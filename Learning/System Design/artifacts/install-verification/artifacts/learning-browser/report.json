@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "checks": [
+    "Learn is the default home with six progressive stages and24 weeks.",
+    "First chapter opens a beginner explanation and local SVG, with exercise answer initially withheld.",
+    "Authored walkthrough shows one concrete state at a time with working forward/back controls.",
+    "Guide practice draft is saved and restored after refresh.",
+    "Three objective checks are graded deterministically; written explanations stay ungraded.",
+    "An explicit reveal exposes the worked solution.",
+    "Self-completion advances the guided next step without asserting interview mastery.",
+    "Progress separates guided self-completion from library sessions and links to the next unfinished chapter.",
+    "Week navigation exposes a concrete practice checkpoint and optional external resources.",
+    "Learn and beginner lesson have no horizontal viewport overflow at390px.",
+    "Search opens the original Redis foundation chapter and its detailed teaching sections.",
+    "Revealed guide cards enter the spaced review queue and a rating is saved.",
+    "Beginner glossary definitions link back to authored guides.",
+    "Guide print view keeps unrevealed worked solutions out of the page."
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "dataDir": "D:\\AIOps Infra Path\\Learning\\System Design\\artifacts\\learning-browser\\test-data-B08grM",
+  "limitations": [
+    "A real learner has not completed the six-month course; this verifies the teaching interface and persistence, not future interview outcomes."
+  ]
+}

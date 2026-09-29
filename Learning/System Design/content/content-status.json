@@ -1,0 +1,3653 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-29T13:13:26.546Z",
+  "counts": {
+    "catalog": 300,
+    "authored": 105,
+    "metadataOnly": 195,
+    "drafted": 95,
+    "reviewed": 10,
+    "validated": 0
+  },
+  "records": [
+    {
+      "id": "001",
+      "moduleId": "M01",
+      "title": "What system design is; diagnostic and your design notebook",
+      "state": "drafted",
+      "wordCount": 873,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "0311037ce561e6c46d2ed3b24316f4aef1f419b61a5945d75555ddeb831fa63c"
+    },
+    {
+      "id": "002",
+      "moduleId": "M01",
+      "title": "Requirements, non-goals, invariants, and acceptable compromises",
+      "state": "drafted",
+      "wordCount": 843,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "3fbe751af193d26cdc9cab62393413d6cca6a9c852a9e356a37e9151b6c48b77"
+    },
+    {
+      "id": "003",
+      "moduleId": "M01",
+      "title": "Latency, throughput, availability, durability, and service objectives",
+      "state": "drafted",
+      "wordCount": 857,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "65f30f7cd39bb87ea309384f977741ef77cfa9fbe5d5e9f6368e36c7c7a42c49"
+    },
+    {
+      "id": "004",
+      "moduleId": "M01",
+      "title": "Estimation I: users, actions, average traffic, and peak traffic",
+      "state": "drafted",
+      "wordCount": 844,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "fd6ff28ecc39c4e547df1446ae333e6608e8119ccd24da5d87ba89bae0ad6650"
+    },
+    {
+      "id": "005",
+      "moduleId": "M01",
+      "title": "[A] Clarify a vague product request and defend its estimates",
+      "state": "drafted",
+      "wordCount": 70,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "81a432a0d3f3d397a9d56012adc9e03f6b7deb5a09380f78b25b4c5c31dd0c1f"
+    },
+    {
+      "id": "006",
+      "moduleId": "M01",
+      "title": "Estimation II: bytes, retention, storage, and bandwidth",
+      "state": "drafted",
+      "wordCount": 836,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "0d5bb1895b7c6b4c40b36655e167cfaa48c5e3c22fe6dce1783a54c689cdd78c"
+    },
+    {
+      "id": "007",
+      "moduleId": "M01",
+      "title": "Estimation III: concurrency, Little’s law, and queueing intuition",
+      "state": "drafted",
+      "wordCount": 892,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "18b2ddecfd16e9cb16ecf82e2534d737374cc3953d8cfa5d779619939c8bf56b"
+    },
+    {
+      "id": "008",
+      "moduleId": "M01",
+      "title": "Estimation IV: headroom, bottlenecks, sensitivity, and cost",
+      "state": "drafted",
+      "wordCount": 876,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "12df4bc3a2926f7a5a5fe75f46d94bb87b41784292bbeef71851336b3b81bdb2"
+    },
+    {
+      "id": "009",
+      "moduleId": "M01",
+      "title": "The 45/60-minute interview framework; diagrams and decision records",
+      "state": "drafted",
+      "wordCount": 914,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "1ded84469af5cd0fba717bfe30a4e804efe9b8e1f4b1fa4144f50c641cd83b86"
+    },
+    {
+      "id": "010",
+      "moduleId": "M01",
+      "title": "[C] Design a small single-server service without overengineering",
+      "state": "drafted",
+      "wordCount": 70,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "fbc51f3ef593cdcc97b892ec0c6fd285938bd18c1d4a7b026350911ce12de96d"
+    },
+    {
+      "id": "011",
+      "moduleId": "M02",
+      "title": "Request journey: DNS, IP addresses, routing, and ports",
+      "state": "reviewed",
+      "wordCount": 738,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: naming/address/port boundaries, cached TTL versus connection lifetime, and diagnostic scope are consistent.",
+        "Cold/warm arithmetic independently recomputed: 155 ms and 55 ms."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "5e17e2a6a407cf74caff92e8a39fd7fb891abda1d85c47d4294fe1b9940dfaee"
+    },
+    {
+      "id": "012",
+      "moduleId": "M02",
+      "title": "TCP versus UDP: loss, congestion, connections, and retransmission",
+      "state": "reviewed",
+      "wordCount": 687,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: TCP stream ordering, UDP message behavior, receiver flow control, and network congestion are correctly separated.",
+        "Bandwidth-delay arithmetic checked: 100 Mbit/s × 40 ms = 500000 bytes; transport ACK is not a business commit."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "cd4a4bdbc93996ffc30e137ac2bbe18f86ed66a93492699c1e5fa3029ef87134"
+    },
+    {
+      "id": "013",
+      "moduleId": "M02",
+      "title": "TLS, certificates, termination, and trust boundaries",
+      "state": "reviewed",
+      "wordCount": 623,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: TLS endpoints, plaintext termination, trusted identity context, and object authorization remain distinct.",
+        "The forged-header exercise requires both channel and identity repair; 30 ms × 2 handshakes = 60 ms."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "46b9fe2f2ba900563cc9f3e9ecd6e604d566a1c3bcc2c892d6adfa22fd7a64bc"
+    },
+    {
+      "id": "014",
+      "moduleId": "M02",
+      "title": "HTTP semantics: methods, status codes, safety, and idempotence",
+      "state": "reviewed",
+      "wordCount": 672,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: safe/idempotent/cacheable are distinct; repeated effect does not require identical response bytes.",
+        "Conditional version update includes atomicity and affected-row interpretation; idempotency-key storage is not attributed to HTTP."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "ef5b5872f99ab86043f23a4c806eebeb1ec88972881441145a486c0bf7e00e33"
+    },
+    {
+      "id": "015",
+      "moduleId": "M02",
+      "title": "[A] Trace and troubleshoot a request from browser to backend",
+      "state": "reviewed",
+      "wordCount": 91,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent assessment review: clarifications localize certificate-name failure before HTTP, and the solution preserves verified identity during DNS migration.",
+        "The candidate brief does not disclose the fault; remediation is within taught lessons."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "702dd35c7c9ebbfd60c579291c675a021388530cb67610c14bdb3c1840955ba3"
+    },
+    {
+      "id": "016",
+      "moduleId": "M02",
+      "title": "HTTP/1.1, HTTP/2, HTTP/3, multiplexing, and head-of-line blocking",
+      "state": "reviewed",
+      "wordCount": 658,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: HTTP/2 versus HTTP/3 head-of-line behavior is scoped by layer and shared congestion/metadata constraints.",
+        "Ten 100 ms slots = idealized 100 operations/s; the exercise controls confounding variables."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "261feb51c59b021c557bd92b8a374700d782488a415c29afada4ba584dc8d313"
+    },
+    {
+      "id": "017",
+      "moduleId": "M02",
+      "title": "Forward proxies, reverse proxies, and L4/L7 load balancers",
+      "state": "reviewed",
+      "wordCount": 625,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: connection assignment differs from request load, sticky state is not durability, and health checks are scoped observations.",
+        "Reported new-client routing-arrow correction was incorporated by root; 20 × 50 = 1000 configured connections."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "d244217e3f9ce564b1994ec26f7ec3444c2c631a6c7930266e8a8bc216013f7d"
+    },
+    {
+      "id": "018",
+      "moduleId": "M02",
+      "title": "REST versus RPC/gRPC: contracts, serialization, and coupling",
+      "state": "reviewed",
+      "wordCount": 635,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: typed code generation does not replace authorization, business validation, retry semantics, or cancellation handling.",
+        "Protocol alternatives are justified by client ecosystem and streaming needs; no universal speed multiplier is claimed."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "e56a200d00f89414f46f46e06ea597c26d97d8d56d83395f44cbd0afd5ef3692"
+    },
+    {
+      "id": "019",
+      "moduleId": "M02",
+      "title": "Polling, long polling, SSE, and WebSockets",
+      "state": "reviewed",
+      "wordCount": 638,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent text review: connection recovery requires retained history, cursor/snapshot coherence, and authorization; slow consumers have bounded policies.",
+        "Arithmetic checked: 4000 polls/s, 25.6 Mbit/s response bodies, 312.5 MiB illustrative buffers."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "5d992c559812de4bb86bde06272df18e1bc38e9f2411d21f680b907d377a7252"
+    },
+    {
+      "id": "020",
+      "moduleId": "M02",
+      "title": "[C] Select transports for a live dashboard and chat product",
+      "state": "reviewed",
+      "wordCount": 84,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked.",
+        "Independent assessment review: multiple justified transport choices are accepted and storage internals beyond the taught scope are not required.",
+        "Reference reasoning distinguishes durable messages from ephemeral typing state and tests reconnect gaps and bounded buffering."
+      ],
+      "limitations": [
+        "Complete acceptance review not yet recorded."
+      ],
+      "sha256": "b84fd49595224c1cb2693615d2992e8215a9e65afa7dd4bf52554e165aa083b4"
+    },
+    {
+      "id": "021",
+      "moduleId": "M03",
+      "title": "Processes, threads, event loops, and Python I/O workloads",
+      "state": "drafted",
+      "wordCount": 764,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "e103db0dc5c088b9f5ba76f5fd9c6d7c7f8c0223d0eaa102160bff3269e95672"
+    },
+    {
+      "id": "022",
+      "moduleId": "M03",
+      "title": "Races, bounded concurrency, cancellation, and shared state",
+      "state": "drafted",
+      "wordCount": 698,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "f58aad32579dcb474636b0205f2abb7b0e66a692761f3930d01673cc5893a0e5"
+    },
+    {
+      "id": "023",
+      "moduleId": "M03",
+      "title": "Resource-oriented APIs, schemas, validation, and error contracts",
+      "state": "drafted",
+      "wordCount": 791,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "66a01bedb695ad9cfcaa189a9159fd98d49df58555c21810c4c10cb77d92eb84"
+    },
+    {
+      "id": "024",
+      "moduleId": "M03",
+      "title": "Offset/cursor pagination, stable ordering, and API evolution",
+      "state": "drafted",
+      "wordCount": 809,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "ed07d9c863ff10846207e72c4cc695e1ca30d1b258dfc2f7f524a47e0767133b"
+    },
+    {
+      "id": "025",
+      "moduleId": "M03",
+      "title": "[B] Repair an API with blocking calls and unstable pagination",
+      "state": "drafted",
+      "wordCount": 47,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "d2352b8316069bdaf13d10fd3fa996cf48be425e2b23ec5237585e15bd793b3b"
+    },
+    {
+      "id": "026",
+      "moduleId": "M03",
+      "title": "Authentication versus authorization; sessions and API-key basics",
+      "state": "drafted",
+      "wordCount": 741,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "a9eef9298a0286a72db977432fc4ef2a4cfa0194ceabefcc161bb37809ef33ad"
+    },
+    {
+      "id": "027",
+      "moduleId": "M03",
+      "title": "Deadlines, uncertain outcomes, and safe retry boundaries",
+      "state": "drafted",
+      "wordCount": 763,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "a19fd2304fd6ceefd5e71d27bb3b8fbda8aa91e8bdaf2c3b5dd8e553cf49ede2"
+    },
+    {
+      "id": "028",
+      "moduleId": "M03",
+      "title": "Modular monoliths, ownership boundaries, and justified service extraction",
+      "state": "drafted",
+      "wordCount": 763,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "55e264ab9b27b20e3b3393c64857c7a52b52c32cd5fd6191084b35a23ef4d2c7"
+    },
+    {
+      "id": "029",
+      "moduleId": "M03",
+      "title": "Lab: run the supplied service/test harness and trace concurrent requests",
+      "state": "drafted",
+      "wordCount": 863,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "d44f75ef06651b32ec7bb5ad0629971842dcf0190eb3d2682bd7adc8b792bc71"
+    },
+    {
+      "id": "030",
+      "moduleId": "M03",
+      "title": "[C] Design an inventory API and expose its race conditions",
+      "state": "drafted",
+      "wordCount": 47,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "b04586f4fae5111b9841ca3368e9c4633269971b560357d2de33cc909e32d0a1"
+    },
+    {
+      "id": "031",
+      "moduleId": "M04",
+      "title": "Access patterns, entities, keys, and relational schemas",
+      "state": "drafted",
+      "wordCount": 769,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "7afaecfcc690f04326ad9222287e01bb32fabb1c30be4f0c64218b39552d7224"
+    },
+    {
+      "id": "032",
+      "moduleId": "M04",
+      "title": "Constraints, normalization, denormalization, and invariant ownership",
+      "state": "drafted",
+      "wordCount": 724,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "e7148728a5279d65e4a5f6a6414a4c4edb73fdf3909095192cf7435005a85adb"
+    },
+    {
+      "id": "033",
+      "moduleId": "M04",
+      "title": "B-tree indexes, composite-key order, and covering access paths",
+      "state": "drafted",
+      "wordCount": 784,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "a9e78d3cec0a6ca5c2ed96adfa07cf92771d54958353d1ab5c1b0f8332876c5a"
+    },
+    {
+      "id": "034",
+      "moduleId": "M04",
+      "title": "Query plans, selectivity, joins, and N+1 performance failures",
+      "state": "drafted",
+      "wordCount": 729,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "57401253ff1a3d4c87df1e3b13672f075482a64af501b4e5998b60767e7327ab"
+    },
+    {
+      "id": "035",
+      "moduleId": "M04",
+      "title": "[A] Defend a schema and index plan for competing workloads",
+      "state": "drafted",
+      "wordCount": 46,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "34d941036e07b6771d06df7636c04443732a6a4614dd952db6023a79fa104b3a"
+    },
+    {
+      "id": "036",
+      "moduleId": "M04",
+      "title": "Transactions and ACID: atomicity is not isolation",
+      "state": "drafted",
+      "wordCount": 731,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "d11857dbbd5dc59187bbbb92a9c10a6e0eb3ff12c9697c89b9f508c9bdbfae13"
+    },
+    {
+      "id": "037",
+      "moduleId": "M04",
+      "title": "Optimistic concurrency, row locks, deadlocks, and transaction retries",
+      "state": "drafted",
+      "wordCount": 763,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "79272ac59a53415bfecfe8aab7337e2c479ef1f5c35b7bc12215a21596fdf338"
+    },
+    {
+      "id": "038",
+      "moduleId": "M04",
+      "title": "MVCC and isolation histories: read committed through serializable",
+      "state": "drafted",
+      "wordCount": 780,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "dba9a4610a509e7b461c560a31a13a5166a355a1b8f853c5f97d372309f260d4"
+    },
+    {
+      "id": "039",
+      "moduleId": "M04",
+      "title": "[P1.1] URL shortener: persistent create/redirect path and correctness tests",
+      "state": "drafted",
+      "wordCount": 868,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "5e04382df3ffa3dcd40f2aff1ef8800ef651ca75c095a316d575eecc84aa135b"
+    },
+    {
+      "id": "040",
+      "moduleId": "M04",
+      "title": "[B] Diagnose overselling and lost updates using transaction histories",
+      "state": "drafted",
+      "wordCount": 46,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "60945257c9fa3f649cdd8c08c5e9416f8c756bbf9b1ac5488913708fa6c7a919"
+    },
+    {
+      "id": "041",
+      "moduleId": "M05",
+      "title": "Write-ahead logs, acknowledgments, crashes, and recovery",
+      "state": "drafted",
+      "wordCount": 763,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "f218ccf3f5fe21e42723e71bfe96a3940ef93b2dbd0d9260b74b19286e1d7c43"
+    },
+    {
+      "id": "042",
+      "moduleId": "M05",
+      "title": "LSM trees, SSTables, compaction, and read/write amplification",
+      "state": "drafted",
+      "wordCount": 755,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "c45284d2d9ad58ca5336e35f1f65bd9f6d110cd9c9b119b55f286f5b77fb6478"
+    },
+    {
+      "id": "043",
+      "moduleId": "M05",
+      "title": "Bloom filters, page caches, compression, and storage budgets",
+      "state": "drafted",
+      "wordCount": 721,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "158dd2ae5665e9a17258b56c908a7f63f30da3b48b8a531c4479947b7de45c1b"
+    },
+    {
+      "id": "044",
+      "moduleId": "M05",
+      "title": "Row stores, columnar analytics, and wide-column data models",
+      "state": "drafted",
+      "wordCount": 686,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "454946470b5d8ff58dbcf7d681057ef3af0460ae66fe8d6566e3b8302c9324a6"
+    },
+    {
+      "id": "045",
+      "moduleId": "M05",
+      "title": "[A] Choose an engine from measured read/write requirements",
+      "state": "drafted",
+      "wordCount": 354,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "cb08068fcedd4cf44013a1568587908cdfbfe95fa4e868d395188da4492072e4"
+    },
+    {
+      "id": "046",
+      "moduleId": "M05",
+      "title": "Key-value and document stores: aggregate boundaries and query limitations",
+      "state": "drafted",
+      "wordCount": 761,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "1501c27461553c00e6a0127c19da93f10eeabd6fd00d6d8477d39bc5bb6394cd"
+    },
+    {
+      "id": "047",
+      "moduleId": "M05",
+      "title": "Search engines: inverted indexes, ranking, and index freshness",
+      "state": "drafted",
+      "wordCount": 733,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "8d0d5d6a0f9ebb08e816b796f8dd6f2edadf88be281c2af9fd5ef508bfa1ed65"
+    },
+    {
+      "id": "048",
+      "moduleId": "M05",
+      "title": "Graph and geospatial access patterns and indexes",
+      "state": "drafted",
+      "wordCount": 691,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "b2c36f54dd8d02db7512981a4fd72469788ebc62573270ed65493c17f7d7b374"
+    },
+    {
+      "id": "049",
+      "moduleId": "M05",
+      "title": "Object, file, and block storage; blobs versus metadata",
+      "state": "drafted",
+      "wordCount": 759,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "b1fabdd8f5db437453ea9d9891c92a272941b2d08a4f05b9bf7b5fad88fac973"
+    },
+    {
+      "id": "050",
+      "moduleId": "M05",
+      "title": "[C] Database-selection clinic across six concrete workloads",
+      "state": "drafted",
+      "wordCount": 366,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "a67a6c37cc3ca62b39e0dcc70b8407aae2e2a9a843350bd22d3896311f054fb4"
+    },
+    {
+      "id": "051",
+      "moduleId": "M06",
+      "title": "Benchmarking, workload models, latency percentiles, and test validity",
+      "state": "drafted",
+      "wordCount": 693,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "e9808484d7f5f811a409b6a940effbcf0d9d69f61a2a63c2cb11dab2df7895bb"
+    },
+    {
+      "id": "052",
+      "moduleId": "M06",
+      "title": "Vertical/horizontal scaling, statelessness, and session placement",
+      "state": "drafted",
+      "wordCount": 619,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "33f235f912716f546372fa9f48e494bd3e058c7e6339256c582e5208bc4465ab"
+    },
+    {
+      "id": "053",
+      "moduleId": "M06",
+      "title": "Load-balancing algorithms, connection skew, and sticky sessions",
+      "state": "drafted",
+      "wordCount": 614,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "f27c202688908c0f855fcb819c66b1f109f235101ae4b422452c7fd5147458f5"
+    },
+    {
+      "id": "054",
+      "moduleId": "M06",
+      "title": "Connection pools, concurrency limits, and database saturation",
+      "state": "drafted",
+      "wordCount": 633,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "cbe604bacd930cae9b988311272d12229ae72c5c71c8e4c707c5d39e280691c2"
+    },
+    {
+      "id": "055",
+      "moduleId": "M06",
+      "title": "[B] Explain why adding API servers made the system slower",
+      "state": "drafted",
+      "wordCount": 70,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "834d6451a7ac44f6f9d04542ccc22237d6099d0e5b6cc2eb97cac16ad3544e58"
+    },
+    {
+      "id": "056",
+      "moduleId": "M06",
+      "title": "Cache-aside, TTL, eviction, hit ratios, and working-set size",
+      "state": "drafted",
+      "wordCount": 648,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "fd7bee0ab8449da6f4a2265e99d8715c589a513bb5099fae039dfaf7a59a5e31"
+    },
+    {
+      "id": "057",
+      "moduleId": "M06",
+      "title": "Cache invalidation, write policies, and stale-read race timelines",
+      "state": "drafted",
+      "wordCount": 654,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "b9645d08d13c3eebd310ea3646bbe65cb0d4d2075a7a3dbba2d7bd3d9e10f940"
+    },
+    {
+      "id": "058",
+      "moduleId": "M06",
+      "title": "CDNs, HTTP caching, cache keys, and origin protection",
+      "state": "drafted",
+      "wordCount": 616,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "7ba2ebb5cb17b85c395b4bb0d5c9321f7cad0626c666d34e7ee0fa1d6fd2ea85"
+    },
+    {
+      "id": "059",
+      "moduleId": "M06",
+      "title": "[P1.2] URL shortener: add a cache and compare measured performance",
+      "state": "drafted",
+      "wordCount": 465,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "d908a33d569eef23ec94abd131b890600184b1787ac762d356e42700a1a6c626"
+    },
+    {
+      "id": "060",
+      "moduleId": "M06",
+      "title": "[C] Scale a read-heavy service and defend every added component",
+      "state": "drafted",
+      "wordCount": 70,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "7158e391e6a784d1bebd66b71b3c59c2e7e2d63870d8603441d7e84aacfba65c"
+    },
+    {
+      "id": "061",
+      "moduleId": "M07",
+      "title": "Synchronous/asynchronous replication, failover, and durability boundaries",
+      "state": "drafted",
+      "wordCount": 697,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "3ec39eed0ac48742fd23328a9811f5fe6264cf3793da41f7653d33d5f8848abe"
+    },
+    {
+      "id": "062",
+      "moduleId": "M07",
+      "title": "Replica lag, read-your-writes, and routing reads safely",
+      "state": "drafted",
+      "wordCount": 715,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "11ed87f2bdfde187d0c3ab1b13fa3684bc3250be4da83642ce84528195c5c1f2"
+    },
+    {
+      "id": "063",
+      "moduleId": "M07",
+      "title": "Hash, range, and directory partitioning; choosing a shard key",
+      "state": "drafted",
+      "wordCount": 649,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "d693a3f230682a935453f30f101845e5fe1f98dcef409c4dce386eb04cf8fcb2"
+    },
+    {
+      "id": "064",
+      "moduleId": "M07",
+      "title": "Consistent hashing: rings, virtual nodes, movement, and alternatives",
+      "state": "drafted",
+      "wordCount": 693,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "97b6f97b70099726422339fccc460c32e1c9b58c2fe54128934eb831972bd731"
+    },
+    {
+      "id": "065",
+      "moduleId": "M07",
+      "title": "[A] Replication versus partitioning; simulate membership changes",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "066",
+      "moduleId": "M07",
+      "title": "Hot keys/shards, request coalescing, stampedes, and skew mitigation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "067",
+      "moduleId": "M07",
+      "title": "Online resharding, rebalancing, routing versions, and migration safety",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "068",
+      "moduleId": "M07",
+      "title": "Distributed identifiers: sequences, UUIDs, time-based IDs, and collisions",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "069",
+      "moduleId": "M07",
+      "title": "[P1.3] URL shortener: simulate partition movement and hotspot failures",
+      "state": "drafted",
+      "wordCount": 507,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "01c7c1c1c245ca55cea71bed4b94bbd0d5fc89c2259ed1efc67e91a6c4bd602a"
+    },
+    {
+      "id": "070",
+      "moduleId": "M07",
+      "title": "[D] URL shortener under growth and a replica failure",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "071",
+      "moduleId": "M08",
+      "title": "Partial failure, slow versus dead nodes, and failure detection",
+      "state": "drafted",
+      "wordCount": 849,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "7313e5955b3bc7ee1157ef87d456be08a478f5edb8adc41a3db9c589e9767e65"
+    },
+    {
+      "id": "072",
+      "moduleId": "M08",
+      "title": "Linearizability and sequential consistency through operation histories",
+      "state": "drafted",
+      "wordCount": 846,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "e7984bffa0e2620a0fcc40412e2c0465c93ef7c142505dea20c8b202391cd7a7"
+    },
+    {
+      "id": "073",
+      "moduleId": "M08",
+      "title": "Eventual, causal, and session consistency through user-visible behavior",
+      "state": "drafted",
+      "wordCount": 886,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "5cb7774f436817c6b32e18764c6df85d0cf69952daea116aedf109011f8442f6"
+    },
+    {
+      "id": "074",
+      "moduleId": "M08",
+      "title": "CAP and PACELC: precise guarantees, partition behavior, and latency",
+      "state": "drafted",
+      "wordCount": 868,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "318e9eee03e64c484b1c56fd73caffb5c0b2732fba2e1db3ab949e9da83d9ff7"
+    },
+    {
+      "id": "075",
+      "moduleId": "M08",
+      "title": "[A] Classify histories and correct misleading CAP explanations",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "076",
+      "moduleId": "M08",
+      "title": "Physical clocks, monotonic time, clock skew, and Lamport clocks",
+      "state": "drafted",
+      "wordCount": 728,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "10667450663c5c360db1b0c495dfc3be6dc666462deaab6df3dc7ad4fbee7987"
+    },
+    {
+      "id": "077",
+      "moduleId": "M08",
+      "title": "Vector clocks, causal histories, and detecting concurrent updates",
+      "state": "drafted",
+      "wordCount": 758,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "563d5a17b40f2762f0bf59ce4c5cee403875e908d164cb13ed3f0b4ca966821d"
+    },
+    {
+      "id": "078",
+      "moduleId": "M08",
+      "title": "Leaderless replication, quorums, repair, and overlap limitations",
+      "state": "drafted",
+      "wordCount": 776,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "7b667de7ef06f0aa08e7d893d8d5e947e34c1ff6f43538fdb2a73b853909f395"
+    },
+    {
+      "id": "079",
+      "moduleId": "M08",
+      "title": "Conflict resolution and CRDTs: convergence does not preserve every invariant",
+      "state": "drafted",
+      "wordCount": 782,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "36b1636d99660dbb49958f3e3f695c5aea4bbf672f4a467968576379eab74bee"
+    },
+    {
+      "id": "080",
+      "moduleId": "M08",
+      "title": "[B] Diagnose split brain and contradictory consistency promises",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "081",
+      "moduleId": "M09",
+      "title": "Replicated state machines; safety, liveness, and agreement",
+      "state": "drafted",
+      "wordCount": 707,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "698a68d82fbbf1c28777f03db26f32abe38ebb17aa5385a0c4cd6d650086eda0"
+    },
+    {
+      "id": "082",
+      "moduleId": "M09",
+      "title": "Raft I: terms, elections, voting, and leader failure",
+      "state": "drafted",
+      "wordCount": 704,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "9d6bc757199610668e22511022867d85d368f9b1b22f8d65db4d046182b01dc1"
+    },
+    {
+      "id": "083",
+      "moduleId": "M09",
+      "title": "Raft II: log replication, commitment, and recovery",
+      "state": "drafted",
+      "wordCount": 730,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "1d8103e478466e67974e9068ebd0bc0cc6bcfdabed5af71c3a3ca0e565401b0b"
+    },
+    {
+      "id": "084",
+      "moduleId": "M09",
+      "title": "Raft III: snapshots, membership changes, and subtle failure histories",
+      "state": "drafted",
+      "wordCount": 675,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "ca1165b8cedcd3e69dca8c5ba5991e6eb0dfe83eca3b9fb4fe719c80f2545a63"
+    },
+    {
+      "id": "085",
+      "moduleId": "M09",
+      "title": "[B] Debug a replicated log with an unsafe acknowledgment rule",
+      "state": "drafted",
+      "wordCount": 350,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "bf44bde549e5c6b8fb0f9229789a8f06951c321afade9d7fa52db8b6db018938"
+    },
+    {
+      "id": "086",
+      "moduleId": "M09",
+      "title": "Paxos intuition and impossibility boundaries: what consensus assumes",
+      "state": "drafted",
+      "wordCount": 695,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "0a0bdec0c287a153596b591cb5d608fcf8722de130709f7a8c8f8e6bc72a3740"
+    },
+    {
+      "id": "087",
+      "moduleId": "M09",
+      "title": "Distributed locks, leases, fencing tokens, and stale owners",
+      "state": "drafted",
+      "wordCount": 717,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "a0f452cc7d338a3749f7001aa1f9bf759cefa3cf96565b7205d3b6a086bf35b3"
+    },
+    {
+      "id": "088",
+      "moduleId": "M09",
+      "title": "Configuration/discovery services, watches, and control/data planes",
+      "state": "drafted",
+      "wordCount": 724,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "24345e50a3afdb043942526b1b1824f9f64d358bbd404407086eb91aeb47e4c5"
+    },
+    {
+      "id": "089",
+      "moduleId": "M09",
+      "title": "Lab: deterministic failure injection and state-machine history tests",
+      "state": "drafted",
+      "wordCount": 673,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "60cd73191b4a12d25458f0778a4a6a62b00b45ccdb4b5558d0fda3c34dbcb5bc"
+    },
+    {
+      "id": "090",
+      "moduleId": "M09",
+      "title": "[C] Design a configuration service with safe updates and watches",
+      "state": "drafted",
+      "wordCount": 329,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "5c8154f704b0f9c6a9a1d755ad0385fe5b8e871fa80f46d7497b136a5dfb7bec"
+    },
+    {
+      "id": "091",
+      "moduleId": "M10",
+      "title": "Queues, pub/sub, and logs: delivery, decoupling, and ownership",
+      "state": "drafted",
+      "wordCount": 649,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "2bfd0c638b284b617dd952fa535967ac095e435ad0335bfa7d324ad649614804"
+    },
+    {
+      "id": "092",
+      "moduleId": "M10",
+      "title": "Acknowledgments, redelivery, and at-most/at-least-once delivery",
+      "state": "drafted",
+      "wordCount": 644,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "ba48240863a0da6960abe90a1e9c8b5e9cddf915681aacf002463d0a49bc15e0"
+    },
+    {
+      "id": "093",
+      "moduleId": "M10",
+      "title": "Persistent idempotency: keys, fingerprints, inboxes, and atomic effects",
+      "state": "drafted",
+      "wordCount": 644,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "cf38101372f6945dcdd71eca20c33de719750cdb091e2008d091c06f827a1830"
+    },
+    {
+      "id": "094",
+      "moduleId": "M10",
+      "title": "Timeout budgets, exponential backoff, jitter, and retry amplification",
+      "state": "drafted",
+      "wordCount": 660,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "76de4beda1936847e119e0894e1597c0b0ed52d2da53fcb3d6f05bc1e5b46726"
+    },
+    {
+      "id": "095",
+      "moduleId": "M10",
+      "title": "[B] Repair a duplicate-side-effect incident and retry storm",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "096",
+      "moduleId": "M10",
+      "title": "Backpressure, bounded buffers, admission control, and fairness",
+      "state": "drafted",
+      "wordCount": 655,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "81e105881390c39204e8dea586c3feacff14a62d307293df0cf3b37d4758af64"
+    },
+    {
+      "id": "097",
+      "moduleId": "M10",
+      "title": "Circuit breakers, bulkheads, and graceful degradation",
+      "state": "drafted",
+      "wordCount": 652,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "36557f501c2fdaab102990c02050f28aa48d7319b23b84c3eea88a109d592daf"
+    },
+    {
+      "id": "098",
+      "moduleId": "M10",
+      "title": "Durable job states, leases, heartbeats, dead letters, and recovery",
+      "state": "drafted",
+      "wordCount": 688,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "eb5813c6a7e82bd95b09134aa2a8de3d672bb5bebcff0b4348b045543ae8e0bb"
+    },
+    {
+      "id": "099",
+      "moduleId": "M10",
+      "title": "[P3.1] Job system: implement claiming, execution, and recovery tests",
+      "state": "drafted",
+      "wordCount": 509,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "f230b69cd920563e7862db7fa6055c13f3b4d06c0e73fee0116b6229c3140c8a"
+    },
+    {
+      "id": "100",
+      "moduleId": "M10",
+      "title": "[C] Design a task queue with worker crashes and duplicate deliveries",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "101",
+      "moduleId": "M11",
+      "title": "Partitioned logs: Kafka partitions, replicas, offsets, and consumer groups",
+      "state": "drafted",
+      "wordCount": 630,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "8202b7d9d1cb9407490037941068b465f464d10ace09794160695627eb9bdd9a"
+    },
+    {
+      "id": "102",
+      "moduleId": "M11",
+      "title": "Ordering, rebalances, retention, replay, and event schema compatibility",
+      "state": "drafted",
+      "wordCount": 622,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "0ea5a53611bd42553d028b51a34f2c8b9419d4dae2614d820c5dce22777e6ddb"
+    },
+    {
+      "id": "103",
+      "moduleId": "M11",
+      "title": "Dual-write failures, transactional outbox, and change data capture",
+      "state": "drafted",
+      "wordCount": 634,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "0ed20af0d51edb293e52c92bcceb6077beb5ddc285d55e4d2070ff06fa00ef9d"
+    },
+    {
+      "id": "104",
+      "moduleId": "M11",
+      "title": "Distributed transactions and two-phase commit: atomicity versus availability",
+      "state": "drafted",
+      "wordCount": 648,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "842346a93c3da99b4696d5640e2ce340685fea5b4c3e29863c939a0228f7e05a"
+    },
+    {
+      "id": "105",
+      "moduleId": "M11",
+      "title": "[A] Locate the failure window in database-plus-broker workflows",
+      "state": "drafted",
+      "wordCount": 91,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "5be6f8f681948cad5a55b582a8a2572d1163413a173dfbf5bb59804665682aac"
+    },
+    {
+      "id": "106",
+      "moduleId": "M11",
+      "title": "Sagas, compensations, durable workflows, and irreversible effects",
+      "state": "drafted",
+      "wordCount": 650,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "8306322c8d17db66a34fcd809442362f68ee4c7b96c1da87043cdfbe8a0a57fb"
+    },
+    {
+      "id": "107",
+      "moduleId": "M11",
+      "title": "Exactly-once boundaries: broker transactions versus end-to-end effects",
+      "state": "drafted",
+      "wordCount": 676,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "8657ef0ed30948578d7cdff9e00a122ddda4b289c747a456becc7a50ee3a8ded"
+    },
+    {
+      "id": "108",
+      "moduleId": "M11",
+      "title": "Stream processing: event time, windows, watermarks, and late data",
+      "state": "drafted",
+      "wordCount": 607,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "c775c0ff00493f9049af5bcef0ddcf030b8d938aad9fe33dded750ac35933883"
+    },
+    {
+      "id": "109",
+      "moduleId": "M11",
+      "title": "[P5.1] Event pipeline: partitioned ingestion and replayable consumers",
+      "state": "drafted",
+      "wordCount": 403,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "ac83dcdc61a2532ac22ec3859f45b2b716ed9fe75ac18192fe7d0ccaf10a5a84"
+    },
+    {
+      "id": "110",
+      "moduleId": "M11",
+      "title": "[C] Design an order workflow that survives partial completion",
+      "state": "drafted",
+      "wordCount": 86,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "143c4e2ad57dccc1c9aa86efdf7621027163dfb9ab1558204c1fa45b5ee346cd"
+    },
+    {
+      "id": "111",
+      "moduleId": "M12",
+      "title": "CQRS: separate read/write models and projection consistency",
+      "state": "drafted",
+      "wordCount": 627,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "18cf9acea581486d9dba55070bfe97c647af6bdedc544dc423223452753c323c"
+    },
+    {
+      "id": "112",
+      "moduleId": "M12",
+      "title": "Event sourcing: events, snapshots, replay, and correction semantics",
+      "state": "drafted",
+      "wordCount": 602,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "2a6a5ca3ecc971172ac3210d4974d7c51185a445aaff172133ff432fe365fdc1"
+    },
+    {
+      "id": "113",
+      "moduleId": "M12",
+      "title": "Schema migration, backfills, reconciliation, and expand/contract changes",
+      "state": "drafted",
+      "wordCount": 616,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "32451d69e6c27e289f5a8d559cd09fbe5ccbbc1ba66a084d66ee8c0c0864a7f3"
+    },
+    {
+      "id": "114",
+      "moduleId": "M12",
+      "title": "Batch pipelines, MapReduce intuition, orchestration, and data quality",
+      "state": "drafted",
+      "wordCount": 556,
+      "evidence": [
+        "Schema, references, objective answer structure and minimum teaching components checked."
+      ],
+      "limitations": [
+        "Substantive independent editorial review and visual diagram verification remain."
+      ],
+      "sha256": "6edd616ac4877ea91fa151ad1d9bf4cd73af9ac503f8c2cc93dd1ba5946664a0"
+    },
+    {
+      "id": "115",
+      "moduleId": "M12",
+      "title": "[B] Repair a projection after a schema change and failed backfill",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "116",
+      "moduleId": "M12",
+      "title": "Time-series and columnar analytics: cardinality, retention, and aggregation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "117",
+      "moduleId": "M12",
+      "title": "Distributed search indexing: ingestion, refresh, deletion, and reindexing",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "118",
+      "moduleId": "M12",
+      "title": "Data retention, deletion, lineage, archival, and backup interactions",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "119",
+      "moduleId": "M12",
+      "title": "[P5.2] Event pipeline: projections, duplicate handling, and late-event tests",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "120",
+      "moduleId": "M12",
+      "title": "[D] Design an analytics pipeline with replay and freshness objectives",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "121",
+      "moduleId": "M13",
+      "title": "SLIs, SLOs, SLAs, error budgets, and user-visible success",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "122",
+      "moduleId": "M13",
+      "title": "Logs, metrics, traces, correlation, OpenTelemetry, and cardinality",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "123",
+      "moduleId": "M13",
+      "title": "Alerting, burn rates, symptom versus cause, and actionable runbooks",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "124",
+      "moduleId": "M13",
+      "title": "Tail latency, fan-out amplification, overload, and capacity headroom",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "125",
+      "moduleId": "M13",
+      "title": "[B] Investigate an incident using incomplete telemetry",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "126",
+      "moduleId": "M13",
+      "title": "Failure domains, redundancy, zonal isolation, and degraded operation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "127",
+      "moduleId": "M13",
+      "title": "Backups, restore tests, RTO/RPO, and disaster-recovery evidence",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "128",
+      "moduleId": "M13",
+      "title": "Multi-region routing, active-active/passive operation, and failback",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "129",
+      "moduleId": "M13",
+      "title": "[P3.2] Job system: retries, dead letters, metrics, and failure injection",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "130",
+      "moduleId": "M13",
+      "title": "[D] Design a reliable notification pipeline under provider outages",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "131",
+      "moduleId": "M14",
+      "title": "Threat modeling: trust boundaries, sessions, request forgery, and SSRF",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "132",
+      "moduleId": "M14",
+      "title": "OAuth 2.0/OIDC: user flows, PKCE, and machine-to-machine access",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "133",
+      "moduleId": "M14",
+      "title": "JWT verification, issuer/audience checks, JWKS, expiry, and key rotation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "134",
+      "moduleId": "M14",
+      "title": "RBAC/ABAC/ReBAC, object permissions, and tenant isolation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "135",
+      "moduleId": "M14",
+      "title": "[A] Find cross-tenant access and token-validation failures",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "136",
+      "moduleId": "M14",
+      "title": "Secrets, encryption at rest/in transit, workload identity, and rotation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "137",
+      "moduleId": "M14",
+      "title": "Abuse prevention and fixed/sliding-window versus token-bucket limits",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "138",
+      "moduleId": "M14",
+      "title": "[P2.1] Rate limiter: deterministic-clock implementation and boundary tests",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "139",
+      "moduleId": "M14",
+      "title": "[P2.2] Rate limiter: atomic shared state and failure policy",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "140",
+      "moduleId": "M14",
+      "title": "[C] Design tenant-aware gateway authorization and quotas",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "141",
+      "moduleId": "M15",
+      "title": "VMs and containers: isolation, resource limits, and shared failure domains",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "142",
+      "moduleId": "M15",
+      "title": "Orchestration, desired state, reconciliation, and service discovery",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "143",
+      "moduleId": "M15",
+      "title": "Kubernetes request path: workloads, Services, ingress, and Gateway concepts",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "144",
+      "moduleId": "M15",
+      "title": "Startup/readiness/liveness, graceful draining, resources, and autoscaling",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "145",
+      "moduleId": "M15",
+      "title": "[B] Debug healthy Pods serving failed requests and cascading restarts",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "146",
+      "moduleId": "M15",
+      "title": "Rolling, blue/green, and canary releases; rollback with schema changes",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "147",
+      "moduleId": "M15",
+      "title": "Managed services, serverless, networking/storage cost, and buy-versus-build",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "148",
+      "moduleId": "M15",
+      "title": "[P3.3] Job system: deployment, graceful shutdown, and bounded scaling",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "149",
+      "moduleId": "M15",
+      "title": "[P3.4] Job system: chaos checks, restore drill, and operational handover",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "150",
+      "moduleId": "M15",
+      "title": "[D] Design deployment and operation of an enterprise HTTP/MCP service",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "151",
+      "moduleId": "M16",
+      "title": "Design URL shortener I: requirements, estimates, APIs, and data model",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "152",
+      "moduleId": "M16",
+      "title": "Design URL shortener II / [P1.4]: evolution, abuse, failures, and evidence",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "153",
+      "moduleId": "M16",
+      "title": "Design Pastebin I: text/blob ownership, access, and retention",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "154",
+      "moduleId": "M16",
+      "title": "Design Pastebin II: expiration, cleanup, caching, and misuse prevention",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "155",
+      "moduleId": "M16",
+      "title": "[D] Unfamiliar short-link/paste workload with changing constraints",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "156",
+      "moduleId": "M16",
+      "title": "Design distributed cache I: API, placement, eviction, and membership",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "157",
+      "moduleId": "M16",
+      "title": "Design distributed cache II: consistency, hotspots, and node failure",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "158",
+      "moduleId": "M16",
+      "title": "Design rate limiter I / [P2.3]: regional quotas and coordination budgets",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "159",
+      "moduleId": "M16",
+      "title": "Design rate limiter II / [P2.4]: load/failure tests and policy defense",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "160",
+      "moduleId": "M16",
+      "title": "[D] Design a quota service under asymmetric regional demand",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "161",
+      "moduleId": "M17",
+      "title": "Design notification service I: preferences, templates, channels, and fan-out",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "162",
+      "moduleId": "M17",
+      "title": "Design notification service II: retries, deduplication, and provider outages",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "163",
+      "moduleId": "M17",
+      "title": "Design distributed scheduler I: triggers, priorities, queues, and ownership",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "164",
+      "moduleId": "M17",
+      "title": "Design distributed scheduler II: leases, fencing, retries, and clock errors",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "165",
+      "moduleId": "M17",
+      "title": "[D] Design a deadline-sensitive background-work platform",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "166",
+      "moduleId": "M17",
+      "title": "Design leaderboard I: rankings, sorted sets, and counter updates",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "167",
+      "moduleId": "M17",
+      "title": "Design leaderboard II: hot counters, aggregation, and abuse resistance",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "168",
+      "moduleId": "M17",
+      "title": "Design API gateway I: routing, identity, admission, and request budgets",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "169",
+      "moduleId": "M17",
+      "title": "Design API gateway II: discovery, configuration rollout, and isolation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "170",
+      "moduleId": "M17",
+      "title": "[D] Integrate gateway, quotas, and background work without overengineering",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "171",
+      "moduleId": "M18",
+      "title": "Design WhatsApp-like chat I: connections, message storage, and delivery",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "172",
+      "moduleId": "M18",
+      "title": "Design WhatsApp-like chat II: order, receipts, presence, and encryption boundaries",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "173",
+      "moduleId": "M18",
+      "title": "[P4.1] Chat backend: persistent messaging over the supplied WebSocket scaffold",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "174",
+      "moduleId": "M18",
+      "title": "[P4.2] Chat backend: reconnect cursors, offline delivery, and tests",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "175",
+      "moduleId": "M18",
+      "title": "[D] Redesign chat when ordering and offline requirements change",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "176",
+      "moduleId": "M18",
+      "title": "Design Slack/Discord I: channel workloads, tenant permissions, and history",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "177",
+      "moduleId": "M18",
+      "title": "Design Slack/Discord II: large-channel fan-out, search, mentions, and threads",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "178",
+      "moduleId": "M18",
+      "title": "Design Gmail-like mail I: submission, delivery queues, mailboxes, and search",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "179",
+      "moduleId": "M18",
+      "title": "Design Gmail-like mail II: retries, attachments, threading, and abuse",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "180",
+      "moduleId": "M18",
+      "title": "[D] Transfer communication principles to an unfamiliar collaboration product",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "181",
+      "moduleId": "M19",
+      "title": "Design Instagram I: social graph, media references, feed APIs, and models",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "182",
+      "moduleId": "M19",
+      "title": "Design Instagram II: feed fan-out, caching, freshness, and ranking boundaries",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "183",
+      "moduleId": "M19",
+      "title": "Design Twitter/X I: celebrity skew and timeline generation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "184",
+      "moduleId": "M19",
+      "title": "Design Twitter/X II: hybrid fan-out, cursor stability, and repair",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "185",
+      "moduleId": "M19",
+      "title": "[D] Design a feed during cache failure and sudden traffic growth",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "186",
+      "moduleId": "M19",
+      "title": "Design Reddit I: communities, comments, votes, and ranking",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "187",
+      "moduleId": "M19",
+      "title": "Design Reddit II: hot threads, tree pagination, and moderation workflows",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "188",
+      "moduleId": "M19",
+      "title": "[P4.3] Chat backend: multiple workers, pub/sub, and presence expiry",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "189",
+      "moduleId": "M19",
+      "title": "[P4.4] Chat backend: load, disconnect, authorization, and recovery tests",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "190",
+      "moduleId": "M19",
+      "title": "[D] First readiness gate: unseen general-backend design and feedback",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "191",
+      "moduleId": "M20",
+      "title": "Design Dropbox I: file chunks, manifests, and upload/download contracts",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "192",
+      "moduleId": "M20",
+      "title": "Design Dropbox II: synchronization, conflicts, sharing, and recovery",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "193",
+      "moduleId": "M20",
+      "title": "Design Google Drive I: permissions, versions, metadata, and change feeds",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "194",
+      "moduleId": "M20",
+      "title": "Design Google Drive II: resumability, search, deduplication, and revocation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "195",
+      "moduleId": "M20",
+      "title": "[D] Design offline-capable file synchronization with constrained bandwidth",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "196",
+      "moduleId": "M20",
+      "title": "Design distributed object store I: metadata, placement, and durability",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "197",
+      "moduleId": "M20",
+      "title": "Design distributed object store II: erasure coding, repair, and failures",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "198",
+      "moduleId": "M20",
+      "title": "Design cloud storage service I: buckets, signed access, and tenant APIs",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "199",
+      "moduleId": "M20",
+      "title": "Design cloud storage service II: metering, lifecycle, residency, and audit",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "200",
+      "moduleId": "M20",
+      "title": "[D] Defend a global storage design through a regional outage",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "201",
+      "moduleId": "M21",
+      "title": "Design YouTube I: uploads, object storage, and transcoding workflows",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "202",
+      "moduleId": "M21",
+      "title": "Design YouTube II: retries, renditions, publication, and CDN playback",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "203",
+      "moduleId": "M21",
+      "title": "Design Netflix-like streaming I: catalog, playback, and entitlement boundaries",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "204",
+      "moduleId": "M21",
+      "title": "Design Netflix-like streaming II: adaptive delivery, edge capacity, and outages",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "205",
+      "moduleId": "M21",
+      "title": "[D] Design video delivery after a tenfold traffic increase",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "206",
+      "moduleId": "M21",
+      "title": "Design autocomplete I: prefix indexes, suggestions, and query contracts",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "207",
+      "moduleId": "M21",
+      "title": "Design autocomplete II: ranking, hot prefixes, freshness, and privacy",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "208",
+      "moduleId": "M21",
+      "title": "Design web crawler I: frontier, politeness, deduplication, and scheduling",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "209",
+      "moduleId": "M21",
+      "title": "Design web crawler II: traps, retries, domain fairness, and recovery",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "210",
+      "moduleId": "M21",
+      "title": "[D] Design a content-discovery pipeline from ingestion to serving",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "211",
+      "moduleId": "M22",
+      "title": "Design Uber-like service I: location updates, candidate search, and matching",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "212",
+      "moduleId": "M22",
+      "title": "Design Uber-like service II: dispatch races, trip state, and stale locations",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "213",
+      "moduleId": "M22",
+      "title": "Design food delivery I: order, merchant, courier, and fulfillment models",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "214",
+      "moduleId": "M22",
+      "title": "Design food delivery II: coordination, compensation, and live status",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "215",
+      "moduleId": "M22",
+      "title": "[D] Adapt a marketplace when reservations and freshness become critical",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "216",
+      "moduleId": "M22",
+      "title": "Design Google Maps-like service I: tiles, spatial data, and routing graphs",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "217",
+      "moduleId": "M22",
+      "title": "Design Google Maps-like service II: traffic updates, routing caches, and scale",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "218",
+      "moduleId": "M22",
+      "title": "Design web search I: crawl, index, query, and ranking boundaries",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "219",
+      "moduleId": "M22",
+      "title": "Design web search II: query fan-out, index freshness, and recovery",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "220",
+      "moduleId": "M22",
+      "title": "[D] Design an unfamiliar search/location service from its access patterns",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "221",
+      "moduleId": "M23",
+      "title": "Design payment platform I: ledger invariants, APIs, and idempotency",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "222",
+      "moduleId": "M23",
+      "title": "Design payment platform II: reconciliation, refunds, and webhook ordering",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "223",
+      "moduleId": "M23",
+      "title": "Design ad serving I: candidates, targeting, and request deadlines",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "224",
+      "moduleId": "M23",
+      "title": "Design ad serving II: budgets, pacing, counters, and delayed events",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "225",
+      "moduleId": "M23",
+      "title": "[D] Design flash-sale reservations without overselling or double charging",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "226",
+      "moduleId": "M23",
+      "title": "Design collaborative editor I: operations, revisions, and ordering",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "227",
+      "moduleId": "M23",
+      "title": "Design collaborative editor II: OT/CRDT tradeoffs and offline convergence",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "228",
+      "moduleId": "M23",
+      "title": "Design global authentication I: sessions, tokens, key distribution, and revocation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "229",
+      "moduleId": "M23",
+      "title": "Design global authentication II: tenant policy, regional outages, and rotation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "230",
+      "moduleId": "M23",
+      "title": "[D] Preserve authorization correctness during partial identity outages",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "231",
+      "moduleId": "M24",
+      "title": "Design Kafka-like log I: partitions, replicas, append/read APIs, and metadata",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "232",
+      "moduleId": "M24",
+      "title": "Design Kafka-like log II: controllers, failover, recovery, and durability",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "233",
+      "moduleId": "M24",
+      "title": "Design metrics platform I: agents, ingestion, labels, and time-series models",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "234",
+      "moduleId": "M24",
+      "title": "Design metrics platform II: cardinality, downsampling, querying, and alerting",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "235",
+      "moduleId": "M24",
+      "title": "[D] Redesign telemetry when cardinality and cost exceed the budget",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "236",
+      "moduleId": "M24",
+      "title": "Design logging platform I: collection, buffering, indexing, and storage",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "237",
+      "moduleId": "M24",
+      "title": "Design logging platform II: redaction, audit access, backpressure, and loss budgets",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "238",
+      "moduleId": "M24",
+      "title": "[P5.3] Event pipeline: checkpoint recovery, batch replay, and reconciliation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "239",
+      "moduleId": "M24",
+      "title": "[P5.4] Event pipeline: schema/backfill failure tests and evidence report",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "240",
+      "moduleId": "M24",
+      "title": "[D] Design an observable enterprise data platform with bounded cost",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "241",
+      "moduleId": "M25",
+      "title": "Design multi-region SaaS I: tenant directory, placement, and isolation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "242",
+      "moduleId": "M25",
+      "title": "Design multi-region SaaS II: tenant migration, residency, and disaster recovery",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "243",
+      "moduleId": "M25",
+      "title": "Design Kubernetes-like orchestrator I: desired state, scheduling, and admission",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "244",
+      "moduleId": "M25",
+      "title": "Design Kubernetes-like orchestrator II: reconciliation, leases, and node failure",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "245",
+      "moduleId": "M25",
+      "title": "[D] Design a cloud control plane that remains safe under partial failure",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "246",
+      "moduleId": "M25",
+      "title": "Design distributed counter I: exact versus approximate aggregation and hot keys",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "247",
+      "moduleId": "M25",
+      "title": "Design distributed counter II: CRDTs, bounded counters, and business invariants",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "248",
+      "moduleId": "M25",
+      "title": "Model checking a tiny distributed state machine: invariants and counterexamples",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "249",
+      "moduleId": "M25",
+      "title": "Architecture evolution: migrations, ownership, build/buy decisions, and exit strategies",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "250",
+      "moduleId": "M25",
+      "title": "[D] Architecture review with changing budget, staffing, and recovery requirements",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "251",
+      "moduleId": "M26",
+      "title": "ML system boundaries: data, labels, features, models, serving, and quality",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "252",
+      "moduleId": "M26",
+      "title": "Batch/stream features, point-in-time correctness, leakage, and training-serving skew",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "253",
+      "moduleId": "M26",
+      "title": "Design feature store I: offline/online data paths and feature contracts",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "254",
+      "moduleId": "M26",
+      "title": "Design feature store II: freshness, replay, point-in-time joins, and recovery",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "255",
+      "moduleId": "M26",
+      "title": "[C] Diagnose a feature platform with correct uptime but incorrect predictions",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "256",
+      "moduleId": "M26",
+      "title": "Design inference platform I: online/offline APIs, registries, and model artifacts",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "257",
+      "moduleId": "M26",
+      "title": "Design inference platform II: CPU/GPU batching, model caching, and rollout",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "258",
+      "moduleId": "M26",
+      "title": "Design recommendation engine I: candidate retrieval, ranking, and feature access",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "259",
+      "moduleId": "M26",
+      "title": "Design recommendation engine II: feedback, evaluation, latency, and fallbacks",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "260",
+      "moduleId": "M26",
+      "title": "[D] Design a recommendation service with changing freshness requirements",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "261",
+      "moduleId": "M27",
+      "title": "LLM workload estimation: tokens, request rates, TTFT, and inter-token latency",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "262",
+      "moduleId": "M27",
+      "title": "Model-memory budgeting: weights, precision, activations, and serving overhead",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "263",
+      "moduleId": "M27",
+      "title": "Prefill, decode, attention, and KV-cache lifetime",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "264",
+      "moduleId": "M27",
+      "title": "Static, dynamic, and continuous batching: latency/throughput experiments",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "265",
+      "moduleId": "M27",
+      "title": "[A] Estimate capacity from supplied token workloads and benchmark evidence",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "266",
+      "moduleId": "M27",
+      "title": "Prefix caching, routing locality, KV reuse, and tenant isolation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "267",
+      "moduleId": "M27",
+      "title": "GPU placement, fragmentation, cold starts, queues, and autoscaling",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "268",
+      "moduleId": "M27",
+      "title": "Tensor/pipeline/data parallel serving and disaggregated prefill/decode",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "269",
+      "moduleId": "M27",
+      "title": "[P6.1] Inference gateway: contracts, mock backend, and cancellable token streaming",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "270",
+      "moduleId": "M27",
+      "title": "[B] Diagnose queued requests, disconnected clients, and wasted generation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "271",
+      "moduleId": "M28",
+      "title": "Embeddings and approximate nearest-neighbor indexes: recall, filtering, and cost",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "272",
+      "moduleId": "M28",
+      "title": "RAG ingestion: chunks, hybrid retrieval, reranking, ACLs, and deletion",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "273",
+      "moduleId": "M28",
+      "title": "Design enterprise RAG I: requirements, data flows, APIs, and quality targets",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "274",
+      "moduleId": "M28",
+      "title": "Design enterprise RAG II: freshness, access changes, evaluation, and versioning",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "275",
+      "moduleId": "M28",
+      "title": "[D] Redesign retrieval after document permissions change",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "276",
+      "moduleId": "M28",
+      "title": "Design LLM inference service I: gateways, admission, queues, and streaming",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "277",
+      "moduleId": "M28",
+      "title": "Design LLM inference service II: multi-model routing, GPUs, caching, and failure",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "278",
+      "moduleId": "M28",
+      "title": "Design ChatGPT-like service I: conversations, model calls, tools, and safety boundaries",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "279",
+      "moduleId": "M28",
+      "title": "Design ChatGPT-like service II: cancellation, resumability, quotas, and audit",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "280",
+      "moduleId": "M28",
+      "title": "[D] Derive an unfamiliar AI-product architecture from workload and risk",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "281",
+      "moduleId": "M29",
+      "title": "Design experimentation platform I: datasets, models, prompts, lineage, and evaluation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "282",
+      "moduleId": "M29",
+      "title": "Design experimentation platform II: online experiments, drift, rollout, and rollback",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "283",
+      "moduleId": "M29",
+      "title": "Distributed training concepts: parallelism, synchronization, and checkpoints",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "284",
+      "moduleId": "M29",
+      "title": "MCP/tool execution: authorization, approvals, durable state, and bounded execution",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "285",
+      "moduleId": "M29",
+      "title": "[D] Investigate a model regression and design a safe rollback",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "286",
+      "moduleId": "M29",
+      "title": "[P6.2] Inference gateway: tenant admission, token limits, and budgets",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "287",
+      "moduleId": "M29",
+      "title": "[P6.3] Inference gateway: provider failures, cancellation, and telemetry",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "288",
+      "moduleId": "M29",
+      "title": "[P6.4] Inference gateway: load/fault tests and latency/cost evidence",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "289",
+      "moduleId": "M29",
+      "title": "Advanced inference tradeoffs: quantization, speculation, caching, and evaluation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "290",
+      "moduleId": "M29",
+      "title": "[D] Enterprise AI gateway: architecture defense and MCP deployment bridge",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "291",
+      "moduleId": "M30",
+      "title": "[D] Sealed interview A: prompt revealed only when the session begins",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "292",
+      "moduleId": "M30",
+      "title": "Review A: scored evidence, alternative design, and targeted retry",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "293",
+      "moduleId": "M30",
+      "title": "[D] Sealed interview B: new workload and changed requirements",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "294",
+      "moduleId": "M30",
+      "title": "Review B: failure analysis, counterproposal, and targeted retry",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "295",
+      "moduleId": "M30",
+      "title": "[D] Sealed interview C: correctness and external-dependency challenge",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "296",
+      "moduleId": "M30",
+      "title": "Review C: invariant defense, alternative architecture, and targeted retry",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "297",
+      "moduleId": "M30",
+      "title": "[D] Sealed interview D: advanced or AI specialization selected by completed track",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "298",
+      "moduleId": "M30",
+      "title": "Review D: detailed rubric, valid alternatives, and remediation",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "299",
+      "moduleId": "M30",
+      "title": "Portfolio defense, delayed retrieval, and evidence-based skill matrix",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    },
+    {
+      "id": "300",
+      "moduleId": "M30",
+      "title": "[D] Final unseen interview, readiness decision, and maintenance plan",
+      "state": "metadata-only",
+      "wordCount": 0,
+      "evidence": [],
+      "limitations": [
+        "Teaching or assessment package not authored."
+      ]
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    "Structural validation is not pedagogical review. No automatic promotion to validated."
+  ]
+}

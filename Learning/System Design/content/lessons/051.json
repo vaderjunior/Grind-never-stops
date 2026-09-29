@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "051",
+  "objectives": [
+    "Define a representative benchmark and its measurement boundaries.",
+    "Explain latency percentiles without averaging them incorrectly.",
+    "Detect load-generator saturation and omitted waiting."
+  ],
+  "retrieval": [
+    "L003: which population and interval define an SLI?",
+    "L008: which bottleneck would change your scaling decision?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A benchmark can be precise and answer the wrong question",
+      "markdown": "A service returns 10,000 cached records/s on a laptop. That number tells you little about a workload with 20% writes, large tenants, misses, TLS, and a dependency across a network. Performance evidence is a statement about a particular experiment. Record workload, environment, configuration, software version, dataset shape, duration, and measurement method before interpreting the number.\n\nStart with a decision. For example: can the proposed instance count handle 800 reads/s and 100 writes/s at p95 below 200 ms while one instance is unavailable? The test must include that request mix and failure scenario. A capacity number with no latency/error condition is not a usable capacity guarantee."
+    },
+    {
+      "id": "mechanism",
+      "title": "Arrival rate and completion rate are not interchangeable",
+      "markdown": "An open-loop generator schedules arrivals according to a chosen process even when the service slows, subject to its own resource limits. A closed-loop generator lets each virtual user wait for a response before issuing another request. Both models can represent real scenarios. A closed-loop test can inadvertently reduce offered load exactly when latency rises, concealing queue buildup that independent real arrivals would cause.\n\nMeasure offered, admitted, completed, rejected, timed-out, and canceled operations separately. Count errors in the denominator relevant to the objective. If your latency histogram includes only successes, a service rejecting the slowest half can appear faster while being less useful. If scheduled requests wait in the generator before their timing starts, observed latency omits that wait. State where the clock begins and what the test cannot observe.\n\nFor sorted samples, a percentile identifies a boundary in that sample distribution under a chosen convention. It is not the maximum, a prediction for every future request, or an average of the slowest group. Do not average per-instance p99 values to obtain a global p99; merge compatible raw samples or histograms with counts. Preserve distinct operation classes when their costs or objectives differ."
+    },
+    {
+      "id": "worked",
+      "title": "The hidden overload in a closed loop",
+      "markdown": "Suppose 100 virtual users each issue one request at a time with no thinking delay. At 50 ms average latency, the loop can offer about 100 / 0.05 = 2,000 requests/s. When latency grows to 500 ms, the same script offers only about 200 requests/s. A plot of completed RPS may look stable while the generator has removed 90% of the pressure. This follows the concurrency relationship from L007; it is not evidence that the service intentionally throttled clients safely.\n\nNow examine an illustrative report: 10,000 offered operations, 9,500 successes at p95 80 ms, and 500 timeouts at a 2-second deadline. The success-only percentile hides a 5% timeout rate. Against a 99.9% success objective, the run fails regardless of the attractive successful-request p95. Report the failed population and deadline separately, or use an explicitly defined all-operation latency distribution where meaningful.\n\nA local test should verify the generator has spare CPU, sockets, and bandwidth. Repeating a run after warming a cache answers a different question from a cold-start run. Run both when both matter and label them. Random seeds and recorded input traces help make regressions reproducible."
+    },
+    {
+      "id": "failure",
+      "title": "Design the experiment before choosing the conclusion",
+      "markdown": "Use a ramp with steady measurement windows, a hold phase long enough to expose resource accumulation, and a cool-down that reveals whether queues drain. Include realistic key skew and response sizes. A uniform tiny dataset may fit entirely in memory when production does not. Remove one replica or dependency only in a controlled test environment and observe recovery, not just the initial fault.\n\nCollect queue depth, dependency wait, CPU, memory, I/O, and connection counts alongside user-visible latency and errors. These signals help distinguish cause from correlation. More telemetry is not automatically better: labels with unbounded IDs can overwhelm the monitoring system. Keep raw evidence and state limitations.\n\nCommon mistakes: presenting the fastest of several runs; testing only the happy path; equating warm-cache throughput with sustainable capacity; summing percentiles; and reporting successful completions while ignoring dropped requests. A useful conclusion sounds like “under this mix and dataset, this configuration met these objectives for this duration,” followed by what remains untested."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and additional practice",
+      "markdown": "Core 55 minutes: retrieve prior concepts for 5, study explanation and diagrams for 18, work the trace for 8, exercise for 10, attempt Q1–Q3 for 10, compare reasoning and review cards for 4. Q4–Q5 are an optional practice bank. Estimates are illustrative; do not treat model output as a production benchmark."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "measurement",
+      "title": "Which waiting interval does the benchmark count?",
+      "source": "sequenceDiagram\nparticipant G as Arrival schedule\nparticipant Q as Generator queue\nparticipant S as Service queue\nparticipant W as Worker\nG->>Q: Request becomes due\nNote over G,Q: Include generator delay when modeling scheduled arrivals\nQ->>S: Request transmitted\nS->>W: Admit when capacity available\nW-->>G: Success or failure result\nNote over G,W: Record total elapsed time and outcome",
+      "caption": "The measurement boundary must match the question. A service-only timer excludes client and generator waiting.",
+      "steps": [
+        "Schedule an arrival.",
+        "Record any generator backlog instead of hiding it.",
+        "Record service queue and execution time separately.",
+        "Include failures and timeouts in the stated outcome population."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "You receive a report claiming 5,000 RPS, p99 40 ms, from 50 clients against 1,000 cached keys for 30 seconds. The target workload is 20% writes, one million keys, and a 99.9% success objective. Write a corrected experiment and identify three missing facts that prevent accepting the claim.",
+    "rubric": [
+      "Match request mix, dataset, and key skew.",
+      "Specify offered/completed/errors and timing boundary.",
+      "Include a duration/failure objective and generator checks."
+    ],
+    "solution": "The report omits errors, arrival model, measurement start, payload sizes, cache state, and generator capacity; its dataset and write mix differ from the target. Use the target mix and key distribution, track offered/admitted/completed/rejected/timed-out operations, define end-to-end timing, and run cold/warm phases with a representative hold duration. Test the intended replica-loss scenario if part of the requirement. The original observation can remain valid for its limited workload but cannot support the broader claim."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Can global p99 be computed by averaging per-server p99?",
+      "options": [
+        "Yes",
+        "No, sample counts and distributions are needed",
+        "Only for HTTP/2"
+      ],
+      "answer": "No, sample counts and distributions are needed",
+      "explanation": "A percentile of a mixture is not the arithmetic mean of component percentiles."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "100 one-at-a-time users with 500 ms average responses can offer roughly what rate?",
+      "answer": 200,
+      "unit": "requests/s",
+      "tolerance": 0.01,
+      "explanation": "100 / 0.5 = 200 requests/s without think time."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which missing metric can hide a fast-looking failure?",
+      "options": [
+        "Success-only latency excluding timeout rate",
+        "Font choice",
+        "The UI theme"
+      ],
+      "answer": "Success-only latency excluding timeout rate",
+      "explanation": "Rejecting or timing out slow work can make successful responses look faster."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is a closed-loop test appropriate?",
+      "answer": "When it models users who genuinely wait before issuing another action. It must not be mistaken for independent arrivals under overload.",
+      "explanation": "When it models users who genuinely wait before issuing another action. It must not be mistaken for independent arrivals under overload."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why test cold and warm caches separately?",
+      "answer": "They exercise different dependency demand and startup behavior; neither result substitutes for the other when both occur in service.",
+      "explanation": "They exercise different dependency demand and startup behavior; neither result substitutes for the other when both occur in service."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Benchmark first question?",
+      "back": "Which decision and workload does this experiment represent?"
+    },
+    {
+      "front": "Open-loop arrivals?",
+      "back": "Scheduled independently of response completion, subject to generator capacity."
+    },
+    {
+      "front": "Closed-loop risk?",
+      "back": "Slow responses reduce offered load and can conceal overload."
+    },
+    {
+      "front": "Aggregate percentiles?",
+      "back": "Merge distributions/counts, not percentile values."
+    },
+    {
+      "front": "Success-only latency caveat?",
+      "back": "It can hide failures and timeouts from the user-visible population."
+    }
+  ],
+  "mentalModel": "A performance claim is a workload, a boundary, a measurement, and a limit—not one impressive number.",
+  "sources": [
+    {
+      "title": "Google SRE — Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Monitoring Distributed Systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

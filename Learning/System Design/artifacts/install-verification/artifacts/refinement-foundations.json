@@ -1,0 +1,724 @@
+{
+  "date": "2026-09-29",
+  "author": "curriculum agent",
+  "scope": [
+    "what-is-system-design",
+    "computer-and-server-basics",
+    "request-journey",
+    "dns-and-addresses",
+    "apis-without-jargon",
+    "connection-and-protocol-basics",
+    "data-that-survives",
+    "processes-threads-and-concurrency",
+    "databases-and-sql",
+    "sql-in-small-steps",
+    "find-data-with-indexes",
+    "database-families",
+    "transactions-and-correctness",
+    "data-modeling-basics",
+    "choose-a-database",
+    "blobs-files-and-objects",
+    "measure-before-scaling",
+    "grow-one-server",
+    "gateways-and-proxies",
+    "service-boundaries",
+    "load-balancing",
+    "remember-with-caches",
+    "redis-from-scratch",
+    "cache-patterns-and-invalidation"
+  ],
+  "reviewStatus": "All 24 refinements independently AI reviewed; report hashes reflect the post-review frozen files.",
+  "guides": [
+    {
+      "id": "what-is-system-design",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "b56d9aedff305d7b8d90e5e29cb32357a593270d8f2bfa07f01a6f603fdcbbac",
+      "sha256": "a8aa844bfafc68a2fbe9c4fea486d0e68370cce609692fd48f28416e39bf7f0c",
+      "protectedFieldsSha256": "a7df5662be546171feef49ddc61b6ff761817a5a9902add308533af5ff392383",
+      "diagrams": 2,
+      "walkthrough": "draft-to-record",
+      "changes": [
+        "Replaced the initial role paragraph with a concrete role/job/example table.",
+        "Shortened the save narrative around intention versus confirmation.",
+        "Added need-to-responsibility diagram, four-stage draft walkthrough, and stable-identity prediction."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "5158564a0a9b25ba08f812cd5b0c0012b4a6236ad0ed8597b39a7dda320a3bf3",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Read the full three-role story, save/read diagrams, exercise and checks. The draft-to-record states correctly separate stored facts from confirmation.",
+          "Replaced stale week-specific wording for memory/storage study with “the next chapters,” matching the expanded foundation sequence."
+        ]
+      }
+    },
+    {
+      "id": "computer-and-server-basics",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "fae6a413c7777052234ad0145e3521dfade161a62829bb83fe6c599c55af7016",
+      "sha256": "c726d206a531906a1697554ea5cb1725a4a247a15a927dcf98c7d5109caba905",
+      "protectedFieldsSha256": "ce56c8058351f8fd9a34d67549b846694b81ba7aea33bda62b16bb6f4819e510",
+      "diagrams": 3,
+      "walkthrough": "upload-memory-budget",
+      "changes": [
+        "Turned CPU arithmetic into a unit-labeled budget table and clarified the full RAM budget.",
+        "Added a resource-diagnosis diagram and a bounded-upload walkthrough with changing memory totals.",
+        "Added evidence-based interview phrasing without changing assessments."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "c726d206a531906a1697554ea5cb1725a4a247a15a927dcf98c7d5109caba905",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked CPU-seconds, bits/bytes, and upload-memory arithmetic: 100 × 8 MB + 250 MB = 1,050 MB; limiting buffers to 50 gives 650 MB.",
+          "The resource diagnosis diagram presents hypotheses, and the walkthrough labels payload-only totals and bounded admission. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "request-journey",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "51ff1bca195fc0bc2b5bd06f780f56a6225953106e1bed79284bd14e0f0d8556",
+      "sha256": "1dcbbc67b7bc911477ac67756399c44fff330d76d242b6467649f9a311076544",
+      "protectedFieldsSha256": "5d962445a81610dbf02b4be7703f3c71a984cd710df3d791940e364ea7c38d74",
+      "diagrams": 2,
+      "walkthrough": "page-then-data",
+      "changes": [
+        "Replaced the HTTP message inventory with a concrete method/path/header/body table.",
+        "Made the request order scannable and added an elapsed-time page/data walkthrough.",
+        "Added a connection-reuse diagram and prediction that retains permission checks."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "296286ab742cbcd5bf048eb3cfc75b3306121fa8683f20c4fd8e48c056eb6528",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked page-then-data chronology (40/70/75/120 ms), request fields, reuse diagram, and displayed-note failure cases.",
+          "The diagram and prose preserve connection security versus application authorization and label timing as illustrative. No content correction required.",
+          "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+        ]
+      }
+    },
+    {
+      "id": "dns-and-addresses",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "3cf34f494cf52302e5d568822901c1c771225f5bd926c762033225b96b857048",
+      "sha256": "cd67b09c5ba4f46861a99d4e94d4f539e0949b4765706d507c415a27861a0d59",
+      "protectedFieldsSha256": "104cdf0889bc09dbe606e39a0a76905ab3df4b4c0a345546f0fa12be111b412e",
+      "diagrams": 3,
+      "walkthrough": "change-path-keep-destination",
+      "changes": [
+        "Added URL-part and symptom/next-check tables in place of dense enumerations.",
+        "Added a hostname-versus-path routing diagram and changing-resource walkthrough.",
+        "Clarified the port-versus-record distinction with a targeted mistake callout."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "e54c9dcaca648836ccb53166dc2e48f2fe4c466b2c86c87f17f9803abd66ee99",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked hostname/path separation, DNS hierarchy, existing-cache TTL example, diagnostic table and path-change walkthrough.",
+          "Corrected the connection diagram to show the URL’s explicit/default port feeding the endpoint separately from the DNS address. Ordinary hostname lookup must not appear to supply the application port.",
+          "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+        ]
+      }
+    },
+    {
+      "id": "apis-without-jargon",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "30a119ca15515470c8b795101e34ff88d33b5cb705149174ee2f97cfc1fc767b",
+      "sha256": "a145e7687e76b160205b76e38064fb86bfa5b73fc890847c967cb7977c91c3af",
+      "protectedFieldsSha256": "1412b626875517a0b93c50c2af44d897d73002cb48750afb0f951a6f10ed5740",
+      "diagrams": 2,
+      "walkthrough": "partial-title-change",
+      "changes": [
+        "Replaced operation and pre-save-check enumerations with actionable tables.",
+        "Added result-evidence decision flow and a concrete partial-edit walkthrough.",
+        "Preserved timeout uncertainty and the full assessment contract."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "a145e7687e76b160205b76e38064fb86bfa5b73fc890847c967cb7977c91c3af",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked method/path and input/result examples, scoped edit walkthrough and timeout-result diagram.",
+          "Validation, caller identity and record permission remain separate; title update retains the same note identity. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "connection-and-protocol-basics",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "032d093694e49406dad385c6ec6c3351ee415666fb108f13e3f253d00619da5a",
+      "sha256": "9f54c17eb1e7da488175ebb131b25371020613a991a38d51bb897fe045aa4a56",
+      "protectedFieldsSha256": "bcdcd620f38647f4710a85f612adaf9b6f403ca532c64e6878b77cb046e452f2",
+      "diagrams": 3,
+      "walkthrough": "byte-stream-framing",
+      "changes": [
+        "Added a protocol-responsibility table and polling/SSE/WebSocket comparison.",
+        "Defined early jargon at first meaningful use: endpoint, stack, proxy, authorization, idempotency identity, reconciliation, deadline, vector, gateway, cursor.",
+        "Added a two-hop security diagram and original byte-framing walkthrough without duplicating protected exercises."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "f1755976baa9dbfbec28026d28617aa4b368c2691b9f7b24bcac5af568e5f832",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked all layer comparisons, TCP/QUIC limits, streaming direction, TLS-hop diagram and byte-stream walkthrough.",
+          "Clarified that the invented length prefix counts payload bytes and uses single-byte ASCII characters; changed the state label from 3 characters to 3 bytes. This prevents generalizing a character count to arbitrary encoded text.",
+          "Rechecked RFC 9293’s ordered byte-stream semantics and added the official TCP reference.",
+          "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+        ]
+      }
+    },
+    {
+      "id": "data-that-survives",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "b1d2b7a4ff1ea99983aaa8f3a281fbced35a76e84773f5519d3f729271c901c4",
+      "sha256": "60ee856ad255c2dcbea003362267c99476eb3fa11dd669f40a5fdeec59a9ccf2",
+      "protectedFieldsSha256": "129fea644361a4245ed6e4fa3452becda2584de930e07fd5d56817e3cee66b95",
+      "diagrams": 2,
+      "walkthrough": "cache-reload-after-restart",
+      "changes": [
+        "Rendered the promised failure table and contrasted cached copies with sole copies in RAM.",
+        "Added a point-in-time backup diagram and prediction with recovery limits.",
+        "Added a cache-loss/reload walkthrough showing copy locations across a process restart."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "01757da70d20268a80c9859187c895634dbb327101c9dfdc96527952f73f38bd",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked saved-copy versus cache-copy roles, process-restart walkthrough, backup timeline and exercise outcomes.",
+          "Aligned the pause-and-predict backup count with the adjacent diagram’s two notes. Persistent copies, retained backups and restore testing remain distinct."
+        ]
+      }
+    },
+    {
+      "id": "processes-threads-and-concurrency",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "53ca84ba9b8f6ad9b91c4c368f62afc07324675d64d844f8dc706609be20162a",
+      "sha256": "d469976424e2f68fa7c9fc5ca0b88ecb8bf260ae5fb62ee8136ee4aafd5dc068",
+      "protectedFieldsSha256": "b06ef2f72f61d1c9957f47144de48f5bca4b5fb0319a3aed2c8b75d822cccecc",
+      "diagrams": 3,
+      "walkthrough": "two-process-baskets",
+      "changes": [
+        "Explained operating-system vocabulary through everyday meanings before naming it.",
+        "Added a concurrency/parallelism comparison and clarified authoritative state.",
+        "Added the blocked-event-loop diagram and independent-process dictionary walkthrough."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "a384cc92598e8b59bd79ee88770c079a95183e6cea29e61da2a321689b68a948",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Verified the blocking 210 ms versus overlapping 105/115 ms example and 20 ms CPU → ideal 50/s arithmetic.",
+          "Checked separate process dictionaries, thread sharing, callback-blocking diagram and seat-race explanation. The walkthrough’s shared-storage ending is a proposed redesign, not automatic copying. No content correction required.",
+          "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+        ]
+      }
+    },
+    {
+      "id": "databases-and-sql",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "ffacc1241bf2126c6aa317a961a2f6588527f2a0d2c00b80422c65a74c467a33",
+      "sha256": "fc82d32f80f1fddb8657279e37b8092a43c98db03e0331ee6338fb5f2935b41d",
+      "protectedFieldsSha256": "b2a3c53f164692245e206a98c63fb458e7beadeee723fe60172d9acc9b66df18",
+      "diagrams": 2,
+      "walkthrough": "rename-one-user",
+      "changes": [
+        "Clarified primary identity, relationship keys, and editable labels in a comparison table.",
+        "Displayed the SQL result as actual rows and added a query-shape diagram.",
+        "Added a rename walkthrough and reasoned interview sentence tied to the data model."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "76bb1712ac45e3e922adbe65ead58dcc0b1df59d4e973365a37b426e72fe4950",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked every sample row, owner-filter result and rename-through-join walkthrough.",
+          "Stable identities, editable labels and foreign-key versus authorization meanings agree across tables, diagrams and checks. No content correction required.",
+          "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+        ]
+      }
+    },
+    {
+      "id": "sql-in-small-steps",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "93dda5ca0dab0aa0606902d9852e0038eeb9448d38c61b5a16ec76bebfac10c9",
+      "sha256": "76be8bbdc3778bbb557345194a6eba51003dcb899a4e92d6b335e8075674e8af",
+      "protectedFieldsSha256": "0dff114858b9234f882892f8ea1a8789ae8b5927b89733ff90d1d3709377bd23",
+      "diagrams": 3,
+      "walkthrough": "filter-order-limit",
+      "changes": [
+        "Replaced compact join-output prose with a real result table.",
+        "Added a constraint/rejected-record table including NOT NULL versus empty text.",
+        "Added write-scope decision flow, condition prediction, and a logical query-result walkthrough with explicit optimizer caveat."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "76be8bbdc3778bbb557345194a6eba51003dcb899a4e92d6b335e8075674e8af",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Verified original three-note query results, descending tie-breaker/limit walkthrough, join table, left-join zero-count rule and writes.",
+          "Parameters remain distinct from authorization; NULL and NOT NULL are not confused with empty strings. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "find-data-with-indexes",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "7de1921a83defbfd608321e8b90db8d7b988017506eea77e44546f60f6665ab8",
+      "sha256": "941043d0a2b5ffcaafa0354018f7367fddb12d6b2e39a722714553ceb17c6c6a",
+      "protectedFieldsSha256": "26a32444c9d9834a37d4cbafeb0dd9ff18db2576b2793d7a15fcf6a69e413a9d",
+      "diagrams": 2,
+      "walkthrough": "directory-to-card",
+      "changes": [
+        "Made the paper directory and row/index-maintenance costs visible as tables.",
+        "Added coordinated index-maintenance diagram and output-versus-work mistake callout.",
+        "Added a concrete identity-lookup walkthrough followed by a changed all-records question."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "941043d0a2b5ffcaafa0354018f7367fddb12d6b2e39a722714553ceb17c6c6a",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked directory-to-card mapping 41 → C, owner/note composite-index rationale and scan/output distinction.",
+          "The maintenance diagram assigns row/index coordination to the database, and diagrams make no physical-access-count or benchmark claim. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "database-families",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "7d3e08926b3ff882cf55a082c15048e8885cbec30f6b20a9c0a2b6bce52e3a33",
+      "sha256": "d525c1bca237398bed03ddee031e13c1cb01f9341f36887b54a4ad167b99ae04",
+      "protectedFieldsSha256": "8c73c01db4d56001805834c6acc53f2e3e53973b759997c71e36c2d9f326bdda",
+      "diagrams": 3,
+      "walkthrough": "event-question-changes",
+      "changes": [
+        "Added concrete key/value and grouped-event rows rather than relying only on family descriptions.",
+        "Defined serialization and partition key locally.",
+        "Added an ordered-group diagram, changed-query walkthrough, and bounded-document prediction while retaining product-overlap caveats."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "d525c1bca237398bed03ddee031e13c1cb01f9341f36887b54a4ad167b99ae04",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked concrete document/key-value/event tables, tie-broken e3/e2/e1 range, graph direction/depth and changed-query walkthrough.",
+          "The comparisons present candidate fits with overlapping capabilities, independent growth limits and authorization. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "transactions-and-correctness",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "c4a7de29b883602693a3f292e4c192d3d35133f8052d8a3d6f632aea44133a55",
+      "sha256": "aada4a7eab952aa419266309b4817462167f726dad52b2d422aab4e50a8f5d4f",
+      "protectedFieldsSha256": "8e536e750aad5b47f97f7b831975f6d7a1f4f475b929ebfd4a664672a7d520c4",
+      "diagrams": 2,
+      "walkthrough": "accepted-but-not-heard",
+      "changes": [
+        "Displayed the invalid half-move states and conditional-revision outcomes in small tables.",
+        "Added a commit-versus-lost-response sequence and knowledge/state walkthrough.",
+        "Preserved permission-stability assumptions and explained the transaction boundary in interview language."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "aada4a7eab952aa419266309b4817462167f726dad52b2d422aab4e50a8f5d4f",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked half-completed move/activity table, affected-row caveat, stable-permission assumption, revision conflict example and commit/lost-response states.",
+          "The walkthrough distinguishes accepted state from caller knowledge and uses operation evidence rather than equating silence with rollback. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "data-modeling-basics",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "17201d99406b347f1635d91ec324edf7fabd3904cbed0e0b8173ee8fd5db294e",
+      "sha256": "544333385a4e23c5aeb9b0625e3538b47d023b1d34e73761bcf5440eaa7d6d89",
+      "protectedFieldsSha256": "2aadef24986168119af5528bfb97adbbc70635ca78befb8ed56e40a6b5d17e16",
+      "diagrams": 3,
+      "walkthrough": "role-belongs-to-membership",
+      "changes": [
+        "Made composite membership keys and current-versus-historical fields concrete with tables.",
+        "Added a one-fact rename diagram and targeted update-anomaly prediction.",
+        "Added a relationship-role walkthrough that separates user identity from notebook permissions."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "02862513111c6a5b55269d035670ffcfac410f926d5a983542cd2f2a53e97506",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked membership composite identities, rename and count-maintenance diagrams, deliberate historical snapshots and many-to-many exercise.",
+          "Made the reader-role walkthrough explicitly deny the attempted edit before the separate authorized promotion. The same user’s other notebook role stays unchanged."
+        ]
+      }
+    },
+    {
+      "id": "choose-a-database",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "1db8a9e22a5bcf415e1c659227d9f1d2e922937ee34d44a56069e235186ab8e5",
+      "sha256": "2c25838ebff6faca7849abe334fc7a51694b14f9c5303d32480dc5ea72f6ce0f",
+      "protectedFieldsSha256": "7b2a644a3b76d679bb0f23e0569f02d2c640c55c935457205e15576c96ac48dc",
+      "diagrams": 3,
+      "walkthrough": "registry-workload-card",
+      "changes": [
+        "Turned access patterns into an explicit workload card and photo sizing into a unit-labeled table.",
+        "Removed fragile relative chapter wording and added a workload-comparison mistake callout.",
+        "Added an evaluation-loop diagram and AI registry decision walkthrough without claiming unexecuted benchmarks."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "2c25838ebff6faca7849abe334fc7a51694b14f9c5303d32480dc5ea72f6ce0f",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked workload card, 20 × 1 kB versus 20 × 2 MB table, registry joins/JSON reasoning and evaluation walkthrough.",
+          "Performance and restoration steps are proposed evidence to collect, not reported outcomes. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "blobs-files-and-objects",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "dd1203cf2aca8a7973679bce44fdb3f528f379ba493d1fd345f4b4c39272a6a7",
+      "sha256": "2af2d3ba0f5972fa5462f24edc6f497d836aea8789aee8d16f5f6bcc0c64bbfb",
+      "protectedFieldsSha256": "967c4c37da203a41fb9915e4e148fd4f768e036f786abc5a2c56014de9a8d32b",
+      "diagrams": 3,
+      "walkthrough": "photo-ready-state",
+      "changes": [
+        "Added representation-size and explicit upload-state tables.",
+        "Added private-content retrieval diagram with server-mediated-delivery scope.",
+        "Added attachment-readiness walkthrough and key-versus-permission mistake callout while preserving the reviewed recovery graph."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "2af2d3ba0f5972fa5462f24edc6f497d836aea8789aee8d16f5f6bcc0c64bbfb",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Verified 50 × 4 MB = 200 MB and metadata totals, interface distinction, private delivery path and upload lifecycle.",
+          "The walkthrough keeps bytes-existing, content-verified and metadata-ready separate, with access still required. Cross-store recovery and cleanup are explicit. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "measure-before-scaling",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "204d0f4e3578617085a7d90f0d5a97dc1aacf2d284c4cf232e3efe13d2d76c38",
+      "sha256": "698fa066b037891bce991eb487413f3f56d0d60847d47d670d97931371ee1904",
+      "protectedFieldsSha256": "55003a798cc35116b3d7912980791435c64db2d21ec4a90365fc8cb6ad1c8a52",
+      "diagrams": 2,
+      "walkthrough": "average-hides-slow-user",
+      "changes": [
+        "Separated latency and throughput with explicit units and nonreciprocal overlap caveat.",
+        "Replaced timer prose with a containment table and nested-timer diagram.",
+        "Added an average-versus-individual-experience walkthrough that distinguishes summed durations from batch wall time."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "698fa066b037891bce991eb487413f3f56d0d60847d47d670d97931371ee1904",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked attempted/completed rates, 60 MB logical storage, nested 900/100/30 ms timers and (9 × 100 + 2,000) ÷ 10 = 290 ms walkthrough.",
+          "Means are not treated as every-user experience or batch wall time. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "grow-one-server",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "a0864287c34cd9d59fffcbbb6dff7c156c0365d798b732fd1d514a3ddbec4d39",
+      "sha256": "d2a405e5722d4e505247942f8c5d3b578de0a1356f8d2b59f8e14288b2c2762f",
+      "protectedFieldsSha256": "e9d79dc89c7908121e34c5fd3f33b8c514c49f903a921a5275c8bda0ec397708",
+      "diagrams": 2,
+      "walkthrough": "surviving-capacity",
+      "changes": [
+        "Added shared-bottleneck and growth-choice tables in place of dense comparisons.",
+        "Added an end-to-end capacity diagram and a healthy-versus-surviving-capacity walkthrough.",
+        "Preserved assumptions about one database operation per request and added state-placement prediction."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "d2a405e5722d4e505247942f8c5d3b578de0a1356f8d2b59f8e14288b2c2762f",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked one/two/three app capacities against the 60/s shared dependency and the separate failure-headroom assumptions.",
+          "The walkthrough explicitly resets to a three-ready-instance starting scenario before losing one, rather than pretending capacity appears instantly after a failure. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "gateways-and-proxies",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "476d9d779b2d023f9b6faec6037ebbd960a4facac1e0d16eaebe623fb67dd38c",
+      "sha256": "cca911c5148969c625252cc58836b8c7b478daaa3c625425bd86652787637fa9",
+      "protectedFieldsSha256": "140d6071e692b113d25fd0cdb2b65352b2d4c93d23e21fd3456f43b90623fff7",
+      "diagrams": 3,
+      "walkthrough": "replace-one-backend",
+      "changes": [
+        "Added responsibility and draining-state tables, with local definitions of draining and trace identity.",
+        "Labeled later Kubernetes material as an optional preview.",
+        "Added a readiness/drain diagram, changing-backend walkthrough, and identity-header trust callout."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "75cc74c136910bbf184c7edf9ae27261565d3e230ed75e785e5ce28fefd4137b",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked forward/reverse responsibilities, combined entry policies, trusted identity boundary, readiness lag and 2 → 1 → 0 in-flight draining states.",
+          "Corrected one diagram step to identify A as the instance being replaced; “replacement instance” could incorrectly imply draining the new backend."
+        ]
+      }
+    },
+    {
+      "id": "service-boundaries",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "2cdbeebac484363408ba509eda7f4c00ebcfb667c3abd68aa84a787146b5195f",
+      "sha256": "2d00d6230dafba92b829fd565eb852a7f45bf8f3f9e60ee004e6001135232954",
+      "protectedFieldsSha256": "a152e47a2090328d4ec6c24372de19d69d7bd53a07db8b335dad39d608ba9b64",
+      "diagrams": 3,
+      "walkthrough": "optional-suggestions-deadline",
+      "changes": [
+        "Converted local-versus-remote behavior and service operating costs into concrete comparisons.",
+        "Defined serialization, authoritative ownership, and telemetry in context.",
+        "Added an optional-dependency decision diagram and bounded-wait walkthrough with cancellation uncertainty preserved."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "4db2ec7e71f534456ba60acc3352242b0c338cbece110dc2c02a82685e2dfb61",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked modular versus deployment boundaries, partial failure, durable extraction and optional dependency fallback.",
+          "The 20 ms start / 100 ms elapsed deadline correctly gives an 80 ms wait, and cancellation does not claim remote termination. No content correction required.",
+          "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+        ]
+      }
+    },
+    {
+      "id": "load-balancing",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "7cf09e4359877508770912a03e987033978603b183f4ecdacef93105ad23287f",
+      "sha256": "c6cbf125ff9465025cb3ea8c7993cf6e8e6504cb5e0adf0198690f728f58a7ff",
+      "protectedFieldsSha256": "7bcac83574bc47208d01779cab785c7d0d8ba4d56622b07f3772e403efea092b",
+      "diagrams": 2,
+      "walkthrough": "equal-count-unequal-work",
+      "changes": [
+        "Added a routing-signal comparison with specific blind spots.",
+        "Shortened health prose around scope and age of evidence, then added a health-information-lag diagram.",
+        "Added a heterogeneous-work round-robin walkthrough and bounded interview explanation."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "c6cbf125ff9465025cb3ea8c7993cf6e8e6504cb5e0adf0198690f728f58a7ff",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked round-robin outcomes, health-information lag and cumulative assigned CPU work A 400 ms versus B 20 ms.",
+          "Counts are not equated with simultaneous load or latency, and retries retain outcome uncertainty. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "remember-with-caches",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "2c990ee39a5dc5c74574a71ba8c4bdc92dcac7940a5e8db39d5d51d6077523d3",
+      "sha256": "bf90b08a7f98d5db937a9a23c08500db1401602c55109870abd9ec00d7ac0c19",
+      "protectedFieldsSha256": "21d9608802372a317f125ea0103d257761889bb0db4729116a6187e9062caaa5",
+      "diagrams": 2,
+      "walkthrough": "miss-hit-evict-rebuild",
+      "changes": [
+        "Clarified the key’s format-version meaning.",
+        "Added hit/miss cost and stale-copy state tables in place of dense arithmetic and update prose.",
+        "Added cache-copy lifecycle diagram and miss/hit/eviction/rebuild walkthrough."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "bf90b08a7f98d5db937a9a23c08500db1401602c55109870abd9ec00d7ac0c19",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Verified 90% hit fraction, 5/55 ms paths → 10 ms modeled mean, and distinct main/cached values after edit.",
+          "The miss/hit/evict sequence preserves the saved record and explicit public representation scope. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "redis-from-scratch",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "202ca40920e8efde35013555e6daea027b2e99561e3ce105a80188342bddcc05",
+      "sha256": "ea0d108983177ee28bdd6cec452f738a332390e66b63f2a3ba10684b5ec67798",
+      "protectedFieldsSha256": "107c8ac666ee433a06f7aa2f1da2e73bd21ce57ae2f9174baef96a1051e26b4b",
+      "diagrams": 3,
+      "walkthrough": "set-changes-expiry",
+      "changes": [
+        "Added command/reply and TTL-meaning tables, distinguishing missing, error, and timeout.",
+        "Added expiry-versus-eviction diagram including no-eviction limits.",
+        "Added a five-step SET/TTL walkthrough exposing accidental TTL removal and explicitly labeled unexecuted illustrative commands."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "ea0d108983177ee28bdd6cec452f738a332390e66b63f2a3ba10684b5ec67798",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked command/type examples, atomic increment versus repetition, configured durability limits and the full 0/25/85 second TTL walkthrough.",
+          "Rechecked official Redis SET and TTL docs: plain SET discards an existing expiry, explicit EX establishes the replacement lifetime, and current TTL returns -1 for no expiry and -2 for absent keys. No content correction required."
+        ]
+      }
+    },
+    {
+      "id": "cache-patterns-and-invalidation",
+      "versionBefore": 1,
+      "versionAfter": 2,
+      "beforeSha256": "6ac87000579b88013af7a7968c9587fa05fcd66db15427bd981b07daaeee9c1e",
+      "sha256": "cccb8ded9872ce8d2882735797e3a364b6cb83ff64e5bb49d1910cfefb40e86f",
+      "protectedFieldsSha256": "0292309295d7e156c3d810fd7d1179b264ccdf3451dd6e772debdd4201c5015b",
+      "diagrams": 3,
+      "walkthrough": "three-waiters-one-fetch",
+      "changes": [
+        "Added miss-owner pattern comparison and expiry/capacity/freshness table.",
+        "Explained admission control and replaced unexplained concurrency jargon with concrete freshness mechanisms.",
+        "Added a scoped coalescing diagram, three-request evolving walkthrough, and cross-process prediction."
+      ],
+      "remainingGaps": [
+        "AI authoring and editorial review have not been validated through human teaching or learner-outcome studies.",
+        "Examples are teaching scenarios; no live Redis, broker, Kubernetes or multi-machine failure deployment was exercised by this refinement."
+      ],
+      "authoredSha256": "ac659fa13ab92b7d555b1926e804cc42ed6d5e8966b71b3f7c91ec32c8c3c1d0",
+      "independentReview": {
+        "reviewer": "interface agent — independent review of curriculum agent refinements",
+        "reviewedAt": "2026-09-29T14:07:36.226Z",
+        "notes": [
+          "Checked stale-refill ordering, read/write-pattern limits, 100-to-1,000 fallback load and three-local-waiter timeline.",
+          "The coalescing example stays within one process and exact representation scope, bounds waiters and clears in-flight state; no global freshness or cross-process guarantee is implied. No content correction required.",
+          "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+        ]
+      }
+    }
+  ],
+  "completed": 24,
+  "structuralCheck": {
+    "checkedAt": "2026-09-29T14:08:47.925Z",
+    "guides": 24,
+    "currentHashesMatch": true,
+    "protectedAssessmentContentUnchanged": true,
+    "walkthroughs": 24,
+    "diagrams": 61,
+    "issues": [],
+    "rendering": "Parent owns final Mermaid/browser verification after all review edits."
+  }
+}

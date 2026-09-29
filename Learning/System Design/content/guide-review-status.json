@@ -1,0 +1,616 @@
+{
+  "checkedAt": "2026-09-29T14:42:50.616Z",
+  "authored": 76,
+  "reviewed": 76,
+  "unmatched": [],
+  "records": [
+    {
+      "id": "what-is-system-design",
+      "sha256": "a8aa844bfafc68a2fbe9c4fea486d0e68370cce609692fd48f28416e39bf7f0c",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "read-system-diagrams",
+      "sha256": "949c549d3896194c927d1cdd6811c9cf762d8d8b781121948a23b516e6a09824",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-root.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "computer-and-server-basics",
+      "sha256": "c726d206a531906a1697554ea5cb1725a4a247a15a927dcf98c7d5109caba905",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "request-journey",
+      "sha256": "1dcbbc67b7bc911477ac67756399c44fff330d76d242b6467649f9a311076544",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "dns-and-addresses",
+      "sha256": "cd67b09c5ba4f46861a99d4e94d4f539e0949b4765706d507c415a27861a0d59",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "apis-without-jargon",
+      "sha256": "a145e7687e76b160205b76e38064fb86bfa5b73fc890847c967cb7977c91c3af",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "connection-and-protocol-basics",
+      "sha256": "9f54c17eb1e7da488175ebb131b25371020613a991a38d51bb897fe045aa4a56",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "http-requests-and-errors",
+      "sha256": "ab3da809a0cb8b54d3bcb105d767b9fce1bc80a9df5fc4d3e1cf2a6521aec18b",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-root.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "data-that-survives",
+      "sha256": "60ee856ad255c2dcbea003362267c99476eb3fa11dd669f40a5fdeec59a9ccf2",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "processes-threads-and-concurrency",
+      "sha256": "d469976424e2f68fa7c9fc5ca0b88ecb8bf260ae5fb62ee8136ee4aafd5dc068",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "databases-and-sql",
+      "sha256": "fc82d32f80f1fddb8657279e37b8092a43c98db03e0331ee6338fb5f2935b41d",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "sql-in-small-steps",
+      "sha256": "76be8bbdc3778bbb557345194a6eba51003dcb899a4e92d6b335e8075674e8af",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "find-data-with-indexes",
+      "sha256": "941043d0a2b5ffcaafa0354018f7367fddb12d6b2e39a722714553ceb17c6c6a",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "pagination-from-scratch",
+      "sha256": "06cdbf403cb8344103b4d2d6f35ace0f24fb93ba3cf7b831bb9724d5be26fa9c",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-root.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "database-families",
+      "sha256": "d525c1bca237398bed03ddee031e13c1cb01f9341f36887b54a4ad167b99ae04",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "transactions-and-correctness",
+      "sha256": "aada4a7eab952aa419266309b4817462167f726dad52b2d422aab4e50a8f5d4f",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "data-modeling-basics",
+      "sha256": "544333385a4e23c5aeb9b0625e3538b47d023b1d34e73761bcf5440eaa7d6d89",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "choose-a-database",
+      "sha256": "2c25838ebff6faca7849abe334fc7a51694b14f9c5303d32480dc5ea72f6ce0f",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "blobs-files-and-objects",
+      "sha256": "2af2d3ba0f5972fa5462f24edc6f497d836aea8789aee8d16f5f6bcc0c64bbfb",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "numbers-bytes-and-units",
+      "sha256": "10acd4c66b8cf07a36e418541c73ccfdd5a9a5cee198deb1826a29b7a513db01",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-root.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "measure-before-scaling",
+      "sha256": "698fa066b037891bce991eb487413f3f56d0d60847d47d670d97931371ee1904",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "grow-one-server",
+      "sha256": "d2a405e5722d4e505247942f8c5d3b578de0a1356f8d2b59f8e14288b2c2762f",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "gateways-and-proxies",
+      "sha256": "cca911c5148969c625252cc58836b8c7b478daaa3c625425bd86652787637fa9",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "service-boundaries",
+      "sha256": "2d00d6230dafba92b829fd565eb852a7f45bf8f3f9e60ee004e6001135232954",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "load-balancing",
+      "sha256": "c6cbf125ff9465025cb3ea8c7993cf6e8e6504cb5e0adf0198690f728f58a7ff",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "remember-with-caches",
+      "sha256": "bf90b08a7f98d5db937a9a23c08500db1401602c55109870abd9ec00d7ac0c19",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "redis-from-scratch",
+      "sha256": "ea0d108983177ee28bdd6cec452f738a332390e66b63f2a3ba10684b5ec67798",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "cache-patterns-and-invalidation",
+      "sha256": "cccb8ded9872ce8d2882735797e3a364b6cb83ff64e5bb49d1910cfefb40e86f",
+      "editoriallyReviewed": true,
+      "reviewer": "interface agent — independent review of curriculum agent refinements",
+      "evidence": "artifacts/guide-review-curriculum.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "cache-freshness-and-cdns",
+      "sha256": "b75accf9da750bb482f3320f574b81d65feb46c090339ce46fd20f91a6aeed7c",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "serialization-and-data-formats",
+      "sha256": "bd225fe479a060cc66a41b0c873e70d489932391f325ca4c61e3f07fdd81dd19",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "background-jobs",
+      "sha256": "a6f15d165f290d2eca5d99174b4aa2fcc27d56e9615698453f85df6c1aedf580",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "containers-and-deployment",
+      "sha256": "ea4c6973d8474a93a8abfd975f950210f123bc88e9123bba16206e6fb38cf0a4",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "queues-and-retries",
+      "sha256": "d2001aef518ee4e94e811e206e9bccb886542edc40c8007b7b55ff2a569fbf28",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "queue-broker-fundamentals",
+      "sha256": "df3f08eccb90fcf474ada36e4ec2359d65e92a6ed5e263bb3ebc1144939d2602",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "job-lifecycle-and-backpressure",
+      "sha256": "6e88b610803c8a456d0a107fdfdae4c83daf18195394632952cf71d81c9683c4",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "first-design-url-shortener",
+      "sha256": "7f8d193db0d209b594fd10894e54bb56d141db3d5d9977dc72559f389f27e195",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "copying-data",
+      "sha256": "a51a2d8ae6157ae40476b9554f73f74663eec4e35865e10bc711a07c7e8d1a00",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "split-data-into-shards",
+      "sha256": "25f64c10cd4612a6fc19635bbf41318f337582f03de868a17c28b7b28894af30",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "consistency-in-plain-language",
+      "sha256": "60294e67467aa398d9bc8df14f574b3ef1cc0268a4d3f36368e05367d814d238",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "partitions-and-quorums",
+      "sha256": "5abaa92b093f65f97ade1354b5f4dd13d040cd2d80084a500ab682a682150b12",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "reliable-events",
+      "sha256": "f38cb3eea709a1f172ee3b7deefba290ade73247808d432516d4de492177f105",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "streaming-and-replay",
+      "sha256": "babbb644998fac1c8061862e7285f8a4fbeb162a07c05d187f5ff0a266f3e232",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "identity-and-permissions",
+      "sha256": "d5440c0e77ae47c129daec87aee32ecd5a0de3f1d246102e88037a13985bec76",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "rate-limits-and-abuse",
+      "sha256": "1a025a93a8cf6167bb2eee353c54209d3366b8eb6ec9651a56005cd512db850b",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "reliable-systems",
+      "sha256": "9f3f1313c7ee89d40257a2bcc6ca082fe088dbe6f2427d4087363c3ca3f30bf1",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "reliability-controls",
+      "sha256": "aba729400a2977913ded2211a335127173902240a62e71371a7fd20a38a25629",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "observe-and-debug",
+      "sha256": "795584f30988980643bbfb9f670d7ac3997dbe31746bf8ce7d1eab00230f8b66",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "kubernetes-building-blocks",
+      "sha256": "bf4e7d93b1917c07573b1e5b5ebdfb1b00769a7733e8dd450363be6f791b35ac",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "ship-and-recover",
+      "sha256": "cfdd0dec7c96cad9663761c216ce2c5a735cb541b355d31252af7904fa8bb36a",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "kubernetes-networking",
+      "sha256": "265671dc18bd24aa8fae38bd2f2b41484849de8dd1da0396c078cd8e15267f30",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "regions-and-disaster-recovery",
+      "sha256": "659d90b5d7abd72020b694de5757881d806938d2a041fc2a04550f0c096d56aa",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "kubernetes-operations",
+      "sha256": "5e4daf99b93c1e04e69e5d6b9b6b69e27c7336a72ce68d3b04efc6cf94708fcb",
+      "editoriallyReviewed": true,
+      "reviewer": "Independent curriculum agent",
+      "evidence": "artifacts/guide-review-engine.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "interview-game-plan",
+      "sha256": "5b482ae0a4bcf7dc33abea324154accd4d61d04b0d4e2c87a6982f310a3861e7",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "estimates-and-tradeoffs",
+      "sha256": "a692ad96ecde88784fd282839744143d880673d175d7d217b99673c20d79572d",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-notifications",
+      "sha256": "cbb75416f96db0caffcbc39d36e1991252baefdcf5f3e03e9a406fc822f769d6",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-rate-limiter",
+      "sha256": "1667b2d2f585556c1055a1a90d7f17e7bcd7ac7e174886438862a2b35b32c532",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-chat",
+      "sha256": "b6be0fbe4f70519ee8cff8129366ceb680a7a000c463e0714cb2b460e12f10e0",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "chat-reconnect-and-scale",
+      "sha256": "5ea87f34574ce57ebc888cb49f748cc5f30203b0bf85d42769e687e2de2923fc",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-news-feed",
+      "sha256": "f37be4d309b0543dfeb6856e813c524a267049b4fdd5614013db5e4d3e0ccc03",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "feed-fanout-and-ranking",
+      "sha256": "1c32762a497f65d348f7d2133429f9dbc3db6af32f252f9f371ddbb72eb710f9",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-file-storage",
+      "sha256": "7aef0c2aa012fdf55d3c7bcf6993b297d5408c39e160301865a377878991e89d",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "file-sync-and-conflicts",
+      "sha256": "921d5d42c8a37bce7e8c927d00b832264c72598641b204c24aa0a51fb81b59ea",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-video-platform",
+      "sha256": "53ccd5c250e7368085ea8f48a939ccd9ad31216fcb4b2f9cec3cb3906658a614",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-search-and-autocomplete",
+      "sha256": "e3c8c081eb5d1ed15c7bb62811a18234a956865f24814e335cf37aa5a913b2f7",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-bookings",
+      "sha256": "306e07f0dc23679b9969af5f3a65a21af17ee5b25d8129deaf4578952cf62558",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "design-payments",
+      "sha256": "a8305be5195750c68976edbb39e2df5b5c45463ea971dadef49fac663d2137a8",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "coordination-and-leases",
+      "sha256": "bc216b5be9957d57debf8c14cc990d5cf0e236562ba19da3bb09b9841f2c7700",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "change-data-safely",
+      "sha256": "3c6746bd96ba012d9b5f0f4154836b47d4f4d011cd530ab522a50ee43f0958df",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "mcp-platform-architecture",
+      "sha256": "5b0180bc9b811033f0a0a5288fe8759c842569d2ad870da83e2dbaf3f39ebdf7",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "platform-security-and-tenancy",
+      "sha256": "3376017e76cb03b96b73d11e36c787cf37fb3f385fdd40b96fb6d68f3cfef617",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "ai-system-design",
+      "sha256": "5ef2247fc44c7f1786d8446ab0049257530281e16c0071714b756c2b3d636230",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "model-serving-and-gpus",
+      "sha256": "fe834ba0b7fbeb0fc4694fe35ef07e95d994915f761ad532c2c1fa044ad65a96",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "rag-and-inference",
+      "sha256": "0e880b9993dd57bb63bdec82bc38d727b37e92b79e84cf1c6ac112a9f6d1f759",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "ai-platform-operations",
+      "sha256": "60c7180dc735ef8d75a913243ed1fa7f425353b5ada5faf1d745f24597206bb6",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "full-mock-interview",
+      "sha256": "91547289d283529f4ba798e93aa97d5c2d37d243aaee44c5f5b3883105c199c7",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    },
+    {
+      "id": "capstone-and-readiness-plan",
+      "sha256": "fa5ddcf6b1cb6e7a83065a5797a91b93cd100e9ffcac1945237e18c52c732232",
+      "editoriallyReviewed": true,
+      "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+      "evidence": "artifacts/guide-review-interface.json",
+      "reviewType": "Independent AI editorial review; not human certification or learner outcome evidence"
+    }
+  ]
+}

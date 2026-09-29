@@ -1,0 +1,110 @@
+{
+  "id": "interview_021",
+  "lessonId": "105",
+  "title": "[A] Locate the failure window in database-plus-broker workflows",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "aliases": [
+    "L105",
+    "lesson_105"
+  ],
+  "modeType": "A",
+  "minutes": 45,
+  "sessionMinutes": 60,
+  "brief": "An order API commits SQL state and publishes an event to a broker. Customers report accepted orders missing from shipping; a recent retry change also caused duplicate shipment requests. Locate concrete failure windows and propose a reliable handoff. Do not assume a distributed transaction exists. Start by clarifying the required guarantees.",
+  "clarifications": [
+    {
+      "question": "Can the SQL schema change?",
+      "answer": "Yes. Orders and a new local table may participate in the same database transaction."
+    },
+    {
+      "question": "What does shipping control?",
+      "answer": "A separate SQL store for shipment requests; its handlers can use local transactions and unique constraints."
+    },
+    {
+      "question": "What workload and freshness are required?",
+      "answer": "500orders/s peak;99% of accepted orders should reach shipping within30seconds during healthy operation. Outages can be caught up without silently losing accepted orders."
+    }
+  ],
+  "hints": [
+    "Draw the exact point between the first durable effect and the second.",
+    "Distinguish repeating publication from repeating a committed shipment request.",
+    "State what the recovery checkpoint proves."
+  ],
+  "changes": [
+    "The relay stops for40minutes while the API remains healthy.",
+    "A consumer receives the same event ID with a different payload."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "Put order and event intent in one SQL transaction; relay committed intents with stable event IDs and per-order ordering where required. Accept that relay publication can repeat after a crash. At shipping, commit a unique processed-event marker with creation of the shipment request. Preserve original results for duplicates and reject conflicting payload identities. Monitor oldest outstanding age, backlog, relay throughput, poison schemas and reconciliation. At500/s for2,400seconds the backlog is1.2million events before new traffic; catch-up capacity must exceed arrivals. Do not promise the eventual physical shipment or external carrier action belongs to the SQL transaction. A supported distributed transaction is an alternative only with participant support and accepted availability costs.",
+  "debrief": "Replay each proposed crash point. Award feedback only for actual candidate evidence: local atomic boundary, duplicate-safe receiver, retention/recovery, units, and an explicit external-effect limit. A correct pattern name without its failure trace is weak evidence.",
+  "remediation": [
+    "094",
+    "096",
+    "101",
+    "103",
+    "107"
+  ]
+}

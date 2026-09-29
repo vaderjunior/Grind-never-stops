@@ -1,0 +1,111 @@
+{
+  "id": "interview_022",
+  "lessonId": "110",
+  "title": "[C] Design an order workflow that survives partial completion",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "aliases": [
+    "L110",
+    "lesson_110"
+  ],
+  "modeType": "C",
+  "minutes": 45,
+  "sessionMinutes": 60,
+  "brief": "Design a durable equipment-order workflow that reserves inventory, obtains a deposit authorization, schedules a pickup, and confirms the order. The external provider can time out after accepting a request. Customers can cancel before pickup. Work through partial completion, recovery, and a changed requirement using explicit states.",
+  "clarifications": [
+    {
+      "question": "Which actions support stable operation identities?",
+      "answer": "The deposit provider supports an idempotency key and querying its recorded result for seven days. Pickup scheduling accepts a stable customer request ID."
+    },
+    {
+      "question": "What can be reversed?",
+      "answer": "Unused reservations and uncollected pickup bookings can be released. A completed physical pickup is irreversible within this workflow; it needs a returns process."
+    },
+    {
+      "question": "What scale and objectives apply?",
+      "answer": "100orders/s peak; normal confirmation within10seconds, with clearly displayed pending status during provider failure. Every stuck workflow needs an operator-visible recovery state."
+    }
+  ],
+  "hints": [
+    "Draw durable intermediate states before listing services.",
+    "A timeout says the caller did not receive a result; identify what the provider knows.",
+    "Give each compensation its own failure and retry path."
+  ],
+  "changes": [
+    "A cancellation arrives while the deposit result is unknown.",
+    "The workflow remains paused longer than the provider idempotency retention period."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "Use one authoritative durable workflow record with conditional transitions and stable step identities. Reserve inventory locally, issue deposit authorization with the retained key, reconcile unknown outcomes, and schedule pickup only after the necessary confirmed state. Cancellation races follow an explicit state-transition policy; compensation uses actual provider references and may enter pending/manual-review. Never void an assumed failure without resolving an unknown accepted effect. After provider identity retention expires, use supported audit/reconciliation evidence or intervention rather than claiming a repeated call is safe. Track oldest state age, retry counts, unknown outcomes, compensation failures and operator actions. Protect tenant access to orders and redact provider-sensitive data. A modular monolith plus durable work table may suffice; a workflow engine is justified by recovery/operation complexity, not fashion.",
+  "debrief": "Compare the candidate state machine with the observed failure schedule. Probe whether compensations were treated as infallible rollback and whether expired dedupe identities change the guarantee. Feedback should cite exact recorded turns, give one focused retry for an unresolved race, and admit missing evidence.",
+  "remediation": [
+    "027",
+    "096",
+    "103",
+    "104",
+    "106",
+    "107"
+  ]
+}

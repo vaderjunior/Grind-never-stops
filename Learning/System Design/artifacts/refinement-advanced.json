@@ -1,0 +1,571 @@
+{
+  "scope": "Last 24 Learn chapters in path order",
+  "method": "Full chapter reading, original illustrated refinements, assessment-preserving edits; independent cross-review pending.",
+  "chapters": [
+    {
+      "id": "interview-game-plan",
+      "file": "content/guides/interview-game-plan.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "c66dbfd0a6a72c42136ab4b04b05863c3af1185c294074b1b8668193977a1402",
+      "sha256": "c73dfc3986612f447875d2a86c208deee353ac9d8670685638e2be7286dff7f0",
+      "assessmentSha256": "f16521884e41fad4196a88c4fd9bad573187d6a4dc459b07514e92a8a205745b",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Replaced a dense contracts paragraph with an example record table and annotated request/response flow.",
+        "Added a requirement-to-mechanism decision diagram and a four-step link lifecycle walkthrough.",
+        "Added a pause-and-predict prompt without revealing the protected deletion exercise."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "one-link-two-journeys",
+        "sectionId": "flow",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "estimates-and-tradeoffs",
+      "file": "content/guides/estimates-and-tradeoffs.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "e8b9d5d8e97de731dc7b55e020989224a62b30c90fa08f3d33a8572dedaa84fc",
+      "sha256": "a692ad96ecde88784fd282839744143d880673d175d7d217b99673c20d79572d",
+      "assessmentSha256": "b35789278b0eae3ef9bda271848541a35bb664052af51da0387e0024fbbd98e6",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Turned traffic arithmetic and worker headroom into explicit unit tables.",
+        "Added a control-versus-byte-path diagram.",
+        "Added a different-number sensitivity walkthrough that does not expose the protected file-retention exercise."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "small-attachment-estimate",
+        "sectionId": "defend",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-notifications",
+      "file": "content/guides/design-notifications.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "78df5a8b794d3aae6997dbe9402d7a02b574c9fd705428e6be156800c595fb25",
+      "sha256": "8538295c6dcb0b981b3597d153043938f10ff04666571a4ba9c4ffe1cc1e6542",
+      "assessmentSha256": "aec593c39ea096eb4fe080374e484a5da9ba563897f6645dc53a8becab65cc6d",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added explicit durable-record and delivery-evidence tables.",
+        "Added channel-attempt branching diagram and concrete duplicate-event walkthrough.",
+        "Clarified inbox uniqueness versus external provider outcomes while leaving the crash-recovery exercise protected."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "repeated-comment-event",
+        "sectionId": "outbox",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-rate-limiter",
+      "file": "content/guides/design-rate-limiter.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "8900f268eb63f64c5831433841684adb7bd94e8c144c831649216a280a056219",
+      "sha256": "780db415da6b9fab2ee0f22b8981c4b12909e7a2462d34de8cd4c084763611a3",
+      "assessmentSha256": "48791df6bd11de15deee57403f6c494e2e48f892f820e77fc16f7cac39a4d760",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added a contract comparison table and concrete regional reservation example.",
+        "Added a bounded fallback-budget diagram.",
+        "Added a fractional-refill walkthrough with numbers distinct from the protected exercise."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "fractional-credit",
+        "sectionId": "algorithm",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-chat",
+      "file": "content/guides/design-chat.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "61c06fd0737305b24db66ce4f8ab1e7b632484c8124050644933bc1a294ff5c0",
+      "sha256": "b6be0fbe4f70519ee8cff8129366ceb680a7a000c463e0714cb2b460e12f10e0",
+      "assessmentSha256": "8d55a5530ea50800441d47bec01c2052ae4207e923f97d9efc933fbeef7ae890",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Turned message states and data ownership into concrete tables.",
+        "Added a receipt-evidence sequence diagram.",
+        "Added a normal-send walkthrough distinct from the lost-response assessment."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "message-evidence",
+        "sectionId": "scope",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "chat-reconnect-and-scale",
+      "file": "content/guides/chat-reconnect-and-scale.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "bf9c4eb855c47e4c8067f6b8c9fcee902a763509b9ac405039e096685685ba9e",
+      "sha256": "5ea87f34574ce57ebc888cb49f748cc5f30203b0bf85d42769e687e2de2923fc",
+      "assessmentSha256": "9377df1937c72abbd501f67dfe6a0fcd76a52db47e6331baf9ea4a17f60aa390",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Replaced the reconnect-race paragraph with an event timeline table.",
+        "Added explicit overflow/expired-cursor outcomes and a repair-state diagram.",
+        "Added a different-position subscription/replay walkthrough without exposing the assessment ordering sequence."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "bounded-replay-bridge",
+        "sectionId": "handoff",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-news-feed",
+      "file": "content/guides/design-news-feed.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "29d3f6b46ebb61fb3e9370b43f09c4c73945711bcee74c7c68d154c6d620d6ee",
+      "sha256": "f37be4d309b0543dfeb6856e813c524a267049b4fdd5614013db5e4d3e0ccc03",
+      "assessmentSha256": "30c7e357b4ac46bc652fffeef8a9bcaa583befc2be406b208d0a1e0a89cacf68",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added source-record and push/pull responsibility tables.",
+        "Added an ordered-cursor diagram with explicit continuity limits.",
+        "Added candidate hydration walkthrough using concrete IDs and a stale entry."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "candidate-is-not-permission",
+        "sectionId": "read",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "feed-fanout-and-ranking",
+      "file": "content/guides/feed-fanout-and-ranking.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "e892b2e3aa278c32f5d72c879642ee3de55841cef4db1af0cdc604ca6554f873",
+      "sha256": "1c32762a497f65d348f7d2133429f9dbc3db6af32f252f9f371ddbb72eb710f9",
+      "assessmentSha256": "ab09f8c4b73bc6245e00b898af1eec14e4036e26adbc061c17036b982b92b971",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Replaced dense ranking and pagination text with stage and continuity tables.",
+        "Added a safe fan-out policy transition diagram.",
+        "Added concrete candidate merge, score, and session-state walkthrough."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "rank-small-candidates",
+        "sectionId": "ranking",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-file-storage",
+      "file": "content/guides/design-file-storage.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "cb3e86b9c05ac6d942403711b4c66f8633499cbb8b1e5e944619932becb5afa6",
+      "sha256": "6436bb009bc4791b1e6975e8b4568d067bca9470a7af020d9d317388c4b3042f",
+      "assessmentSha256": "1b6573dc2e0532dceb811f5432d50d1df399e181c95397b79749ac9705623edc",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added a concrete metadata-versus-bytes record table and transparent storage arithmetic table.",
+        "Retained the two reviewed upload diagrams and their recovery boundaries.",
+        "Added a rename-to-authorized-download walkthrough without revealing the multipart exercise solution."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "rename-and-download",
+        "sectionId": "why",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "file-sync-and-conflicts",
+      "file": "content/guides/file-sync-and-conflicts.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "4c564dd7de7042e29b9d4771d3fd1152b97a6b315aa6d852a6984f6ce8333c16",
+      "sha256": "921d5d42c8a37bce7e8c927d00b832264c72598641b204c24aa0a51fb81b59ea",
+      "assessmentSha256": "beeb18045200d1f135a3adef4b9cdabd6f2abf66858bea062099c5155470754a",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added a conflict-policy comparison and explicit apply/checkpoint table.",
+        "Preserved reviewed offline-draft protection in the rewritten sync explanation.",
+        "Added a dirty-local-file catch-up walkthrough; retained both reviewed diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "preserve-before-catchup",
+        "sectionId": "sync",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-video-platform",
+      "file": "content/guides/design-video-platform.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "16b27c1a738de98018cd24ea71b1bebe15e93da5de6643b55844302108efe3e2",
+      "sha256": "53ccd5c250e7368085ea8f48a939ccd9ad31216fcb4b2f9cec3cb3906658a614",
+      "assessmentSha256": "59c9befb1b0ccc2eec5a2ab7cff087bb95304ea1dcbb71edd3db6e4a0b2ef1fd",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Replaced playback prose with an annotated flow and distinct-number segment arithmetic table.",
+        "Added a three-journey outcome/observation comparison.",
+        "Added an evolving playback-buffer walkthrough; preserved isolated immutable processing outputs and both reviewed diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "buffer-behavior",
+        "sectionId": "watch",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-search-and-autocomplete",
+      "file": "content/guides/design-search-and-autocomplete.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "f75b97971fc6cd9b4a2bdd4cb8c3d4c6e9af860775ef01e1257af8a97fe09d95",
+      "sha256": "d7d351ec21aa31929ed603bd4fb99b525872a191ddafabc8edd5d8dc7387751a",
+      "assessmentSha256": "2e966895ee748c5674ff6b55863e6375a983aeecbfb65dc3e8943e38ca54d24a",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added actual documents and inverted-index lookup tables.",
+        "Added a compact prefix-tree illustration and clarified request tagging versus cancellation.",
+        "Added an out-of-order autocomplete walkthrough, keeping both reviewed index/permission diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "latest-prefix-wins",
+        "sectionId": "suggest",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-bookings",
+      "file": "content/guides/design-bookings.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "61bdd13427fded338697d101f2a31771fd4d53cb42d6eb7f8ce04610b86c9f95",
+      "sha256": "306e07f0dc23679b9969af5f3a65a21af17ee5b25d8129deaf4578952cf62558",
+      "assessmentSha256": "61d7b2ca719d132d55521c487d1f32534b2cf5c5e8cc53046a894470c747991a",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added observation-versus-promise and browse/checkout responsibility tables.",
+        "Added a compact race-versus-atomic-operation flow.",
+        "Added a contention walkthrough with different identities from the protected late-payment exercise."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "one-seat-one-decision",
+        "sectionId": "claim",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "design-payments",
+      "file": "content/guides/design-payments.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "3a88acac82481eb91a4f1bbff40615231fd83b89fb9cd6e98d106fddef44bab0",
+      "sha256": "5c27c53edb094dec7c4de6af28af8fbf3d6f561d8c701c2dbbd9d135e1c56b40",
+      "assessmentSha256": "d646d189ab0cd24ca17bbc02646a4a4d0feab41958458a4c0591d9cefbc4ac6f",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Replaced dense identity and reconciliation paragraphs with record/evidence tables.",
+        "Added a verified-status reconciliation walkthrough separate from duplicate-webhook exercise details.",
+        "Retained provider-specific retention, lifecycle, uncertainty, and exact-money constraints; rechecked official Stripe idempotency/webhook references."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "reconcile-one-attempt",
+        "sectionId": "records",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "coordination-and-leases",
+      "file": "content/guides/coordination-and-leases.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "95b59f339026950d11d56725ed3eccb7e64a1ff14d9c3c6c44a43f72e44fdb17",
+      "sha256": "bc216b5be9957d57debf8c14cc990d5cf0e236562ba19da3bb09b9841f2c7700",
+      "assessmentSha256": "07b9936712cb80d1430aba9f120317b666500808741763c3b36bfad48b294a10",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added an operation-by-operation availability table and mechanism/limit comparison.",
+        "Added an explicit grant→resource→rejection flow.",
+        "Added a concrete publication-state walkthrough preserving the reviewed handoff/fencing nuance."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "private-work-public-result",
+        "sectionId": "partition",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "change-data-safely",
+      "file": "content/guides/change-data-safely.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "514f0e83b10023ebe0c9b7f33ff79cdec8272c416718573948a8f8b5a6717dfa",
+      "sha256": "3c6746bd96ba012d9b5f0f4154836b47d4f4d011cd530ab522a50ee43f0958df",
+      "assessmentSha256": "965970b873c1a7b544659dd2f8c8a59a04f6878022c873701271b79b83b6df4a",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added migration validation questions beyond counts in a table.",
+        "Added command/event/projection comparison and an effect-boundary text flow.",
+        "Added a membership-event reconstruction walkthrough while retaining both reviewed migration/replay diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "event-versus-view",
+        "sectionId": "history",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "mcp-platform-architecture",
+      "file": "content/guides/mcp-platform-architecture.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "ed2dcab7123eba694839ef7faabaff4e75d432fd35e2bade704f241521fb287d",
+      "sha256": "5b0180bc9b811033f0a0a5288fe8759c842569d2ad870da83e2dbaf3f39ebdf7",
+      "assessmentSha256": "4fb8474fef950075764c60f17d7f7bc622942e344dfcb4eb774ce640e6717885",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added a human/host/client/server/downstream actor table.",
+        "Added a five-identity comparison and shared-state text flow.",
+        "Added a read-only status walkthrough; preserved revision-specific transport/session/cancellation sections and both reviewed diagrams.",
+        "Reopened the matching 2026 and earlier 2025 official transport specifications."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "bounded-status-request",
+        "sectionId": "request",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "platform-security-and-tenancy",
+      "file": "content/guides/platform-security-and-tenancy.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "0eacd19b2c6e2f4d5c67bc0bbccedba17547c4e275164f1810259cb6b4d7a317",
+      "sha256": "3376017e76cb03b96b73d11e36c787cf37fb3f385fdd40b96fb6d68f3cfef617",
+      "assessmentSha256": "57042878204bd0802be8da2572e08b20c0a84ab67eacf99ab21162f47e351043",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added human/workload/delegated/audience identity comparison.",
+        "Reworked secret handling into a lifecycle table with a pause-and-predict prompt.",
+        "Added a scoped rotation walkthrough with an explicit overlap assumption; preserved tenant and queued-revocation sections and both reviewed diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "rotate-scoped-credential",
+        "sectionId": "secrets",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "ai-system-design",
+      "file": "content/guides/ai-system-design.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "11fb647e3e4fec198d90d2cf9489d3afbac35cf096c340c2bb53a10b9832d840",
+      "sha256": "5ef2247fc44c7f1786d8446ab0049257530281e16c0071714b756c2b3d636230",
+      "assessmentSha256": "bcbd77e1579711382c9403cd4142626081c6a6f3e4665acf0f372391e16555e2",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added request-work comparison and an annotated token-capacity calculation.",
+        "Added a delivery-versus-quality observation table.",
+        "Added a draft lifecycle walkthrough with explicit partial/completed states and human review."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "draft-request-lifecycle",
+        "sectionId": "request",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "model-serving-and-gpus",
+      "file": "content/guides/model-serving-and-gpus.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "3d2b2cfcced1e47cb3de926a2c0124774050a74118fcf70c10e65fd49bc669bb",
+      "sha256": "fe834ba0b7fbeb0fc4694fe35ef07e95d994915f761ad532c2c1fa044ad65a96",
+      "assessmentSha256": "74381d3260e5a2d854d6f1f8f4edac6f252be37b5c7a7b6b9855c8c8a58efe59",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added a complete serving-memory responsibility table with explicit GB/GiB limits.",
+        "Added fixed-versus-continuous scheduling comparison.",
+        "Added a distinct request/remaining-step scheduler walkthrough; preserved KV formula, safety caveats, and both reviewed diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "scheduler-active-set",
+        "sectionId": "batching",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "rag-and-inference",
+      "file": "content/guides/rag-and-inference.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "df383d9358fbaaa66ef95fc248e6a16e5bc707aa52aa015c45eecf80bc58c195",
+      "sha256": "0e880b9993dd57bb63bdec82bc38d727b37e92b79e84cf1c6ac112a9f6d1f759",
+      "assessmentSha256": "c9e78d477be290091360df34ba84e97c9f6c540e8596e88e74f6832373c74f41",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added chunk-identity/meaning table and a concrete rule-versus-exception example.",
+        "Added final-answer versus prefix-cache comparison.",
+        "Added an allowed-evidence walkthrough distinct from the private-tenant cache assessment; preserved both reviewed diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "retrieve-the-exception",
+        "sectionId": "answer",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "ai-platform-operations",
+      "file": "content/guides/ai-platform-operations.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "6e417da30e22a7eb4616a395c050c6c0779bca3b5de6cecb47bc2320846702b0",
+      "sha256": "60c7180dc735ef8d75a913243ed1fa7f425353b5ada5faf1d745f24597206bb6",
+      "assessmentSha256": "c8bb0d92dde571ea6c004652191042da8630f1cebfd472ed855e45fd42be212d",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added registry/deployment/router responsibility table.",
+        "Replaced dense latency explanation with boundary table and distinct annotated numeric timeline.",
+        "Added incident observations/actions table and concrete version rollout walkthrough; retained both reviewed diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "candidate-to-serving",
+        "sectionId": "rollout",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "full-mock-interview",
+      "file": "content/guides/full-mock-interview.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "e7a8f9f3b55d8deaab12157731c0597c5503cc8d1626a430c88ee80dc32fd22f",
+      "sha256": "51900df1f25387772be5c3baea710c89ab798ab51048e0e12319f92938daeb7c",
+      "assessmentSha256": "b92c0ac50a960fe5db00a8db46001cdc58993ce28b1e59ccf5b4dca8b04b6f78",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Turned candidate facts into a compact table while preserving the problem.",
+        "Removed a premature example of the later city-wide acceptance policy from the public clarification section.",
+        "Added evidence worksheet, process-only diagram, and solution-free practice-record walkthrough.",
+        "Kept the entire timed-change section and all private assessment content unchanged."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "mock-working-record",
+        "sectionId": "setup",
+        "steps": 5
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    },
+    {
+      "id": "capstone-and-readiness-plan",
+      "file": "content/guides/capstone-and-readiness-plan.json",
+      "previousVersion": 1,
+      "version": 2,
+      "beforeSha256": "bd66a01bbb9a1328935631bf75dc0642383a56166713f320eb0ca520efdc5eef",
+      "sha256": "fa5ddcf6b1cb6e7a83065a5797a91b93cd100e9ffcac1945237e18c52c732232",
+      "assessmentSha256": "9d530de5c38d9e1c2aa03eb383de80d6944ff40da95549c3e5e3d51326f3305b",
+      "changes": [
+        "Split long ordinary paragraphs at meaningful sentence boundaries.",
+        "Added evidence-versus-insufficient-evidence comparison for five interview skills.",
+        "Replaced dense practice-plan prose with gap/drill/evidence table and explicit assisted-versus-independent distinction.",
+        "Added a concrete four-stage learning record with remaining uncertainty; preserved both reviewed diagrams."
+      ],
+      "diagrams": 2,
+      "walkthrough": {
+        "id": "one-gap-new-evidence",
+        "sectionId": "plan",
+        "steps": 4
+      },
+      "gaps": [],
+      "review": "awaiting independent editorial and final diagram review"
+    }
+  ],
+  "updatedAt": "2026-09-29T14:00:09.668Z",
+  "checks": {
+    "checkedAt": "2026-09-29T14:00:13.364Z",
+    "chapters": 24,
+    "currentHashesMatch": true,
+    "protectedAssessmentsUnchanged": true,
+    "walkthroughStructure": true,
+    "diagramPlacementsAndStepCounts": true,
+    "scriptSyntax": true,
+    "rendering": "Parent will run final shared diagram renderer after independent review"
+  }
+}

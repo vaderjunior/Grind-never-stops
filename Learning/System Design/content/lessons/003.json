@@ -1,0 +1,151 @@
+{
+  "id": "003",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish latency, throughput, availability, and durability.",
+    "Interpret percentiles without confusing them with maximum latency.",
+    "Define a user-facing indicator and its target.",
+    "Compute a simple request-based error budget."
+  ],
+  "retrieval": [
+    "From L002, give a functional requirement and a separate invariant.",
+    "What does a confirmed response promise in the borrowing example?"
+  ],
+  "sections": [
+    {
+      "id": "metrics",
+      "title": "Four questions, four different measurements",
+      "markdown": "Core budget: 5 minutes retrieval, 18 explanation, 8 arithmetic, 10 exercise, 10 questions, 4 review. Reuse a photo-notebook service: a user saves a photo with a caption, then opens an album. This is an invented workload, not a description of a commercial product.\n\nLatency asks how long one operation takes. Throughput asks how many operations cross a specified boundary per unit time. Availability asks whether the requested useful service can be obtained. Durability asks whether accepted information remains preserved over the stated period and failures. A service may be available but return the wrong account's photos, so correctness is not supplied by any of these performance numbers.\n\nAn upload can take two seconds while the system finishes 500 uploads per second if many uploads overlap. There is no contradiction: one is a duration and one is a rate. A process can be down while its stored photos remain safe. Conversely, it can answer every request promptly after accidentally deleting half the albums. That is high request availability for some operations and terrible data preservation.\n\nAlways name the operation and observation point. Upload-start to first response, upload-start to fully stored photo, and album-click to visible image are different latencies. A server-side timer cannot see all time spent waiting in the browser or traversing the network."
+    },
+    {
+      "id": "distributions",
+      "title": "The average can hide the user who is stuck",
+      "markdown": "Suppose 100 album requests contain 95 durations of 100 ms and five durations of 2,000 ms. Their arithmetic mean is (95 × 100 + 5 × 2,000) / 100 = 195 ms. Using nearest-rank percentiles, p95 is 100 ms and p99 is 2,000 ms. A p95 target alone permits the slowest five percent to be much worse. p99 is not the maximum, and a percentile from 100 observations is much less stable than the same percentile from a large representative population.\n\nSpecify how the distribution is gathered. Mixing image thumbnails with huge uploads can make a single latency number unhelpful. Counting only successful responses can conceal fast failures or exclude the worst timeouts. Measure errors and success latency together, and explain your treatment of timed-out operations.\n\nDo not average the p99 values of two servers to obtain a fleet p99. One server may have ten requests and the other ten thousand; even weighting their percentile values does not reconstruct their distributions. Combine the underlying observations or compatible histograms. The purpose of the percentile is to describe a population, not to provide a convenient number detached from that population.\n\nIn the walkthrough, predict where the user-visible timer starts and stops. If a backend reports 80 ms but an image becomes visible after 900 ms, investigate the gap before claiming the database is slow."
+    },
+    {
+      "id": "objectives",
+      "title": "Turn a measurement into a decision",
+      "markdown": "An SLI is the measurement definition; an SLO is a target for that measurement. A practical album-read SLI might be the fraction of valid album reads that return the authorized album within 500 ms, measured at the local gateway during a rolling 28-day window. An initial SLO might require that fraction to be at least 99.5%. Those numbers are exercise assumptions and require product agreement in real work. An SLA adds an agreement and consequences; it is not merely another spelling of SLO.\n\nFor 200,000 eligible requests, a 99.5% success target permits 1,000 bad requests in the window: 200,000 × (1 − 0.995). If 700 are already bad, 300 remain under this simplified fixed-volume calculation. A moving window and future request volume change the available budget, so a production dashboard needs exact window semantics.\n\nDo not convert that request budget into minutes of downtime without assumptions. A five-minute outage during a busy event may affect more users than an hour overnight. A time-based objective is a different measure. Likewise, a storage durability target needs a definition of accepted data and failure scope; “we have backups” is a mechanism claim, not a measured loss probability.\n\nAn objective earns its place when missing it leads to an action: reduce overload, investigate a slow dependency, or improve recovery. CPU utilization is often diagnostic evidence. It does not by itself tell you whether users can complete the operation."
+    },
+    {
+      "id": "failure",
+      "title": "Use the dimensions to diagnose, not decorate",
+      "markdown": "Consider a deployment that doubles completed requests per second but increases p99 from 400 ms to 4 seconds. It improved one rate while potentially violating the interactive objective. A batch import might welcome that tradeoff; a user waiting for a booking decision may not. Decide using the operation's needs.\n\nNow stop the application process while leaving its disk intact. Availability drops; no data loss has yet been shown. Restore the process from an old snapshot that misses yesterday's confirmed photos. Availability returns, but durability has failed for those photos. Your report should describe both events separately so the team does not celebrate recovery while overlooking missing data.\n\nCommon mistakes include claiming “99.9% uptime” without a window, promising “zero latency,” excluding all failures from the denominator, interpreting p99 as a guarantee on every request, and treating replication or backup count as proof of durability. Prefer a small set of precise measurements to a page of unexplained percentages.\n\nOptional depth: instrument a familiar script with a monotonic timer and collect a distribution. This extension is separate from the scheduled arithmetic exercise; no instrumentation library is required for the core."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "timers",
+      "title": "Which latency does the user experience?",
+      "source": "sequenceDiagram\nparticipant U as User\nparticipant B as Browser\nparticipant A as Application\nparticipant S as Storage\nU->>B: Open album and start user timer\nB->>A: Read album\nNote over A: Server timer starts\nA->>S: Read photo metadata\nS-->>A: Album data\nA-->>B: Response and stop server timer\nB->>B: Decode and display images\nB-->>U: Album visible and stop user timer",
+      "caption": "Server latency is a subset of the journey. The drawing shows ordering, not measured durations.",
+      "steps": [
+        "User-visible timing begins with the action.",
+        "Application timing excludes earlier client and network delay.",
+        "Storage is one segment of application work.",
+        "Rendering completes after the server has already replied."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "An API receives 80,000 eligible requests. 240 fail, and another 160 return correctly but slower than the 600 ms objective. Define a combined good-request SLI, compute its value, and decide whether it meets 99.6%. Explain what a backup does and does not tell you about this result.",
+    "minutes": 10,
+    "rubric": [
+      "Counts failed and slow outcomes once each using the disjoint categories stated.",
+      "Shows denominator and units.",
+      "Distinguishes target from observed result.",
+      "Separates recovery/data preservation from request performance."
+    ],
+    "solution": "Good = 80,000 − 240 − 160 = 79,600. SLI = 79,600/80,000 = 99.5%, below 99.6%. Budget is 320 bad requests; there are 400, an excess of 80. The supplied categories are disjoint; with real data use a union so slow failures are not counted twice. A backup may support recovery of stored information, but it does not establish response latency or request availability."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which has units of requests/second?",
+      "options": [
+        "Latency",
+        "Throughput",
+        "Durability"
+      ],
+      "answer": "Throughput",
+      "explanation": "Latency has time units; throughput is a flow rate."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "p99 is 800 ms. What does this describe?",
+      "options": [
+        "Every request is below 800 ms.",
+        "The 99th-percentile point of the defined observed population.",
+        "The mean is 800 ms."
+      ],
+      "answer": "The 99th-percentile point of the defined observed population.",
+      "explanation": "A percentile is neither a maximum nor a mean; sample and window definitions matter."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "At a 99.9% target, how many bad requests are allowed among 500,000 eligible requests?",
+      "answer": 500,
+      "unit": "requests",
+      "tolerance": 0,
+      "explanation": "500,000 × 0.001 = 500."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "The service is available after restoration but loses the last hour of confirmed writes. Which claims must be separated?",
+      "answer": "Serving has resumed, but accepted data was lost. Availability recovery does not establish durability.",
+      "explanation": "Name the affected period and accepted-data boundary; avoid treating a healthy process as complete recovery."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When might you accept a throughput gain with worse latency?",
+      "answer": "For a workload whose completion deadline tolerates the slower individual response, such as a bounded batch import, if the agreed objective still holds.",
+      "explanation": "The same change can be valid for batch work and invalid for interactive requests."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Latency?",
+      "back": "Elapsed time for an operation at a stated boundary."
+    },
+    {
+      "front": "Throughput?",
+      "back": "Operations or bytes completed per unit time."
+    },
+    {
+      "front": "Availability versus durability?",
+      "back": "Can I use the service now versus is accepted data preserved?"
+    },
+    {
+      "front": "SLI versus SLO?",
+      "back": "Measurement definition versus target for it."
+    },
+    {
+      "front": "Request error budget?",
+      "back": "Eligible requests × allowed bad fraction, with exact window semantics."
+    },
+    {
+      "front": "Can fleet p99 be obtained by averaging server p99s?",
+      "back": "No; aggregate distributions or compatible histograms."
+    }
+  ],
+  "mentalModel": "Duration, rate, usability, and preservation are separate promises. Define the population before interpreting a number.",
+  "sources": [
+    {
+      "title": "Google SRE: Service Level Objectives",
+      "url": "https://sre.google/sre-book/service-level-objectives/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE: Monitoring Distributed Systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

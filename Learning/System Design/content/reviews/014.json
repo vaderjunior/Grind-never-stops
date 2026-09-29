@@ -1,0 +1,12 @@
+{
+  "lessonId": "014",
+  "sha256": "ef5b5872f99ab86043f23a4c806eebeb1ec88972881441145a486c0bf7e00e33",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: safe/idempotent/cacheable are distinct; repeated effect does not require identical response bytes.",
+    "Conditional version update includes atomicity and affected-row interpretation; idempotency-key storage is not attributed to HTTP."
+  ]
+}

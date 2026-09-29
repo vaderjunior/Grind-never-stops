@@ -1,0 +1,261 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "level": "beginner",
+  "id": "numbers-bytes-and-units",
+  "week": 5,
+  "title": "Bytes, bandwidth, and units without guessing",
+  "minutes": 45,
+  "summary": "Build a small calculation ledger. Convert bits and bytes, distinguish rates from quantities, and use estimates to ask better design questions.",
+  "objectives": [
+    "Distinguish bits, bytes, decimal prefixes, and binary prefixes.",
+    "Calculate a payload rate and an ideal transfer-time lower bound.",
+    "Keep assumptions, overhead, and headroom separate from arithmetic."
+  ],
+  "terms": [
+    {
+      "term": "Bit",
+      "definition": "One binary digit; a basic unit of information."
+    },
+    {
+      "term": "Byte",
+      "definition": "Eight bits in the systems discussed here."
+    },
+    {
+      "term": "Bandwidth",
+      "definition": "A rate at which a connection can carry information, often advertised in bits per second."
+    },
+    {
+      "term": "Payload",
+      "definition": "The application content itself, before counting surrounding protocol and storage overhead."
+    },
+    {
+      "term": "Headroom",
+      "definition": "Capacity intentionally left unused so variation and failures do not immediately exhaust the system."
+    }
+  ],
+  "retrieval": [
+    "Which resource moves data between computers? How does that differ from the place that keeps saved data?"
+  ],
+  "sections": [
+    {
+      "id": "units",
+      "title": "First write the unit beside the number",
+      "markdown": "“The file is 20” is not enough information. Twenty bytes, megabytes, and gigabytes describe very different amounts. “The network does 100” is also incomplete: it needs an amount **per unit of time**.\n\nUse the table as a small reference, not a memorization exercise:\n\n| Written unit | Meaning |\n| --- | --- |\n| b | bit |\n| B | byte; 8 bits |\n| kB, MB, GB | 1,000; 1,000,000; 1,000,000,000 bytes |\n| TB | 1,000,000,000,000 bytes |\n| KiB, MiB, GiB | 1,024; 1,048,576; 1,073,741,824 bytes |\n| Mbit/s | Million bits each second |\n| MB/s | Million bytes each second |\n\nFor this chapter, all MB and GB values are decimal. A 100 Mbit/s connection has a theoretical raw rate of 12.5 MB/s because 100 divided by 8 is 12.5. Application throughput will usually be lower. Always check a dashboard's documented units rather than assuming its labels are precise."
+    },
+    {
+      "id": "amount-rate",
+      "title": "An amount and a rate answer different questions",
+      "markdown": "A photo occupies **4 MB**. A link transfers **20 MB/s**. A queue holds **300 jobs**. Workers finish **30 jobs/s**.\n\nLook at the units before calculating:\n\n```text\namount ÷ rate = time\n4 MB ÷ 20 MB/s = 0.2 s\n300 jobs ÷ 30 jobs/s = 10 s\n```\n\nThe queue calculation assumes no new arrivals and a sustained finish rate. The file calculation ignores setup time, shared traffic, retransmission, and other overhead. They are useful idealized baselines, not promises to a user.\n\nNow compare a different question: “How much data arrives each second?” That requires a number of operations per second multiplied by bytes per operation. Write the units so they cancel visibly. This habit catches many mistakes before a calculator is needed."
+    },
+    {
+      "id": "payload",
+      "title": "Follow a small upload workload",
+      "markdown": "Assume 50 users each upload one 2 MB photo in the same second. That is 50 uploads/s during this example burst, not an estimate of average daily behavior.\n\n```text\n50 uploads/s × 2 MB/upload = 100 MB/s\n100 MB/s × 8 bits/byte = 800 Mbit/s\n```\n\nThis is the incoming photo payload rate. It excludes HTTP/TLS overhead and any extra internal copies. A nominal 1 Gbit/s link is therefore not a comfortably proven deployment just because 800 is below 1,000.\n\n| Separate question | Extra information needed |\n| --- | --- |\n| Can the entry link carry it? | Sustained usable throughput and other traffic |\n| Can the storage keep up? | Write throughput, latency, and request behavior |\n| Can thumbnails keep up? | Processing time and worker capacity |\n\nA system can pass the network calculation and still queue behind slow processing. Count the limiting resource on the actual request path."
+    },
+    {
+      "id": "transfer",
+      "title": "A transfer estimate is a lower bound",
+      "markdown": "Suppose a backup contains 6 GB and the only available connection is advertised at 100 Mbit/s. Ignore overhead for the first pass.\n\n```text\n6 GB = 6,000 MB\n100 Mbit/s ÷ 8 = 12.5 MB/s\n6,000 MB ÷ 12.5 MB/s = 480 s = 8 min\n```\n\nEight minutes is an ideal transfer lower bound at that full raw rate. Recovery may also require reading the backup, verification, decompression, restoring indexes, and starting the application. Those activities can overlap or serialize depending on the implementation.\n\n> **Common mistake:** calling this “our recovery time.” It estimates one part of recovery under optimistic assumptions. A restore drill measures the actual end-to-end result.\n\nIn an interview, say “the transfer alone takes at least about eight minutes under these assumptions” rather than promising an eight-minute recovery."
+    },
+    {
+      "id": "retention",
+      "title": "Multiply the right things, once each",
+      "markdown": "A telemetry service collects observations about a system, such as request events. In this example it receives 1,000 events/s. Each stored logical event is estimated at 500 bytes. Keep 30 days.\n\n```text\n1,000 events/s × 500 B/event = 500,000 B/s\n500,000 B/s × 86,400 s/day = 43.2 GB/day\n43.2 GB/day × 30 days = 1,296 GB\n```\n\nThat is about 1.296 TB of logical payload. Three complete physical copies would be 3.888 TB of that payload before indexes, metadata, spare capacity, and other storage overhead. Compression could reduce some bytes; do not assume its ratio without representative data.\n\nKeep your ledger in three rows: logical payload, required copies, and additional overhead. Do not multiply by a replication factor twice because both your source number and your later estimate already included it.\n\n**Pause and predict:** doubling retention doubles the retained payload in this steady-rate example. Does it necessarily double CPU capacity for live ingestion? No. Ingestion rate has not changed, though larger storage can change other operational work."
+    },
+    {
+      "id": "explain",
+      "title": "Use numbers to choose the next check",
+      "markdown": "An estimate is valuable when it changes a decision. If the calculated payload approaches available network capacity, measure sustained throughput and consider reducing transfer or increasing capacity. If the amount is tiny, investigate another bottleneck.\n\nUse this short spoken pattern:\n\n1. “I assume this number of operations per second.”\n2. “Each carries roughly this many bytes.”\n3. “That implies this payload rate.”\n4. “I still need overhead, peak behavior, and failure headroom.”\n\nFor an AI platform, separate the size of a model artifact from how often it is downloaded and how much GPU memory a running model needs. A file size is not automatically the full memory budget. You will study those extra components later.\n\nThe goal is not impressive arithmetic. It is an explanation another person can check, correct, and use to choose a small experiment."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "unit-path",
+      "sectionId": "units",
+      "title": "Convert once, keep the unit visible",
+      "source": "flowchart LR\nA[100 Mbit per second] -->|Divide by 8| B[12.5 MB per second]\nB --> C[Raw transfer capacity]\nC --> D[Measure usable application throughput]",
+      "caption": "Decimal units are used here. Protocol overhead and shared resources reduce usable application throughput.",
+      "steps": [
+        "Read the capital or lowercase unit carefully.",
+        "Convert bits to bytes by dividing by eight.",
+        "Treat raw capacity as an upper bound, not observed throughput."
+      ]
+    },
+    {
+      "id": "rate-path",
+      "sectionId": "payload",
+      "title": "From uploads to an incoming payload rate",
+      "source": "flowchart TD\nA[50 uploads each second] --> C[100 MB each second]\nB[2 MB per upload] --> C\nC -->|Multiply by 8| D[800 Mbit each second]\nD --> E[Add overhead and check real capacity]",
+      "caption": "The workload is an illustrative burst. Average traffic, internal copies, and processing capacity are separate estimates.",
+      "steps": [
+        "State request rate and size separately.",
+        "Multiply to obtain payload bytes per second.",
+        "Compare compatible units before considering headroom."
+      ]
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "transfer-ledger",
+      "sectionId": "transfer",
+      "title": "Build the backup-transfer estimate",
+      "intro": "Keep a ledger rather than doing invisible mental conversions.",
+      "steps": [
+        {
+          "title": "State the quantities",
+          "explanation": "The size is an amount; the link figure is a rate.",
+          "state": [
+            {
+              "label": "Backup",
+              "value": "6 GB"
+            },
+            {
+              "label": "Link",
+              "value": "100 Mbit/s"
+            },
+            {
+              "label": "Units",
+              "value": "Decimal"
+            }
+          ]
+        },
+        {
+          "title": "Convert to matching byte units",
+          "explanation": "Use megabytes on both sides so the division is meaningful.",
+          "state": [
+            {
+              "label": "Backup",
+              "value": "6,000 MB"
+            },
+            {
+              "label": "Raw rate",
+              "value": "12.5 MB/s"
+            },
+            {
+              "label": "Conversion",
+              "value": "8 bits per byte"
+            }
+          ]
+        },
+        {
+          "title": "Divide and bound the claim",
+          "explanation": "This covers ideal transfer, not the full restore procedure.",
+          "state": [
+            {
+              "label": "Transfer",
+              "value": "480 s = 8 min"
+            },
+            {
+              "label": "Overhead",
+              "value": "Not counted yet"
+            },
+            {
+              "label": "Recovery",
+              "value": "Needs measured restore steps"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Correct arithmetic becomes useful only when the unit and the scope of the claim stay attached."
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "An API returns a 25 kB payload 400 times each second. Calculate its outgoing payload rate in MB/s and Mbit/s using decimal units. Name two reasons the required connection capacity may be larger.",
+    "rubric": [
+      "Multiply requests/s by bytes/response.",
+      "Convert decimal bytes to bits correctly.",
+      "Distinguish payload from overhead and headroom."
+    ],
+    "solution": "400 responses/s × 25 kB/response = 10,000 kB/s = 10 MB/s. Multiplying by eight gives 80 Mbit/s of application payload. Protocol headers, encrypted framing, other requests, retransmissions, and demand spikes can require more connection capacity. Deliberate failure headroom may also be needed. These numbers do not tell us whether application CPU or database work can produce the responses at the required rate; those resources need separate checks."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "How many bits are in one byte here?",
+      "options": [
+        "8",
+        "1",
+        "1,000"
+      ],
+      "answer": "8",
+      "explanation": "Use eight bits per byte when converting these rates."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What unit results from MB divided by MB/s?",
+      "options": [
+        "Seconds",
+        "MB squared",
+        "Requests"
+      ],
+      "answer": "Seconds",
+      "explanation": "The byte amount cancels, leaving time."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Does an ideal transfer estimate establish the full recovery time?",
+      "options": [
+        "Yes, always",
+        "No, other recovery work and overhead remain",
+        "Only if the file has a short name"
+      ],
+      "answer": "No, other recovery work and overhead remain",
+      "explanation": "Restore verification, startup and actual throughput also matter."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why label a number as logical payload before multiplying by copies?",
+      "answer": "It prevents double counting and makes explicit which storage overhead and replication assumptions remain.",
+      "explanation": "It prevents double counting and makes explicit which storage overhead and replication assumptions remain."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What should follow a rate estimate close to a resource limit?",
+      "answer": "Measure representative sustained behavior, include overhead and peak/failure headroom, and investigate other resources on the same path.",
+      "explanation": "Measure representative sustained behavior, include overhead and peak/failure headroom, and investigate other resources on the same path."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "One MB in this chapter?",
+      "back": "1,000,000 bytes; MiB means 1,048,576 bytes."
+    },
+    {
+      "front": "Convert Mbit/s to MB/s?",
+      "back": "Divide by eight, using matching decimal prefixes."
+    },
+    {
+      "front": "Amount divided by rate?",
+      "back": "Time, when the units describe the same quantity."
+    },
+    {
+      "front": "Payload estimate includes overhead?",
+      "back": "Only if explicitly stated; account for protocol and storage overhead separately."
+    },
+    {
+      "front": "Why keep headroom?",
+      "back": "So variation and failures do not immediately exhaust capacity."
+    }
+  ],
+  "mentalModel": "Write the unit, show the cancellation, and label the assumptions before trusting the number.",
+  "sources": [
+    {
+      "title": "NIST: metric SI prefixes",
+      "url": "https://www.nist.gov/pml/owm/metric-si-prefixes",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "NIST: prefixes for binary multiples",
+      "url": "https://physics.nist.gov/cuu/Units/binary.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

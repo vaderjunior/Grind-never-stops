@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "054",
+  "objectives": [
+    "Explain how a pool bounds dependency concurrency.",
+    "Budget pool wait and execution against a request deadline.",
+    "Predict how replicas multiply database connections."
+  ],
+  "retrieval": [
+    "L007: apply Little’s law to in-flight dependency calls.",
+    "L037: why can concurrent transactions wait even when the application has spare CPU?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "More API servers, less database throughput",
+      "markdown": "A service scales from four API instances to twenty. Each opens a pool of fifty database connections. The API tier's CPU falls, but tail latency doubles and database memory rises. The change increased the maximum dependency concurrency from 200 to 1,000 without demonstrating that the database can use it productively.\n\nA pool avoids creating an expensive connection for every request and bounds concurrent use. It is a capacity and ownership mechanism. Increasing its size can reduce waiting in one place while moving more expensive waiting into the database. Measure where work queues and which resource is saturated."
+    },
+    {
+      "id": "mechanism",
+      "title": "A pool has a queue, owners, and a release obligation",
+      "markdown": "A request acquires a connection, performs bounded work, and returns the connection. While the pool is exhausted, later requests wait or fail according to configured limits. Every path—success, exception, timeout, and cancellation—must release or discard the resource correctly. A leaked connection can slowly reduce usable pool capacity until the service stalls.\n\nKeep transactions short. A connection held while calling an unrelated remote service can retain locks and a pool slot for far longer than the SQL needs. That reduces useful concurrency and can amplify contention. The correct size depends on database execution capacity, latency distribution, transaction behavior, and the number of application instances, not a universal magic number.\n\nBudget deadlines across stages. A 300 ms request deadline does not justify waiting 300 ms for the pool and then starting a 300 ms query. Each stage consumes the remaining budget. Cancel queued work when the caller's request is no longer useful; cancellation of an executing database operation has implementation-specific timing and must be handled carefully, especially around uncertain commit outcomes."
+    },
+    {
+      "id": "worked",
+      "title": "A concurrency estimate is a starting hypothesis",
+      "markdown": "Assume the database completes a representative query in 20 ms on average at the planned load, and the API needs 500 queries/s. Average in-flight query work is approximately 500×0.020 = 10 under stable conditions. This does not prove a pool of exactly ten is sufficient: bursts, long transactions, variation, and routing matter. It does show why choosing 1,000 connections merely because 1,000 requests can arrive is unsupported.\n\nSuppose four instances use a pool of fifteen each: the configured aggregate is sixty connections. Doubling to eight instances doubles that ceiling to 120 unless per-instance limits change. Reserve database slots for administration, migrations, monitoring, and other services. Count deployments temporarily running old and new replicas together.\n\nImagine one slow query holds a slot for five seconds while normal queries need 20 ms. The slow query occupies as much slot-time as 250 normal query intervals. A small fraction of slow operations can dominate pool occupancy. Partitioning pools or applying separate concurrency limits to expensive operations can protect latency-sensitive work, but it adds configuration that must be tested."
+    },
+    {
+      "id": "failure",
+      "title": "Observe wait time before changing limits",
+      "markdown": "Record pool acquire wait, active/idle connections, query duration, transaction age, cancellations, and errors. If pool wait is high while database resources and query latency remain low, the pool might be unnecessarily small. If query latency and lock wait grow as pool size rises, the dependency is already struggling. Add limits before blindly opening more connections.\n\nAn outage may cause every instance to reconnect simultaneously. Bound connection creation and use retry backoff. A pool containing half-dead connections needs health/age policies appropriate to its driver, but testing every connection expensively before every query can itself become overhead. Consult versioned driver/database documentation for concrete settings.\n\nMisconceptions include treating connection count as throughput, assuming idle API CPU means the system has spare capacity, and forgetting release on cancellation. Optional practice: inspect a service's transaction boundaries and identify a remote call made while a transaction remains open."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and additional practice",
+      "markdown": "Core 55 minutes: retrieve prior concepts for 5, study explanation and diagrams for 18, work the trace for 8, exercise for 10, attempt Q1–Q3 for 10, compare reasoning and review cards for 4. Q4–Q5 are an optional practice bank. Estimates are illustrative; do not treat model output as a production benchmark."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "pool",
+      "title": "Where does excess concurrency wait?",
+      "source": "flowchart LR\nR[Incoming requests] -->|Bounded admission| Q[Pool acquisition queue]\nQ -->|Lease a free slot| P[Connection pool: limited slots]\nP -->|Execute query or transaction| DB[(Database capacity)]\nDB -->|Result and release| P\nQ -.->|Deadline expires| X[Reject or cancel waiting work]",
+      "caption": "The pool limits active dependency calls; it must also bound waiting work. A released slot is available to the next eligible request.",
+      "steps": [
+        "Admit only bounded waiting work.",
+        "Acquire a connection within the remaining deadline.",
+        "Execute a short operation while measuring dependency time.",
+        "Release on every path, or fail queued work when its budget is spent."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Twelve API replicas each have a forty-connection pool. A rolling deployment can add four extra replicas. The database allows 600 connections, with 100 reserved for other work. Calculate both aggregate ceilings and propose a safe deployment/concurrency budget. Explain what further measurement is needed.",
+    "rubric": [
+      "Compute480 and640 and compare against500 usable slots.",
+      "Include deployment surge in capacity budgeting.",
+      "Separate connection ceiling from useful database throughput."
+    ],
+    "solution": "Steady configured ceiling is12×40=480, below500 available application slots. During surge16×40=640, above the budget. Cap surge, reduce each pool to at most floor(500/16)=31, or enforce a shared connection budget/proxy with explicit behavior. A smaller limit still needs workload tests: measure pool wait, query duration, locks, CPU/I/O, and errors. The database maximum is an admission ceiling, not a promise of efficient execution at that concurrency."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What can a bigger pool do under database saturation?",
+      "options": [
+        "Always reduce total latency",
+        "Move waiting into the database and worsen contention",
+        "Create more disk bandwidth"
+      ],
+      "answer": "Move waiting into the database and worsen contention",
+      "explanation": "The constrained dependency remains finite."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Sixteen replicas with forty connections each have what configured ceiling?",
+      "answer": 640,
+      "unit": "connections",
+      "tolerance": 0.01,
+      "explanation": "16×40=640; include deployment surge."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "At500 queries/s and20 ms average query time, approximate in-flight queries?",
+      "answer": 10,
+      "unit": "queries",
+      "tolerance": 0.01,
+      "explanation": "500×0.020=10 under stable, matching measurement boundaries."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is raising the pool limit defensible?",
+      "answer": "When pool waits dominate while representative dependency measurements show spare capacity, with controlled load testing and aggregate connection budgeting.",
+      "explanation": "When pool waits dominate while representative dependency measurements show spare capacity, with controlled load testing and aggregate connection budgeting."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why avoid holding a transaction across an unrelated remote call?",
+      "answer": "It occupies a scarce connection and may retain locks while waiting on an uncertain dependency, increasing contention and failure exposure.",
+      "explanation": "It occupies a scarce connection and may retain locks while waiting on an uncertain dependency, increasing contention and failure exposure."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Pool purpose?",
+      "back": "Reuse connections and bound active dependency concurrency."
+    },
+    {
+      "front": "Aggregate pool ceiling?",
+      "back": "Per-instance pool size times maximum simultaneously running instances, plus other consumers."
+    },
+    {
+      "front": "Pool leak symptom?",
+      "back": "Usable slots decline and acquisition wait rises over time."
+    },
+    {
+      "front": "Stage deadline budget?",
+      "back": "Each wait/execution stage spends the same remaining request budget."
+    },
+    {
+      "front": "Connection count equals capacity?",
+      "back": "No. Useful throughput depends on execution and contention."
+    }
+  ],
+  "mentalModel": "A pool relocates and bounds waiting; it does not create dependency capacity.",
+  "sources": [
+    {
+      "title": "Google SRE — Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL 18 — Connection settings",
+      "url": "https://www.postgresql.org/docs/18/runtime-config-connection.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

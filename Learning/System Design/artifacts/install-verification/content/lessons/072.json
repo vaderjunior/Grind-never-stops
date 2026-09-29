@@ -1,0 +1,149 @@
+{
+  "id": "072",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Test a completed operation history against a register specification.",
+    "Distinguish real-time order from per-client program order.",
+    "Construct a sequentially consistent history that is not linearizable.",
+    "Separate consistency of individual operations from transaction isolation and read-modify-write atomicity."
+  ],
+  "retrieval": [
+    "L071: can a timeout place a definite commit point in a history?",
+    "L038: why does transaction terminology need a stated isolation contract?",
+    "L066: what user behavior can replication lag expose?"
+  ],
+  "sections": [
+    {
+      "id": "spec",
+      "title": "Start with the object before naming the guarantee",
+      "markdown": "Our object is a register x, initially 0. write(v) replaces its value and returns success. read() returns the value of the latest preceding write in the chosen legal sequential order, or 0 if none precedes it. This specification is tiny enough to check by hand. A queue, set, compare-and-swap register, and multi-object transaction each require different legal behavior.\n\nFor each operation record client, invocation, response, argument, and result. Draw an interval from invocation to response. Use a trusted harness order for the exercise; production machine timestamps may be skewed. The ordering question is whether the observed operations can be arranged into a legal sequential execution under the required constraints. Do not start by guessing whether the implementation is “strong.”\n\nUse 5 minutes retrieval, 20 history reasoning, 10 diagram walkthrough, 10 exercise, and 10 questions/cards. No consensus algorithm is needed yet; this lesson defines what one would need to provide."
+    },
+    {
+      "id": "linear",
+      "title": "Linearizability preserves non-overlapping real-time order",
+      "markdown": "Linearizability treats each operation as if it took effect at one instant inside its own invocation–response interval. The resulting sequential execution must satisfy the object specification. If operation A finishes before B begins, A must precede B. If they overlap, either order may be legal depending on the observed results. “Instantaneous” describes the external explanation, not the absence of internal network work.\n\nHistory H1: Alice writes 1 during [1,4]; Bob reads during [2,3] and returns 0. This can be linearizable: place Bob’s read before Alice’s write because their intervals overlap. Alice’s write could take effect near time 3.5. Bob is not necessarily entitled to see a write that was still in progress throughout his read.\n\nHistory H2: Alice writes 1 during [1,2]; Bob reads during [3,4] and returns 0. With no intervening write, this is not linearizable. Alice’s completed write must precede Bob’s invocation, and the register specification then demands 1. A response from a lagging replica explains how the history happened; it does not make the contract satisfied."
+    },
+    {
+      "id": "sequential",
+      "title": "Sequential consistency drops cross-client real-time constraints",
+      "markdown": "Sequential consistency requires one legal sequential execution preserving each client’s program order. It need not preserve the wall-time order between different clients. H2 is sequentially consistent if Alice and Bob each perform only that one operation: order Bob’s read before Alice’s write in the explanation. That explanation contradicts real time but not either client’s local sequence.\n\nNow H3 uses one client: Alice writes 1 successfully, then Alice reads 0, with no other writes. Per-client order forces the write before the read, so even sequential consistency fails. Asking “whose operation follows whose?” is essential. A stale result from another client and a stale result in the writer’s own program can differ in which guarantees they violate.\n\nFor a stronger test, let Alice execute write(x,1) then read(y)→0; Bob execute write(y,1) then read(x)→0, initially both zero. The first read requires Alice’s read before Bob’s write, and the second requires Bob’s read before Alice’s write. Combined with both program orders, these form a cycle. There is no single legal sequential order. This is an original two-register exercise; checking each register independently is insufficient to establish sequential consistency of the combined program."
+    },
+    {
+      "id": "overlap",
+      "title": "Work a history instead of using a slogan",
+      "markdown": "Consider write(1) [1,5], read→1 [2,3], read→0 [6,7]. The first read can observe the overlapping write, but the final read cannot return 0: the write completed before it began. One allowed explanation for the prefix does not excuse the later violation.\n\nCompleted operations simplify the exercises. A real trace may contain an invocation without a response. A checker needs a stated treatment for those pending operations; an uncertain write may have taken effect. Deleting every timed-out operation from a trace can falsely accuse or falsely clear an implementation. The optional small checker in labs/consistency handles completed well-formed histories only and reports that boundary explicitly.\n\nLinearizable read and write operations do not make a client-side increment atomic. Alice reads 0, Bob reads 0, Alice writes 1, Bob writes 1 is a perfectly legal linearizable register history. It loses an intended increment because the application required an atomic read-modify-write operation. Use an appropriate conditional or atomic increment contract, or a transaction whose actual guarantees enforce the invariant."
+    },
+    {
+      "id": "scope",
+      "title": "State the scope and what evidence establishes",
+      "markdown": "Serializability asks whether transactions have an equivalent serial execution; by itself it does not impose the same real-time constraint as strict serializability. Linearizability usually describes operations on concurrent objects. Do not use “ACID consistent,” “serializable,” and “linearizable” as interchangeable marketing words. State the unit: one key operation, a transaction over several keys, or a whole application workflow.\n\nA leader label also does not prove linearizability. A stale follower read, a resumed old leader, or an acknowledged write lost on failover can invalidate the promised histories. Conversely, a correct protocol can hide substantial internal replication work behind a legal operation interval. The contract is about allowed observations, so verification must include invocation and response events plus relevant failure cases.\n\nWhen explaining a design, say “a read begun after successful write completion must return that value or a later legal overwrite.” This is more assessable than “reads are up to date.” A finite passing test demonstrates the tested histories; it is not a proof over every schedule and failure. A single valid counterexample, however, disproves the claimed universal guarantee."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "histories",
+      "title": "Two different-client operations can separate the guarantees",
+      "source": "sequenceDiagram\nparticipant A as Alice\nparticipant X as Register x initially 0\nparticipant B as Bob\nA->>X: write 1 begins\nX-->>A: write succeeds\nNote over A,B: Write response precedes read invocation\nB->>X: read begins\nX-->>B: returns 0\nNote over A,B: Not linearizable<br/>Sequential order B-read then A-write is legal",
+      "caption": "The final note assumes each client performs only its one shown operation and there are no other writes. Sequential consistency can reorder these different-client operations across real time.",
+      "steps": [
+        "Record both operation intervals.",
+        "Real time forces write before read for linearizability.",
+        "The returned 0 then violates the register specification.",
+        "Removing cross-client real-time order permits the reversed sequential explanation."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "For an initially-zero register classify three completed histories: (A) P writes1 [1,4], Q reads0 [2,3]; (B) P writes1 [1,2], Q reads0 [3,4]; (C) P writes1 [1,2], then P reads0 [3,4]. For each, state linearizable and sequentially consistent yes/no, and supply an ordering or contradiction. Assume no other operations.",
+    "minutes": 10,
+    "rubric": [
+      "A allows overlapping read before write.",
+      "B rejects real-time order but permits different-client reversal.",
+      "C preserves P’s program order and rejects both.",
+      "Uses the register specification rather than replica labels."
+    ],
+    "solution": "A: yes/yes; order Q-read0 then P-write1, with the write linearization point after the read. B: no/yes; real time requires P-write1 before Q-read, but sequential consistency may order Q-read0 before P-write1. C: no/no; P’s own write precedes P’s read in both required orders, so return0 is illegal without a later overwrite."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A read overlapping write1 returns the previous value. Must linearizability be violated?",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "The overlapping read can precede the write’s linearization point."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which extra ordering does linearizability preserve beyond a legal sequential explanation?",
+      "options": [
+        "All network packet arrivals",
+        "Non-overlapping real-time operation order",
+        "Alphabetical client IDs"
+      ],
+      "answer": "Non-overlapping real-time operation order",
+      "explanation": "Response-before-invocation requires the earlier operation first."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why can two linearizable reads and two linearizable writes lose an increment?",
+      "answer": "Each operation is atomic but the combined read-modify-write sequence is not; both clients can read0 and later write1.",
+      "explanation": "Choose the correct atomic operation or transaction boundary."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is a timed-out write dangerous to omit from a checker?",
+      "answer": "It may have taken effect even though its response was not observed, affecting the legal explanation of subsequent reads.",
+      "explanation": "Pending-operation semantics must be part of the checker’s model."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does a finite passing history test prove all executions linearizable?",
+      "answer": "No. It verifies only the modeled observed histories; one counterexample can refute the guarantee, but finite success does not prove all schedules.",
+      "explanation": "Evidence must be scoped."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Linearization point?",
+      "back": "An explanatory instant within an operation’s invocation–response interval."
+    },
+    {
+      "front": "Overlapping operations?",
+      "back": "May be ordered either way if the resulting object behavior is legal."
+    },
+    {
+      "front": "Sequential consistency preserves?",
+      "back": "Each client’s program order within one legal sequential execution."
+    },
+    {
+      "front": "Linearizability additionally preserves?",
+      "back": "Real-time order of non-overlapping operations."
+    },
+    {
+      "front": "Atomic register increment?",
+      "back": "Separate read and write do not provide it."
+    },
+    {
+      "front": "How to disprove a history claim?",
+      "back": "Show no allowed ordering satisfies the object specification."
+    }
+  ],
+  "mentalModel": "A consistency guarantee is a rule for which sequential stories can explain observed operation intervals.",
+  "sources": [
+    {
+      "title": "Herlihy and Wing — Linearizability: A Correctness Condition for Concurrent Objects (1990)",
+      "url": "https://cs.brown.edu/~mph/HerlihyW90/p463-herlihy.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

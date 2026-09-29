@@ -1,0 +1,312 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 23,
+  "title": "Model registries, routing, rollout, and AI observability",
+  "level": "advanced",
+  "minutes": 60,
+  "id": "ai-platform-operations",
+  "summary": "Connect model versions, serving deployments, routing, rollout, and observability into a platform you can operate and explain.",
+  "objectives": [
+    "Separate a model registry from a running model server and a routing policy.",
+    "Plan a compatible model rollout using quality and operational evidence.",
+    "Choose signals for waiting, first-token delay, generation speed, cost, and correctness.",
+    "Explain overload, autoscaling delays, and fallback constraints."
+  ],
+  "terms": [
+    {
+      "term": "Model registry",
+      "definition": "A system for organizing model versions and associated metadata or lifecycle references; registration is not deployment."
+    },
+    {
+      "term": "Serving runtime",
+      "definition": "The process that loads a model and executes inference requests."
+    },
+    {
+      "term": "Control plane",
+      "definition": "The mechanisms that decide and configure desired deployment or routing state."
+    },
+    {
+      "term": "Data plane",
+      "definition": "The components that handle the actual inference requests and responses."
+    },
+    {
+      "term": "Canary rollout",
+      "definition": "A controlled introduction of a new version to limited traffic before broader use."
+    },
+    {
+      "term": "Time to first token",
+      "definition": "The time a caller waits until the first generated token is observed under a stated measurement boundary."
+    },
+    {
+      "term": "Token",
+      "definition": "A unit of text representation used by the model, which may be a word, part of a word, or another symbol."
+    },
+    {
+      "term": "Tokenizer",
+      "definition": "The model-compatible rules and software that turn text into token identities and interpret token output."
+    }
+  ],
+  "retrieval": [
+    "Why does adding a Pod not instantly create a ready model replica?",
+    "What is the difference between a normal response cache and attention KV cache?"
+  ],
+  "sections": [
+    {
+      "id": "story",
+      "title": "An approved model is not yet a running service",
+      "markdown": "A team approves model version 7 after evaluation. Its artifact exists, metadata is recorded, and an owner is known. A user still cannot necessarily send an inference request to it.\n\n| Responsibility | Question it answers | What it does not prove |\n| --- | --- | --- |\n| Registry | Which model version and evidence exist? | A running worker is ready |\n| Deployment machinery | Which workers should be running? | Every worker has finished loading |\n| Request router | Which eligible destination should receive this request? | The answer will be factually correct |\n\nA serving process must load the right artifact and configuration on suitable hardware, become ready, and receive routed traffic. “Version 7 exists” and “version 7 can serve this request now” are different facts.\n\nTools such as MLflow and KServe occupy useful parts of this picture, with capabilities that depend on the selected version and integration. Learn the responsibilities before memorizing product names. This chapter's platform is an original teaching design, not an employer's internal architecture."
+    },
+    {
+      "id": "registry",
+      "title": "Record an identity you can reproduce",
+      "markdown": "A useful deployment reference identifies the model artifact/version, relevant tokenizer, serving configuration, and compatible runtime. If an artifact label silently changes underneath a deployment, reproducing yesterday's behavior becomes difficult. Keep immutable identities or digests where appropriate and record the resolved version actually loaded.\n\nA friendly alias such as production can point to a chosen version, but the rollout record should retain the concrete target. Approval state is also a policy decision: who may promote a model, which evidence is required, and how is revocation enforced? A cached description is not necessarily an authoritative approval check.\n\nStore evaluation results, ownership, intended use, and relevant limitations alongside the version reference. An accuracy number without the evaluated dataset, scoring method, and comparison baseline is weak evidence. It may hide regressions for languages, tenants, or tasks that matter to the actual product."
+    },
+    {
+      "id": "planes",
+      "title": "Keep control changes separate from request execution",
+      "markdown": "An operator changes the desired replica count or promotes a version through the control plane. Controllers and deployment components reconcile that desired state with running workers. The data plane routes and executes inference using the resulting configuration and healthy capacity.\n\nA temporary registry or control API outage need not stop every already-loaded worker if the design permits them to continue with a known valid configuration. Conversely, a security revocation may require a stricter freshness path. Define what stale configuration means and when continued service is permitted.\n\nThe request router should know which versions, capabilities, and tenant policies are eligible. A model that fits one context length or modality may not support another. Readiness should reflect the ability to serve the intended workload, not merely an open TCP port."
+    },
+    {
+      "id": "rollout",
+      "title": "Warm capacity before sending it real demand",
+      "markdown": "A new replica may need hardware allocation, image startup, artifact download, model loading, and warm-up. Each stage can take time and fail. Keep enough existing capacity during a rollout, subject to cost and hardware availability, so removing the old version does not create a gap before the new one is ready.\n\nBegin with bounded canary traffic or an appropriate offline/shadow evaluation strategy. Shadow traffic can still consume expensive resources and expose sensitive inputs, so it needs an explicit data and cost policy. It must not duplicate downstream side effects merely because its response is hidden from the user.\n\nDefine rollout gates: service errors, latency, memory failures, quality checks, and important task-specific outcomes. A model can be operationally healthy while giving worse answers. Rollback also has limits: API/schema changes, tokenizer differences, or stored embeddings may be incompatible even if the old process still starts."
+    },
+    {
+      "id": "metrics",
+      "title": "Measure waiting and generation separately",
+      "markdown": "A streamed answer has several clocks. State where each clock starts and ends.\n\n| Measurement | Boundary | User-facing question |\n| --- | --- | --- |\n| Queue wait | Accepted into queue → selected for execution | How long am I waiting for capacity? |\n| Time to first token | Stated request boundary → first output token | When does the response begin? |\n| Inter-token delay | One output token → the next | Does the stream proceed smoothly? |\n| End-to-end latency | Request start → completed response | When is the full result ready? |\n\nConsider a separate simplified sequential request:\n\n~~~text\n0.0 s: request enters queue\n0.3 s: queue wait ends; retrieval begins\n0.4 s: retrieval ends; initial model work begins\n1.0 s: first token reaches the chosen measurement point\n~~~\n\nThe first visible delay is 0.3 + 0.1 + 0.6 = 1.0 second in this model. Later output adds to completion time. If stages overlap, follow the actual critical path rather than adding overlapping durations.\n\nAlso track admitted/rejected work, queue age and depth, input/output tokens, cancellations, runtime errors, and out-of-memory failures. “GPU busy” is context, not evidence of a good experience: high throughput can coexist with an unacceptable first-token delay."
+    },
+    {
+      "id": "quality",
+      "title": "Service reliability and answer quality need different evidence",
+      "markdown": "HTTP success proves that the service returned according to its API contract; it does not establish factuality, relevance, permission correctness, or task success. Maintain representative evaluation cases with explicit scoring rules, expected boundaries, and a way to inspect regressions.\n\nFor retrieval-augmented generation, evaluate retrieval relevance and permission filtering as well as the final answer. A fluent answer based on another tenant's document is a serious failure even if latency and token throughput look excellent. Test deleted or revoked content and stale indexes.\n\nPrefer data minimization in observability. Request identifiers, model version, token counts, timing, and categorized errors can often support diagnosis without logging full prompts. Where content sampling is justified, use consent/policy, access restrictions, redaction, and retention suitable for the data. Do not place user text in unbounded metric labels."
+    },
+    {
+      "id": "capacity",
+      "title": "Autoscaling responds slowly to some demand",
+      "markdown": "A spike can arrive faster than new model replicas become ready. A queue temporarily buffers work, but it cannot create GPU capacity. Estimate whether available workers can drain the backlog within the product's waiting-time objective. Bound accepted work, enforce appropriate rate/token/concurrency budgets, and return honest overload behavior.\n\nScaling signals should reflect the bottleneck. A CPU-based web autoscaler may add API Pods while inference workers remain saturated. A growing queue and high request age can be more relevant, but the scaling policy still needs suitable nodes, quotas, model-loading time, and an upper cost limit.\n\nDifferent models and request sizes consume different resources. One large-context request may occupy memory or execution capacity differently from many short requests. A fair scheduler may need tenant budgets and workload classes rather than treating every request as equal. Keep the initial policy simple enough to measure and explain."
+    },
+    {
+      "id": "fallback",
+      "title": "A fallback changes product behavior",
+      "markdown": "When a preferred model is unavailable, routing to a smaller model can improve availability if the product permits its quality and capability differences. It may be unsuitable for a task requiring a specific approved version, privacy location, modality, or output contract. Document when a fallback is allowed and how it is reported.\n\nRetrying after a streaming response has begun can duplicate text or repeat tool effects. Distinguish a transport retry from restarting a generation and from repeating an external action. Preserve operation identities and reconcile uncertain side effects when the workflow includes tools.\n\nFor long-running batch work, pausing and resuming may be preferable to silently changing the model mid-job. Store the resolved model version with each task so results remain explainable. Availability is useful only when the returned behavior still meets the agreed product contract."
+    },
+    {
+      "id": "drill",
+      "title": "Run a small operating drill",
+      "markdown": "Use a small incident table to decide what evidence changes your action.\n\n| Incident | Inspect first | Bounded response to evaluate |\n| --- | --- | --- |\n| New version is ready but answers regress | Version, affected evaluation slice, traffic cohort | Stop promotion and compare quality evidence |\n| Worker disappears during a stream | Last client-visible output and any external effects | Report interruption; apply the stated retry policy |\n| Demand arrives before new workers are ready | Queue age, admission rate, available suitable hardware | Bound admission while checking whether capacity can arrive |\n\nFor each incident, name a recovery check. “Add monitoring” is incomplete; “verify that excess work is rejected before the queue exceeds its waiting-time objective” is testable.\n\n**Pause and predict:** API Pods double, but the oldest inference request keeps getting older. Which component actually executes the expensive work, and is its capacity increasing?\n\nIn an interview, connect each operational decision to a fundamental: identity and quotas admit work, schedulers control waiting, runtimes consume finite memory and compute, and version records make changes explainable. Service health and answer quality need separate evidence."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "planes",
+      "title": "Configuration and serving have different paths",
+      "source": "flowchart TB\nR[Registry: immutable model version and metadata] --> C[Control plane: deployment and routing policy]\nC -.-> W[Ready serving workers]\nC -.-> G[Request router]\nU[Authorized client request] --> G\nG --> Q[Bounded scheduler]\nQ --> W\nW --> O[Streamed result and measured outcome]",
+      "caption": "Dashed arrows configure behavior; solid request arrows describe the serving path.",
+      "steps": [
+        "Resolve a reproducible model version.",
+        "Deploy and verify ready capacity.",
+        "Route allowed requests to eligible workers.",
+        "Measure both service behavior and answer quality."
+      ],
+      "sectionId": "planes"
+    },
+    {
+      "id": "canary",
+      "title": "Promotion needs more than a healthy process",
+      "source": "flowchart LR\nV[Candidate version] --> E[Offline evaluation]\nE --> W[Warm compatible runtime]\nW --> C[Bounded canary traffic]\nC --> G{Quality and operating gates pass?}\nG -->|Yes| P[Expand traffic gradually]\nG -->|No| R[Stop and recover safely]",
+      "caption": "Rollbacks must account for data, tokenizer, and interface compatibility as well as process health.",
+      "steps": [
+        "Evaluate before live exposure.",
+        "Load capacity before shifting demand.",
+        "Observe limited traffic with defined gates.",
+        "Promote or recover using recorded evidence."
+      ],
+      "sectionId": "rollout"
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Version 7 gives better offline results but doubles first-token delay for long prompts. Design a limited rollout and name four signals, two quality checks, an overload policy, and a rollback constraint. Use a concrete tenant workload.",
+    "rubric": [
+      "Quality and latency evidence are separate.",
+      "Canary scope and promotion gates are explicit.",
+      "Capacity and rollback compatibility are considered."
+    ],
+    "solution": "For an internal report assistant, keep a bounded tenant-approved canary on version 7 while most traffic remains on the prior compatible version. Measure queue age, first-token latency by input-length bucket, output pace, and memory/runtime errors. Evaluate report factuality/citation support and tenant permission correctness on representative cases. Limit accepted work and concurrent long prompts when waiting exceeds budget. Promote only after both quality and operating gates pass. Verify tokenizer/API/output and stored-data compatibility before rollback; do not assume a running old process can read every new artifact."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Registering a model version proves it is loaded and ready to serve?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with an alias"
+      ],
+      "answer": "No",
+      "explanation": "Artifact/version metadata, deployment, readiness, and routing are distinct responsibilities."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Sequential queue 0.6 s + retrieval 0.2 s + first-token work 0.4 s totals what?",
+      "answer": 1.2,
+      "unit": "seconds",
+      "explanation": "0.6 + 0.2 + 0.4 = 1.2 under the stated nonoverlapping trace.",
+      "tolerance": 0.001
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "An HTTP success response proves an AI answer is factually correct?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with a large model"
+      ],
+      "answer": "No",
+      "explanation": "Service outcome and task/answer quality require different evidence."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might adding API Pods fail to improve inference latency?",
+      "answer": "The bottleneck may remain GPU memory/compute or model scheduling; new model capacity also needs suitable hardware and loading time.",
+      "explanation": "The bottleneck may remain GPU memory/compute or model scheduling; new model capacity also needs suitable hardware and loading time."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can a fallback model be unacceptable?",
+      "answer": "It may violate required capabilities, quality, approved version, location/privacy, or output semantics even if it improves service availability.",
+      "explanation": "It may violate required capabilities, quality, approved version, location/privacy, or output semantics even if it improves service availability."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Registry versus runtime?",
+      "back": "Version/artifact metadata versus a loaded process executing inference."
+    },
+    {
+      "front": "Control plane versus data plane?",
+      "back": "Configure desired behavior versus handle actual requests."
+    },
+    {
+      "front": "Useful streaming timing signals?",
+      "back": "Queue age, time to first token, inter-token pace, and total duration."
+    },
+    {
+      "front": "A healthy model endpoint proves quality?",
+      "back": "No; evaluate task outcomes and permission correctness separately."
+    },
+    {
+      "front": "Scale-out limit?",
+      "back": "Hardware availability and model startup can lag demand; bound admitted work."
+    }
+  ],
+  "mentalModel": "Operate the model as a versioned, resource-limited dependency whose answers need their own quality evidence.",
+  "sources": [
+    {
+      "title": "MLflow — Model Registry",
+      "url": "https://mlflow.org/docs/latest/ml/model-registry/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "KServe — System architecture",
+      "url": "https://kserve.github.io/website/docs/concepts/architecture",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "OpenTelemetry — Observability signals",
+      "url": "https://opentelemetry.io/docs/concepts/signals/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "candidate-to-serving",
+      "title": "Follow a candidate from registry to limited traffic",
+      "sectionId": "rollout",
+      "intro": "In this illustrative rollout, version 9 is a compatible candidate and version 8 currently serves users. The record changes before routing should change.",
+      "steps": [
+        {
+          "title": "Register the evaluated candidate",
+          "explanation": "The version has an immutable artifact reference and evaluation evidence. Registration alone does not create a ready serving process.",
+          "state": [
+            {
+              "label": "Candidate",
+              "value": "version 9 registered"
+            },
+            {
+              "label": "Ready version 9 workers",
+              "value": "0"
+            },
+            {
+              "label": "User traffic",
+              "value": "version 8"
+            }
+          ]
+        },
+        {
+          "title": "Load and warm a worker",
+          "explanation": "Deployment machinery starts compatible capacity. Downloading or loading is not sufficient for routing eligibility.",
+          "state": [
+            {
+              "label": "Candidate worker",
+              "value": "loading, then warming"
+            },
+            {
+              "label": "Routing eligibility",
+              "value": "not ready yet"
+            },
+            {
+              "label": "Existing capacity",
+              "value": "version 8 retained"
+            }
+          ]
+        },
+        {
+          "title": "Admit a bounded canary",
+          "explanation": "After the readiness checks pass, a small defined share of compatible traffic reaches the candidate. Evidence is collected for the chosen gate window.",
+          "state": [
+            {
+              "label": "Candidate worker",
+              "value": "ready"
+            },
+            {
+              "label": "Traffic policy",
+              "value": "bounded canary share"
+            },
+            {
+              "label": "Promotion state",
+              "value": "gates under observation"
+            }
+          ]
+        },
+        {
+          "title": "Expand only with the required evidence",
+          "explanation": "When the predefined operating and quality gates pass, traffic can increase gradually. A failed gate would stop expansion instead.",
+          "state": [
+            {
+              "label": "Gate result",
+              "value": "passes for this observed window"
+            },
+            {
+              "label": "Traffic policy",
+              "value": "gradual expansion"
+            },
+            {
+              "label": "Recovery option",
+              "value": "compatible version 8 capacity retained"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Registry state, worker readiness, and routing state are different. Promotion is a policy decision supported by evidence, not a side effect of uploading a model."
+    }
+  ]
+}

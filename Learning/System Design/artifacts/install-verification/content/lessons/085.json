@@ -1,0 +1,116 @@
+{
+  "id": "085",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Present an explicit contract and defend decisions with a failure history.",
+    "Distinguish known facts, assumptions and uncertain outcomes.",
+    "Produce a testable repair or design using the preceding module."
+  ],
+  "retrieval": [
+    "Retrieve the relevant mechanism from L081 before starting; do not open its solution during the attempt.",
+    "Retrieve the relevant mechanism from L082 before starting; do not open its solution during the attempt.",
+    "Retrieve the relevant mechanism from L083 before starting; do not open its solution during the attempt."
+  ],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate brief",
+      "markdown": "A three-voter metadata service uses a leader and two followers. Its API promises that a successful update will remain visible after one node crashes, and that a later fresh read sees it. The implementation returns success immediately after the leader writes its local buffer and sends replication messages. An incident shows a successful update disappearing after a leader restart. You receive the failure trace during the interview. Diagnose the unsafe acknowledgement rule, propose a minimal repair, and defend the behavior during a partition. Do not replace the system with a list of products; reason about the exact commit and application boundaries."
+    },
+    {
+      "id": "workflow",
+      "title": "Run a bounded interview",
+      "markdown": "Scheduled 60 minutes. Use the Interview center to start interview_017, or copy its AI interviewer instruction into a connected MCP client. Coaching mode permits requested hints; exam mode begins with this brief and lets you ask clarifying questions. The engine records hint use and supports pause/resume. Record actual diagrams, estimates and answers in the session notebook; do not rely on an AI chat transcript being visible automatically.\n\nSuggested allocation: scope and facts5, initial reasoning15, detailed mechanism15, changed condition10, verification and summary10, reflection5. Ask the interviewer for one question at a time. Name your assumptions before using numbers, show a concrete operation history, and identify the authority that enforces each guarantee. It is acceptable to revise a decision when a new fact arrives; explain why the requirement changes its justification."
+    },
+    {
+      "id": "evidence",
+      "title": "Submission and feedback contract",
+      "markdown": "Before finishing, save your final explanation and any unresolved questions. Finish closes the answering phase without inventing a grade. Without a connected model, use explicitly labeled self assessment against the weighted course rubric. With an AI evaluator, require exact supporting excerpts from candidate turns and targeted lesson references.\n\nJudge the consistency of requirements, operation ordering, failure handling and tests. A polished diagram cannot compensate for acknowledging a result before the promised guarantee exists. After submission, compare your actual choices to the reference reasoning; alternatives may be defensible under different explicit assumptions. The score is educational evidence with uncertainty, not an assurance of a hiring outcome. Reattempt with the changed conditions after remediation, preserving the first attempt rather than overwriting history."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "The assessment records evidence, then reveals reference reasoning",
+      "source": "flowchart LR\nB[Candidate brief] --> C[Clarify one question at a time]\nC --> A[Save actual reasoning and artifacts]\nA --> F[Finish answering]\nF --> E[Evidence-based feedback]\nE --> D[Debrief and focused retry]",
+      "caption": "Reference reasoning stays separate while the attempt is active or paused. Actual candidate turns provide the evidence for feedback.",
+      "steps": [
+        "Start a stable interview definition.",
+        "Save the candidate’s actual decisions.",
+        "Close the answering phase.",
+        "Compare with references and plan a focused retry."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 40,
+    "prompt": "Complete the interview in the session notebook. Submit a requirements statement, one operation/failure trace, the proposed mechanism, and an executable or precisely specified acceptance test.",
+    "rubric": [
+      "Makes the contract explicit.",
+      "Shows authority and operation order.",
+      "Addresses the given failure condition.",
+      "Uses evidence rather than product-name lists."
+    ],
+    "solution": "The violated contract is acknowledged durability/visibility, not merely slow replication. In the trace, success crossed no durable consensus boundary: A buffered index11, attempted transmission, and replied before any required persistence acknowledgement. A crash can therefore erase the only copy, and a later valid quorum has no obligation to preserve an entry it never durably received. The smallest counterexample is the supplied five-event history: receive, buffer/send, success, crash-before-persistence, later read40.\n\nRepair the result path using the protocol, not by sleeping. Persist the leader’s entry and relevant protocol state as required; replicate onto matching follower prefixes; wait for sufficient durable follower acknowledgement to establish a majority for a current-term entry; mark it committed and apply it in order; then return the promised application result. In a three-voter fixed group, a durable leader plus one durable follower can provide the majority. Waiting for all three is unnecessary for the stated single-failure goal and would reduce availability during one follower outage. Conversely, sending to two peers is not equivalent to receiving two durable replies.\n\nExplain the current-term qualification. Raft does not directly infer commitment of an older-term entry from replica count alone; a current-term committed entry establishes commitment of its preceding prefix under the log rules. A repair that implements only a naked counter and ignores election freshness, persisted votes and conflicting suffix repair is still incomplete. Reuse a tested consensus implementation in a real product; this exercise audits its acknowledgement integration rather than building Raft in an hour.\n\nFor the partition change, B/C can form a majority and elect later-term authority under the protocol. A’s old local belief does not permit it to acknowledge new authoritative writes. It should reject or redirect, and only expose a stale read under a clearly distinct weaker contract. A fresh read needs current-authority evidence and sufficient applied-state progress, so a local is_leader flag is insufficient after isolation.\n\nFor the lost-response change, the command may already be committed and applied. A retry must use the same logical request identity, with a request fingerprint and retained result, so a repeated mutation does not execute twice. A changed payload under r17 should conflict. The result table belongs to the state machine’s recovery state and must survive snapshots/restarts under the chosen retry-retention contract.\n\nVerification should inject failure at named boundaries: before local persistence, after local persistence but before majority, after majority before client reply, and after reply. Precommit failures may leave an uncertain/uncommitted operation; after a promised successful reply the new leader must preserve the update. Capture invocation/response histories and check a later fresh read. Add minority-isolation tests and restart tests that confirm persisted votes/logs rather than only process uptime.\n\nObserve durable append latency, follower acknowledgement latency, commit-to-apply lag, term changes, pending proposals and client retries. These distinguish protocol progress from storage stalls. Security should authenticate cluster membership and protect the update API, but adding TLS would not repair the ordering defect itself. A defensible alternative may relax the original API to acknowledge only receipt, yet that changes the product promise and must be named rather than quietly implemented."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "open",
+      "prompt": "After the attempt, which assumption most changed your design?",
+      "answer": "Name an actual assumption from the saved conversation and explain its effect on one mechanism.",
+      "explanation": "Name an actual assumption from the saved conversation and explain its effect on one mechanism."
+    },
+    {
+      "id": "q2",
+      "type": "open",
+      "prompt": "What is your smallest counterexample to the unsafe alternative?",
+      "answer": "Provide an ordered history showing a violated stated invariant, and a check that catches it.",
+      "explanation": "Provide an ordered history showing a violated stated invariant, and a check that catches it."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Which part of your answer needs a focused retry?",
+      "answer": "Select the lowest-supported rubric dimension and write a short changed-constraint exercise.",
+      "explanation": "Select the lowest-supported rubric dimension and write a short changed-constraint exercise."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Assessment evidence?",
+      "back": "Actual saved reasoning, estimates, diagrams and tests."
+    },
+    {
+      "front": "Timeout means?",
+      "back": "The caller does not know the outcome; it may have occurred."
+    },
+    {
+      "front": "A valid alternative?",
+      "back": "One justified against explicit assumptions and a matching guarantee."
+    },
+    {
+      "front": "Hint use?",
+      "back": "Recorded as assistance, not hidden from interpretation."
+    },
+    {
+      "front": "Debrief goal?",
+      "back": "Find a specific reasoning gap and practise it under changed constraints."
+    }
+  ],
+  "mentalModel": "Defend a guarantee with an operation history and a test that would expose its violation.",
+  "sources": [
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "etcd v3.5 API guarantees: revisions, watches, leases and consistency modes",
+      "url": "https://etcd.io/docs/v3.5/learning/api_guarantees/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+# Authoring and review
+
+The primary learning course is now the76-chapter `content/guides/` path. The latest user examples require broad foundations with definitions, concrete traces, tool roles, access-pattern examples, analogies with limits, common mistakes, and worked answers. Early practice checks one component at a time. Chapter counts and word counts alone never establish teaching quality. The numbered300-session library is a separate partial reference collection.
+
+Guide structural checks are `npm run validate:guides` and `npm run validate:illustrated`; the walkthrough schema and visual teaching rules are in [ILLUSTRATED_TEACHING.md](ILLUSTRATED_TEACHING.md); per-file hashes and state are in `content/guide-status.json`. Independent AI review evidence is in `artifacts/guide-review-*.json`, and diagram/browser execution is recorded separately. `content/guide-review-status.json` binds those review records to current file hashes. Recompute it after content changes; do not silently preserve a passed review for a different file. This is editorial evidence, not learner outcome validation.
+
+Author each source session with its exact ID and activity type. Preserve paired designs and scheduled time. Use original explanations, diagrams, calculations, bounded exercises with worked solutions, and meaningful question distractors. Do not generate generic paragraphs by substituting titles. Preparing JSON with a script is acceptable when every body is individually authored; it is not evidence of review.
+
+Teaching JSON uses objectives, retrieval, sections with stable IDs/Markdown, Mermaid diagrams with captions/steps, one bounded exercise with a rubric and solution, choice/numeric/open questions, a mental model, flashcards, and claim-relevant sources. Numeric answers specify units and an absolute tolerance. Choice answers exactly match an option string. Open responses are never graded by keywords.
+
+Assessment sessions have a candidate package and a separate interview definition. Keep reference reasoning, hints, changed requirements, and debrief private. Map stable interview IDs from the manifest; never renumber them when authoring later modules. Early sessions should use already-taught concepts.
+
+Normal pacing: retrieval 5, explanation 18, worked example 8, exercise 10, scheduled questions 10, solution/cards 4 minutes. Label optional questions and depth. A diagram must answer a question, use consistent state owners and acknowledgment order, and include an accessible explanation. Store executable examples separately with deterministic tests, dependencies, commands, expected output, and actual execution evidence. Label code sketches/simulations accurately.
+
+Review checklist: does the mechanism preserve the stated invariant? Do failures and uncertain outcomes match the guarantee? Are arithmetic units/assumptions correct? Does every question have an explained answer and plausible alternatives? Is exercise scope bounded? Are diagrams consistent with code and text? Are sources read and version-sensitive claims checked? Does material connect to specific prerequisites? Is the prose substantive rather than repeated filler?
+
+Run `npm run validate:content`. It generates content/content-status.json without awarding editorial review. An actual review record in content/reviews/NNN.json must name the current file SHA-256, result pass, and concrete evidence. Only matching reviewed content is counted reviewed. Full validated status additionally requires execution/diagram/browser evidence and is never inferred from word count.

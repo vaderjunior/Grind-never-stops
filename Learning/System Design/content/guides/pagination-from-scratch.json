@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "level": "beginner",
+  "id": "pagination-from-scratch",
+  "week": 3,
+  "title": "Pagination: read a large list in small, reliable pieces",
+  "minutes": 45,
+  "summary": "Use six rows to understand page size, offsets, cursors, ties, and changing data. A list API is a contract about order and continuation.",
+  "objectives": [
+    "Explain why list responses need a bound.",
+    "Trace an offset page and a cursor page through changing rows.",
+    "Choose a stable ordering and explain what pagination does not guarantee."
+  ],
+  "terms": [
+    {
+      "term": "Pagination",
+      "definition": "Returning a large result in bounded pieces."
+    },
+    {
+      "term": "Offset",
+      "definition": "A number of matching rows to skip before returning a page."
+    },
+    {
+      "term": "Cursor",
+      "definition": "A continuation value that identifies a place in an ordered result."
+    },
+    {
+      "term": "Tie-breaker",
+      "definition": "An additional ordering field that makes equal primary values unambiguous."
+    },
+    {
+      "term": "Snapshot",
+      "definition": "A view of data from a defined point or consistency boundary, rather than an automatically changing live list."
+    }
+  ],
+  "retrieval": [
+    "What do ORDER BY and LIMIT do? Why might an index help a query that lists one owner’s notes?"
+  ],
+  "sections": [
+    {
+      "id": "bound",
+      "title": "A small screen does not need every row",
+      "markdown": "Imagine a user has 100,000 notes. Their phone can initially show only twenty titles. Returning every note would transfer unnecessary bytes and make the server and phone do work the current screen does not need.\n\nThe API can return a page of twenty plus a continuation value. The next request asks for the next piece.\n\n```json\n{\"items\":[{\"id\":60},{\"id\":50}],\"next\":\"after-50\"}\n```\n\nThis tiny teaching response uses a readable cursor label. A real API may encode or sign its continuation state. It should still validate limits and filters on the server.\n\n| Decision | A possible contract |\n| --- | --- |\n| Default page size | 20 rows |\n| Maximum page size | 100 rows |\n| Order | Newest immutable creation time, then ID |\n| Completion | No next cursor means this traversal has no further page |\n\nDo not accept an unbounded client limit just because the interface usually requests twenty. The boundary protects resources even when a client behaves differently."
+    },
+    {
+      "id": "offset",
+      "title": "Count how many rows to skip",
+      "markdown": "For an easy example, sort these immutable IDs from largest to smallest:\n\n```text\n60, 50, 40, 30, 20, 10\nPage size = 2\nPage 1: skip 0 → 60, 50\nPage 2: skip 2 → 40, 30\n```\n\nThat is offset pagination. It is easy to understand and can suit small administrative lists.\n\nNow insert ID 70 before fetching page two. The list becomes 70, 60, 50, 40, 30, 20, 10. Skipping two now returns **50, 40**. The client has already seen 50.\n\nThe offset did not remember an item. It remembered a count of positions in a result that later changed. A deletion before the boundary can shift rows in the other direction and cause a skip.\n\n> **Pause and predict:** if your list changes often, does increasing the page size fix that boundary problem? It changes the amount of work, but it does not make a position count stable."
+    },
+    {
+      "id": "cursor",
+      "title": "Continue after a value instead of after a count",
+      "markdown": "For our descending ID example, the first page ends at 50. The next request asks for IDs **less than 50**, still in descending order, with limit two.\n\n```sql\nSELECT id, title\nFROM notes\nWHERE owner_id = 7 AND id < 50\nORDER BY id DESC\nLIMIT 2;\n```\n\nIt returns 40, 30 whether or not 70 was inserted before the boundary. This is often called keyset pagination. An appropriate index, such as one beginning with owner and ID for this query, can help seek to the relevant region.\n\nThat does not mean every cursor is automatically fast. The actual filter, ordering, index, and database plan still matter. Nor does it mean the new ID 70 appears in this existing traversal; the user may refresh to see newly added items.\n\nThe worked example below keeps the page boundary visible so you can compare the two policies directly."
+    },
+    {
+      "id": "ties",
+      "title": "Equal timestamps need one more field",
+      "markdown": "A real notes app may sort by creation time. Two notes can share the same timestamp, so time alone is not always a complete ordering.\n\n| Created at | ID | Descending position |\n| --- | --- | --- |\n| 12:00:00 | 52 | First |\n| 12:00:00 | 51 | Second |\n| 11:59:59 | 50 | Third |\n\nUse both creation time and ID in the order. A continuation after the second row must carry both boundary values. Its condition means “an earlier time, or that same time and a smaller ID.”\n\nIf you carry only the time, a page boundary can lose some rows with equal timestamps. If you sort by an editable field, rows can move across your cursor while you traverse. Immutable ordering fields simplify the contract, but do not provide a complete snapshot by themselves."
+    },
+    {
+      "id": "contract",
+      "title": "Name the promises the cursor does not make",
+      "markdown": "A cursor is a place to continue, not a permission slip. Every request still checks the caller's access to the rows. A token should be bound to its intended filters and sort order; otherwise a client may continue a different query accidentally or maliciously.\n\nPagination also does not automatically freeze a changing dataset. When an export needs an exact, consistent view, the system needs a snapshot or another explicitly defined export strategy. That is a stronger requirement than “show the next twenty current notes.”\n\n| Need | Candidate starting approach |\n| --- | --- |\n| Small stable admin list with page numbers | Bounded offset pagination |\n| Large changing feed traversed sequentially | Cursor over a suitable stable order |\n| Exact consistent report | Defined snapshot/export workflow |\n\n**Interview phrasing:** “I would specify ordering, a maximum page size, and continuation semantics. A cursor helps traverse this indexed order, but it does not replace authorization or promise a frozen dataset.” This explains the behavior instead of just naming pagination."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "page-request",
+      "sectionId": "bound",
+      "title": "One page at a time",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant A as List API\nparticipant D as Database\nC->>A: First page, limit 2\nA->>D: Ordered bounded query\nD-->>A: 60 and 50\nA-->>C: Items and cursor after 50\nC->>A: Next page after 50",
+      "caption": "The readable cursor stands for a documented continuation contract. Authorization occurs on every request.",
+      "steps": [
+        "Request a bounded first page.",
+        "Return its rows and a continuation value.",
+        "Use the continuation for the next request."
+      ]
+    },
+    {
+      "id": "cursor-choice",
+      "sectionId": "cursor",
+      "title": "Insertion before the boundary changes an offset",
+      "source": "flowchart TD\nA[First page: 60 and 50] --> I[Insert new row 70]\nI --> O[Offset: skip first two current rows]\nI --> K[Keyset: IDs below 50]\nO --> X[Returns 50 and 40]\nK --> Y[Returns 40 and 30]",
+      "caption": "This example orders immutable integer IDs descending. General cursor designs need complete ordering and explicit update behavior.",
+      "steps": [
+        "The first page ends at ID 50.",
+        "An insertion shifts current row positions.",
+        "A value boundary remains below ID 50."
+      ]
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "moving-boundary",
+      "sectionId": "cursor",
+      "title": "Follow an insertion between page requests",
+      "intro": "Page size is two. We compare the same requests against a deliberately small changing list.",
+      "steps": [
+        {
+          "title": "Read the first page",
+          "explanation": "Both policies begin with the same two rows.",
+          "state": [
+            {
+              "label": "List",
+              "value": "60, 50, 40, 30, 20, 10"
+            },
+            {
+              "label": "Seen",
+              "value": "60, 50"
+            },
+            {
+              "label": "Boundary",
+              "value": "Offset 2; cursor 50"
+            }
+          ]
+        },
+        {
+          "title": "A new item arrives",
+          "explanation": "The new item moves every old position one place to the right.",
+          "state": [
+            {
+              "label": "List",
+              "value": "70, 60, 50, 40, 30, 20, 10"
+            },
+            {
+              "label": "Seen",
+              "value": "60, 50"
+            },
+            {
+              "label": "Cursor",
+              "value": "Still 50"
+            }
+          ]
+        },
+        {
+          "title": "Fetch the next piece",
+          "explanation": "The keyset request follows the saved value boundary. The offset request counts current positions.",
+          "state": [
+            {
+              "label": "Offset",
+              "value": "50, 40 — repeats 50"
+            },
+            {
+              "label": "Keyset",
+              "value": "40, 30"
+            },
+            {
+              "label": "New item",
+              "value": "70 appears on refresh"
+            }
+          ]
+        }
+      ],
+      "takeaway": "An offset tracks a position count; a keyset cursor tracks a value in a defined order."
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "IDs are 90, 80, 70, 60, 50 in descending order. Page one returns 90, 80. Before page two, row 90 is deleted. Compare offset 2 with a keyset condition id < 80. Explain which row an offset traversal misses.",
+    "rubric": [
+      "Trace the current list after deletion.",
+      "Calculate each page from its actual rule.",
+      "Name the missing row and avoid promising full snapshot semantics."
+    ],
+    "solution": "After deletion the current list is 80, 70, 60, 50. Offset 2 skips 80 and 70, then returns 60 and 50, so the traversal misses 70. The keyset condition id < 80 returns 70 and 60 and continues from the known value boundary. This example benefits from immutable IDs and a consistent descending order. It does not prove the entire traversal is a frozen snapshot: other records may be deleted or become inaccessible, and updates to an ordering field require a defined policy."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why bound a list response?",
+      "options": [
+        "To reduce unnecessary work and transfer",
+        "To remove authorization",
+        "To make all databases identical"
+      ],
+      "answer": "To reduce unnecessary work and transfer",
+      "explanation": "A page should match useful work and have a server-enforced maximum."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "After IDs 12 and 11 in descending order, which keyset condition continues below the boundary?",
+      "options": [
+        "id < 11",
+        "id > 12",
+        "Skip any random two rows"
+      ],
+      "answer": "id < 11",
+      "explanation": "The next page continues below the last returned value."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Several records share a timestamp. What does a stable cursor need?",
+      "options": [
+        "Only the timestamp",
+        "A complete order including a tie-breaker",
+        "No ORDER BY"
+      ],
+      "answer": "A complete order including a tie-breaker",
+      "explanation": "The boundary must distinguish tied rows."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why must authorization run for a cursor request?",
+      "answer": "The cursor describes continuation, not permission. Access can differ between users or change between requests.",
+      "explanation": "The cursor describes continuation, not permission. Access can differ between users or change between requests."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does keyset pagination automatically give an exact snapshot export?",
+      "answer": "No. A changing dataset can still be updated or deleted. Exact export consistency needs its own defined strategy.",
+      "explanation": "No. A changing dataset can still be updated or deleted. Exact export consistency needs its own defined strategy."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Offset?",
+      "back": "A count of matching rows to skip in the current result."
+    },
+    {
+      "front": "Keyset cursor?",
+      "back": "A boundary value in a complete ordering."
+    },
+    {
+      "front": "Why add an ID to timestamp ordering?",
+      "back": "To break equal-time ties unambiguously."
+    },
+    {
+      "front": "Cursor equals authorization?",
+      "back": "No; every request still enforces access."
+    },
+    {
+      "front": "Pagination equals snapshot?",
+      "back": "No; snapshot consistency is a separate contract."
+    }
+  ],
+  "mentalModel": "A page needs a size, an order, and a way to continue. State what happens when the list changes.",
+  "sources": [
+    {
+      "title": "PostgreSQL: LIMIT and OFFSET",
+      "url": "https://www.postgresql.org/docs/18/queries-limit.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL: row comparisons",
+      "url": "https://www.postgresql.org/docs/18/functions-comparisons.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

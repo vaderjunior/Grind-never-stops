@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "014",
+  "objectives": [
+    "Distinguish safe, idempotent, and cacheable semantics.",
+    "Design retry behavior from the operation contract.",
+    "Use status codes and conditional writes to make failures interpretable."
+  ],
+  "retrieval": [
+    "L012: what is uncertain when a response is lost?",
+    "L002: state an invariant for a create operation."
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Retrying is a semantic decision",
+      "markdown": "A mobile client sends an order creation request, waits, and loses its connection. The server might have rejected it, committed it, or never received it. A status code would help only if the response arrived. HTTP supplies a common vocabulary, but the application contract must resolve uncertain effects. Start by saying what the request means, not by choosing a fashionable endpoint name.\n\nA resource-oriented API can expose a stable order identity and a separate processing state. A response that accepts work should not pretend the asynchronous work is finished. A deletion that already happened can still satisfy the client's desired end state."
+    },
+    {
+      "id": "semantics",
+      "title": "Three properties that do not mean the same thing",
+      "markdown": "A safe method asks for behavior intended to be read-only, although incidental logging or accounting may occur. GET should not be used to trigger a business mutation because clients and intermediaries may prefetch or repeat it. An idempotent operation has the same intended effect when repeated as when performed once. Its responses need not be identical. Deleting an already absent resource may return a different status while leaving the same absence.\n\nPUT conventionally replaces the representation at a client-known target. Repeating the same representation can be idempotent. POST has resource-specific processing semantics and is not automatically idempotent. PATCH is not inherently idempotent: setting a field to a fixed value differs from incrementing it. Cacheability is another axis governed by method and response/request controls. An operation can be safe without every response being suitable for shared caching.\n\nStatus codes describe the server's response to a request. Use successful creation semantics such as 201 when a resource was created; 202 means accepted processing with unfinished outcome. A 409 can describe a state conflict. A failed precondition can use 412 when an explicit condition such as If-Match is false. Do not return 200 with an undocumented error string and expect generic clients to infer a failed operation."
+    },
+    {
+      "id": "trace",
+      "title": "Worked contract: an editable design note",
+      "markdown": "Suppose GET /notes/n7 returns a representation with ETag \"v3\". Two clients edit it. Client A sends a replacement with If-Match: \"v3\". The server atomically checks the current revision and writes v4. Client B then submits against v3 and receives a failed precondition. This prevents silent overwriting only if the version check and write are one atomic operation. A separate check followed by an unguarded write still has a race.\n\nFor a teaching database, the underlying conditional update could be:\n\n```sql\nUPDATE notes\nSET body = :body, version = version + 1\nWHERE id = :id AND tenant_id = :tenant AND version = :expected;\n```\n\nInterpret the affected-row count within the transaction and enforce tenant authorization. Zero rows can reflect a stale version or an unavailable/unauthorized resource; the API's disclosure policy determines what to reveal. This is a pattern sketch, not a complete HTTP server.\n\nFor POST /orders, an application-defined idempotency key can map repeated requests to a durable result. Bind it to the caller and a request fingerprint, reject key reuse with different input, and specify retention. HTTP does not implement this storage or atomicity for you."
+    },
+    {
+      "id": "failures",
+      "title": "Do not let intermediaries mutate your business",
+      "markdown": "A link checker that follows GET /delete-account can accidentally destroy state if the endpoint violates safe-method expectations. A client retrying a POST after timeout can create duplicates if the server lacks a repeat-safe contract. An API that returns 202 without a status resource leaves clients polling an outcome they cannot name.\n\nWrite explicit error fields: stable machine-readable code, safe human message, request identifier, and retry guidance where meaningful. Do not include stack traces or credentials in error responses. Set bounds on bodies and validate types before executing business logic. Authentication and authorization remain required even when the HTTP method is safe.\n\nThe misconception 'idempotent means the function returns the same bytes' would incorrectly reject a valid second DELETE that reports absence. The relevant property is the intended effect. Another misconception is that naming a POST field idempotency_key makes an operation safe: without atomic ownership and a stored result it is only a string."
+    },
+    {
+      "id": "budget",
+      "title": "Practice allocation",
+      "markdown": "Core: 5 minutes retrieval, 18 explanation/diagram, 8 conditional-write trace, 10 exercise, 10 Q1–Q3, 4 comparison. Q4–Q5 are optional. Advanced transaction isolation is deliberately deferred to M04."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "condition",
+      "title": "Where must a conditional write be atomic?",
+      "source": "sequenceDiagram\nparticipant A as Client A\nparticipant B as Client B\nparticipant S as Note API\nparticipant D as Authoritative database\nA->>S: PUT n7 with If-Match v3\nS->>D: Atomic update WHERE version = 3\nD-->>S: 1 row updated to v4\nS-->>A: Success with v4\nB->>S: PUT n7 with If-Match v3\nS->>D: Atomic update WHERE version = 3\nD-->>S: 0 rows updated\nS-->>B: 412 precondition failed",
+      "caption": "The acknowledgment follows the atomic conditional update. A read-then-write without a concurrency guard would not provide this behavior.",
+      "steps": [
+        "Both clients started from revision v3.",
+        "A updates only if the authoritative version still matches.",
+        "B cannot silently overwrite A with its stale revision.",
+        "B retrieves current state and consciously reconciles its edit."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Design create, retrieve, replace, and delete contracts for a saved note. Include the ambiguous timeout case and two concurrent editors. State method, path, success status, and one failure response for each. Do not implement a whole service.",
+    "rubric": [
+      "Do not mutate on GET.",
+      "Use a revision/precondition check atomically.",
+      "Explain create retry identity and conflicting key reuse."
+    ],
+    "solution": "POST /notes can create with a scoped idempotency key, returning 201 plus Location and durable ID. GET /notes/{id} returns 200 and an ETag after authorization. PUT /notes/{id} with If-Match replaces a known representation and returns 200/204 or 412 on stale revision. DELETE removes the target and may return 204 whether already absent under a chosen disclosure contract. Repeating a create with the same scoped key and fingerprint returns the stored outcome; differing input is a conflict. A timeout triggers status lookup/retry using that identity, not an unrelated new create."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A second DELETE returns a different status but leaves the resource absent. Is idempotence necessarily broken?",
+      "options": [
+        "Yes, responses must match",
+        "No, intended effect is the relevant property",
+        "Only if TLS was used"
+      ],
+      "answer": "No, intended effect is the relevant property",
+      "explanation": "Response equality and intended-effect idempotence are different."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which statement about PATCH is correct?",
+      "options": [
+        "Every PATCH is idempotent",
+        "No PATCH can be idempotent",
+        "It depends on the operation semantics"
+      ],
+      "answer": "It depends on the operation semantics",
+      "explanation": "Assigning a fixed value may be repeat-safe; incrementing a value is not inherently so."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "What does 202 Accepted establish?",
+      "options": [
+        "All processing completed durably",
+        "The request was accepted, with processing possibly unfinished",
+        "The client can ignore errors"
+      ],
+      "answer": "The request was accepted, with processing possibly unfinished",
+      "explanation": "Provide a way to observe the eventual operation outcome."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is check-version then unguarded update unsafe?",
+      "answer": "Another writer can change the version between the check and write. The check must participate in the atomic write/transaction.",
+      "explanation": "Another writer can change the version between the check and write. The check must participate in the atomic write/transaction."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When is PUT preferable to POST for creation?",
+      "answer": "When the client knows/chooses the target resource identity and replacement/create semantics fit. POST fits server-assigned identity or resource-specific processing. Neither removes authorization or concurrency requirements.",
+      "explanation": "When the client knows/chooses the target resource identity and replacement/create semantics fit. POST fits server-assigned identity or resource-specific processing. Neither removes authorization or concurrency requirements."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Safe?",
+      "back": "Intended business behavior is read-only."
+    },
+    {
+      "front": "Idempotent?",
+      "back": "Repeated identical requests have the same intended effect as one."
+    },
+    {
+      "front": "202?",
+      "back": "Accepted, but the final processing outcome may be pending."
+    },
+    {
+      "front": "If-Match purpose?",
+      "back": "Make a write conditional on the representation revision."
+    },
+    {
+      "front": "Idempotency key requirements?",
+      "back": "Scope, fingerprint, atomic ownership/effect/result, and documented retention."
+    }
+  ],
+  "mentalModel": "Describe the effect, identity, precondition, and uncertain outcome; then map that contract onto HTTP.",
+  "sources": [
+    {
+      "title": "RFC 9110 — method semantics and conditional requests",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "checked": "2026-09-29"
+    }
+  ]
+}

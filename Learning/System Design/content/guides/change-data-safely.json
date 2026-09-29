@@ -1,0 +1,294 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 22,
+  "title": "Migrations, event sourcing, and safe replay",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "change-data-safely",
+  "summary": "Change a live system without losing the writes that happen while you copy it. Learn what can be replayed, what must never be repeated, and when rollback stops being simple.",
+  "objectives": [
+    "Combine a consistent snapshot with a catch-up change stream.",
+    "Explain event sourcing without confusing it with a database backup or notification queue.",
+    "Define validation and rollback gates for a migration."
+  ],
+  "terms": [
+    {
+      "term": "Migration",
+      "definition": "A controlled change to storage layout, schema, or the system serving a responsibility."
+    },
+    {
+      "term": "Snapshot",
+      "definition": "A view of data at a defined point or consistency boundary."
+    },
+    {
+      "term": "Change data capture",
+      "definition": "A mechanism for observing changes committed to a source database."
+    },
+    {
+      "term": "Projection",
+      "definition": "A derived view calculated from authoritative state or events."
+    },
+    {
+      "term": "Event sourcing",
+      "definition": "Keeping accepted domain events as the authoritative history from which state is derived."
+    },
+    {
+      "term": "Replay",
+      "definition": "Applying retained input again to reconstruct or verify a result."
+    }
+  ],
+  "retrieval": [
+    "Why can a search index be rebuilt?",
+    "What is the risk of advancing a cursor before applying changes?"
+  ],
+  "sections": [
+    {
+      "id": "moving",
+      "title": "Renovate the library while people still borrow books",
+      "markdown": "A library wants a new catalog. Copying the old catalog on Monday is not enough if people keep borrowing, returning, and adding books on Tuesday. The new catalog needs both an initial copy and every relevant change that occurs after its copy boundary.\n\nOur software example replaces an old search projection with a new one containing improved title analysis. The document database remains the source of truth. That choice reduces risk: we are changing a derived view rather than moving the only authoritative copy of every document.\n\nWrite down what the new view must mean before copying. Does it include deleted documents? Which version should win? Which permissions must be represented or checked at query time? A migration that copies rows accurately can still be wrong if it implements different business rules."
+    },
+    {
+      "id": "copy",
+      "title": "Connect the snapshot and stream without a gap",
+      "markdown": "Take a consistent source snapshot tied to a documented change position. Load it into a new index generation. Then apply the later changes, including updates and deletions, until the new generation catches up. Use the database/change-capture tool's supported snapshot protocol; independently choosing a timestamp and reading rows can miss or duplicate changes around the boundary.\n\nDuplicated changes are manageable if application is repeatable and version-aware. Missing changes are harder because the target may look healthy while silently lacking data. Retain the source change history long enough for the whole copy and catch-up process. If the necessary history is lost, restart from a new valid boundary rather than guessing the missing interval.\n\nFor a simple workload estimate, imagine a 10 GB backlog, new changes arriving at 100 MB per second, and a target that can apply 150 MB per second. Its net catch-up rate is 50 MB per second, so the backlog takes roughly 200 seconds to drain with decimal units and steady rates. If apply capacity falls to 100 MB per second, it never catches up while those writes continue."
+    },
+    {
+      "id": "switch",
+      "title": "Validate before making users depend on it",
+      "markdown": "A target with the same number of rows can still contain the wrong rows. Validate meanings, not only counts.\n\n| Check | Example question | Why count alone misses it |\n| --- | --- | --- |\n| Current versions | Is document 17 at the accepted revision? | An old version still counts as one row |\n| Deletion | Is a known removed document suppressed? | A stale record can replace a missing record in the total |\n| Permission | Can each test principal see only allowed results? | Row totals do not describe audience |\n| Representative queries | Do expected useful documents appear? | Correctly copied text can be analyzed incorrectly |\n\nUse bounded read-only shadow queries to compare generations without overloading the live source. Record which differences are intended and which are defects.\n\nSwitch the serving pointer only after the declared catch-up and validation gates. Keep the old generation during a defined observation window if it remains compatible and updated.\n\nRollback is not merely changing an address. Old code must understand newly accepted formats and semantics. An expand-and-contract change adds compatible fields first, updates readers and writers in stages, and removes old fields only after the compatibility window closes."
+    },
+    {
+      "id": "history",
+      "title": "Event sourcing is a different authority choice",
+      "markdown": "Event sourcing changes which record is authoritative.\n\n| Record type | Meaning | Example |\n| --- | --- | --- |\n| Incoming command | A request that can be rejected | “Upgrade membership M17” |\n| Accepted domain event | A fact accepted under domain rules | “Membership M17 upgraded to Pro” |\n| Projection | A derived current view | M17 currently has tier Pro |\n\nA normal database commonly stores current state with logs supporting durability or change capture. In event sourcing, the accepted domain event history itself is the authority; projections fold that history into useful views.\n\nThis supports reconstruction and audit only with deliberate ordering, event versions, correction semantics, and personal-data handling. It is not equivalent to retaining every HTTP request, and it is not automatically simpler than ordinary create/read/update/delete operations.\n\n~~~text\nreplay accepted facts → rebuild the intended view\n                    ↛ automatically issue fresh external commands\n~~~\n\nA historical payment fact can update a report. It must not silently create another charge. Keep external effects behind an explicit, enforced policy in replay mode.\n\n**Pause and predict:** a rejected upgrade request appears in an access log. Should replaying that log turn the membership into Pro? A request log is not the accepted domain history."
+    },
+    {
+      "id": "interview",
+      "title": "Explain the switch and the way back",
+      "markdown": "In an interview, use four verbs: copy, catch up, validate, switch. Then add the condition under which rollback remains safe. Name the authoritative store throughout; avoid leaving the audience unsure whether both stores can independently accept writes.\n\nFor a derived view, keeping one write authority and replaying its changes is often easier to defend than application-level dual writes. If you need to migrate the write authority itself, an ownership handoff must additionally prevent old and new writers from accepting conflicting changes. The fencing lesson supplies that reasoning, but the actual migration protocol must integrate it.\n\nEvent sourcing and complex cross-service migrations are useful advanced topics. Their value comes from a concrete requirement such as retained business history or rebuilding several views, not from making an interview diagram look more sophisticated."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "migration-stream",
+      "title": "A copied snapshot joins a continuous change history",
+      "source": "flowchart LR\nS[(Source authority)] -->|Consistent snapshot at P| L[Load new projection]\nS -->|Changes after P| C[Retained change stream]\nL --> A[Apply ordered version-aware changes]\nC --> A\nA --> V[Validate and catch up]\nV --> R[Switch read generation]",
+      "caption": "The snapshot and position P must come from a compatible, gap-free capture protocol.",
+      "steps": [
+        "Establish a consistent copy boundary P.",
+        "Load the snapshot into an isolated generation.",
+        "Apply retained changes after P, including deletes.",
+        "Validate before changing which generation serves reads."
+      ],
+      "sectionId": "copy"
+    },
+    {
+      "id": "replay-effects",
+      "title": "Rebuilding a view is not permission to repeat a charge",
+      "source": "flowchart LR\nH[(Accepted event history)] --> R[Replay mode]\nR --> P[(Rebuilt projection)]\nH --> N[Normal processing with effect policy]\nN --> E[Tracked external effect]\nR --> B[External effects disabled or explicitly controlled]",
+      "caption": "The diagram separates state reconstruction from external commands. A replay policy must be enforced in code.",
+      "steps": [
+        "Read accepted historical events.",
+        "Rebuild the desired projection repeatably.",
+        "Keep external commands behind an explicit effect policy.",
+        "Validate rebuilt state without charging or notifying people again."
+      ],
+      "sectionId": "history"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Replace a live search index. Describe the snapshot boundary, change catch-up, two correctness checks beyond total row count, and a rollback condition. Then say whether replaying “order paid” should create a new charge.",
+    "rubric": [
+      "Use a supported gap-free snapshot/change capture protocol.",
+      "Validate versions/deletions, representative results, and permissions.",
+      "Keep an interpretable updated old view for rollback; suppress external charges during replay."
+    ],
+    "solution": "Create generation B from a consistent snapshot at position P, then apply retained changes after P with version-aware repeatable handling. Check known deleted records, current versions, query relevance, and permission-sensitive cases. Switch only after catch-up and validation. Roll back to A only while it still supports current semantics and has a valid updated state. Historical order-paid events rebuild reporting state; they do not authorize a fresh charge."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A snapshot alone misses what in a live migration?",
+      "options": [
+        "Changes accepted after its copy boundary",
+        "Every historical record by definition",
+        "Only file names"
+      ],
+      "answer": "Changes accepted after its copy boundary",
+      "explanation": "Ongoing writes require a compatible catch-up stream or another protected migration protocol."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Matching total row counts proves complete correctness.",
+      "options": [
+        "True",
+        "False",
+        "Only for a large database"
+      ],
+      "answer": "False",
+      "explanation": "Missing, duplicate, stale, or wrongly authorized records can preserve the same count."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Replaying a historical payment event should normally…",
+      "options": [
+        "Rebuild the intended view without reissuing the charge",
+        "Charge again to confirm it",
+        "Delete the operation identity"
+      ],
+      "answer": "Rebuild the intended view without reissuing the charge",
+      "explanation": "Reconstruction and new external effects require different policies."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why may rollback fail after a schema change?",
+      "answer": "The old reader or writer may no longer understand newly accepted formats or semantics, or the old state may no longer be caught up. Repointing traffic cannot restore compatibility.",
+      "explanation": "The old reader or writer may no longer understand newly accepted formats or semantics, or the old state may no longer be caught up. Repointing traffic cannot restore compatibility."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What distinguishes an accepted domain event from an incoming request?",
+      "answer": "A request asks to do something and may fail validation. An accepted event records a domain fact under the application’s authority and ordering rules.",
+      "explanation": "A request asks to do something and may fail validation. An accepted event records a domain fact under the application’s authority and ordering rules."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Migration verbs?",
+      "back": "Copy, catch up, validate, switch—and define the way back."
+    },
+    {
+      "front": "Snapshot/change boundary requirement?",
+      "back": "No unaccounted gap between the copied state and retained later changes."
+    },
+    {
+      "front": "Projection?",
+      "back": "A derived view that can be rebuilt from authoritative input."
+    },
+    {
+      "front": "Event sourcing authority?",
+      "back": "Accepted domain event history, with explicit ordering and versioning rules."
+    },
+    {
+      "front": "Replay safety?",
+      "back": "Reconstruct state without unintentionally repeating external effects."
+    }
+  ],
+  "mentalModel": "A safe migration accounts for every change across the copy boundary and proves both the switch and the recovery path.",
+  "sources": [
+    {
+      "title": "Debezium — PostgreSQL snapshots and change capture",
+      "url": "https://debezium.io/documentation/reference/stable/connectors/postgresql.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Microsoft — Event sourcing pattern",
+      "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/event-sourcing",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18 — Transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "event-versus-view",
+      "title": "Rebuild a current view from accepted facts",
+      "sectionId": "history",
+      "intro": "A small membership history shows why requests, accepted events, and projections are different. No external effects are enabled in this reconstruction.",
+      "steps": [
+        {
+          "title": "Start from the retained history",
+          "explanation": "The authoritative stream contains two accepted domain facts with a defined order.",
+          "state": [
+            {
+              "label": "Membership",
+              "value": "M17"
+            },
+            {
+              "label": "Event 1",
+              "value": "Opened at Basic"
+            },
+            {
+              "label": "Event 2",
+              "value": "Tier changed to Pro"
+            },
+            {
+              "label": "Replay effects",
+              "value": "disabled"
+            }
+          ]
+        },
+        {
+          "title": "Apply the first fact",
+          "explanation": "A new projection applies the opening event and records the resulting current state.",
+          "state": [
+            {
+              "label": "Projection generation",
+              "value": "B"
+            },
+            {
+              "label": "Applied through",
+              "value": "event 1"
+            },
+            {
+              "label": "Current tier",
+              "value": "Basic"
+            }
+          ]
+        },
+        {
+          "title": "Apply the next fact",
+          "explanation": "The next accepted fact changes the derived tier. It does not submit the original upgrade command again.",
+          "state": [
+            {
+              "label": "Applied through",
+              "value": "event 2"
+            },
+            {
+              "label": "Current tier",
+              "value": "Pro"
+            },
+            {
+              "label": "New provider call",
+              "value": "none"
+            }
+          ]
+        },
+        {
+          "title": "Validate what was reconstructed",
+          "explanation": "Compare the intended current view and event position. A discarded or rejected request is not inserted as an accepted fact.",
+          "state": [
+            {
+              "label": "Current view",
+              "value": "M17 / Pro"
+            },
+            {
+              "label": "History boundary",
+              "value": "event 2"
+            },
+            {
+              "label": "Authority",
+              "value": "accepted events"
+            },
+            {
+              "label": "Validation",
+              "value": "state plus boundary"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A replay interprets accepted history to reconstruct a view. It does not decide anew whether past requests should succeed."
+    }
+  ]
+}

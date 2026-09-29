@@ -1,0 +1,316 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 22,
+  "title": "Platform identity, secrets, tenant isolation, and tool permissions",
+  "level": "advanced",
+  "minutes": 60,
+  "id": "platform-security-and-tenancy",
+  "summary": "Carry a caller’s identity and permissions through an MCP gateway, service, worker, and downstream system without turning shared infrastructure into shared access.",
+  "objectives": [
+    "Separate user identity, workload identity, and delegated authority.",
+    "Enforce tenant boundaries in data, caches, jobs, and tools.",
+    "Explain why a namespace, token, or TLS connection is not a complete authorization policy.",
+    "Design secret rotation, audit evidence, and safe tool admission."
+  ],
+  "terms": [
+    {
+      "term": "Workload identity",
+      "definition": "The identity of a running service or job, distinct from the human who requested work."
+    },
+    {
+      "term": "Audience",
+      "definition": "The intended recipient or resource for an access token; a service should reject tokens not meant for it."
+    },
+    {
+      "term": "Delegation",
+      "definition": "Allowing another component to act with a specifically bounded authority on behalf of a caller."
+    },
+    {
+      "term": "Confused deputy",
+      "definition": "A privileged service being tricked into using its authority for an action the original caller was not permitted to perform."
+    },
+    {
+      "term": "Trust boundary",
+      "definition": "A point where data or authority crosses between components with different trust assumptions."
+    },
+    {
+      "term": "Secret rotation",
+      "definition": "Replacing a credential and retiring its predecessor through a controlled transition."
+    },
+    {
+      "term": "Access token",
+      "definition": "A credential issued for permitted access to a resource; the receiving service verifies its validity and allowed scope."
+    }
+  ],
+  "retrieval": [
+    "Why does authentication not imply permission to read an arbitrary note?",
+    "What state follows a queued job after its original HTTP request ends?"
+  ],
+  "sections": [
+    {
+      "id": "scenario",
+      "title": "Start with one tool and one tenant",
+      "markdown": "An internal platform exposes a tool called analyze_incident. Ajay belongs to the operations team for tenant NorthCo. The tool retrieves incident records, runs analysis, and stores a report. The platform also serves SouthCo. A successful design lets legitimate work proceed without letting either tenant inspect the other's incidents.\n\nDraw the actors before adding products: human caller, MCP client, gateway, MCP service, worker, incident API, and report storage. Each arrow carries data and possibly authority. Ask what the receiving component trusts and how that trust is established.\n\nThe model's suggestion to call a tool is not itself a permission grant. A tool description, retrieved document, or generated parameter can be wrong or malicious. The service must apply the authenticated caller's allowed scope and its own policy before taking action."
+    },
+    {
+      "id": "identities",
+      "title": "The user and the service are different identities",
+      "markdown": "A human request and a service connection carry different identities.\n\n| Question | Example | Required decision |\n| --- | --- | --- |\n| Who requested work? | Ajay in NorthCo operations | Is this person allowed this action and object? |\n| Which workload connects downstream? | analysis-worker | Is this service allowed that dependency operation? |\n| On whose behalf is it acting? | Validated NorthCo job context | Does delegated scope match this job? |\n| Who is a token intended for? | The named API audience | Will the receiving resource accept this credential? |\n\nA broad service credential does not give every caller that service’s privileges. If downstream sees only the workload identity, the service must prevent unauthorized user requests from reaching that authority. Where supported, scoped delegation lets downstream enforce a caller boundary too.\n\nVerify tokens using the protocol’s supported signature checks or authenticated issuer checks and established libraries. Validate issuer, audience, expiry, and required permissions. Do not forward an arbitrary incoming token to every endpoint.\n\n**Common mistake:** reading “valid token” as “may do anything.” Validity, intended recipient, and permission answer different questions."
+    },
+    {
+      "id": "gateway",
+      "title": "A gateway check is useful but has a defined scope",
+      "markdown": "A gateway may terminate external TLS, validate a supported access token, apply coarse rate limits, and route traffic. The backend still needs the object- and tool-specific decisions: may this caller analyze this incident in this tenant with these options?\n\nIf a service trusts identity headers inserted by a gateway, direct access must be constrained and the gateway-to-service path authenticated under the deployment's design. Otherwise a caller may bypass the gateway or supply a forged header. An authenticated internal connection also does not remove the need for per-operation authorization.\n\nPlace cheap rejection before expensive work when possible. Invalid payloads or clearly unauthorized operations should not occupy a GPU or enqueue thousands of jobs. Decide which checks belong at the edge, which require application data, and which the downstream authority must repeat."
+    },
+    {
+      "id": "tenant",
+      "title": "Isolation crosses more than one database query",
+      "markdown": "Derive or validate tenant context from trusted identity and membership, rather than accepting tenantId from the tool arguments as proof. Scope database reads and writes, object references, cache keys, job records, and search retrieval consistently. A tenant-scoped SQL query can still leak information if a shared cache returns an unscoped private result.\n\nA Kubernetes namespace organizes resources and supports scoped policies, but it is not by itself complete isolation between mutually untrusted tenants. Workload permissions, network policies, resource controls, node sharing, and the threat model determine the effective boundary. Some tenants or workloads may require stronger separation.\n\nKeep network reachability and data permission distinct. Blocking one service from connecting to another reduces attack paths; permitting the connection does not authorize every resource. Test both paths: an unauthorized network route and an authorized route attempting an unauthorized tenant object."
+    },
+    {
+      "id": "tools",
+      "title": "A tool has an input contract and an authority contract",
+      "markdown": "For analyze_incident, validate incident identity, allowed time range, output destination, and resource budget. A read-only diagnostic tool needs different authority from a tool that restarts a deployment. Make that distinction visible to the caller and to policy enforcement.\n\nAvoid exposing a generic shell command as a convenient substitute for a bounded operation. A tool that accepts arbitrary URLs can also become a path to internal services unless destinations and network access are controlled. Fetching an attacker-controlled link is not equivalent to fetching a trusted incident record.\n\nExternal content returned by a tool is data. It should not change the platform's authorization rules or instruct the service to reveal credentials. For actions requiring user approval, bind approval to a concrete operation and scope; a generic earlier consent should not silently authorize a different destructive action."
+    },
+    {
+      "id": "jobs",
+      "title": "Queued work must retain the right context",
+      "markdown": "The initial request can finish while an analysis job continues for minutes. Store the job identity, validated tenant scope, requested action, relevant resource versions, and audit reference. Do not place long-lived broad secrets in queue payloads or logs merely to make workers independent.\n\nDecide what happens if the user loses access while the job is waiting. A sensitive operation may need permission revalidation at execution or publication time. A report that completed under old permissions should not automatically be downloadable by a now-removed member. State the revocation rule explicitly.\n\nRetry identity is separate from authorization. A stable operation ID can prevent duplicate report creation, but a replayed unauthorized job should still be rejected. On uncertain external effects, preserve a pending/unknown state and reconcile rather than issuing another privileged operation with a fresh identity."
+    },
+    {
+      "id": "secrets",
+      "title": "Credentials need a lifecycle, not just a storage location",
+      "markdown": "A secret needs controlled use and replacement, not just a hiding place.\n\n| Stage | Concrete question |\n| --- | --- |\n| Limit access | Which workload needs which dependency action? |\n| Distribute | How does the running process obtain the credential without a repository or log copy? |\n| Introduce replacement | Can consumers use the new credential while the dependency accepts it? |\n| Verify transition | Which consumers still use the old credential? |\n| Retire | When is the old credential rejected, and how is failure observed? |\n\nKubernetes Secrets hold sensitive configuration, but base64 is reversible encoding. Access control, encryption at rest where configured, safe distribution, and avoiding logs still matter. A supported managed secret store or workload identity may reduce long-lived static credentials.\n\nRotation follows the dependency’s real policy. A controlled overlap may be possible; it is not universally supported. Restarting all workers at once can disrupt service, while never retiring the old credential defeats the purpose.\n\nAn analysis worker might need incident reads and report writes, without deployment modification or access to every tenant’s secrets. Least privilege limits damage from compromise; it does not replace validation or monitoring.\n\n**Pause and predict:** a new credential is stored, but every worker still has the old value in memory. Has rotation finished? Identify the missing observation."
+    },
+    {
+      "id": "evidence",
+      "title": "Audit decisions without copying private payloads everywhere",
+      "markdown": "A useful audit record connects actor, workload, tenant, tool/action, resource reference, decision, operation identity, and outcome. That lets you investigate whether a report came from an allowed request and whether a retry repeated an effect. Keep timestamps with a defined clock/ordering interpretation rather than claiming they prove all causality.\n\nAudit records can themselves reveal sensitive relationships. Restrict access, choose retention, and redact tokens and unnecessary content. Operational metrics can count denied calls or failed jobs without placing raw incident documents in metric labels.\n\nBuild a test matrix: valid member, wrong tenant, removed member, expired or wrong-audience token, forged identity header, replayed job, and a retrieved document that asks for unrelated tool access. These tests target actual boundaries instead of only confirming that a login page works."
+    },
+    {
+      "id": "explain",
+      "title": "Explain one allowed path and one denied path",
+      "markdown": "In a design interview, trace Ajay's allowed analysis request. The gateway establishes a validated identity context; the service checks tool and incident permissions; a job carries the authorized scope; a worker uses appropriately limited dependency access; the report is stored and later served under current access policy.\n\nThen change one fact: the incident belongs to SouthCo. The service should reject the operation before expensive work, and no cache or export path should return the private data anyway. Repeat the trace with the worker's credential stolen to reason about the blast radius of that separate threat.\n\nThis chapter describes a teaching platform, not SAP's or any employer's actual private architecture. Apply the questions to your environment using its approved identity and deployment mechanisms. The transferable skill is following authority through every component, including asynchronous work and failure recovery."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "authority",
+      "title": "Every hop has a stated identity and permission role",
+      "source": "flowchart LR\nC[Authenticated caller] --> G[Gateway: validate intended access token]\nG --> S[MCP service: authorize tool and object]\nS --> J[(Job with validated tenant scope)]\nJ --> W[Worker with limited workload identity]\nW --> D[Downstream API enforces permitted scope]\nD --> R[(Tenant-scoped report)]",
+      "caption": "This is a conceptual trust path; exact token flows follow the selected protocol and identity provider.",
+      "steps": [
+        "Validate the caller at the appropriate boundary.",
+        "Authorize the specific action and resource.",
+        "Carry validated scope into asynchronous work.",
+        "Enforce downstream and result-access boundaries."
+      ],
+      "sectionId": "gateway"
+    },
+    {
+      "id": "boundaries",
+      "title": "A tenant boundary must survive every data path",
+      "source": "flowchart TB\nT[Validated NorthCo context] --> DB[Scoped database query]\nT --> CA[Scoped private cache representation]\nT --> Q[Scoped queue job]\nT --> O[Scoped object access]\nDB --> A[Audit decision reference]\nCA --> A\nQ --> A\nO --> A",
+      "caption": "A correct SQL filter alone does not protect an unscoped cache, job, or object route.",
+      "steps": [
+        "Establish the tenant context.",
+        "Apply it to each storage and processing route.",
+        "Check publication and download permissions.",
+        "Record enough evidence to investigate."
+      ],
+      "sectionId": "tenant"
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Trace an analyze_incident job for NorthCo, then change the incident to a SouthCo object and remove the user from NorthCo while the job waits. Mark which checks occur at request, execution, and report download. Define the revocation policy.",
+    "rubric": [
+      "Actor and workload identities are distinct.",
+      "Tenant scope is validated rather than trusted from arguments.",
+      "Asynchronous revocation and result access have explicit rules."
+    ],
+    "solution": "At request time validate identity and authorize the tool, tenant, and incident. Store validated scope and operation identity, not arbitrary caller authority. A SouthCo incident is rejected for a NorthCo-only member. At execution revalidate sensitive access under the chosen revocation policy and use limited worker credentials. At download check current access to the tenant report. If membership was revoked and the policy requires immediate revocation, stop or withhold further sensitive work/results rather than treating old queue acceptance as permanent permission."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A Kubernetes namespace alone proves complete hostile-tenant isolation?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with a long name"
+      ],
+      "answer": "No",
+      "explanation": "The actual boundary depends on permissions, network/resource controls, node sharing, and the threat model."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A valid token for one audience is a universal downstream credential?",
+      "options": [
+        "Yes",
+        "No",
+        "Only over TLS"
+      ],
+      "answer": "No",
+      "explanation": "A token must be intended for the receiving resource and used under the applicable authorization contract."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Base64 encoding a Secret encrypts its contents?",
+      "options": [
+        "Yes",
+        "No",
+        "Only for short values"
+      ],
+      "answer": "No",
+      "explanation": "Encoding is reversible representation, not encryption or access control."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why must job execution consider revoked membership?",
+      "answer": "Queued work outlives the original request; the product must define whether authorization is revalidated before execution or publication.",
+      "explanation": "Queued work outlives the original request; the product must define whether authorization is revalidated before execution or publication."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What makes a privileged service a confused deputy?",
+      "answer": "It uses its own broad authority to perform an action the original caller lacked permission to request.",
+      "explanation": "It uses its own broad authority to perform an action the original caller lacked permission to request."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "User identity versus workload identity?",
+      "back": "Requester versus the running service; both need scoped authority."
+    },
+    {
+      "front": "Tenant scope belongs where?",
+      "back": "Queries, caches, object access, jobs, retrieval, and result publication."
+    },
+    {
+      "front": "Gateway authentication replaces object authorization?",
+      "back": "No; specific actions and objects still need policy decisions."
+    },
+    {
+      "front": "Queued consent lasts forever?",
+      "back": "No; define execution and result-access revocation rules."
+    },
+    {
+      "front": "Secret lifecycle?",
+      "back": "Limit access, distribute securely, rotate, verify transition, retire old credentials."
+    }
+  ],
+  "mentalModel": "Follow both the data and the authority. Every new hop must preserve the intended boundary.",
+  "sources": [
+    {
+      "title": "Kubernetes — Multi-tenancy",
+      "url": "https://kubernetes.io/docs/concepts/security/multi-tenancy/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Secrets",
+      "url": "https://kubernetes.io/docs/concepts/configuration/secret/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MCP 2025-11-25 — Security best practices (versioned reference)",
+      "url": "https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "OWASP — Authorization",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "rotate-scoped-credential",
+      "title": "Verify a credential transition before retiring the old one",
+      "sectionId": "secrets",
+      "intro": "Assume this dependency supports a planned overlap of two scoped credentials. This is an illustrative lifecycle, not a live secret value or a command sequence.",
+      "steps": [
+        {
+          "title": "Know the starting consumers",
+          "explanation": "Two worker groups use credential version C1 for incident reads. The credential is not copied into job payloads.",
+          "state": [
+            {
+              "label": "Credential version",
+              "value": "C1"
+            },
+            {
+              "label": "Consumers",
+              "value": "worker groups A and B"
+            },
+            {
+              "label": "Allowed action",
+              "value": "incident reads"
+            }
+          ]
+        },
+        {
+          "title": "Introduce the replacement",
+          "explanation": "The dependency accepts C2 under the same deliberately limited scope. Consumers can begin switching.",
+          "state": [
+            {
+              "label": "Dependency accepts",
+              "value": "C1 and C2 during planned overlap"
+            },
+            {
+              "label": "New version",
+              "value": "C2"
+            },
+            {
+              "label": "Scope",
+              "value": "still incident reads"
+            }
+          ]
+        },
+        {
+          "title": "Observe actual use",
+          "explanation": "Group A has switched but group B has not. Rotation is incomplete even though the new value exists in the secret mechanism.",
+          "state": [
+            {
+              "label": "Group A",
+              "value": "C2 verified"
+            },
+            {
+              "label": "Group B",
+              "value": "C1 still in use"
+            },
+            {
+              "label": "Retire C1 now?",
+              "value": "not yet under this plan"
+            }
+          ]
+        },
+        {
+          "title": "Retire after the transition gate",
+          "explanation": "Once both groups are verified on C2, retire C1 according to policy and monitor for remaining old-credential failures.",
+          "state": [
+            {
+              "label": "Group A and B",
+              "value": "C2 verified"
+            },
+            {
+              "label": "C1",
+              "value": "retired at dependency"
+            },
+            {
+              "label": "Observation",
+              "value": "old-credential failures monitored"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Creating a new credential is only one step. Rotation finishes when consumers have moved and the old authority is actually retired."
+    }
+  ]
+}

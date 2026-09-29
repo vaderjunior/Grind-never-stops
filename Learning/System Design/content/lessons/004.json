@@ -1,0 +1,146 @@
+{
+  "id": "004",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Translate active users and actions into operation rates.",
+    "Separate average traffic from a stated peak scenario.",
+    "Account for API amplification and workload mix.",
+    "Use ranges and dimensional checks instead of false precision."
+  ],
+  "retrieval": [
+    "From L003: explain why requests/second and milliseconds cannot substitute for each other.",
+    "From L002: name a non-goal before estimating a product."
+  ],
+  "sections": [
+    {
+      "id": "model",
+      "title": "Count behavior before servers",
+      "markdown": "Core budget: retrieval 5, explanation 18, worked arithmetic 8, exercise 10, questions 10, review 4 minutes. We estimate a reading-list app where users save links and browse a personal list. The figures are explicit invented assumptions, not measurements from an existing service.\n\nRegistered accounts are not a request rate. Start with a population active within a stated interval, multiply by actions per active person in that interval, and divide by interval seconds. Units should cancel: users/day × actions/user × requests/action gives requests/day. Dividing by seconds/day yields requests/second. In everyday interview shorthand “DAU × actions per user per day” means the same calculation, but writing units prevents accidentally multiplying by an extra day.\n\nSuppose the app has one million registered accounts, 100,000 daily active users, and each active user opens their list 12 times and saves two links per day. Browse volume is 1.2 million operations/day; saves are 200,000/day. Average browse rate is about 13.9/s, save rate 2.31/s, and combined rate 16.2/s. One million accounts alone could have suggested an enormous service while hiding a modest actual flow.\n\nAn action is not necessarily an API request. If opening a list fetches a page of data and then separately fetches permissions and unread counts, one action makes three API calls. If each page triggers one query per item, internal database demand may be amplified again. Keep user actions, external requests, and internal operations in separate rows."
+    },
+    {
+      "id": "peaks",
+      "title": "A peak needs a timescale and a cause",
+      "markdown": "Daily average rate spreads work across all 86,400 seconds. If most users are in one time zone or a notification prompts them simultaneously, that average misses the decisive load. For this exercise, assume a busiest one-minute window at eight times the daily mean. External peak is then about 130 requests/s under the one-call-per-action model. Eight is a scenario assumption to validate, not a universal industry multiplier.\n\nA one-second burst, one-minute peak, and one-hour peak can require different handling. A buffer may absorb a brief surge for delay-tolerant work; it cannot erase sustained demand that exceeds completion capacity. An interactive deadline can also make buffering unsuitable. State whether arrivals are spread evenly within your peak window; 7,800 requests in one minute could arrive smoothly or in one second.\n\nTraffic mix may change during the peak. During an import launch, saves might dominate, even though reads dominate the daily average. A single overall multiplier assumes the mix stays fixed. Split the estimate when the architecture is sensitive to write cost, expensive search, large uploads, or a hot account.\n\nGeographic and tenant skew also matter. A global average does not say how much reaches one region or one customer's partition. Record the largest plausible concentration before assuming traffic is evenly spread."
+    },
+    {
+      "id": "worked",
+      "title": "An estimate you can recompute aloud",
+      "markdown": "Use round numbers until a decision needs precision. Here is an executable standard-library arithmetic example, intended for Python 3.11 or newer. Save as traffic.py and run python traffic.py. Expected output is shown; the companion verification script checks these equations.\n\n~~~python\ndef average_rps(dau: int, actions_each: int, calls_each: int = 1) -> float:\n    assert dau >= 0 and actions_each >= 0 and calls_each >= 0\n    return dau * actions_each * calls_each / 86_400\n\nbrowse = average_rps(100_000, 12)\nsave = average_rps(100_000, 2)\nassert round(browse + save, 1) == 16.2\nprint(f\"average={browse + save:.1f}/s peak={(browse + save) * 8:.1f}/s\")\n# average=16.2/s peak=129.6/s\n~~~\n\nSensitivity is more useful than extra decimal places. If daily active users are between 50,000 and 200,000, the same behavior produces 8.1–32.4 requests/s average and roughly 65–259/s at eightfold peak. If browse requires three calls, combined daily calls become 3.8 million, or 44.0/s average and 352/s peak. That uncertainty changes the result more than rounding 86,400 to 100,000.\n\nDo not conclude “one server supports this” without measurements and request cost. State instead: “The demand model is about 130/s peak under these assumptions; next I need per-operation service cost and a representative benchmark.”"
+    },
+    {
+      "id": "reasoning",
+      "title": "Use the number to choose the next question",
+      "markdown": "The estimate should answer a design question. If the initial concern is network capacity, request counts alone are insufficient; the next lesson introduces bytes. If the concern is memory held by unfinished requests, duration matters; L007 connects rate and concurrency. If the concern is a business correctness race, even two simultaneous writes can violate an invariant, so low traffic is no excuse to ignore it.\n\nFailure scenarios begin in the workload model. A client retry after every timeout can add attempted requests without increasing useful user actions. A periodic job scheduled for every tenant at midnight can produce a concentrated burst. A product announcement can synchronize readers on one object. Record these as scenarios rather than quietly folding them into a vague safety factor.\n\nCommon errors include using monthly active users as daily active users, dividing by hours while labeling the result per second, applying a peak multiplier twice, estimating every operation as equally expensive, and confusing completed throughput with offered demand during overload. Use a small table with population, action, interval, multiplier, and uncertainty to expose these errors.\n\nOptional practice: estimate one day of a service you use, with an honest low/high range and a plan to measure it. Do not research private traffic numbers and present guesses as company facts."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "funnel",
+      "title": "Turn human actions into component demand",
+      "source": "flowchart LR\nU[100000 daily active users] -->|12 browses each| B[1200000 browse actions per day]\nU -->|2 saves each| W[200000 save actions per day]\nB -->|1 API call per action| T[1400000 API calls per day]\nW -->|1 API call per action| T\nT -->|Divide by 86400 seconds| R[16.2 average requests per second]\nR -->|Assumed 8x one-minute peak| P[129.6 peak requests per second]",
+      "caption": "This is a demand calculation, not a measured benchmark or server-capacity claim. The one-call assumption is deliberately visible.",
+      "steps": [
+        "Select active population and time interval.",
+        "Count read and write actions separately.",
+        "Apply API amplification explicitly.",
+        "Convert units, then apply one stated peak scenario."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Estimate a course app with 60,000 daily active students. Each opens 20 lesson pages and submits three quizzes daily. Each page makes two API calls; each quiz submission makes one. Assume a sixfold peak with the same mix. Compute average and peak API requests/s, then name two assumptions that could invalidate this peak estimate.",
+    "minutes": 10,
+    "rubric": [
+      "Separates page actions from API calls.",
+      "Includes quiz submissions.",
+      "Divides by 86,400 and applies peak once.",
+      "Challenges time distribution or changing operation mix."
+    ],
+    "solution": "Page calls = 60,000 × 20 × 2 = 2,400,000/day. Quiz calls = 180,000/day. Total = 2,580,000/day; average 29.86/s and peak 179.17/s. A synchronized exam can concentrate quiz writes much more than reads; one-minute averages can hide one-second bursts. Bots, retries, or a changed page API also alter amplification."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "10,000 users each make 86.4 requests/day. What is average demand?",
+      "answer": 10,
+      "unit": "requests/s",
+      "tolerance": 0.05,
+      "explanation": "10,000 × 86.4 / 86,400 = 10."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A sixfold peak multiplier is best described as:",
+      "options": [
+        "A universal constant",
+        "A stated workload assumption requiring validation",
+        "A guarantee provided by a load balancer"
+      ],
+      "answer": "A stated workload assumption requiring validation",
+      "explanation": "Its validity depends on user behavior and aggregation window."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which can increase requests without increasing useful user actions?",
+      "options": [
+        "Retries after timeouts",
+        "Renaming an endpoint",
+        "Reducing registered-account count only"
+      ],
+      "answer": "Retries after timeouts",
+      "explanation": "Retries are extra attempts for the same intent."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is a per-operation traffic mix useful?",
+      "answer": "Different operations can have different CPU, storage, network, and correctness costs; peak mix may differ from daily mix.",
+      "explanation": "A total RPS number hides expensive operations and state contention."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Is one server enough for 200 requests/s?",
+      "answer": "The rate alone is insufficient. Need request cost, service objectives, measured sustainable capacity, and recovery requirements.",
+      "explanation": "A good answer requests decision-relevant evidence instead of asserting an arbitrary capacity."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Average request rate?",
+      "back": "Active population × actions each × requests each / interval seconds."
+    },
+    {
+      "front": "Seconds in a day?",
+      "back": "86,400."
+    },
+    {
+      "front": "What must accompany a peak multiplier?",
+      "back": "Its timescale, scenario, operation mix, and uncertainty."
+    },
+    {
+      "front": "User action versus request?",
+      "back": "One intent can trigger several external or internal calls."
+    },
+    {
+      "front": "Offered demand versus throughput?",
+      "back": "Arrivals attempted versus work actually completed at a boundary."
+    },
+    {
+      "front": "Why estimate a range?",
+      "back": "Uncertain behavior often dominates rounding precision."
+    }
+  ],
+  "mentalModel": "Population × behavior × amplification ÷ time. Every multiplier is an assumption you should be able to explain.",
+  "sources": [
+    {
+      "title": "Google SRE: Monitoring Distributed Systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

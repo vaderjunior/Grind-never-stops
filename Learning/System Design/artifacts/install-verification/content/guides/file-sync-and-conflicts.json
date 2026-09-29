@@ -1,0 +1,285 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 19,
+  "title": "File synchronization and conflicting edits",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "file-sync-and-conflicts",
+  "summary": "Let two devices work offline without silently throwing one person’s edits away. Use file versions to detect a conflict before deciding how to resolve it.",
+  "objectives": [
+    "Detect two edits that began from the same older version.",
+    "Separate conflict detection from the product’s merge policy.",
+    "Explain a catch-up cursor, deletion marker, and safe full resynchronization."
+  ],
+  "terms": [
+    {
+      "term": "Base version",
+      "definition": "The saved version a device started editing."
+    },
+    {
+      "term": "Conditional update",
+      "definition": "An update accepted only if a stated condition still holds, such as the current version matching the base version."
+    },
+    {
+      "term": "Conflict",
+      "definition": "Two changes that cannot both replace the current value under the chosen rule."
+    },
+    {
+      "term": "Change cursor",
+      "definition": "A saved position in a stream of changes used to resume synchronization."
+    },
+    {
+      "term": "Deletion marker",
+      "definition": "A record that something was deleted, retained long enough for other devices to learn about it."
+    }
+  ],
+  "retrieval": [
+    "Why did the previous lesson separate a file’s identity from its display name?",
+    "What can go wrong if two clients read the same value and both overwrite it?"
+  ],
+  "sections": [
+    {
+      "id": "analogy",
+      "title": "Two printed copies of the same draft",
+      "markdown": "A club organizer downloads a schedule on her laptop and phone. Both devices have version 7. While offline, the laptop changes the meeting time to 10:00; the phone changes it to 11:00. When they reconnect, which version should survive?\n\nImagine handing the same printed draft to two editors. Knowing which paper returned last does not tell you which editor's intention is more important. File synchronization has the same problem. A device clock may be wrong, and a later upload may contain an older decision. The system must state a policy instead of treating timestamps as proof of intent.\n\nOur first policy favors preservation: accept an edit when its base version is still current; otherwise keep both versions and ask the user to resolve the conflict. This is understandable for ordinary files. Collaborative text editing may choose a more sophisticated merge algorithm, but we do not need it to detect the problem."
+    },
+    {
+      "id": "version",
+      "title": "Make “what I edited” part of the request",
+      "markdown": "Each download includes the stable file identity and its current version. When the laptop uploads, it says: “Replace file 42, provided its current version is still 7.” The server checks and changes the metadata in one atomic operation. If the condition matches, the server publishes a new version, say 8.\n\nThe phone later makes the same condition against version 7. It must fail because the current version is now 8. Checking first and updating in a separate unprotected step would leave a race, so the check belongs at the storage boundary with the update. HTTP conditional requests can carry this idea using an entity tag and If-Match; an application may also use an explicit revision field.\n\nThe rejected edit is not worthless. Its bytes can be preserved as a conflict copy associated with the original file. The user can inspect both, combine their intentions, and save a new version based on version 8. Detecting a conflict is the system's job. Deciding what the two edits mean is a separate problem."
+    },
+    {
+      "id": "sync",
+      "title": "Catch up by asking what changed",
+      "markdown": "A device with thousands of files should ask **what changed after its saved position**, not download everything on each reconnect.\n\n| Change-stream item | Device action before checkpointing |\n| --- | --- |\n| File 42 now has version 8 | Fetch permitted new content; first preserve any unsaved local edit and its base |\n| File 51 was deleted | Apply the deletion marker; preserve conflicting local work before removing the working view |\n| End of batch: cursor 106 | Save 106 only after the batch is durably accounted for |\n\nThis batch began after cursor 104. A cursor belongs to a documented stream and scope; it is not a universal time for the whole system.\n\n~~~text\nfetch batch → preserve local drafts → apply remote changes repeatably\n            → durably record local outcome → checkpoint cursor\n~~~\n\nA repeated event should not create a second file. A crash-safe local transaction or carefully repeatable apply-then-checkpoint procedure handles the boundary.\n\n**Common mistake:** advancing the cursor because the network response arrived. If the device crashes before local application, its next request could skip work it never saved."
+    },
+    {
+      "id": "deleted",
+      "title": "Deletion must travel too",
+      "markdown": "If the server simply erases every trace of a deleted file, an offline device may reconnect with its old copy and upload it as if it were new. A deletion marker tells that device what happened. It identifies the file and the relevant version of the deletion, rather than just the old filename.\n\nMarkers and change streams cannot always be retained forever. Suppose the service keeps change history for 30 days and a phone reconnects after 90. Its old cursor is no longer sufficient. Return a clear “full resync required” response and compare against a fresh authoritative inventory using a defined consistent snapshot/catch-up procedure. Do not pretend the expired cursor is current or interpret missing history as “nothing changed.”\n\nMoving a file between folders and revoking access also need explicit semantics. A device that loses permission should stop receiving private updates, and previously downloaded bytes cannot be recalled merely by deleting a server entry. State that security limit honestly."
+    },
+    {
+      "id": "tradeoff",
+      "title": "Choose the simplest conflict policy that fits",
+      "markdown": "Detecting a competing edit does not decide what the people intended. Choose that product behavior separately.\n\n| Conflict policy | Benefit | Cost or limit |\n| --- | --- | --- |\n| Preserve both versions | Avoids silent loss of either draft | Extra storage and a user decision |\n| Last write wins under a defined order | Simple single-result rule | Deliberately discards another edit |\n| Automatic text merge | Can combine disjoint changes | May still produce unintended meaning; does not fit every file type |\n\nOur first design preserves both. A later human resolution should save against the new current base version, not bypass the version check.\n\nDevice clocks do not prove which intention deserves to win. Binary photos and spreadsheets also differ from plain text; do not apply one merge rule to every format without a product decision.\n\n**Interview phrase:** “I can detect that this edit was based on older state. Preservation is my initial resolution policy.” Trace a normal edit, competing offline drafts, and a long-disconnected device.\n\nPush notifications can make a device check sooner. The durable change stream and version checks still repair missed notifications."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "sync-conflict",
+      "title": "The second edit reveals a real conflict",
+      "source": "sequenceDiagram\nparticipant L as Laptop\nparticipant S as Metadata service\nparticipant P as Phone\nL->>S: Save based on version 7\nS-->>L: Accepted as version 8\nP->>S: Save based on version 7\nS-->>P: Conflict: current version is 8\nP->>S: Preserve separate conflict copy",
+      "caption": "Both devices edited version 7 while offline. Arrival order chooses the accepted revision, not which human intention is best.",
+      "steps": [
+        "The laptop saves with a base-version condition.",
+        "The server accepts it as version 8.",
+        "The phone still refers to version 7.",
+        "The server rejects the stale overwrite and preserves the competing edit."
+      ],
+      "sectionId": "version"
+    },
+    {
+      "id": "sync-cursor",
+      "title": "Apply changes before moving the saved cursor",
+      "source": "flowchart LR\nC[Saved cursor 104] --> Q[Ask for later changes]\nQ --> A[Apply versions and deletion markers]\nA --> D[Durably save applied state]\nD --> N[Save cursor 106]\nN --> Q",
+      "caption": "The device must use a crash-safe apply/checkpoint protocol; arrows describe responsibility, not an automatic cross-store transaction.",
+      "steps": [
+        "Start at the last durable cursor.",
+        "Fetch a bounded batch.",
+        "Apply each change repeatably.",
+        "Save the new cursor only with or after durable application."
+      ],
+      "sectionId": "sync"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Both devices edit version 12. Laptop publishes version 13, then phone reconnects with its edit based on 12. Describe the phone’s response and two reasonable user choices. Then explain why a 90-day-old cursor may need a full resync.",
+    "rubric": [
+      "Reject an unconditional overwrite of version 13.",
+      "Preserve the phone edit and allow explicit inspection/merge or discard.",
+      "Recognize limited history and define a fresh inventory/catch-up path."
+    ],
+    "solution": "The phone receives a conflict because version 12 is no longer current. Preserve its content as a conflict version. The user may compare and merge into a new version based on 13, or deliberately discard one edit. The system should not choose by a possibly incorrect device timestamp. If the change history has expired, the cursor cannot prove what changed; establish a fresh inventory and resume from a valid position without silently resurrecting deleted files."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A save based on version 7 arrives while current version is 8. Our policy should…",
+      "options": [
+        "Overwrite version 8",
+        "Report a conflict and preserve the edit",
+        "Trust the device clock"
+      ],
+      "answer": "Report a conflict and preserve the edit",
+      "explanation": "The base version exposes that the edit did not include the current saved state."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Should the client checkpoint a cursor before applying its batch?",
+      "options": [
+        "Yes, to reduce latency",
+        "No, a crash could permanently skip changes",
+        "It does not matter"
+      ],
+      "answer": "No, a crash could permanently skip changes",
+      "explanation": "The saved cursor must not claim durable work that has not happened."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "What helps an offline device learn that a file was removed?",
+      "options": [
+        "A deletion marker",
+        "A shorter filename",
+        "A faster network only"
+      ],
+      "answer": "A deletion marker",
+      "explanation": "Deletion is a change that other replicas must observe."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is “latest device timestamp wins” not a neutral solution?",
+      "answer": "Device clocks can disagree, upload time does not establish intent, and the policy deliberately discards another edit. Its loss semantics must be accepted.",
+      "explanation": "Device clocks can disagree, upload time does not establish intent, and the policy deliberately discards another edit. Its loss semantics must be accepted."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What does a push notification add to this design?",
+      "answer": "It can prompt a device to check sooner. Durable change history and version checks still recover missed notifications and concurrent edits.",
+      "explanation": "It can prompt a device to check sooner. Durable change history and version checks still recover missed notifications and concurrent edits."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Base version answers what?",
+      "back": "Which saved state the editor actually started from."
+    },
+    {
+      "front": "Conflict detection versus resolution?",
+      "back": "Detection finds incompatible changes; resolution chooses how their content or intention should be combined."
+    },
+    {
+      "front": "Conditional update boundary?",
+      "back": "The expected-version check and mutation must be atomic."
+    },
+    {
+      "front": "Why deletion markers?",
+      "back": "Offline devices need to learn deletions rather than resurrect old copies."
+    },
+    {
+      "front": "Expired change cursor?",
+      "back": "Require a safe full resync; missing retained history is not proof of no changes."
+    }
+  ],
+  "mentalModel": "A device should say what it edited, a server should protect newer work, and sync should remember both changes and deletions.",
+  "sources": [
+    {
+      "title": "HTTP conditional updates — If-Match",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Match",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18 — Explicit locking",
+      "url": "https://www.postgresql.org/docs/18/explicit-locking.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "preserve-before-catchup",
+      "title": "Catch up without erasing an offline draft",
+      "sectionId": "sync",
+      "intro": "The laptop has one unsaved edit. A new remote version arrives in a synchronization batch; both pieces of work must remain accounted for.",
+      "steps": [
+        {
+          "title": "Notice the two kinds of state",
+          "explanation": "The laptop has an accepted base and an unsaved working draft. They are not interchangeable.",
+          "state": [
+            {
+              "label": "File",
+              "value": "file_17"
+            },
+            {
+              "label": "Local draft base",
+              "value": "version_4"
+            },
+            {
+              "label": "Unsaved local work",
+              "value": "present"
+            },
+            {
+              "label": "Saved cursor",
+              "value": "300"
+            }
+          ]
+        },
+        {
+          "title": "Receive a newer remote version",
+          "explanation": "The batch says file_17 is now version_5. Do not copy those bytes over the only local draft.",
+          "state": [
+            {
+              "label": "Remote event",
+              "value": "file_17 → version_5"
+            },
+            {
+              "label": "Batch end",
+              "value": "301"
+            },
+            {
+              "label": "Local draft",
+              "value": "still preserved"
+            }
+          ]
+        },
+        {
+          "title": "Record a conflict safely",
+          "explanation": "Keep the draft and its base as a pending/conflict copy, then apply the permitted remote version to the synchronized view.",
+          "state": [
+            {
+              "label": "Synced view",
+              "value": "version_5"
+            },
+            {
+              "label": "Conflict copy",
+              "value": "local edit based on version_4"
+            },
+            {
+              "label": "User decision",
+              "value": "still pending"
+            }
+          ]
+        },
+        {
+          "title": "Checkpoint accounted-for work",
+          "explanation": "After the remote update and preserved local draft are durable, the device can acknowledge this batch. Sync completion does not mean the content conflict was resolved.",
+          "state": [
+            {
+              "label": "Saved cursor",
+              "value": "301"
+            },
+            {
+              "label": "Remote batch",
+              "value": "applied"
+            },
+            {
+              "label": "Draft",
+              "value": "durably preserved"
+            },
+            {
+              "label": "Conflict resolution",
+              "value": "not yet chosen"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A safe cursor can advance after preserving an unresolved conflict. It must never advance by silently deleting the local work."
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "id": "interview_017",
+  "lessonId": "085",
+  "title": "Debug a replicated log with an unsafe acknowledgment rule",
+  "aliases": [
+    "L085",
+    "lesson_085"
+  ],
+  "version": 1,
+  "status": "drafted",
+  "modeType": "B",
+  "minutes": 60,
+  "brief": "A three-voter metadata service uses a leader and two followers. Its API promises that a successful update will remain visible after one node crashes, and that a later fresh read sees it. The implementation returns success immediately after the leader writes its local buffer and sends replication messages. An incident shows a successful update disappearing after a leader restart. You receive the failure trace during the interview. Diagnose the unsafe acknowledgement rule, propose a minimal repair, and defend the behavior during a partition. Do not replace the system with a list of products; reason about the exact commit and application boundaries.",
+  "clarifications": [
+    {
+      "question": "What does the incident trace contain?",
+      "answer": "Leader A receives set(quota,50) as request r17 in term6. It buffers the entry at index11, sends to B/C, and returns success. B has not persisted index11, C is unreachable, and A then loses its volatile buffer in a crash. B/C later form a leader quorum and quota remains40."
+    },
+    {
+      "question": "Are protocol state and logs durably written before replies?",
+      "answer": "The current implementation does not wait for durable storage before its client reply. You may change that ordering. Assume durable storage works when its completion is awaited."
+    },
+    {
+      "question": "What failures must the proposed baseline tolerate?",
+      "answer": "Crash/recovery faults and network partitions, with a fixed three-voter set. Members are not malicious. Do not introduce Byzantine assumptions."
+    },
+    {
+      "question": "What latency and availability tradeoff is acceptable?",
+      "answer": "Correctness takes priority. Losing the ability to write from a minority partition is acceptable; silently losing an acknowledged update is not."
+    },
+    {
+      "question": "What does a fresh read require?",
+      "answer": "A read invoked after a successful update must reflect that update or a later value. A separately labeled stale read could be offered only as an optional different API contract."
+    },
+    {
+      "question": "Can clients retry?",
+      "answer": "Yes, with the same stable logical request ID; a response timeout does not tell the client whether the command committed."
+    }
+  ],
+  "hints": [
+    "Label each event as buffered, persisted, replicated, committed or applied. Which of these was actually proved when success was sent?",
+    "Count durable voters, including the leader only if its own durable write completed. Then separate current-term commitment from later application.",
+    "Check the old leader’s behavior during a partition and what proves a supposedly fresh read is current."
+  ],
+  "changes": [
+    "B has the entry durably, but the client response is lost after valid commitment. Explain the retry result and the identity record needed.",
+    "A is isolated while B/C elect a new leader. A can still receive client traffic. Defend its write and read behavior."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "The violated contract is acknowledged durability/visibility, not merely slow replication. In the trace, success crossed no durable consensus boundary: A buffered index11, attempted transmission, and replied before any required persistence acknowledgement. A crash can therefore erase the only copy, and a later valid quorum has no obligation to preserve an entry it never durably received. The smallest counterexample is the supplied five-event history: receive, buffer/send, success, crash-before-persistence, later read40.\n\nRepair the result path using the protocol, not by sleeping. Persist the leader’s entry and relevant protocol state as required; replicate onto matching follower prefixes; wait for sufficient durable follower acknowledgement to establish a majority for a current-term entry; mark it committed and apply it in order; then return the promised application result. In a three-voter fixed group, a durable leader plus one durable follower can provide the majority. Waiting for all three is unnecessary for the stated single-failure goal and would reduce availability during one follower outage. Conversely, sending to two peers is not equivalent to receiving two durable replies.\n\nExplain the current-term qualification. Raft does not directly infer commitment of an older-term entry from replica count alone; a current-term committed entry establishes commitment of its preceding prefix under the log rules. A repair that implements only a naked counter and ignores election freshness, persisted votes and conflicting suffix repair is still incomplete. Reuse a tested consensus implementation in a real product; this exercise audits its acknowledgement integration rather than building Raft in an hour.\n\nFor the partition change, B/C can form a majority and elect later-term authority under the protocol. A’s old local belief does not permit it to acknowledge new authoritative writes. It should reject or redirect, and only expose a stale read under a clearly distinct weaker contract. A fresh read needs current-authority evidence and sufficient applied-state progress, so a local is_leader flag is insufficient after isolation.\n\nFor the lost-response change, the command may already be committed and applied. A retry must use the same logical request identity, with a request fingerprint and retained result, so a repeated mutation does not execute twice. A changed payload under r17 should conflict. The result table belongs to the state machine’s recovery state and must survive snapshots/restarts under the chosen retry-retention contract.\n\nVerification should inject failure at named boundaries: before local persistence, after local persistence but before majority, after majority before client reply, and after reply. Precommit failures may leave an uncertain/uncommitted operation; after a promised successful reply the new leader must preserve the update. Capture invocation/response histories and check a later fresh read. Add minority-isolation tests and restart tests that confirm persisted votes/logs rather than only process uptime.\n\nObserve durable append latency, follower acknowledgement latency, commit-to-apply lag, term changes, pending proposals and client retries. These distinguish protocol progress from storage stalls. Security should authenticate cluster membership and protect the update API, but adding TLS would not repair the ordering defect itself. A defensible alternative may relax the original API to acknowledge only receipt, yet that changes the product promise and must be named rather than quietly implemented.",
+  "debrief": "Compare the exact point at which you sent success with the guarantee the client believed. The strongest answer makes buffered/sent/persisted/committed/applied distinct and ties every arrow to an assumption. If you said “use three replicas,” identify which replies carried evidence of persistence. If you said “majority,” check that you preserved election and current-term log rules.\n\nThe consequential missing assumption is often the meaning of a fresh read after leadership changes. Another frequent gap is retry identity after an uncertain response. Find an actual excerpt where you handled or omitted each. A valid defense may wait for all voters for a stricter durability contract, but explain its availability cost; it is not the minimal repair for this scenario.\n\nFocused retry: change to five voters, let two followers be unavailable, and place a crash after commitment but before reply. State the exact durable quorum, retry response, and one history assertion in five minutes.",
+  "remediation": [
+    "081",
+    "082",
+    "083"
+  ]
+}

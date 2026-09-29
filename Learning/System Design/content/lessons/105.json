@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "105",
+  "objectives": [
+    "Ask for the guarantee before selecting a mechanism.",
+    "Use actual traces to defend failure and recovery behavior."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate brief",
+      "markdown": "An order API commits SQL state and publishes an event to a broker. Customers report accepted orders missing from shipping; a recent retry change also caused duplicate shipment requests. Locate concrete failure windows and propose a reliable handoff. Do not assume a distributed transaction exists. Start by clarifying the required guarantees."
+    },
+    {
+      "id": "format",
+      "title": "Saved assessment workflow",
+      "markdown": "Use the interview center for45minutes of reasoning and15minutes of feedback. Ask one clarification at a time. Record actual statements and artifacts. Finish the answering phase before retrieving the separate reference/debrief. A rubric score is educational evidence, not a hiring prediction."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "minutes": 45,
+    "prompt": "An order API commits SQL state and publishes an event to a broker. Customers report accepted orders missing from shipping; a recent retry change also caused duplicate shipment requests. Locate concrete failure windows and propose a reliable handoff. Do not assume a distributed transaction exists. Start by clarifying the required guarantees.",
+    "rubric": [
+      "Scope and invariant.",
+      "Failure schedule and ownership.",
+      "Recovery and defended alternatives."
+    ],
+    "solution": "Use the protected interview debrief after submitting the attempt."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "Name the boundary, show a failing history, then defend the smallest mechanism that closes it.",
+  "sources": []
+}

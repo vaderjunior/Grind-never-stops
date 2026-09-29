@@ -1,0 +1,495 @@
+{
+  "generatedAt": "2026-09-29T14:11:50.483Z",
+  "guides": 76,
+  "guideTerms": 366,
+  "legacyTerms": 60,
+  "legacyUniqueRetained": 30,
+  "total": 396,
+  "legacySha256": "ac2cc78dd242da8e40beb6e2e2f2358d4cad00356a6e971db775c32e5cf40c3b",
+  "rule": "Case-insensitive exact term match; earliest guide in path order wins. Distinct variants remain distinct. Unique legacy entries remain unchanged.",
+  "duplicateGuideTerms": [
+    {
+      "term": "Server",
+      "preferredGuideId": "what-is-system-design",
+      "otherGuideId": "computer-and-server-basics",
+      "preferredDefinition": "A program that receives requests and sends responses. People also use “server” for the computer running it.",
+      "otherDefinition": "A program or machine serving requests from clients; context determines which meaning is intended."
+    },
+    {
+      "term": "Status code",
+      "preferredGuideId": "apis-without-jargon",
+      "otherGuideId": "http-requests-and-errors",
+      "preferredDefinition": "A number in an HTTP response summarizing its result, such as 200 for success or 404 for not found.",
+      "otherDefinition": "A three-digit response code indicating the HTTP outcome."
+    },
+    {
+      "term": "Process",
+      "preferredGuideId": "computer-and-server-basics",
+      "otherGuideId": "processes-threads-and-concurrency",
+      "preferredDefinition": "A running instance of a program, with memory and operating-system-managed resources.",
+      "otherDefinition": "A running program with its own virtual address space and operating-system resources."
+    },
+    {
+      "term": "SQL",
+      "preferredGuideId": "databases-and-sql",
+      "otherGuideId": "sql-in-small-steps",
+      "preferredDefinition": "A language for asking a relational database to read and change data.",
+      "otherDefinition": "A language used to define, query, and modify data in relational databases."
+    },
+    {
+      "term": "Primary key",
+      "preferredGuideId": "databases-and-sql",
+      "otherGuideId": "data-modeling-basics",
+      "preferredDefinition": "A column or combination whose value uniquely identifies each row.",
+      "otherDefinition": "The field or fields that uniquely identify one row."
+    },
+    {
+      "term": "Foreign key",
+      "preferredGuideId": "databases-and-sql",
+      "otherGuideId": "data-modeling-basics",
+      "preferredDefinition": "A database rule that a referenced identifier must exist in another specified set of rows.",
+      "otherDefinition": "A database rule requiring a reference to match an existing referenced key."
+    },
+    {
+      "term": "Access pattern",
+      "preferredGuideId": "database-families",
+      "otherGuideId": "choose-a-database",
+      "preferredDefinition": "A question or update the application performs repeatedly.",
+      "otherDefinition": "A recurring way the application reads or changes data."
+    },
+    {
+      "term": "Metadata",
+      "preferredGuideId": "choose-a-database",
+      "otherGuideId": "blobs-files-and-objects",
+      "preferredDefinition": "Information describing content, such as its owner, size, or storage location.",
+      "otherDefinition": "Information describing content, such as owner, size, type, or storage key."
+    },
+    {
+      "term": "Object storage",
+      "preferredGuideId": "choose-a-database",
+      "otherGuideId": "blobs-files-and-objects",
+      "preferredDefinition": "Storage for named objects such as image files, with content and metadata.",
+      "otherDefinition": "Storage accessed through named objects and service operations, often over a network API."
+    },
+    {
+      "term": "Byte",
+      "preferredGuideId": "blobs-files-and-objects",
+      "otherGuideId": "numbers-bytes-and-units",
+      "preferredDefinition": "A small unit of digital data; files are represented as sequences of bytes.",
+      "otherDefinition": "Eight bits in the systems discussed here."
+    },
+    {
+      "term": "State",
+      "preferredGuideId": "data-that-survives",
+      "otherGuideId": "grow-one-server",
+      "preferredDefinition": "Information the application needs to remember, such as notes, users, or completed operations.",
+      "otherDefinition": "Information that must be remembered between operations."
+    },
+    {
+      "term": "Headroom",
+      "preferredGuideId": "numbers-bytes-and-units",
+      "otherGuideId": "grow-one-server",
+      "preferredDefinition": "Capacity intentionally left unused so variation and failures do not immediately exhaust the system.",
+      "otherDefinition": "Spare capacity reserved for a stated burst, uncertainty, or failure scenario."
+    },
+    {
+      "term": "Load balancer",
+      "preferredGuideId": "gateways-and-proxies",
+      "otherGuideId": "load-balancing",
+      "preferredDefinition": "A component or function that distributes eligible connections or requests among service instances.",
+      "otherDefinition": "A component that distributes incoming connections or requests among eligible servers."
+    },
+    {
+      "term": "Reverse proxy",
+      "preferredGuideId": "gateways-and-proxies",
+      "otherGuideId": "load-balancing",
+      "preferredDefinition": "An entry intermediary that receives requests for a service and forwards them to its backend.",
+      "otherDefinition": "A server that accepts a client request and forwards it to another server on the service’s behalf."
+    },
+    {
+      "term": "TTL",
+      "preferredGuideId": "dns-and-addresses",
+      "otherGuideId": "redis-from-scratch",
+      "preferredDefinition": "Time to live: a limit on how long a DNS answer may normally be reused from cache before it needs refreshing.",
+      "otherDefinition": "Time to live: an expiration duration associated with stored data."
+    },
+    {
+      "term": "Cache-aside",
+      "preferredGuideId": "remember-with-caches",
+      "otherGuideId": "cache-patterns-and-invalidation",
+      "preferredDefinition": "The application checks the cache, and on a miss reads the main store and fills the cache.",
+      "otherDefinition": "The application checks a cache and loads missing values from the store holding the accepted saved records."
+    },
+    {
+      "term": "TTL",
+      "preferredGuideId": "dns-and-addresses",
+      "otherGuideId": "cache-patterns-and-invalidation",
+      "preferredDefinition": "Time to live: a limit on how long a DNS answer may normally be reused from cache before it needs refreshing.",
+      "otherDefinition": "Time to live: an expiry interval for a cached entry under the cache policy."
+    },
+    {
+      "term": "Eviction",
+      "preferredGuideId": "redis-from-scratch",
+      "otherGuideId": "cache-patterns-and-invalidation",
+      "preferredDefinition": "Removal of data under a memory-management policy.",
+      "otherDefinition": "Removing an entry to manage cache capacity, even if its expiry time has not arrived."
+    },
+    {
+      "term": "Source of truth",
+      "preferredGuideId": "remember-with-caches",
+      "otherGuideId": "cache-patterns-and-invalidation",
+      "preferredDefinition": "The main accepted record used to resolve disagreement with a cached copy.",
+      "otherDefinition": "The store whose accepted state determines the correct business value for the operation."
+    },
+    {
+      "term": "TTL",
+      "preferredGuideId": "dns-and-addresses",
+      "otherGuideId": "cache-freshness-and-cdns",
+      "preferredDefinition": "Time to live: a limit on how long a DNS answer may normally be reused from cache before it needs refreshing.",
+      "otherDefinition": "Time to live: the duration an entry may be treated as fresh under a chosen policy."
+    },
+    {
+      "term": "Invalidation",
+      "preferredGuideId": "cache-patterns-and-invalidation",
+      "otherGuideId": "cache-freshness-and-cdns",
+      "preferredDefinition": "Making a cached representation unusable because it may no longer be valid.",
+      "otherDefinition": "Making a cached entry unusable so it will be refreshed or replaced."
+    },
+    {
+      "term": "Process",
+      "preferredGuideId": "computer-and-server-basics",
+      "otherGuideId": "containers-and-deployment",
+      "preferredDefinition": "A running instance of a program, with memory and operating-system-managed resources.",
+      "otherDefinition": "A running instance of a program, with execution state and memory managed by the operating system."
+    },
+    {
+      "term": "Deployment",
+      "preferredGuideId": "read-system-diagrams",
+      "otherGuideId": "containers-and-deployment",
+      "preferredDefinition": "The arrangement of running software on computers or other execution environments.",
+      "otherDefinition": "In Kubernetes, a workload resource and controller arrangement for managing desired replicas and updates of suitable applications."
+    },
+    {
+      "term": "Acknowledgment",
+      "preferredGuideId": "background-jobs",
+      "otherGuideId": "queues-and-retries",
+      "preferredDefinition": "A message or recorded decision that confirms a specified stage, such as task completion.",
+      "otherDefinition": "Confirmation of a specified stage, such as a worker declaring a job complete."
+    },
+    {
+      "term": "Offset",
+      "preferredGuideId": "pagination-from-scratch",
+      "otherGuideId": "queue-broker-fundamentals",
+      "preferredDefinition": "A number of matching rows to skip before returning a page.",
+      "otherDefinition": "A position within a retained log partition."
+    },
+    {
+      "term": "Worker",
+      "preferredGuideId": "background-jobs",
+      "otherGuideId": "job-lifecycle-and-backpressure",
+      "preferredDefinition": "A process or component that takes and performs jobs.",
+      "otherDefinition": "A process that claims and performs background work."
+    },
+    {
+      "term": "Acknowledgement",
+      "preferredGuideId": "queue-broker-fundamentals",
+      "otherGuideId": "job-lifecycle-and-backpressure",
+      "preferredDefinition": "A signal that a specifically defined delivery or processing step completed.",
+      "otherDefinition": "A message confirming a particular stage; its meaning depends on who sends it and what has been persisted."
+    },
+    {
+      "term": "Offset",
+      "preferredGuideId": "pagination-from-scratch",
+      "otherGuideId": "streaming-and-replay",
+      "preferredDefinition": "A number of matching rows to skip before returning a page.",
+      "otherDefinition": "A position identifying a record within one partition."
+    },
+    {
+      "term": "Consumer group",
+      "preferredGuideId": "queue-broker-fundamentals",
+      "otherGuideId": "streaming-and-replay",
+      "preferredDefinition": "A coordination unit whose members share consumption work under the system’s rules.",
+      "otherDefinition": "Cooperating consumers that divide partitions for a particular processing application."
+    },
+    {
+      "term": "Replay",
+      "preferredGuideId": "queue-broker-fundamentals",
+      "otherGuideId": "streaming-and-replay",
+      "preferredDefinition": "Reading retained events again from an earlier position.",
+      "otherDefinition": "Reading retained records again from an earlier position to rebuild or reprocess something."
+    },
+    {
+      "term": "Concurrency limit",
+      "preferredGuideId": "job-lifecycle-and-backpressure",
+      "otherGuideId": "rate-limits-and-abuse",
+      "preferredDefinition": "A bound on the number of operations running at the same time.",
+      "otherDefinition": "A bound on the number of operations running at the same time."
+    },
+    {
+      "term": "Timeout",
+      "preferredGuideId": "http-requests-and-errors",
+      "otherGuideId": "reliability-controls",
+      "preferredDefinition": "The caller stops waiting after a chosen time; this alone does not cancel all remote work.",
+      "otherDefinition": "A limit on how long a particular operation is allowed to wait."
+    },
+    {
+      "term": "Deadline",
+      "preferredGuideId": "reliable-systems",
+      "otherGuideId": "reliability-controls",
+      "preferredDefinition": "The latest time by which a request must finish.",
+      "otherDefinition": "The latest time at which the overall operation remains useful or permitted."
+    },
+    {
+      "term": "Circuit breaker",
+      "preferredGuideId": "reliable-systems",
+      "otherGuideId": "reliability-controls",
+      "preferredDefinition": "A policy that temporarily stops calls to a failing dependency and later probes recovery.",
+      "otherDefinition": "A policy that temporarily stops calls to a failing dependency and later permits limited recovery probes."
+    },
+    {
+      "term": "Cardinality",
+      "preferredGuideId": "data-modeling-basics",
+      "otherGuideId": "observe-and-debug",
+      "preferredDefinition": "How many records on one side can relate to records on another side.",
+      "otherDefinition": "The number of distinct combinations of labels attached to a metric."
+    },
+    {
+      "term": "Container",
+      "preferredGuideId": "containers-and-deployment",
+      "otherGuideId": "kubernetes-building-blocks",
+      "preferredDefinition": "A running workload with operating-system isolation and resource controls; it is not a separate physical computer.",
+      "otherDefinition": "An isolated application process environment created from an image, with configured runtime resources and interfaces."
+    },
+    {
+      "term": "Pod",
+      "preferredGuideId": "containers-and-deployment",
+      "otherGuideId": "kubernetes-building-blocks",
+      "preferredDefinition": "Kubernetes’s smallest deployable workload unit, containing one or more closely related containers sharing selected resources.",
+      "otherDefinition": "Kubernetes’s scheduling unit containing one or more closely related containers with shared networking and configured volumes."
+    },
+    {
+      "term": "Deployment",
+      "preferredGuideId": "read-system-diagrams",
+      "otherGuideId": "kubernetes-building-blocks",
+      "preferredDefinition": "The arrangement of running software on computers or other execution environments.",
+      "otherDefinition": "An object describing desired replicated application Pods and managing their rollout through ReplicaSets."
+    },
+    {
+      "term": "Service",
+      "preferredGuideId": "service-boundaries",
+      "otherGuideId": "kubernetes-building-blocks",
+      "preferredDefinition": "An independently running component reached through a defined communication contract.",
+      "otherDefinition": "A stable access abstraction for a set of eligible network endpoints, often selected Pods."
+    },
+    {
+      "term": "Deployment",
+      "preferredGuideId": "read-system-diagrams",
+      "otherGuideId": "ship-and-recover",
+      "preferredDefinition": "The arrangement of running software on computers or other execution environments.",
+      "otherDefinition": "Putting a new application version into service."
+    },
+    {
+      "term": "Rollback",
+      "preferredGuideId": "transactions-and-correctness",
+      "otherGuideId": "ship-and-recover",
+      "preferredDefinition": "Discard the transaction’s uncommitted changes.",
+      "otherDefinition": "Returning application or configuration behavior to an earlier known version."
+    },
+    {
+      "term": "Backup",
+      "preferredGuideId": "data-that-survives",
+      "otherGuideId": "ship-and-recover",
+      "preferredDefinition": "A recoverable copy kept for restoration after loss, corruption, or another supported recovery scenario.",
+      "otherDefinition": "A retained copy or recoverable history used to reconstruct data."
+    },
+    {
+      "term": "Service",
+      "preferredGuideId": "service-boundaries",
+      "otherGuideId": "kubernetes-networking",
+      "preferredDefinition": "An independently running component reached through a defined communication contract.",
+      "otherDefinition": "A Kubernetes abstraction for reaching a logical set of backends through stable discovery and configured ports."
+    },
+    {
+      "term": "Headroom",
+      "preferredGuideId": "numbers-bytes-and-units",
+      "otherGuideId": "estimates-and-tradeoffs",
+      "preferredDefinition": "Capacity intentionally left unused so variation and failures do not immediately exhaust the system.",
+      "otherDefinition": "Capacity kept above expected demand to handle variation or failures."
+    },
+    {
+      "term": "Dead-letter queue",
+      "preferredGuideId": "job-lifecycle-and-backpressure",
+      "otherGuideId": "design-notifications",
+      "preferredDefinition": "A separate place for messages that cannot be processed successfully under the retry policy.",
+      "otherDefinition": "A holding area for messages that exhaust the normal retry policy."
+    },
+    {
+      "term": "Token bucket",
+      "preferredGuideId": "rate-limits-and-abuse",
+      "otherGuideId": "design-rate-limiter",
+      "preferredDefinition": "A budget that refills at a defined rate up to a maximum capacity; admitted work consumes budget.",
+      "otherDefinition": "A balance that refills at a chosen rate up to a capacity and is spent to admit work."
+    },
+    {
+      "term": "Replay",
+      "preferredGuideId": "queue-broker-fundamentals",
+      "otherGuideId": "chat-reconnect-and-scale",
+      "preferredDefinition": "Reading retained events again from an earlier position.",
+      "otherDefinition": "Reading durable events that a client may have missed."
+    },
+    {
+      "term": "Backpressure",
+      "preferredGuideId": "job-lifecycle-and-backpressure",
+      "otherGuideId": "chat-reconnect-and-scale",
+      "preferredDefinition": "A signal or control that limits incoming work when downstream capacity cannot keep up.",
+      "otherDefinition": "Restricting or slowing upstream work when downstream capacity is limited."
+    },
+    {
+      "term": "Object storage",
+      "preferredGuideId": "choose-a-database",
+      "otherGuideId": "design-file-storage",
+      "preferredDefinition": "Storage for named objects such as image files, with content and metadata.",
+      "otherDefinition": "A service that stores a large byte sequence under a key, such as an uploaded photo."
+    },
+    {
+      "term": "Metadata",
+      "preferredGuideId": "choose-a-database",
+      "otherGuideId": "design-file-storage",
+      "preferredDefinition": "Information describing content, such as its owner, size, or storage location.",
+      "otherDefinition": "Information about a file: its owner, name, size, version, and storage location."
+    },
+    {
+      "term": "Checksum",
+      "preferredGuideId": "blobs-files-and-objects",
+      "otherGuideId": "design-file-storage",
+      "preferredDefinition": "A value computed from content to help detect whether those bytes changed or were corrupted.",
+      "otherDefinition": "A value calculated from bytes to help detect whether they changed or were damaged."
+    },
+    {
+      "term": "CDN",
+      "preferredGuideId": "cache-freshness-and-cdns",
+      "otherGuideId": "design-video-platform",
+      "preferredDefinition": "Content delivery network: servers in multiple locations that can deliver cached content near users.",
+      "otherDefinition": "A content delivery network: distributed servers that deliver cached content closer to viewers."
+    },
+    {
+      "term": "Ranking",
+      "preferredGuideId": "feed-fanout-and-ranking",
+      "otherGuideId": "design-search-and-autocomplete",
+      "preferredDefinition": "Scoring or ordering eligible candidates according to the product objective.",
+      "otherDefinition": "Ordering possible results by a chosen relevance rule."
+    },
+    {
+      "term": "Atomic operation",
+      "preferredGuideId": "design-rate-limiter",
+      "otherGuideId": "design-bookings",
+      "preferredDefinition": "An operation whose protected steps cannot be interleaved with competing operations.",
+      "otherDefinition": "An operation whose protected change is observed as one indivisible result."
+    },
+    {
+      "term": "Transaction",
+      "preferredGuideId": "transactions-and-correctness",
+      "otherGuideId": "design-bookings",
+      "preferredDefinition": "A group of database operations handled together under specified correctness rules.",
+      "otherDefinition": "A group of database changes that commit together or do not commit."
+    },
+    {
+      "term": "Reconciliation",
+      "preferredGuideId": "partitions-and-quorums",
+      "otherGuideId": "design-payments",
+      "preferredDefinition": "Comparing and repairing divergent or missing state after communication or processing resumes.",
+      "otherDefinition": "Comparing records with an authoritative external source to find and resolve mismatches."
+    },
+    {
+      "term": "Quorum",
+      "preferredGuideId": "partitions-and-quorums",
+      "otherGuideId": "coordination-and-leases",
+      "preferredDefinition": "A set of responses large enough for a particular protocol’s decision rule.",
+      "otherDefinition": "A set of participants large enough to satisfy a protocol’s agreement rule, often a majority."
+    },
+    {
+      "term": "Snapshot",
+      "preferredGuideId": "pagination-from-scratch",
+      "otherGuideId": "change-data-safely",
+      "preferredDefinition": "A view of data from a defined point or consistency boundary, rather than an automatically changing live list.",
+      "otherDefinition": "A view of data at a defined point or consistency boundary."
+    },
+    {
+      "term": "Projection",
+      "preferredGuideId": "sql-in-small-steps",
+      "otherGuideId": "change-data-safely",
+      "preferredDefinition": "Choosing which columns appear in a query result.",
+      "otherDefinition": "A derived view calculated from authoritative state or events."
+    },
+    {
+      "term": "Replay",
+      "preferredGuideId": "queue-broker-fundamentals",
+      "otherGuideId": "change-data-safely",
+      "preferredDefinition": "Reading retained events again from an earlier position.",
+      "otherDefinition": "Applying retained input again to reconstruct or verify a result."
+    },
+    {
+      "term": "Token",
+      "preferredGuideId": "design-search-and-autocomplete",
+      "otherGuideId": "ai-system-design",
+      "preferredDefinition": "A unit of text produced by analysis, often a word or part of a word.",
+      "otherDefinition": "A unit the model processes, often a word fragment rather than a whole word."
+    },
+    {
+      "term": "Inference",
+      "preferredGuideId": "ai-system-design",
+      "otherGuideId": "model-serving-and-gpus",
+      "preferredDefinition": "Running a trained model to produce an output from an input.",
+      "otherDefinition": "Running an already trained model to produce outputs from inputs."
+    },
+    {
+      "term": "KV cache",
+      "preferredGuideId": "ai-system-design",
+      "otherGuideId": "model-serving-and-gpus",
+      "preferredDefinition": "Stored attention information used during generation; longer active contexts generally require more memory.",
+      "otherDefinition": "Stored attention keys and values from processed tokens, reused during supported autoregressive generation."
+    },
+    {
+      "term": "Control plane",
+      "preferredGuideId": "kubernetes-building-blocks",
+      "otherGuideId": "ai-platform-operations",
+      "preferredDefinition": "Components that store cluster intent and coordinate scheduling and reconciliation.",
+      "otherDefinition": "The mechanisms that decide and configure desired deployment or routing state."
+    },
+    {
+      "term": "Time to first token",
+      "preferredGuideId": "ai-system-design",
+      "otherGuideId": "ai-platform-operations",
+      "preferredDefinition": "Time until the user receives the first generated output token.",
+      "otherDefinition": "The time a caller waits until the first generated token is observed under a stated measurement boundary."
+    },
+    {
+      "term": "Token",
+      "preferredGuideId": "design-search-and-autocomplete",
+      "otherGuideId": "ai-platform-operations",
+      "preferredDefinition": "A unit of text produced by analysis, often a word or part of a word.",
+      "otherDefinition": "A unit of text representation used by the model, which may be a word, part of a word, or another symbol."
+    },
+    {
+      "term": "Scope",
+      "preferredGuideId": "interview-game-plan",
+      "otherGuideId": "full-mock-interview",
+      "preferredDefinition": "The behaviors included in the current design discussion.",
+      "otherDefinition": "What this design includes and deliberately leaves for another iteration."
+    },
+    {
+      "term": "Invariant",
+      "preferredGuideId": "design-bookings",
+      "otherGuideId": "full-mock-interview",
+      "preferredDefinition": "A rule that must remain true through every allowed operation.",
+      "otherDefinition": "A rule the system must preserve even when requests overlap or fail."
+    },
+    {
+      "term": "Tradeoff",
+      "preferredGuideId": "interview-game-plan",
+      "otherGuideId": "full-mock-interview",
+      "preferredDefinition": "A choice that improves one property while costing another.",
+      "otherDefinition": "A benefit chosen together with the cost or limitation it brings."
+    }
+  ]
+}

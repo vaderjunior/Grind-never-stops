@@ -1,0 +1,146 @@
+{
+  "id": "041",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain log-before-data ordering and the purpose of a durable commit record.",
+    "Distinguish process memory, OS buffers, durable storage, and client knowledge.",
+    "Trace crash recovery without confusing durability with isolation."
+  ],
+  "retrieval": [
+    "L036: what does atomicity guarantee that durability does not?",
+    "L027: why can a timeout leave a successful write uncertain to the caller?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "The success response must have something durable behind it",
+      "markdown": "A registration service updates a seat counter in memory and replies “reserved.” The process crashes before the changed page reaches durable storage. After restart the seat appears free. Correct locking before the crash did not preserve the accepted result: concurrency protection and crash durability solve different problems.\n\nOne approach is to force every changed data page to storage before responding. A transaction may touch many scattered table and index pages, making small random writes expensive. A log records the changes in append order. Recovery can use those records to reconstruct accepted state even if data pages were written later. This changes the write path, not the business invariant: the database still must arbitrate concurrent reservations."
+    },
+    {
+      "id": "mechanism",
+      "title": "Three boundaries, not one “save” operation",
+      "markdown": "Separate constructing a log record in process memory, passing bytes to the operating system, and reaching the durability boundary promised by the storage stack. A normal write call need not imply stable storage. The database's flush/sync protocol must match its failure assumptions, including power loss and controller behavior. This lesson assumes the selected synchronous durability setting and a storage stack that honors its contract.\n\nThe write-ahead rule requires the relevant log records to become durable before a modified data page that depends on them can become durable. At commit, a durable commit decision allows recovery to distinguish accepted transactions from incomplete ones. Implementations differ in whether and how they undo changes, retain old versions, and flush uncommitted pages. Do not generalize our simplified replay model into every engine's recovery algorithm.\n\nIn PostgreSQL's documented WAL design, recovery redoes logged changes that data files do not yet reflect; one synchronization can serve multiple commits. Group commit amortizes synchronization while retaining the chosen acknowledgment guarantee. A checkpoint bounds how far recovery must revisit data state; it does not mean every later transaction must wait for another checkpoint to be durable. Backups still matter: a log on the same failed device cannot recover bytes that no longer exist."
+    },
+    {
+      "id": "trace",
+      "title": "Crash at each boundary",
+      "markdown": "For an illustrative transaction T7, the ordered events are: validate and protect the invariant; append its change records; append its commit record; make that log prefix durable; send success; eventually write the changed data page. Real engines overlap work, but preserve required ordering.\n\nCrash before the durable commit: the service must not promise durable success. Crash after it but before the response: recovery retains T7, while the client may have seen a timeout. Crash after success but before the data-page write: replay reconstructs T7. Crash after the data page: recovery must avoid applying non-idempotent effects twice. Physical/logical redo formats solve this with their own record and page metadata; an external email sent from application code is outside this database recovery contract.\n\nSuppose 400 transactions/s each change four 8-KiB pages but append 600 bytes of log. That is about 12.5 MiB/s of logical dirty-page traffic versus 240,000 log bytes/s before headers and batching. It is not a measured speedup: dirty pages still need writing, indexes add work, and flush latency can dominate. The estimate explains why sequential logging and delayed page writes can change the I/O shape."
+    },
+    {
+      "id": "model",
+      "title": "Executable model: committed replay is different from client certainty",
+      "markdown": "This Python model uses a durable log prefix as input. It intentionally omits real file synchronization, partial records, checksums, locks, and page LSNs. The exercise is to locate the commit boundary, not build a database.\n\n```python\ndef recover(records: list[tuple]) -> dict[str, int]:\n    pending: dict[str, list[tuple[str, int]]] = {}\n    state: dict[str, int] = {}\n    for record in records:\n        kind, transaction, *payload = record\n        if kind == \"put\":\n            key, value = payload\n            pending.setdefault(transaction, []).append((key, value))\n        elif kind == \"commit\":\n            for key, value in pending.pop(transaction, []):\n                state[key] = value\n    return state\n\nprefix = [(\"put\", \"T7\", \"seats\", 9)]\nassert recover(prefix) == {}\nprefix.append((\"commit\", \"T7\"))\nassert recover(prefix) == {\"seats\": 9}\nprint(\"committed prefix replays; reply delivery remains unknown\")\n```\n\nRun with Python 3; the printed sentence is the expected output. The model overwrites a value, so replaying the input from an empty state is deterministic. It does not prove real WAL recovery. A production acceptance test restarts the actual engine with its durability configuration and checks previously acknowledged writes; a power-loss guarantee requires a stronger fault model than killing one process.\n\nCommon errors are equating a WAL with a remote replica, equating commit with response delivery, or disabling synchronous durability and continuing to promise no acknowledged loss. State the selected guarantee and test at its boundary."
+    },
+    {
+      "id": "session-budget",
+      "title": "How to use this session",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation and diagrams, 8 worked trace or arithmetic, 10 bounded exercise, 10 scheduled Q1–Q3, and 4 solution comparison/cards. Q4–Q5 and extension prompts are optional extra practice. Python blocks labeled executable are self-contained standard-library models; they do not implement a production storage engine."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "wal-order",
+      "title": "An acknowledged commit outlives a missing data-page write",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant E as Database engine\nparticipant L as Durable log\nparticipant P as Data pages\nC->>E: Reserve seat\nE->>L: Append changes and commit, sync\nL-->>E: Durable prefix accepted\nE-->>C: Success\nNote over E,P: Crash can happen before this page write\nE->>P: Later write changed page\nL-->>P: Recovery redoes committed changes",
+      "caption": "The log and data pages may share one device; this is crash recovery, not independent disaster recovery. The final recovery arrow describes a restart path, not simultaneous normal execution.",
+      "steps": [
+        "The engine first protects the reservation invariant.",
+        "Changes and the commit decision cross the durability boundary.",
+        "Only then may the synchronous path acknowledge success.",
+        "Recovery uses the log when the data page was not yet written."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A service logs a seat decrement, sends success, and syncs the log 50 ms later. Draw a crash that loses an acknowledged reservation. Repair the response order. Then explain the different outcome when the log is durable but the response is lost.",
+    "rubric": [
+      "Crash lies after success but before durable sync.",
+      "Durable commit precedes the synchronous success response.",
+      "Lost response is an uncertain client outcome, not proof of rollback."
+    ],
+    "solution": "If the process or power fails after success but before the promised durable boundary, volatile log bytes can disappear; replay lacks the accepted reservation. For synchronous durability, append changes and commit, wait for the log prefix to satisfy the durability contract, then respond. A crash after the durable decision but before reply delivery retains the reservation: the client cannot safely infer failure. It needs a stable operation identity or a readback/retry protocol introduced in L027 and expanded later. A separate backup or replica is still needed for loss of the log device."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which ordering is required by write-ahead logging?",
+      "options": [
+        "Durable dependent page before its log",
+        "Relevant durable log before the dependent data page",
+        "Client success before both"
+      ],
+      "answer": "Relevant durable log before the dependent data page",
+      "explanation": "Recovery needs the log information before a changed page can survive independently."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A durable commit exists but the response is lost. What follows?",
+      "options": [
+        "The transaction certainly rolled back",
+        "The client outcome is uncertain although recovery can retain the commit",
+        "Recovery must delete the transaction"
+      ],
+      "answer": "The client outcome is uncertain although recovery can retain the commit",
+      "explanation": "Durability concerns stored state; a received acknowledgment concerns client knowledge. The two events are distinct."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "400 transactions/s each append 600 bytes. What is the raw log payload rate?",
+      "answer": 240000,
+      "unit": "bytes/s",
+      "tolerance": 0,
+      "explanation": "400 × 600 = 240,000 bytes/s, excluding framing and indexes."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Does WAL by itself preserve data after the device containing both log and pages fails?",
+      "answer": "No. It needs a surviving copy or backup outside that failure domain.",
+      "explanation": "Crash recovery assumes the required recovery input survives; a destroyed only copy cannot replay itself."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can group commit preserve durability while improving throughput?",
+      "answer": "Several commits share a synchronization of a log prefix; each response waits until its required prefix is durable.",
+      "explanation": "Batching can change cost and latency while preserving acknowledgment ordering. It is not permission to reply before the flush."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "WAL ordering?",
+      "back": "Durable log information precedes the durable data-page change that depends on it."
+    },
+    {
+      "front": "Durable commit but lost reply?",
+      "back": "Stored success may survive while the caller remains uncertain."
+    },
+    {
+      "front": "Checkpoint versus commit?",
+      "back": "A checkpoint helps bound recovery work; each transaction has its own commit/durability contract."
+    },
+    {
+      "front": "What does group commit share?",
+      "back": "A synchronization that makes a prefix containing multiple commits durable."
+    },
+    {
+      "front": "Does WAL equal backup?",
+      "back": "No. A backup or independent surviving copy covers different failure scenarios."
+    }
+  ],
+  "mentalModel": "A durability promise is an ordering promise at a named storage boundary; a reply is a separate event.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18 — Write-Ahead Logging",
+      "url": "https://www.postgresql.org/docs/18/wal-intro.html",
+      "scope": "Log-before-data ordering, redo, group commit; source current resolved to PostgreSQL 18.",
+      "checked": "2026-09-29"
+    }
+  ]
+}

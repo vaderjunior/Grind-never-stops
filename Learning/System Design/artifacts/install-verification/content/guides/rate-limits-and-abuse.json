@@ -1,0 +1,286 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 12,
+  "title": "Rate limits: protecting a shared service",
+  "level": "intermediate",
+  "minutes": 45,
+  "id": "rate-limits-and-abuse",
+  "summary": "Protect shared capacity with simple counting rules, then reason about bursts, retry behavior, and distributed enforcement.",
+  "objectives": [
+    "Choose a limit key and explain the policy it represents.",
+    "Compare a fixed window with a token bucket using a small trace.",
+    "Describe atomic enforcement, failure behavior, and client retries."
+  ],
+  "terms": [
+    {
+      "term": "Rate limit",
+      "definition": "A policy that bounds admitted work over time for a chosen identity or resource."
+    },
+    {
+      "term": "Limit key",
+      "definition": "The scope being counted, such as one authenticated account and one operation."
+    },
+    {
+      "term": "Fixed window",
+      "definition": "A counter for each aligned time interval that resets for the next interval."
+    },
+    {
+      "term": "Token bucket",
+      "definition": "A budget that refills at a defined rate up to a maximum capacity; admitted work consumes budget."
+    },
+    {
+      "term": "Concurrency limit",
+      "definition": "A bound on the number of operations running at the same time."
+    }
+  ],
+  "retrieval": [
+    "Why can retries increase load during an outage?",
+    "How does a slow dependency cause requests to build up?"
+  ],
+  "sections": [
+    {
+      "id": "story",
+      "title": "One busy caller should not consume all shared capacity",
+      "markdown": "Pocket Notes adds search and file uploads. One buggy client retries search continuously. Another starts many large uploads. Without controls, they can occupy the same servers and connections that ordinary users need. A rate limiter decides how much work to admit for a defined scope and interval.\n\nStart by naming the purpose. A per-account search limit protects shared compute and creates predictable usage. A login-attempt policy helps address credential abuse but requires additional controls and careful handling of legitimate users. An upload quota may count bytes, not just requests. “One hundred requests” is incomplete until you say who, which operation, over what time, and at what cost.\n\nIP addresses are sometimes useful signals, but many people may share one address and one attacker may use many. An authenticated account key often expresses a product policy better after login. Layered controls can combine account, endpoint, tenant, and global resource limits without assuming one identifier solves every abuse problem."
+    },
+    {
+      "id": "window",
+      "title": "A simple counter has a boundary effect",
+      "markdown": "Suppose a fixed-window rule allows 10 requests in each aligned minute. At 12:00:59 a caller sends 10 requests, then at 12:01:00 sends 10 more. Each minute's counter obeys the rule, yet 20 requests arrive roughly a second apart. That is a consequence of the chosen policy, not necessarily a counter bug.\n\nA fixed window is easy to explain and store, but the boundary burst may be unacceptable for the protected service. A sliding-window approach considers a recent rolling interval. Exact timestamp storage uses more memory/work; approximate counters trade precision for cost. Choose based on the requirement rather than assuming every limit must use the same algorithm.\n\nIn concurrent code, checking a counter and incrementing it must form one atomic decision at the enforcing authority. If two requests both observe nine and both independently pass a ten-request limit, the implementation can admit eleven. A central shared store is useful only if the operation it provides actually protects that check-and-update rule."
+    },
+    {
+      "id": "bucket",
+      "title": "A token bucket makes burst capacity explicit",
+      "markdown": "A token bucket makes the permitted burst visible. Imagine room for 10 tokens, refilling at 2 tokens/s, never above 10. Each admitted operation spends a positive validated cost.\n\n| Event | Calculation | Balance/result |\n| --- | --- | --- |\n| Begin full | Capacity 10 | 10 tokens |\n| Eight immediate searches, cost 1 each | 10 − 8 | 2 tokens |\n| Wait one second without work | min(10, 2 + 2) | 4 tokens |\n| One request costs 3 | 4 − 3 | Admit; 1 token |\n| Another immediately costs 2 | Only 1 is available | Deny; keep 1 |\n\nCapacity controls the short burst. Refill controls the ongoing budget. The cost can represent weighted work, but accepting a negative cost would create tokens rather than protect the service.\n\nMake refill, capacity cap, affordability check, and debit one atomic decision at the enforcing authority. Concurrent callers must not both spend the same token. Use a suitable monotonic time source inside one process; distributed enforcement needs a declared time/authority policy. Client timestamps do not prove refill time has passed."
+    },
+    {
+      "id": "distributed",
+      "title": "Decide what happens when the limiter is unavailable",
+      "markdown": "Several local limiters do not become one global limit just because they use the same configuration.\n\n| Enforcement design | Benefit | Cost or limit |\n| --- | --- | --- |\n| Independent per-instance buckets | Fast local decisions | Four 10/s allowances can admit roughly 40/s across four instances |\n| Shared atomic authority | More precise common budget | Adds a dependency and coordination latency |\n| Allocated local budgets | Less frequent coordination | Unused capacity or bounded overshoot depends on the allocation protocol |\n\nIf the shared limiter cannot be reached, choose a policy deliberately. Failing open admits without confirmed enforcement; failing closed rejects. A costly privileged operation may require denial or a small separately authorized emergency allowance. A low-risk read may use bounded local admission. Name the risk and scope.\n\n**Rate is not concurrency.** Ten requests/s lasting 30 seconds imply roughly 300 simultaneous operations in steady conditions. Even a correct rate counter may need a separate active-work cap, deadline, and bounded queue.\n\nIn an interview, describe the budget key, unit, algorithm, atomic operation, allowed burst, and failure behavior. Counting requests is useful only when it connects to the scarce resource you intend to protect."
+    },
+    {
+      "id": "response",
+      "title": "Tell callers how to recover without amplifying the problem",
+      "markdown": "HTTP 429 means too many requests. A response should explain the applicable policy safely and may include Retry-After to indicate when retrying is appropriate. Clients should honor a valid retry delay and use bounded retries with backoff and jitter, which spreads retries rather than making all clients return simultaneously.\n\nDo not make error handling create more work than the request it rejects. Put cheap coarse controls early enough to protect expensive processing, then apply identity-specific checks where the required context is available. Avoid exposing private account details in rejection messages.\n\nMeasure allowed and rejected work, limiter errors, request cost, and downstream saturation. Test the minute boundary, simultaneous arrivals, invalid costs, a restarted server, and the shared store becoming unavailable. In an interview, a strong first design names the key, algorithm, atomic operation, burst behavior, and failure policy before discussing a global deployment."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "bucket-flow",
+      "title": "Capacity and refill are two different controls",
+      "source": "flowchart LR\nR[Refill: 2 tokens per second] --> B[Bucket capacity: 10 tokens]\nQ[Search request: cost 1] --> A[Atomic refill and budget check]\nB --> A\nA -->|Enough tokens: deduct| Y[Admit work]\nA -->|Insufficient tokens| N[Reject with retry guidance]",
+      "caption": "The numbers are teaching assumptions. A distributed limiter also needs a defined authority for the budget.",
+      "steps": [
+        "Refill based on elapsed time.",
+        "Cap balance at bucket capacity.",
+        "Atomically compare and deduct a positive cost.",
+        "Admit or reject according to the result."
+      ],
+      "sectionId": "bucket"
+    },
+    {
+      "id": "rate-and-concurrency",
+      "title": "A request must fit both time-rate and active-work budgets",
+      "sectionId": "distributed",
+      "source": "flowchart LR\nR[Request with validated positive cost] --> B{Rate budget available?}\nB -->|No| X[Reject with clear retry policy]\nB -->|Yes| C{Active-work slot available?}\nC -->|No| Q[Reject or enter bounded queue]\nC -->|Yes| W[Run with deadline]\nW --> F[Release active slot on actual completion]",
+      "caption": "The two controls have different state. Their coordination and charge/refund rules must be specified; drawing sequential checks is not an atomic multi-store implementation.",
+      "steps": [
+        "Validate identity scope and operation cost.",
+        "Check the time-based admission budget under its atomic contract.",
+        "Bound simultaneous expensive work separately.",
+        "Release resources when the work ends, including cancellation handling."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Use a bucket with capacity 10 and refill 2 tokens/second. Start full, admit 8 one-token requests, wait 1 second, then receive a cost-3 request and an immediate cost-2 request. Trace balances and decisions. Then explain what changes if four servers each maintain an independent copy.",
+    "rubric": [
+      "Balances and admission decisions are correct.",
+      "Refill is capped and costs are positive.",
+      "Independent local limits are distinguished from one global policy."
+    ],
+    "solution": "Start 10; eight requests leave 2; one second refills to 4; cost 3 succeeds and leaves 1; immediate cost 2 is rejected, leaving 1 under this policy. Four independent full buckets could admit four times the intended burst and sustained rate for the same account when traffic reaches all four. A global policy needs shared atomic enforcement or an explicit allocation/overshoot design. Decide behavior when that coordination is unavailable."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Ten requests per aligned minute necessarily prevents twenty around a minute boundary?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with HTTPS"
+      ],
+      "answer": "No",
+      "explanation": "Ten at the end of one minute and ten at the start of the next can both satisfy the fixed-window rule."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Capacity 10, refill 2/second: after spending 8 then waiting 1 second, how many tokens remain?",
+      "answer": 4,
+      "unit": "tokens",
+      "explanation": "10−8+2=4, below the capacity cap.",
+      "tolerance": 0
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A rate limit alone guarantees a maximum number of running requests?",
+      "options": [
+        "Yes",
+        "No",
+        "Only for logged-in callers"
+      ],
+      "answer": "No",
+      "explanation": "Running work also depends on duration; a separate concurrency limit may be needed."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why must budget checking and deduction be atomic?",
+      "answer": "Concurrent requests can otherwise observe the same available budget and both consume it, exceeding the policy.",
+      "explanation": "Concurrent requests can otherwise observe the same available budget and both consume it, exceeding the policy."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "How would you choose fail-open versus fail-closed behavior?",
+      "answer": "State the operation risk and service objective; use explicit denial or bounded fallback budgets when appropriate, and measure limiter failures and downstream load.",
+      "explanation": "State the operation risk and service objective; use explicit denial or bounded fallback budgets when appropriate, and measure limiter failures and downstream load."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Complete rate policy includes?",
+      "back": "Scope/key, operation/cost, time behavior, capacity, and enforcement/failure rules."
+    },
+    {
+      "front": "Fixed-window boundary effect?",
+      "back": "Two allowed bursts can arrive immediately across an interval boundary."
+    },
+    {
+      "front": "Token bucket capacity versus refill?",
+      "back": "Capacity bounds stored burst budget; refill controls sustained replenishment."
+    },
+    {
+      "front": "Independent local buckets are globally exact?",
+      "back": "No; budget can multiply unless explicitly allocated/coordinated."
+    },
+    {
+      "front": "HTTP response for too many requests?",
+      "back": "429; Retry-After may provide retry timing guidance."
+    }
+  ],
+  "mentalModel": "A limiter is a budget with an owner, refill rule, and atomic spending decision—not just a counter.",
+  "sources": [
+    {
+      "title": "RFC 6585 — 429 Too Many Requests",
+      "url": "https://www.rfc-editor.org/rfc/rfc6585.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 2697 — Token bucket refill and capacity model",
+      "url": "https://www.rfc-editor.org/rfc/rfc2697.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "small-bucket",
+      "title": "Spend a finite burst, then wait for refill",
+      "sectionId": "bucket",
+      "intro": "A separate teaching bucket holds 6 tokens, refills 1 token/s, and each operation costs 2. One authority performs atomic decisions.",
+      "steps": [
+        {
+          "title": "Begin full",
+          "explanation": "The bucket has enough budget for three immediate operations.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 s"
+            },
+            {
+              "label": "Capacity",
+              "value": "6"
+            },
+            {
+              "label": "Balance",
+              "value": "6"
+            },
+            {
+              "label": "Cost",
+              "value": "2 per operation"
+            }
+          ]
+        },
+        {
+          "title": "Use the burst",
+          "explanation": "Three operations are admitted at the same illustrated time. They debit the shared balance rather than each seeing an independent full bucket.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 s"
+            },
+            {
+              "label": "Admitted",
+              "value": "3"
+            },
+            {
+              "label": "Balance",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "title": "Too soon for another",
+          "explanation": "One second refills one token, less than the next cost. The denied request does not spend a negative balance.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "1 s"
+            },
+            {
+              "label": "Balance",
+              "value": "1"
+            },
+            {
+              "label": "RequestedCost",
+              "value": "2"
+            },
+            {
+              "label": "Decision",
+              "value": "Deny; balance stays 1"
+            }
+          ]
+        },
+        {
+          "title": "Enough budget returns",
+          "explanation": "At second 2 the bucket reaches two tokens. One operation can be admitted and returns the balance to zero.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "2 s"
+            },
+            {
+              "label": "BeforeDecision",
+              "value": "2 tokens"
+            },
+            {
+              "label": "Decision",
+              "value": "Admit one"
+            },
+            {
+              "label": "AfterDecision",
+              "value": "0 tokens"
+            }
+          ]
+        }
+      ],
+      "takeaway": "The refill rate controls how fast budget returns; the capacity controls how much can be saved for a burst. Neither bounds how long admitted work stays active."
+    }
+  ]
+}

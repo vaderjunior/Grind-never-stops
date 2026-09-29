@@ -1,0 +1,135 @@
+{
+  "id": "045",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Defend engine properties from explicit workload and invariant requirements.",
+    "Distinguish burst throughput from sustainable physical work.",
+    "Use a weighted rubric with actual recorded evidence."
+  ],
+  "retrieval": [
+    "L041: draw the durable commit and client response as distinct events.",
+    "L042: define exactly which physical writes enter your amplification ratio."
+  ],
+  "sections": [
+    {
+      "id": "candidate-brief",
+      "title": "The candidate brief",
+      "markdown": "An operations team records equipment-state updates and produces daily fleet reports. It proposes selecting a storage engine from a short throughput benchmark. Clarify the correctness, read/write, and failure requirements, interpret the supplied I/O evidence, and defend a simpler initial design. Use mechanisms from L031–044; product trivia and distributed coordination are outside this checkpoint."
+    },
+    {
+      "id": "session-format",
+      "title": "A measured argument, not a database popularity contest",
+      "markdown": "This is a concept-check interview, not a new teaching lecture. Budget the scheduled 60 minutes as a 45-minute conversation and 15-minute debrief. Start interview_009 in the interview center for coaching or timed-exam mode; use the returned unique session ID to resume the same attempt through MCP.\n\nBegin by asking which result the system promises after success. Separate point reads, range reads, and analytical scans before choosing an engine. Ask for the benchmark's workload and measurement boundaries. Write your arithmetic with units, record assumptions, and identify the observation that would invalidate the chosen design. The interviewer supplies one factual clarification or follow-up at a time.\n\nYou may sketch an API, the state owner, a write acknowledgment trace, and a small storage-budget table. Keep unknown product-specific limits as questions to verify rather than confident guesses. Do not assume that every problem demands an additional database. The debrief values a simple defensible design and recognizes alternative designs under different explicit constraints."
+    },
+    {
+      "id": "evidence",
+      "title": "Record what you actually defended",
+      "markdown": "Use the session transcript for actual questions, answers, and artifacts. The academy does not see the rest of your AI client's conversation unless its tool calls persist those turns. Manual practice works by saving your own response and real interviewer turns with clear attribution.\n\nDuring the answering phase, explain each added component's reason, owner, failure behavior, and rejected alternative. Ask for a hint only when you choose to make that assistance part of the evidence. Finish closes the answering phase; it does not manufacture a score. The subsequent self or AI assessment must quote supporting candidate statements and calculate the supplied weighted rubric.\n\nFor the debrief, identify one incorrect or unstated assumption, rewrite the affected decision, and attempt a changed-number retry. Passing a recall question below is not the same as demonstrating an open-ended architecture under questioning. Keep the two evidence scopes separate."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "selection-evidence",
+      "title": "The interview follows an evidence chain",
+      "source": "flowchart LR\nR[Requirements and invariant] --> A[Access patterns]\nA --> B[Bytes and maintenance budget]\nB --> C[Candidate properties]\nC --> F[Crash and overload trace]\nF --> E[Defensible recommendation]",
+      "caption": "The chain guides questioning without disclosing the particular engine choice or numerical result.",
+      "steps": [
+        "State the accepted outcome.",
+        "Describe operations and their access paths.",
+        "Inspect the measurement and resource boundary.",
+        "Defend the selected properties against failure."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 45,
+    "prompt": "An operations team records equipment-state updates and produces daily fleet reports. It proposes selecting a storage engine from a short throughput benchmark. Clarify the correctness, read/write, and failure requirements, interpret the supplied I/O evidence, and defend a simpler initial design. Use mechanisms from L031–044; product trivia and distributed coordination are outside this checkpoint.",
+    "rubric": [
+      "Requirements and scope: 10% of the supplied evidence-based rubric.",
+      "Workload and estimates: 8% of the supplied evidence-based rubric.",
+      "API contracts: 6% of the supplied evidence-based rubric.",
+      "Data modeling and ownership: 10% of the supplied evidence-based rubric.",
+      "Coherent architecture: 12% of the supplied evidence-based rubric.",
+      "Scalability and bottlenecks: 10% of the supplied evidence-based rubric.",
+      "Reliability and recovery: 10% of the supplied evidence-based rubric.",
+      "Consistency and invariant protection: 10% of the supplied evidence-based rubric.",
+      "Security and isolation: 6% of the supplied evidence-based rubric.",
+      "Observability and operability: 6% of the supplied evidence-based rubric.",
+      "Alternatives and tradeoff reasoning: 6% of the supplied evidence-based rubric.",
+      "Communication, prioritization, and adaptation: 6% of the supplied evidence-based rubric."
+    ],
+    "solution": "A strong opening separates the authoritative current equipment state, an append-only change history, and analytical reports. The invariant is that an accepted state transition has a durable recorded version and stale writers cannot erase a newer accepted transition. Device identity, expected version, and a stable change ID belong in the write contract. A read by device ID and a bounded time-range history require explicit access paths. An analytical report has a different scan shape; a projected columnar copy is justified only if the measured row-store path fails the report/operational isolation objectives.\n\nAt 60,000 updates/s and 200 bytes each, logical ingress is 12,000,000 bytes/s, or 12 decimal MB/s. With the supplied inclusive write amplification of 6×, the sustained physical budget is 72 MB/s, greater than the assumed sustainable 50 MB/s. A ten-second burst using memory can hide that 22-MB/s maintenance deficit; 600 seconds accumulates 13.2 GB of debt under the simple constant-rate model. That is an illustration, not a prediction that every engine buffers exactly that amount before stalling. Check whether the amplification includes WAL, and compare the same durability configuration, dataset, indexes, skew, and cache state.\n\nThe design should not claim that selecting LSM fixes a capacity mismatch automatically. Options include lowering write work through a justified data/index model, increasing measured storage capacity, batching within allowed latency, or rejecting/backpressuring work through an explicit contract. A B-tree row store remains a valid baseline when transactions, point updates, and operational familiarity dominate and representative measurements meet the workload. An LSM engine is plausible for sustained append/update volume with a funded compaction/read/space budget. Their names alone do not decide.\n\nA crash after the durable commit but before response delivery leaves a committed change with an uncertain caller outcome. Stable change identity or version-checked readback avoids blind duplication. The durability assumption must survive the tested failure domain; a WAL on the lost only disk is insufficient disaster recovery. Monitor admitted/completed/error rates, commit latency, write bytes, maintenance backlog, free space, and query latency. Keep tenant access checks at the API/data boundary. Defend the rejected alternative and name the evidence that would change the recommendation."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which benchmark better supports a storage decision?",
+      "options": [
+        "An unexplained maximum RPS",
+        "A representative workload with durability, error, maintenance, and latency boundaries",
+        "A screenshot of an empty monitoring dashboard"
+      ],
+      "answer": "A representative workload with durability, error, maintenance, and latency boundaries",
+      "explanation": "Throughput matters only under a declared contract and sustainable work budget."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "If logical ingress doubles and amplification stays fixed, physical write demand changes by what multiplier?",
+      "answer": 2,
+      "unit": "times",
+      "tolerance": 0,
+      "explanation": "Physical demand scales linearly under those explicit fixed-amplification assumptions."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What makes an alternate engine choice defensible?",
+      "answer": "It meets the stated invariant and access requirements under explicit operational and resource evidence.",
+      "explanation": "There is no single product-name answer. The reasoning and assumptions determine whether an alternative works."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What should precede an engine name?",
+      "back": "Invariant, workload, access paths, and recovery requirements."
+    },
+    {
+      "front": "Why inspect post-burst maintenance?",
+      "back": "Buffered foreground work may hide an unsustainable background deficit."
+    },
+    {
+      "front": "Interview score evidence?",
+      "back": "Actual saved candidate statements or artifacts, with attribution."
+    },
+    {
+      "front": "What does finishing an interview do?",
+      "back": "Closes answering; feedback remains a separate evidence-based action."
+    },
+    {
+      "front": "Best retry after a capacity mistake?",
+      "back": "Change workload numbers and recalculate the same mechanism without memorizing the old answer."
+    }
+  ],
+  "mentalModel": "The recommendation is the end of a chain of evidence, not the first sentence of the interview.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18 — WAL",
+      "url": "https://www.postgresql.org/docs/18/wal-intro.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RocksDB — Overview",
+      "url": "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "ClickHouse — Columnar databases",
+      "url": "https://clickhouse.com/resources/engineering/what-is-columnar-database",
+      "checked": "2026-09-29"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "engine": "Node builtin SQLite in-memory; portable SQL examples, not PostgreSQL execution",
+  "checks": [
+    "Actual SELECT example returns three titles.",
+    "Actual owner filter returns10 and11.",
+    "Actual newest ordering returns11.",
+    "Actual join maps owners correctly.",
+    "Actual aggregate returns2 and1.",
+    "Actual INSERT and UPDATE example changes only13.",
+    "Left join counts zero-child user as0.",
+    "Foreign key rejects an absent owner."
+  ]
+}

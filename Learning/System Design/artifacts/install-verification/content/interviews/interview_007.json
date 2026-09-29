@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "interview_007",
+  "lessonId": "035",
+  "title": "Defend a schema and index plan for competing workloads",
+  "aliases": [
+    "L035",
+    "lesson_035",
+    "m04_concept"
+  ],
+  "modeType": "concept-check",
+  "minutes": 45,
+  "sessionMinutes": 60,
+  "brief": "A multi-department equipment service must show each borrower’s current loans, each item’s history, and a daily cross-department report. Propose the core relational identities and references, defend a small index plan, and explain how you would investigate a slow report without harming the interactive paths. Use L031–034; transaction-isolation deep dives are not required yet.",
+  "clarifications": [
+    {
+      "question": "Which entities and scope?",
+      "answer": "Each physical item belongs to one department and has a department-unique barcode. Loans refer to physical items and borrowers. A loan has opened_at and optional returned_at."
+    },
+    {
+      "question": "What are the main queries?",
+      "answer": "Current loans for a borrower within one department, ordered newest first; full history for one item; a daily aggregate over all departments."
+    },
+    {
+      "question": "What sizes and rates?",
+      "answer": "There are five million loan records, 1% active. Interactive current-loan reads occur 100/s; the report runs once daily. One department owns half the history."
+    },
+    {
+      "question": "Which invariants?",
+      "answer": "At most one active loan per physical item. Historical loans must remain. Loan-item references must not cross the declared department."
+    },
+    {
+      "question": "What slow-path evidence is available?",
+      "answer": "The endpoint fetches 50 loans and then separately fetches each borrower and item description, causing 101 queries. A daily report legitimately scans much of the data."
+    },
+    {
+      "question": "What can be approximate?",
+      "answer": "The daily report may finish in minutes; interactive page correctness and tenant isolation remain strict. Exact total-count pagination is not required."
+    }
+  ],
+  "hints": [
+    "Distinguish a physical item from its model description and the loan’s historical identity.",
+    "An active-only uniqueness rule differs from making item_id unique across all history.",
+    "Count queries per user action before attributing every delay to one SQL statement."
+  ],
+  "changes": [
+    "An engineer proposes one index on every column. Defend a smaller workload-driven choice and its write costs.",
+    "The largest department grows tenfold while small tenants stay stable. What plan evidence should be revisited?"
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "Use stable scoped item and loan IDs, department-unique barcode, composite references for department correctness, and explicit borrower ownership. Preserve historical loans; a unique partial index over (department_id,item_id) WHERE returned_at IS NULL expresses one active loan in this state model. Interactive indexes should align tenant/borrower equality with time/ID order; item history needs its own scoped item/time path if measured frequency justifies it. The daily broad report may reasonably scan rather than use an index for every row. Reduce N+1 with a correctly scoped join for one-to-one fields or bounded batches, preserving parent pagination before any one-to-many expansion. Compare estimates and actual row counts with representative large/small department values, record query count and pool/lock wait, and use safe EXPLAIN ANALYZE practice. Indexes cost writes, space, and cache; all-column indexing is not a plan. No particular planner operator is mandatory without evidence.",
+  "debrief": "Look for a traceable connection from access pattern to key order, and from invariant to constraint. Do not award points merely for naming indexes. Ask the candidate to explain the 101-query amplification and why a broad report can legitimately scan. Retry with a different active fraction and a changed parent/child relationship.",
+  "remediation": [
+    "031",
+    "032",
+    "033",
+    "034"
+  ]
+}

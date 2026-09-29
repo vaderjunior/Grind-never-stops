@@ -1,0 +1,284 @@
+{
+  "id": "ship-and-recover",
+  "title": "Deployments, backups, and restore drills",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 14,
+  "level": "intermediate",
+  "minutes": 45,
+  "summary": "Practice changing a running service in small steps and recovering saved data through a tested restore.",
+  "objectives": [
+    "Separate deployment rollback from data recovery.",
+    "Design a compatible expand–migrate–contract change.",
+    "Specify a restore drill that checks useful application behavior."
+  ],
+  "terms": [
+    {
+      "term": "Deployment",
+      "definition": "Putting a new application version into service."
+    },
+    {
+      "term": "Canary",
+      "definition": "A limited exposure of a change before expanding its rollout."
+    },
+    {
+      "term": "Rollback",
+      "definition": "Returning application or configuration behavior to an earlier known version."
+    },
+    {
+      "term": "Backup",
+      "definition": "A retained copy or recoverable history used to reconstruct data."
+    },
+    {
+      "term": "Restore drill",
+      "definition": "A rehearsal that restores data and validates that the application can use it."
+    }
+  ],
+  "retrieval": [
+    "Why can replicated data still contain the same accidental deletion?",
+    "Why should the remaining servers have spare capacity during a rollout?"
+  ],
+  "sections": [
+    {
+      "id": "change",
+      "title": "Treat a release as an experiment with a stop condition",
+      "markdown": "Pocket Notes is adding archived notes. The existing application stores an active flag; the new version will use a status field. The change seems small, but old servers may run beside new ones during deployment. Users may also keep old browser pages open. A release therefore changes a mixed system, not one perfectly synchronized process.\n\nBefore deploying, state what should improve and what must remain true. Existing notes must remain readable, saving must still work, and archived notes must follow the agreed visibility rule. Define a stop condition such as an unexpected increase in failed saves or a failed invariant check. Choose the observation window and an owner who can stop expansion. “We can roll back” is incomplete until the rollback path has been considered with the changed data."
+    },
+    {
+      "id": "small",
+      "title": "Expose a small, representative slice",
+      "markdown": "A canary sends a limited part of traffic to the new version while the rest uses the earlier version. Compare behavior over the same period: errors, user-visible latency, and domain checks such as duplicate note creation. Five percent is an example, not a universal safe number. Low traffic may require more observation time, and a slice that excludes large accounts may miss the important failure.\n\nIncrease exposure in stages only when the evidence supports it. Keep enough healthy capacity while replacing instances. Separate “deployed” from “enabled” when a feature flag can safely control the new behavior. A flag is a switch, not a cure for incompatible stored data. In a local exercise, simulate two application versions against the same test database and show that both can read what the other writes."
+    },
+    {
+      "id": "compatibility",
+      "title": "Change the data contract in stages",
+      "markdown": "Pocket Notes changes from an active flag to a status field. For this teaching migration, active=true means status=active and active=false means status=archived. Define that mapping before copying data.\n\n| Stage | Readers | Writers and stored data | Recovery concern |\n| --- | --- | --- | --- |\n| Expand | Old readers still use active | Add nullable status; old rows remain valid | Old code must keep working |\n| Migrate | New code handles missing status | Backfill repeatably; keep representations aligned atomically | Interrupted batches can resume |\n| Switch | New readers use validated status | Continue compatible writes during rollback window | Old readers still understand new writes |\n| Contract | Old readers are retired | Remove active only after the window closes | Old binary is no longer a sufficient rollback |\n\nBefore backfilling while writes continue, ensure every active write path keeps both representations aligned. Deploy compatible writers before migration; an original writer that only changes active could otherwise leave a filled status stale. Backfill from the currently accepted active value under a protected update rule, rather than overwriting a concurrent edit with an earlier snapshot.\n\nUse bounded batches and record progress. Count rows, compare meaningful samples, and verify the actual mapping rather than assuming a completed script copied the right business meaning.\n\nTemporary duplicate representations add complexity. State which value is authoritative during each stage and keep related writes in one transaction where possible. Two unrelated stores written independently would introduce another consistency gap.\n\n**Pause and predict:** can you roll back a reader after removing the only field it understands? Artifact retention and data compatibility are different parts of recovery."
+    },
+    {
+      "id": "rollback",
+      "title": "Distinguish reversing code from reversing facts",
+      "markdown": "Suppose the new release accidentally marks private notes as public. Rolling back the code can stop new incorrect changes. It may not identify or undo the rows already changed, and it cannot make an already disclosed note undisclosed. Recovery needs an incident-specific plan, not just an older executable. Audit records and bounded migration batches can make the affected set easier to identify.\n\nLikewise, restoring yesterday’s entire database can erase legitimate work performed since yesterday. Consider targeted correction or point-in-time recovery into a separate environment before choosing a destructive replacement. First preserve evidence and the current state. State which application version can read the restored schema. A backup file that only old, unavailable software can understand is an operational dependency that a recovery plan must address."
+    },
+    {
+      "id": "restore",
+      "title": "Prove a backup by using it",
+      "markdown": "A backup is useful only if you can recover the service from it. Our teaching policy creates hourly backups and keeps an independently controlled copy. Those assumptions do not constitute a complete production policy.\n\n| Drill check | Evidence to collect |\n| --- | --- |\n| Obtain the selected copy | Correct recovery point, integrity check, required access |\n| Restore into an isolated location | Live data remains preserved while investigation continues |\n| Start compatible application | Required binary, configuration, keys, and credentials available |\n| Validate meaning | Known notes, counts, relationships, access behavior |\n| Continue work | Create and read a new test note successfully |\n\nMeasure the whole sequence: discovery, decision, access, restoration, validation, and reopening. A fast file copy can be followed by a long wait for a missing encryption key.\n\nA checksum detects certain byte changes; it does not prove correct relationships or usable application behavior. Replication can preserve availability through some hardware failures, while retained independent history helps after a bad deletion has propagated.\n\nKeep the restored environment separate until checked. Record which failures the drill did and did not simulate. A successful local restore is bounded evidence, not proof of a region-loss recovery target."
+    },
+    {
+      "id": "explain",
+      "title": "Make the recovery plan concrete enough to rehearse",
+      "markdown": "Write a short runbook with a trigger, a decision owner, the selected recovery point, the actual restore steps, and validation criteria. Keep the working environment separate from the restored copy until the result is checked. State how traffic will move, how clients reconnect, and what happens to writes accepted during the incident. The plan must name these decisions even if a beginner exercise simulates them with cards on paper.\n\nDuring an interview, trace one failed release from detection to recovery. For example: error rates rise in the canary, expansion stops, traffic returns to the compatible old version, and a read check confirms existing notes remain accessible. Then discuss a second, harder case: stored data was corrupted. The different responses show that you understand both application behavior and durable state."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "compatible-change",
+      "sectionId": "compatibility",
+      "title": "A migration with a rollback window",
+      "source": "flowchart LR\nA[Add status field] --> B[Compatible readers and writers]\nB --> C[Backfill in repeatable batches]\nC --> D[Validate and switch reads]\nD --> E[Close rollback window]\nE --> F[Remove old field]",
+      "steps": [
+        "Expand without breaking the old version.",
+        "Migrate and validate existing rows.",
+        "Keep compatibility during the agreed rollback window.",
+        "Remove old representation only when safe."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "restore-isolated",
+      "title": "Validate a restored copy before replacing the serving state",
+      "sectionId": "restore",
+      "source": "flowchart LR\nB[Selected retained backup] --> I[Restore into isolated environment]\nI --> A[Start compatible application]\nA --> V[Check known records and permissions]\nV --> W[Create and read a new test record]\nW --> D{Recovery criteria met?}\nD -->|Yes| P[Plan controlled traffic and write handoff]\nD -->|No| F[Preserve evidence and investigate]",
+      "caption": "This is a safe rehearsal outline. A real handoff must account for writes accepted during the incident; restoring a file alone does not make that decision.",
+      "steps": [
+        "Choose a recovery point and preserve the current state.",
+        "Restore separately with the required software and keys.",
+        "Test data meaning and continued application work.",
+        "Plan the serving handoff only after validation."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Plan the active→status migration in six steps. A deployment fails halfway through the backfill. State how to resume or roll back without losing new notes. Then list four checks for restoring a backup into a separate local directory.",
+    "rubric": [
+      "Old and new versions remain compatible during transition.",
+      "Backfill is repeatable and records progress.",
+      "Rollback accounts for stored schema.",
+      "Restore checks application behavior as well as file integrity."
+    ],
+    "solution": "Add status while preserving active; deploy compatible readers/writers; backfill bounded repeatable batches; validate both representations; switch reads with a rollback window; remove active only after old code is retired. A stopped backfill resumes from a recorded checkpoint or repeats safe batches. Rollback uses code that still understands the expanded schema. Restore checks can include integrity, expected records and relationships, known note reads, and a new create/read cycle. Preserve the current database before any replacement."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does rolling back application code necessarily undo?",
+      "options": [
+        "Every data change made by the new version",
+        "Only the code behavior actually reverted",
+        "All externally observed consequences"
+      ],
+      "answer": "Only the code behavior actually reverted",
+      "explanation": "Stored mutations and external effects need separate recovery reasoning."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "When should the old field normally be removed?",
+      "options": [
+        "Before the new version is deployed",
+        "After compatibility checks and the rollback window",
+        "As soon as one new server starts"
+      ],
+      "answer": "After compatibility checks and the rollback window",
+      "explanation": "Older readers and rollback versions may still need the field."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A batch migration processes 1,000 of 8,000 rows per batch. How many batches are needed?",
+      "answer": 8,
+      "unit": "batches",
+      "tolerance": 0,
+      "explanation": "8,000 ÷ 1,000 = 8 batches, assuming no retries."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why test a restored application rather than only the backup checksum?",
+      "answer": "A checksum checks byte integrity, not schema compatibility, required credentials, useful records, or whether new reads and writes work.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why might a 5% canary miss a bug?",
+      "answer": "The slice may contain too few requests or omit affected account sizes, operations, regions, or data shapes. Choose representative coverage and an adequate observation period.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Canary purpose?",
+      "back": "Limit exposure while collecting evidence about a change."
+    },
+    {
+      "front": "Expand–migrate–contract?",
+      "back": "Add compatible structure, move data/users, then remove old structure."
+    },
+    {
+      "front": "Why make backfills repeatable?",
+      "back": "A crash or retry must not corrupt already processed rows."
+    },
+    {
+      "front": "Does replication replace a backup?",
+      "back": "No. Replicas can receive the same unwanted change."
+    },
+    {
+      "front": "What demonstrates recoverability?",
+      "back": "A measured restore drill with application-level validation and required dependencies."
+    }
+  ],
+  "mentalModel": "A safe change has a small exposure, a compatible return path, and a separately tested data-recovery path.",
+  "sources": [
+    {
+      "title": "Google SRE Workbook — Canarying releases",
+      "url": "https://sre.google/workbook/canarying-releases/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Canva Engineering — Scaling media and migrating live",
+      "url": "https://www.canva.dev/blog/engineering/from-zero-to-50-million-uploads-per-day-scaling-media-at-canva/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "expand-before-contract",
+      "title": "Old and new readers overlap safely",
+      "sectionId": "compatibility",
+      "intro": "The illustrative mapping is active=false → archived. One database transaction keeps the two representations aligned during the compatibility window. All active writers have been upgraded to that compatible rule before backfill; original active-only writers are no longer accepting changes.",
+      "steps": [
+        {
+          "title": "Expand without changing old meaning",
+          "explanation": "Add the new nullable column. Old code still reads the original flag.",
+          "state": [
+            {
+              "label": "Record",
+              "value": "n12"
+            },
+            {
+              "label": "Active",
+              "value": "false"
+            },
+            {
+              "label": "Status",
+              "value": "null"
+            },
+            {
+              "label": "Reader",
+              "value": "Old code sees archived through active=false"
+            }
+          ]
+        },
+        {
+          "title": "Backfill the agreed mapping",
+          "explanation": "A repeatable migration fills status from the chosen authoritative old representation.",
+          "state": [
+            {
+              "label": "Active",
+              "value": "false"
+            },
+            {
+              "label": "Status",
+              "value": "archived"
+            },
+            {
+              "label": "Validation",
+              "value": "Mapping agrees for n12"
+            }
+          ]
+        },
+        {
+          "title": "Run both compatible versions",
+          "explanation": "New code reads status. Compatible writes retain active so old readers and rollback still work.",
+          "state": [
+            {
+              "label": "OldReader",
+              "value": "Uses active"
+            },
+            {
+              "label": "NewReader",
+              "value": "Uses status"
+            },
+            {
+              "label": "WriteRule",
+              "value": "Update both atomically under defined mapping"
+            }
+          ]
+        },
+        {
+          "title": "Contract only after retirement",
+          "explanation": "Once old readers and the rollback window are gone, the old field can be removed deliberately.",
+          "state": [
+            {
+              "label": "RemainingField",
+              "value": "status"
+            },
+            {
+              "label": "OldBinary",
+              "value": "No longer a sufficient rollback"
+            },
+            {
+              "label": "RequiredEvidence",
+              "value": "No remaining old readers and verified data"
+            }
+          ]
+        }
+      ],
+      "takeaway": "An application rollback works only while old code can interpret the current stored state. Expand-and-contract makes that window explicit."
+    }
+  ]
+}

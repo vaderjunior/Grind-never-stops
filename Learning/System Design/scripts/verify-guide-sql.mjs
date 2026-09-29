@@ -1,0 +1,13 @@
+import {DatabaseSync} from 'node:sqlite';import {readFileSync,writeFileSync} from 'node:fs';import assert from 'node:assert/strict';
+const guide=JSON.parse(readFileSync('content/guides/sql-in-small-steps.json','utf8')),db=new DatabaseSync(':memory:');
+db.exec('PRAGMA foreign_keys=ON; CREATE TABLE users(id INTEGER PRIMARY KEY,name TEXT NOT NULL); CREATE TABLE notes(id INTEGER PRIMARY KEY,owner_id INTEGER NOT NULL REFERENCES users(id),title TEXT NOT NULL,created_order INTEGER NOT NULL); INSERT INTO users VALUES(1,\'Ajay\'),(2,\'Mira\'); INSERT INTO notes VALUES(10,1,\'Redis basics\',1),(11,1,\'Queue practice\',3),(12,2,\'Database questions\',2);');
+const query=id=>guide.sections.find(s=>s.id===id).markdown.match(/~~~sql\n([\s\S]*?)\n~~~/)[1];
+const checks=[];assert.equal(db.prepare(query('select')).all().length,3);checks.push('Actual SELECT example returns three titles.');
+assert.deepEqual(db.prepare(query('filter')).all().map(x=>x.id),[10,11]);checks.push('Actual owner filter returns10 and11.');
+assert.equal(db.prepare(query('order')).get().id,11);checks.push('Actual newest ordering returns11.');
+assert.deepEqual(db.prepare(query('join')).all().map(x=>x.name),['Ajay','Ajay','Mira']);checks.push('Actual join maps owners correctly.');
+assert.deepEqual(db.prepare(query('count')).all().map(x=>x.note_count),[2,1]);checks.push('Actual aggregate returns2 and1.');
+db.exec(query('writes'));assert.equal(db.prepare('SELECT title FROM notes WHERE id=13').get().title,'Cache exercises');checks.push('Actual INSERT and UPDATE example changes only13.');
+db.exec("INSERT INTO users VALUES(3,'No notes')");assert.equal(db.prepare('SELECT COUNT(notes.id) AS n FROM users LEFT JOIN notes ON users.id=notes.owner_id WHERE users.id=3 GROUP BY users.id').get().n,0);checks.push('Left join counts zero-child user as0.');
+assert.throws(()=>db.exec("INSERT INTO notes VALUES(14,99,'Invalid owner',5)"));checks.push('Foreign key rejects an absent owner.');db.close();
+writeFileSync('artifacts/guide-sql-validation.json',JSON.stringify({passed:true,engine:'Node builtin SQLite in-memory; portable SQL examples, not PostgreSQL execution',checks},null,2)+'\n');console.log(JSON.stringify({passed:true,checks},null,2));

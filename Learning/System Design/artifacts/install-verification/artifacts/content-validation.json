@@ -1,0 +1,14 @@
+{
+  "counts": {
+    "catalog": 300,
+    "authored": 105,
+    "metadataOnly": 195,
+    "drafted": 95,
+    "reviewed": 10,
+    "validated": 0
+  },
+  "errors": [],
+  "warnings": [
+    "Structural validation is not pedagogical review. No automatic promotion to validated."
+  ]
+}

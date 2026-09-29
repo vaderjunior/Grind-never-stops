@@ -1,0 +1,333 @@
+{
+  "id": "choose-a-database",
+  "title": "SQL, NoSQL, and choosing what you need",
+  "version": 2,
+  "week": 4,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Choose storage for the notes app by listing the questions it must answer and the promises it must keep.",
+  "objectives": [
+    "Describe relational, document, key-value, and object storage in plain language.",
+    "Choose a modest starting data design from access patterns.",
+    "Separate small searchable metadata from large photo content.",
+    "Explain one reason to revisit a storage choice."
+  ],
+  "terms": [
+    {
+      "term": "Access pattern",
+      "definition": "A recurring way the application reads or changes data."
+    },
+    {
+      "term": "Relational database",
+      "definition": "A database that organizes related records into tables and supports operations over those relationships."
+    },
+    {
+      "term": "Document store",
+      "definition": "A database organized around records that can contain nested fields and lists."
+    },
+    {
+      "term": "Key-value store",
+      "definition": "A store that retrieves a value using its associated key."
+    },
+    {
+      "term": "Object storage",
+      "definition": "Storage for named objects such as image files, with content and metadata."
+    },
+    {
+      "term": "Metadata",
+      "definition": "Information describing content, such as its owner, size, or storage location."
+    }
+  ],
+  "retrieval": [
+    "Why does the notes table use an owner identifier rather than copying a name into every row?",
+    "Which two changes did our transaction keep together?"
+  ],
+  "sections": [
+    {
+      "id": "questions",
+      "title": "Begin with the questions, not the product list",
+      "markdown": "The notes app stores users, notebooks, notes, sharing permissions, and photos. A colleague suggests choosing whatever database appears most often in technology talks. That is tempting because a product name sounds like a decision. But we have not yet stated what the storage must do.\n\nWrite a small workload card before naming a product:\n\n| User question or change | Data and behavior needed |\n| --- | --- |\n| Create a note | Known owner, bounded text, saved identity |\n| List my newest notes | Owner filter, defined order, bounded result |\n| Open one note | Known identity and permission check |\n| Move a note | Note change and matching activity accepted together |\n\nAdd the promises: accepted text survives an application restart, and a private note is not returned to an unauthorized user. Now a storage candidate has concrete requirements to satisfy.\n\nThink of choosing a household container. A filing cabinet, labeled box, and freezer all store things, but different retrieval and preservation needs make them useful. The analogy ends before software guarantees: a database’s transaction, indexing, recovery, and replication behavior comes from its actual implementation and configuration. A friendly metaphor cannot prove those properties."
+    },
+    {
+      "id": "relational",
+      "title": "Related records and grouped changes",
+      "markdown": "A relational database organizes data into tables. Relationships can connect a note to its owner or a sharing row to both a notebook and a member. Queries can combine those facts. Earlier chapters gave us a small relational design, an index candidate, and a transaction boundary. That makes it a reasonable starting point for this app."
+    },
+    {
+      "id": "document",
+      "title": "A bounded nested record can be convenient",
+      "markdown": "A document store organizes a record as a document that may include nested fields and lists. A note with its title, text, and a short list of labels can be a convenient document. But placing an ever-growing history inside one document can make that record expensive or hit implementation limits. Flexible shape does not eliminate the need to validate required fields and plan updates."
+    },
+    {
+      "id": "keyvalue",
+      "title": "Known-key retrieval is a particular access pattern",
+      "markdown": "A key-value store associates a key with a value, similar to asking for the saved answer labeled note:41. This is useful when the key is already known and that direct lookup matches the job. Asking “find all notes mentioning a word, ordered by owner” requires additional supported capabilities or structures; a basic key lookup alone does not answer it."
+    },
+    {
+      "id": "overlap",
+      "title": "Categories overlap; guarantees belong to implementations",
+      "markdown": "These categories overlap in real products. A relational database can support JSON documents, and some non-relational databases support transactions and indexes. SQL is a query language, not a promise that every product sharing the label has identical performance or failure behavior. NoSQL is an umbrella term, not a guarantee of speed or automatic scaling."
+    },
+    {
+      "id": "constraints",
+      "title": "Write a workload card before comparing products",
+      "markdown": "Our decision needs more than record shape. Write down the frequent questions, their filters and order, and the approximate number and size of results. Then list changes: creates, edits, deletes, and multi-record actions that must agree. A read-heavy page returning twenty small records differs from a batch job writing millions of events.\n\nState the important failures too. How much accepted data may be lost after a crash? How quickly must the service recover? May a reader briefly see an earlier value? Who operates backups and tests restoration? These questions distinguish requirements from preferences. “Reliable” is too vague until we describe the behavior people depend on.\n\nFor Pocket Notes, the first workload card might say: list one owner’s newest twenty notes, open one permitted note, and move a note with its activity record in one database transaction. Photo content is larger and fetched separately. These are illustrative initial requirements; we would measure actual rates and sizes before sizing equipment.\n\nFinally, include operating knowledge. A database the team can maintain, upgrade, observe, and restore can be a better starting choice than an unfamiliar product whose theoretical feature list looks ideal. This is a design constraint, not an argument against learning new tools."
+    },
+    {
+      "id": "photos",
+      "title": "A photo and its description are different data",
+      "markdown": "Our list page shows twenty note titles and small photo previews. It does not need every original image’s full bytes. Keep a note’s owner, title, and photo reference in searchable records. Store photo content through a path suited to large objects, such as object storage. An object has a name or key used to retrieve its content, plus descriptive metadata.\n\nUse decimal units: 1 kB is 1,000 bytes and 1 MB is 1,000,000 bytes.\n\n| Requested representation | One item | Twenty items |\n| --- | --- | --- |\n| Searchable note metadata | About 1 kB | About 20 kB |\n| Original photo content | About 2 MB | About 40 MB |\n\nThe screen can ask for small records and suitable previews rather than every original. This calculation motivates separating access paths; it does not prove a particular storage product is required.\n\nA local prototype can keep photo files in a controlled directory and store their identifiers in the database. A later service may use object storage for operational needs. Both designs must decide what happens if a file upload succeeds but its note record fails. The relational transaction from the transactions chapter does not automatically include another file service. Keep a visible upload state and a cleanup/retry plan rather than claiming one database choice solves the entire workflow."
+    },
+    {
+      "id": "ai",
+      "title": "Worked choice: an AI deployment registry",
+      "markdown": "Now transfer the method to an AI platform. A deployment runs a particular model version for a team. Operators ask: find deployment 301; list team 8’s deployments; filter failed deployments by region; and show the model version and owning team together. These are related-record lookups and filters, so a relational database is a natural candidate to evaluate.\n\nCreate a small thought experiment. Teams have team_id and name. Deployments have deployment_id, team_id, model_version_id, region, and status. Model versions have an identity and an artifact reference. A query can join those facts to answer which team owns a failed deployment. Index candidates follow the common filters; adding an index to every displayed field without a query is not the plan.\n\nDifferent model types have different configuration details. A GPU deployment has accelerator settings; a CPU deployment does not. A validated JSON settings field in the same relational database might handle that variation. Nested fields alone do not require deploying a separate document store. Check how frequently those fields are filtered, changed, and validated.\n\nThe parameter files may be gigabytes, while registry records are small. Keep an artifact key and immutable version identity in the registry and retrieve verified content through a suitable file or object path. If later requirements center on extremely large event histories or multi-step dataset lineage, investigate those specific access patterns separately. This is a reason to evaluate an additional organization, not proof that every AI platform needs every database family."
+    },
+    {
+      "id": "verify",
+      "title": "Evaluate a candidate with a small representative experiment",
+      "markdown": "Suppose a colleague claims a different store will make owner-list queries ten times faster. Ask which data distribution, result size, index, machine, and update rate produced that claim. A benchmark fetching one repeated key does not evaluate joins, permissions, or a mixed production workload.\n\nFor a practical evaluation, load a representative sample including ordinary and unusually large owners. Run the important queries, compare returned results, and inspect their query plans where supported. Measure writes as well as reads. Test a backup restoration and the failure behavior your requirements depend on. These are proposed evaluation steps, not results already obtained in this chapter.\n\nMigration also costs work: translating records, keeping old and new versions compatible, copying ongoing changes, verifying the new dataset, cutting over, and retaining a recovery path. A new store should solve a specific requirement strongly enough to justify those costs. Sometimes the right next action is a better query or a thumbnail, not a migration.\n\n> **Common mistake:** Comparing a single repeated-key benchmark with an owner-list page. They ask the store to do different work. Keep query shape, result size, data distribution, concurrent changes, and recovery requirements comparable."
+    },
+    {
+      "id": "decision",
+      "title": "Make a choice you can explain and revisit",
+      "markdown": "For our first version, choose one relational database for users, notes, membership, and activity. The reason is not that relational databases always win; it is that our current queries combine related records and our move requires grouped database changes. Use a file or object-content path for the photos, keeping references in note records. This is two responsibilities in the design, not a demand to deploy several machines today.\n\nBefore switching tools, ask what measured problem is unresolved. A slow owner-list query may need the index we just studied. A page downloading huge originals may need thumbnails. Neither automatically requires replacing the database. Adding another store creates copying, failure, backup, and operating work that must earn its place.\n\nRecord a short decision: “The first app uses related tables because ownership and notebook membership are common queries. We keep large photo bytes separate from list metadata. Revisit when measured workload, recovery requirements, or a new search feature exceeds this design’s tested behavior.” The revisit condition is more useful than claiming the choice will fit every future scale.\n\nYou are ready to continue when you can select a starting shape for the data and explain one tradeoff without reciting a brand comparison chart. The next week asks how to observe the app’s actual demand. Those observations will tell us whether its simple starting design needs to grow."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "storage",
+      "title": "Small searchable facts and large photo content have different paths",
+      "source": "flowchart LR\nB[Browser asks for note list] --> A[Notes application]\nA -->|Owner titles and photo references| D[(Relational tables)]\nA -->|Photo content by stored key| P[(Photo files or object store)]\nD -->|Small records| A\nP -->|Requested image bytes| A\nA --> B",
+      "caption": "This is a separation of responsibilities. A small local version can run on one machine; the diagram does not require separate hosted services.",
+      "steps": [
+        "List the fields required for the note-list screen.",
+        "Retrieve owners, titles, and photo references from records.",
+        "Fetch image content only when that representation is needed.",
+        "Keep permission checks and incomplete-upload handling explicit across the paths."
+      ],
+      "sectionId": "photos"
+    },
+    {
+      "id": "registry",
+      "title": "The registry stores relationships while artifacts store large content",
+      "source": "flowchart LR\nQ[Find team 8 failed deployments] --> D[(Deployments with team and model references)]\nD --> T[(Teams)]\nD --> M[(Model versions and artifact keys)]\nM -.->|Retrieve only when required| A[(Versioned model artifact bytes)]",
+      "caption": "This teaching example separates searchable registry facts from large model content without requiring a database product for each box.",
+      "steps": [
+        "Start with the operator’s filter question.",
+        "Find deployment rows through an appropriate access path.",
+        "Match team and model identities for the required details.",
+        "Fetch the large artifact only when an operation needs its bytes."
+      ],
+      "sectionId": "ai"
+    },
+    {
+      "id": "candidate-evaluation",
+      "sectionId": "verify",
+      "title": "A candidate earns its place through the workload",
+      "source": "flowchart LR\nQ[Write query and correctness requirements] --> C[Choose simplest plausible candidate]\nC --> E[Evaluate representative data and failures]\nE --> F{Meets the requirements?}\nF -->|Yes| K[Keep it and record revisit triggers]\nF -->|No| I[Identify the missing capability]\nI --> C",
+      "caption": "This is a decision process, not a performance benchmark. A new product is one possible change; queries, indexes, payloads, and operating practices can also be the issue.",
+      "steps": [
+        "Specify required queries and accepted-state rules.",
+        "Evaluate a candidate using representative work and recovery checks.",
+        "Keep or revise the design based on the actual gap and the cost of changing it."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "The app must list one owner’s notes, check notebook membership, and move a note with an activity record. Photos are much larger than note titles. Choose a starting storage arrangement, give two reasons, and name one event that would make you revisit it.",
+    "minutes": 8,
+    "rubric": [
+      "Connects related-record queries to a reasonable database choice.",
+      "Separates photo content from small list metadata.",
+      "States a measured or requirement-driven revisit condition."
+    ],
+    "solution": "One relational database is a defensible start for ownership, membership, notes, and grouped move/activity changes. Store photo bytes in controlled files or object storage and keep references in the records. Revisit after measuring a workload or recovery requirement the current arrangement cannot meet, or when a new feature such as large-scale text search has a distinct access pattern. Product popularity alone is not the reason."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What should most directly guide a database choice?",
+      "options": [
+        "The current read/write questions and guarantees",
+        "The number of logos in its ecosystem",
+        "A universal SQL-versus-NoSQL winner"
+      ],
+      "answer": "The current read/write questions and guarantees",
+      "explanation": "The selected behavior must fit the application’s access patterns and rules."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "NoSQL means no application data rules are needed:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "A flexible record shape still needs validation and update semantics."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Why separate a photo reference from its full bytes in a list response?",
+      "options": [
+        "The list often needs only small descriptive fields",
+        "Image files cannot have owners",
+        "A database can never store binary data"
+      ],
+      "answer": "The list often needs only small descriptive fields",
+      "explanation": "It avoids transferring large content the current screen does not need."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is a slow owner-list query insufficient reason to replace the database?",
+      "answer": "Its cause may be a missing suitable index, a large result, or an inefficient request path; measure and address that problem first.",
+      "explanation": "Changing products adds work without necessarily removing the cause."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Give one boundary a relational transaction does not automatically cover in this design.",
+      "answer": "An upload to a separate file or object-storage service, so a failed note record may leave uploaded content requiring recovery or cleanup.",
+      "explanation": "The storage arrangement needs a cross-boundary workflow policy."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Access pattern?",
+      "back": "A recurring way data is read or changed."
+    },
+    {
+      "front": "Relational organization?",
+      "back": "Tables and operations over their relationships."
+    },
+    {
+      "front": "Document organization?",
+      "back": "Records that may contain nested fields and lists."
+    },
+    {
+      "front": "Key-value lookup?",
+      "back": "Retrieve the value associated with a known key."
+    },
+    {
+      "front": "Photo metadata versus content?",
+      "back": "Descriptive owner/location/size information versus the image bytes themselves."
+    }
+  ],
+  "mentalModel": "Choose how to store data by how you need to find, change, and preserve it.",
+  "sources": [
+    {
+      "title": "PostgreSQL18: JSON types",
+      "url": "https://www.postgresql.org/docs/current/datatype-json.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "SQLite: appropriate uses",
+      "url": "https://www.sqlite.org/whentouse.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon S3: objects and storage concepts",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "ByteByteGo: Understanding Database Types, optional overview",
+      "url": "https://bytebytego.com/guides/understanding-database-types/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL: examining query plans",
+      "url": "https://www.postgresql.org/docs/18/using-explain.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "registry-workload-card",
+      "sectionId": "ai",
+      "title": "A model registry choice develops from questions",
+      "intro": "This is a reasoning exercise for an AI deployment registry, not a claim that these candidates have been benchmarked.",
+      "steps": [
+        {
+          "title": "Begin with an identity lookup",
+          "explanation": "The first screen opens a known deployment. Many database families can support that question.",
+          "state": [
+            {
+              "label": "Query",
+              "value": "Open deployment 301"
+            },
+            {
+              "label": "Known value",
+              "value": "deployment_id"
+            },
+            {
+              "label": "Required result",
+              "value": "One bounded configuration"
+            }
+          ]
+        },
+        {
+          "title": "Add operational filters",
+          "explanation": "Operators also need a filtered list with owning-team information. A bare key lookup no longer explains the whole workload.",
+          "state": [
+            {
+              "label": "Query",
+              "value": "Team 8 failed deployments"
+            },
+            {
+              "label": "Filter fields",
+              "value": "team_id, status"
+            },
+            {
+              "label": "Related record",
+              "value": "Team name"
+            }
+          ]
+        },
+        {
+          "title": "Separate varying settings from ownership",
+          "explanation": "One candidate is related tables plus validated JSON settings. The settings shape does not erase ownership relationships.",
+          "state": [
+            {
+              "label": "Core records",
+              "value": "Teams and deployments"
+            },
+            {
+              "label": "Variable settings",
+              "value": "Validated JSON candidate"
+            },
+            {
+              "label": "Large model bytes",
+              "value": "Artifact reference only"
+            }
+          ]
+        },
+        {
+          "title": "Define the evidence to collect",
+          "explanation": "Evaluate the real filters, representative large teams, writes, and restoration. Keep the decision revisitable.",
+          "state": [
+            {
+              "label": "Read test",
+              "value": "Team/status result and plan"
+            },
+            {
+              "label": "Write test",
+              "value": "Required related changes"
+            },
+            {
+              "label": "Recovery test",
+              "value": "Restore accepted registry data"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Choose a candidate from the whole workload, then verify its guarantees and operating cost. A convenient first query is not the whole design."
+    }
+  ]
+}

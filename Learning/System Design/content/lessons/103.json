@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "103",
+  "objectives": [
+    "Demonstrate both database/broker dual-write failure windows.",
+    "Design a transactional outbox and idempotent receiver.",
+    "Explain CDC lag, retention, and replay constraints."
+  ],
+  "retrieval": [
+    "L034: which writes can share a database transaction?",
+    "L096: where must a deduplication marker commit?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Two successful calls do not make one atomic action",
+      "markdown": "An API creates an order in SQL and then publishes OrderCreated. The database commit succeeds, the process crashes before publication, and downstream shipping never hears about the order. Reversing the calls produces the opposite failure: the broker accepts an event, then the database transaction rolls back, leaving a published order that never existed. Retrying the HTTP handler does not by itself close either gap.\n\nFirst ask whether both effects actually need separate systems. If a single transaction and local work table meet requirements, retain that simpler boundary. If independent asynchronous consumers and retained event history justify a broker, define a reliable handoff between the authority and transport."
+    },
+    {
+      "id": "mechanism",
+      "title": "Persist intent with the business change",
+      "markdown": "Within one local database transaction, insert the order and an outbox row describing the event to publish. They commit together or neither is visible. A separate relay scans committed outbox rows or reads their change log through change data capture. It publishes using a stable event ID and records its progress only after the broker accepts the event under the chosen durability policy.\n\nThe relay can crash after publish but before recording completion. Publication repeats, so outbox does not promise unique delivery. A receiver can atomically insert a processed-event marker and update its local business state in the same destination transaction. A duplicate marker means the effect has already committed under that scope. External effects still require their own idempotency or reconciliation.\n\nUse the aggregate identity as an ordering key when per-order sequence matters. Include a version or sequence for the entity and define concurrent-writer behavior. A single source transaction does not automatically impose an order across unrelated partitions or separate databases."
+    },
+    {
+      "id": "worked",
+      "title": "A three-row trace with one deliberate crash",
+      "markdown": "Original SQL pattern, not executed PostgreSQL setup: BEGIN; insert orders(id,state) values('o7','accepted'); insert outbox(event_id,aggregate_id,type,payload) values('e9','o7','OrderAccepted',...); COMMIT. The omitted payload syntax is deliberately pseudocode. The important part is one transaction, not the exact table names.\n\nRelay R reads e9 and publishes it. Consumer C inserts processed('e9') and a shipment request in its own transaction. R crashes before marking e9 sent. On restart R publishes e9 again. C's unique marker rejects the second application, and the existing shipment request remains singular. If C instead inserts the marker before an independent shipment update, a crash between them can suppress necessary work. Couple the marker to the effect it claims.\n\nSuppose10,000 events/min arrive while a failed relay accumulates30minutes of backlog. At a sustainable relay rate15,000/min while new traffic continues,300,000 queued events require60minutes to drain. Budget outbox storage and freshness alarms for recovery, not only normal operation. A healthy API can coexist with stale downstream views."
+    },
+    {
+      "id": "operations",
+      "title": "The handoff needs repair tools",
+      "markdown": "CDC observes committed database changes. It can reduce polling overhead and expose a durable change position, but it introduces connector offsets, log retention, schema permissions, and operational recovery. A stopped connector can fall behind the retained source log. Decide how to resnapshot without losing updates or replaying unsafe external effects. Reading a raw database table's changes may expose storage-level details rather than the stable domain event consumers need.\n\nMonitor oldest unpublished age, relay errors, publish rate, unsupported schema counts, source-log space, and reconciliation results. Retire sent rows only under a policy compatible with relay recovery and auditing. Avoid unbounded payloads and accidental personal-data duplication into a long-retained topic. A poison record needs quarantine and an accountable recovery process rather than silent dropping.\n\nCommon misconceptions are that outbox makes the whole system one transaction, that CDC removes duplicate delivery, and that an event ID automatically deduplicates all effects forever. State the local atomic boundary, the at-least-once handoff, and the receiver's exact deduplication scope. Optional depth: investigate connector snapshot modes only after the basic failure trace is clear."
+    },
+    {
+      "id": "schedule",
+      "title": "Core practice and optional depth",
+      "markdown": "Core 55 minutes: retrieval5, mechanism18, worked trace8, bounded exercise10, scheduled Q1–Q3 ten minutes, comparison/cards4. Q4–Q5 are optional extra practice. Product commands below are documented patterns unless explicitly labeled as executed local code. The academy itself needs no broker cluster."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "outbox",
+      "title": "Two local transactions joined by a retryable handoff",
+      "source": "flowchart LR\nAPI[Order API] -->|One SQL transaction| DB[(Order plus outbox)]\nDB -.->|Read committed intent| R[Relay]\nR -.->|May publish again| B[(Broker)]\nB -.-> C[Consumer]\nC -->|One destination transaction| S[(Processed ID plus shipment request)]",
+      "caption": "Solid arrows show each local transaction. Dashed transport can repeat. There is no single transaction around the entire picture.",
+      "steps": [
+        "Commit order and event intent together.",
+        "Publish a stable event identity.",
+        "Expect a crash between publish and relay checkpoint.",
+        "Commit receiver dedupe and local effect together."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "An inventory service updates stock, publishes an event, and then stores a sent flag. Show a crash schedule that loses an event and one that duplicates it. Redesign using an outbox and a receiving inventory projection. Name one remaining failure an outbox does not solve.",
+    "rubric": [
+      "Show actual crash points.",
+      "Use two explicit local atomic boundaries.",
+      "Preserve duplicate/recovery limits."
+    ],
+    "solution": "Without an outbox, crash after stock commit before publish loses the event. With a persisted outbox, relay crash after successful publish before sent/progress recording duplicates delivery. Atomically commit stock plus event intent; relay with the same event ID; atomically commit processed-event marker plus projection update at the receiver. Remaining failures include an external side effect without idempotency, a relay outage exceeding log retention, and buggy event semantics. Reconcile authority and projection instead of treating transport success as correctness."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "The outbox row belongs in which transaction?",
+      "options": [
+        "A later independent transaction",
+        "The same transaction as the business change",
+        "The broker retention job"
+      ],
+      "answer": "The same transaction as the business change",
+      "explanation": "That atomic boundary prevents committed business state without recorded publication intent."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A relay crash after publish before checkpoint commonly causes what?",
+      "options": [
+        "Duplicate publication",
+        "Guaranteed data loss",
+        "Automatic rollback at every receiver"
+      ],
+      "answer": "Duplicate publication",
+      "explanation": "The relay must retry uncertain publication; receiver effects must tolerate repetition."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Backlog90,000, arrivals1,000/min, relay2,500/min: catch-up time?",
+      "answer": 60,
+      "unit": "minutes",
+      "explanation": "90,000 /(2,500−1,000)=60min under stable rates.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is polling an outbox reasonable?",
+      "answer": "When measured volume and freshness tolerate bounded indexed scans, avoiding additional CDC operations. Monitor age and contention; choose from constraints.",
+      "explanation": "When measured volume and freshness tolerate bounded indexed scans, avoiding additional CDC operations. Monitor age and contention; choose from constraints."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is the dedupe marker a transaction concern?",
+      "answer": "It asserts an effect occurred. If it commits separately, crashes can create either duplicate effects or a marker that suppresses an effect that never happened.",
+      "explanation": "It asserts an effect occurred. If it commits separately, crashes can create either duplicate effects or a marker that suppresses an effect that never happened."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Outbox closes which gap?",
+      "back": "Business commit versus recording publication intent in the same database."
+    },
+    {
+      "front": "Outbox eliminates duplicates?",
+      "back": "No, the relay can republish after an uncertain acknowledgment."
+    },
+    {
+      "front": "CDC observes?",
+      "back": "Committed changes under connector/database log semantics."
+    },
+    {
+      "front": "Receiver atomic boundary?",
+      "back": "Dedupe marker plus the corresponding local business effect."
+    },
+    {
+      "front": "Critical freshness signal?",
+      "back": "Age of the oldest outstanding event, alongside rate and failure metrics."
+    }
+  ],
+  "mentalModel": "Commit the intent with the fact; retry the handoff; couple deduplication to the effect.",
+  "sources": [
+    {
+      "title": "Debezium 3.6 — Outbox event router",
+      "url": "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Kafka 4.1 — Design, partitions and delivery semantics",
+      "url": "https://kafka.apache.org/41/design/design/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

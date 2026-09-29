@@ -1,0 +1,247 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "level": "beginner",
+  "id": "read-system-diagrams",
+  "week": 1,
+  "title": "Read a system diagram, one arrow at a time",
+  "minutes": 40,
+  "summary": "Turn boxes and arrows into a story you can explain. Learn what a diagram shows, what it leaves out, and how to check whether its arrows make sense.",
+  "objectives": [
+    "Give each box a responsibility rather than guessing its product name.",
+    "Read an arrow as a specific message between two named parts.",
+    "Separate a picture of responsibilities from a picture of physical computers."
+  ],
+  "terms": [
+    {
+      "term": "Component",
+      "definition": "A part of a system with a named responsibility, such as checking a request."
+    },
+    {
+      "term": "Boundary",
+      "definition": "A line or grouping showing a meaningful separation, such as your browser versus the service you call."
+    },
+    {
+      "term": "Sequence diagram",
+      "definition": "A picture that shows messages in a chosen order, usually with time moving downward."
+    },
+    {
+      "term": "Deployment",
+      "definition": "The arrangement of running software on computers or other execution environments."
+    }
+  ],
+  "retrieval": [
+    "What different jobs do the browser, server, and database perform in Pocket Notes?"
+  ],
+  "sections": [
+    {
+      "id": "question",
+      "title": "A diagram should answer a question",
+      "markdown": "You see three boxes and five arrows. Where do you start? Start with the question the picture answers: **How does a note get saved?**\n\nAn architecture picture is a chosen view of a system. It cannot show every detail at once. A city map showing train stations helps you plan a journey; it does not tell you the plumbing beneath every house. Similarly, a request diagram need not show every computer or security rule.\n\n| What you want to explain | A useful picture |\n| --- | --- |\n| Who uses the application? | People and their connections to the application |\n| Which part does which job? | Components and labeled relationships |\n| What happens first, next, and last? | A message sequence |\n| Where do the programs run? | Computers with the programs drawn inside |\n\nWrite a short title before drawing. “How note 42 is saved” is more helpful than “Architecture.” It gives the reader a job to perform while looking."
+    },
+    {
+      "id": "boxes",
+      "title": "Read the labels before counting machines",
+      "markdown": "In our small application, **Browser** means “show the editor and send requests.” **Server** means “check requests and coordinate the work.” **Database** means “keep organized saved notes.”\n\nThose labels describe responsibilities. All three may run on your laptop while learning. A larger deployment may put them on different computers. Three boxes alone do not prove either arrangement.\n\n```text\nBox: Database\nResponsibility: preserve and retrieve notes\nExample input: save note 42\nExample result: note 42 is saved\n```\n\nUse this four-line card for any unfamiliar box. If you cannot name its input and result, you probably need an explanation before adding more boxes.\n\n> **Common mistake:** treating a cloud logo as an explanation. A familiar product still needs a stated job. You can reason about the job before learning that product's settings."
+    },
+    {
+      "id": "arrows",
+      "title": "An arrow needs a verb and a payload",
+      "markdown": "Compare “Browser → Server” with “Browser → Server: save the text Buy coffee.” The second version explains who asks, who receives, and what information moves.\n\nOur overview uses solid arrows for requests and dashed arrows for replies. This is a **local legend**, not a universal law. Other diagrams may use different conventions; read their legend first.\n\n| Arrow | Say it aloud |\n| --- | --- |\n| Browser → Server | Please save this text |\n| Server → Database | Store this note with identity 42 |\n| Database → Server | The save completed under the storage contract |\n| Server → Browser | Note 42 was saved |\n\nThe browser does not need to write directly into the database. The server can check the request and decide which operation is allowed. Login is deliberately outside this first picture; a private application will need it.\n\n**Pause and predict:** if the last reply disappears, has the drawing proved that the database did nothing? No. A missing reply leaves the browser uncertain about the earlier work."
+    },
+    {
+      "id": "order",
+      "title": "A sequence adds order to the same story",
+      "markdown": "A component picture says which parts communicate. A sequence picture helps you inspect the **order** of their messages.\n\nRead it from top to bottom. The participant names identify roles. Horizontal arrows carry messages. The vertical lines let you follow the same participant through the story.\n\nThe sequence below tells one successful save. It is not a scale drawing of elapsed time: a long gap on the page does not imply a slow operation. It also does not prove that all requests in a real system happen one after another.\n\nNow trace the worked example. First the text exists only in the browser. After the storage step, a saved record exists. Only after the reply arrives can this browser show a confirmed success. These are different moments, and drawing them separately helps you spot misleading promises."
+    },
+    {
+      "id": "boundaries",
+      "title": "Write down what the picture leaves out",
+      "markdown": "A useful beginner drawing can be small and honest. Add a note such as:\n\n```text\nShown: one successful save and its reply\nAssumed: the request is allowed\nOmitted: login, backups, multiple servers\nNot promised: survival of every possible disk failure\n```\n\nLater, a boundary might distinguish a public browser from a private application network. Crossing that line raises questions about permission and trust. A boundary is a prompt to explain controls; drawing it does not enforce them.\n\nKeep this checklist beside your sketch:\n\n1. Can I explain the responsibility of every box?\n2. Does every important arrow say what moves?\n3. Have I stated the order when order matters?\n4. Which assumptions would change the picture?\n\n**Interview phrasing:** “This first view shows the save path. I am using one service and one database so we can check the behavior before discussing growth.” That gives the interviewer a clear way to follow you."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "request-map",
+      "sectionId": "arrows",
+      "title": "The same saved note connects all three roles",
+      "source": "flowchart TD\nB[Browser: edit text] -->|Save Buy coffee| S[Server: check and coordinate]\nS -->|Store note 42| D[(Database: saved notes)]\nD -.->|Save completed| S\nS -.->|Note 42 saved| B",
+      "caption": "Solid arrows are requests; dashed arrows are replies in this picture. They do not specify physical machines.",
+      "steps": [
+        "Read the request label before moving to the next box.",
+        "Follow the database result back to the server.",
+        "Only the server reply confirms success to this browser."
+      ]
+    },
+    {
+      "id": "message-order",
+      "sectionId": "order",
+      "title": "One successful save in order",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant S as Server\nparticipant D as Database\nB->>S: Save Buy coffee\nS->>D: Store note 42\nD-->>S: Saved\nS-->>B: Note 42 saved",
+      "caption": "Time moves downward; vertical spacing does not measure latency. This is one request, not a claim that requests never overlap.",
+      "steps": [
+        "The client starts the conversation.",
+        "Storage finishes before the confirmed reply.",
+        "The client learns the result only when the reply arrives."
+      ]
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "save-snapshots",
+      "sectionId": "order",
+      "title": "Watch where “Buy coffee” exists",
+      "intro": "Follow the same text through three snapshots. A box is a responsibility; a snapshot describes its state at one moment.",
+      "steps": [
+        {
+          "title": "Before Save",
+          "explanation": "Typing changes the browser. No request has been sent yet.",
+          "state": [
+            {
+              "label": "Browser",
+              "value": "Buy coffee"
+            },
+            {
+              "label": "Server",
+              "value": "No request yet"
+            },
+            {
+              "label": "Database",
+              "value": "No note 42"
+            }
+          ]
+        },
+        {
+          "title": "Storage has finished",
+          "explanation": "The server has stored the note. The reply is still on its way to the browser.",
+          "state": [
+            {
+              "label": "Browser",
+              "value": "Waiting for confirmation"
+            },
+            {
+              "label": "Server",
+              "value": "Sending saved result"
+            },
+            {
+              "label": "Database",
+              "value": "42 → Buy coffee"
+            }
+          ]
+        },
+        {
+          "title": "The reply arrives",
+          "explanation": "Now the browser can distinguish a confirmed save from a request that is still waiting.",
+          "state": [
+            {
+              "label": "Browser",
+              "value": "Saved: note 42"
+            },
+            {
+              "label": "Server",
+              "value": "Request finished"
+            },
+            {
+              "label": "Database",
+              "value": "42 → Buy coffee"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A request, a saved fact, and the client learning about that fact are separate moments."
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw a tiny weather page using a browser, a server, and a weather-data source. Label a request and its reply. State one detail you deliberately omitted.",
+    "rubric": [
+      "Each box has a responsibility.",
+      "Request and response arrows carry named information.",
+      "One assumption or omission is explicit."
+    ],
+    "solution": "The browser asks the server for the weather in Berlin. The server asks its weather-data source for the relevant forecast, receives that data, and returns a displayable response to the browser. Labels should name the city request and forecast response rather than saying only data. The source might be another service or saved data; choose and state the assumption. Authentication, freshness rules, and unavailable-source behavior can be explicitly omitted from this first drawing, then added when studying those requirements."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What can three component boxes establish on their own?",
+      "options": [
+        "Three physical computers exist",
+        "Three responsibilities have been named",
+        "There are exactly three users"
+      ],
+      "answer": "Three responsibilities have been named",
+      "explanation": "A component view needs separate deployment information to establish physical placement."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which arrow label is most useful?",
+      "options": [
+        "Data",
+        "Magic",
+        "Fetch note 42"
+      ],
+      "answer": "Fetch note 42",
+      "explanation": "A specific operation and identifier make the message understandable."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A save reply is lost. What does the browser know?",
+      "options": [
+        "The database definitely did nothing",
+        "The outcome is uncertain from that missing reply alone",
+        "The note definitely vanished"
+      ],
+      "answer": "The outcome is uncertain from that missing reply alone",
+      "explanation": "The work may have completed before the reply was lost."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why name the omitted details?",
+      "answer": "It bounds what the picture claims and gives the reader specific follow-up questions instead of implying every concern is solved.",
+      "explanation": "It bounds what the picture claims and gives the reader specific follow-up questions instead of implying every concern is solved."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "How does a sequence diagram add to a component view?",
+      "answer": "It shows an order of messages for a chosen scenario; it does not automatically measure time or describe every concurrent request.",
+      "explanation": "It shows an order of messages for a chosen scenario; it does not automatically measure time or describe every concurrent request."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What does a component box name?",
+      "back": "A responsibility; not necessarily a separate computer."
+    },
+    {
+      "front": "What belongs on an arrow?",
+      "back": "The operation or information moving between named participants."
+    },
+    {
+      "front": "What does a sequence diagram emphasize?",
+      "back": "Message order in a chosen scenario."
+    },
+    {
+      "front": "Does drawing a trust boundary enforce security?",
+      "back": "No. It identifies a separation whose controls must be explained and implemented."
+    },
+    {
+      "front": "Missing save reply means?",
+      "back": "The caller may not know whether earlier work committed."
+    }
+  ],
+  "mentalModel": "Read a diagram as a story: who asks, what moves, who remembers, and what the caller learns.",
+  "sources": [
+    {
+      "title": "C4 model: diagram notation guidance",
+      "url": "https://c4model.com/diagrams/notation",
+      "checked": "2026-09-29"
+    }
+  ]
+}

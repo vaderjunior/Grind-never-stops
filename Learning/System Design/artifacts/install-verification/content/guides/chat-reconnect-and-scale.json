@@ -1,0 +1,285 @@
+{
+  "id": "chat-reconnect-and-scale",
+  "title": "Chat: reconnects, ordering, and growth",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 17,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Repair the gap between replay and live delivery, and keep slow or reconnecting clients from exhausting the service.",
+  "objectives": [
+    "Identify the history-to-live subscription race.",
+    "Design a bounded replay handoff using a durable cursor and deduplication.",
+    "Handle slow consumers, room ordering, and permission revocation during growth."
+  ],
+  "terms": [
+    {
+      "term": "Replay",
+      "definition": "Reading durable events that a client may have missed."
+    },
+    {
+      "term": "High-water mark",
+      "definition": "A known committed position that bounds one catch-up pass."
+    },
+    {
+      "term": "Backpressure",
+      "definition": "Restricting or slowing upstream work when downstream capacity is limited."
+    },
+    {
+      "term": "Tombstone",
+      "definition": "A retained deletion marker that lets replicas or clients learn an item was removed."
+    },
+    {
+      "term": "Reconnect storm",
+      "definition": "Many clients attempting to reestablish service at nearly the same time."
+    }
+  ],
+  "retrieval": [
+    "Why can a WebSocket reconnect without recovering missed messages?",
+    "Why must a room sequence come from a defined authority?"
+  ],
+  "sections": [
+    {
+      "id": "gap",
+      "title": "Find the event that falls between two operations",
+      "markdown": "A connection reopening does not fill in the history that arrived while it was closed.\n\n| Event | Client view | Hidden problem |\n| --- | --- | --- |\n| Ben has applied through 40 | Cursor 40 | Later messages may exist |\n| History returns 41–50 | Cursor can reach 50 | Live subscription is not active yet |\n| Alice sends 51 | Ben receives nothing | It falls between the two operations |\n| Subscription activates; 52 arrives | Ben sees 52 | Message 51 is still missing |\n\nBoth individual requests succeeded. The combined transition failed.\n\nSubscribing before replay can deliberately create overlap instead. The same event may arrive from history and live delivery; stable identities let the client recognize it. This still needs a confirmed subscription boundary, bounded buffers, and repair rules.\n\n**Common mistake:** treating WebSocket as a replay protocol. It carries messages over a live connection; your application must define how missing history is recovered."
+    },
+    {
+      "id": "handoff",
+      "title": "Build a bounded bridge from history to live events",
+      "markdown": "One teaching protocol first establishes a subscription that buffers new room events and confirms when that subscription is active. It then reads a committed high-water mark H from the durable room log and fetches events after the client’s cursor through H in bounded pages. Meanwhile, the gateway or client retains later live events in a bounded buffer.\n\nApply the replayed events, deduplicate overlap by room sequence, then merge buffered events after H in sequence order. The durable log is authoritative when live delivery is missing or out of order. If a required sequence is absent, request repair from the log rather than skipping past it.\n\nThis design assumes the log retains the required ordered events and the subscription activation boundary is meaningful. A durable stream subscription with a cursor can supply a different implementation of the same need."
+    },
+    {
+      "id": "cursor",
+      "title": "Advance the cursor only over accounted-for history",
+      "markdown": "A cursor means “I have applied history through this position,” not “I saw one large number.” Receiving 52 while 51 is missing must not advance a contiguous applied cursor from 50 to 52. Otherwise a reconnect asking for events after 52 would omit 51 again. Buffer the out-of-order event and repair the gap, or use an explicit protocol whose cursor describes a different safe boundary.\n\nEdits, deletions, and membership changes complicate the log. If a message is removed, retain an appropriate tombstone or provide a protocol watermark that accounts for omitted positions. Do not assume every database sequence allocation produces a visible message; aborted transactions or filtered events may create legitimate gaps in some systems.\n\nOur teaching log sequences committed room events with explicit deletion markers. State that assumption instead of applying “wait for every integer” blindly to an unrelated database."
+    },
+    {
+      "id": "bounds",
+      "title": "Choose what happens when catching up cannot fit in memory",
+      "markdown": "A mobile client applies twenty events/s while a busy room produces two hundred. A buffer retaining all traffic grows by about 180 events/s. More memory buys time; it does not change the rate imbalance.\n\n| Condition | Defined response | What must not happen |\n| --- | --- | --- |\n| Small temporary delay | Buffer within size and age limits | Grow memory without a bound |\n| Buffer limit reached | Enter explicit repair/resync mode | Drop events but report caught up |\n| Requested cursor expired | Return expired-cursor state and a recovery path | Return an empty success as though nothing changed |\n\nA snapshot must name the state it contains and the replay position associated with it. Older message history may still require separate pagination.\n\nProtect each connection with its own budget so a slow device cannot hold every room worker. The server may stop live delivery and require bounded catch-up; that is more honest than keeping an unfinishable promise.\n\n**Pause and predict:** which resource is growing when arrival rate exceeds application rate? Draw the buffer, then point to the policy that eventually stops growth."
+    },
+    {
+      "id": "growth",
+      "title": "Scale connections without losing ownership rules",
+      "markdown": "Gateway instances can be partitioned by connections, while room events are routed to the gateways with subscribed members. A registry helps locate live connections, but stale entries and repeated deliveries should remain harmless. Ordered writes for one room still need one defined authority or a storage protocol that serializes them. During failover, prevent the former authority from committing conflicting room sequences.\n\nIf a region fails, many clients may reconnect together. Randomized backoff spreads retries, and admission limits protect the recovering service. Stagger replay work as well as socket handshakes; a million cheap connections can trigger a million expensive history queries. Measure replay lag and recovery progress separately from connected-socket count. Being reconnected does not mean a client has caught up, and being caught up does not prove the user has read the messages."
+    },
+    {
+      "id": "permissions",
+      "title": "Recheck access and test the seam directly",
+      "markdown": "A removed room member may still have an established connection or an old cursor. Recheck authorization at reconnect and replay, and propagate revocation to active subscriptions under a defined deadline. Decide how already delivered local copies are treated; removing server access cannot erase a screenshot or guarantee deletion from an untrusted client. Keep the technical promise precise.\n\nTest by inserting event 51 exactly between the history snapshot and live handoff. Deliver 52 before 51, repeat 51, restart the gateway, and overflow the per-client buffer. The client should either apply every authorized required event once logically or enter an explicit repair state. Finally test an expired cursor and a revoked member. These small adversarial timelines provide stronger evidence than a happy-path demo with two browser windows."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "replay-handoff",
+      "sectionId": "handoff",
+      "title": "Overlap plus deduplication bridges the reconnect race",
+      "source": "flowchart LR\nC[Client cursor 40] --> S[Activate bounded live buffer]\nS --> H[Read committed boundary H 50]\nH --> R[Replay 41 through 50]\nR --> M[Merge buffered events after H]\nM --> D[Deduplicate and repair gaps]\nD --> L[Continue live with durable cursor]",
+      "steps": [
+        "Activate subscription before taking the replay boundary.",
+        "Replay a finite committed range.",
+        "Merge overlap using stable room sequences.",
+        "Repair gaps or overflow explicitly before advancing the cursor."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "chat-repair-state",
+      "sectionId": "bounds",
+      "title": "Overflow changes the mode instead of hiding loss",
+      "source": "flowchart LR\nL[Live with bounded buffer] --> C{Within size and age limits?}\nC -->|Yes| A[Apply and advance safe cursor]\nA --> L\nC -->|No| R[Explicit resync required]\nR --> H[Authorized snapshot or bounded replay]\nH --> V[Verify catch-up boundary]\nV --> L",
+      "caption": "The recovery path requires a snapshot/replay contract and retained data. A reconnect alone is not evidence of catch-up.",
+      "steps": [
+        "Measure the backlog for this connection.",
+        "Continue only while the buffer stays within its limits.",
+        "Report resync when ordinary live delivery can no longer keep its promise.",
+        "Resume after the recovery boundary is established."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "A client has applied through 40. Replay covers 41–50. Live events arrive as 52, 51, 52. Show the applied cursor after each step and how duplicates are handled. Then assume a buffer limit of 100 while input is 200 events/s and client processing is 20/s; explain the overflow policy.",
+    "rubric": [
+      "Do not advance a contiguous cursor past missing 51.",
+      "Deduplicate the repeated 52.",
+      "Calculate growth as 180 events/s.",
+      "Use a bounded repair/resync response rather than unlimited buffering."
+    ],
+    "solution": "After replay the cursor is 50. Buffer 52 and retain cursor 50 while repairing or waiting for 51. After 51 arrives, apply 51 then buffered 52 and advance to 52. Ignore the repeated 52 logically. The buffer grows about 180 events/s, so an empty 100-event buffer fills in about 0.56 seconds under sustained rates. Disconnect or pause the live path with a resync requirement, then use a bounded snapshot/replay contract. Never silently skip events and report caught up."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Input is 200 events/s and processing is 20 events/s. Approximate backlog growth?",
+      "answer": 180,
+      "unit": "events/s",
+      "tolerance": 0,
+      "explanation": "200 − 20 = 180 events/s."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Cursor is 50 and event 52 arrives before required event 51. What is safe?",
+      "options": [
+        "Advance immediately to 52",
+        "Buffer 52 and repair the gap",
+        "Forget the cursor"
+      ],
+      "answer": "Buffer 52 and repair the gap",
+      "explanation": "A contiguous applied cursor cannot skip required history."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "What should an expired replay cursor produce?",
+      "options": [
+        "A truthful resync/expired-cursor response",
+        "An empty success that means no new messages",
+        "An unlimited memory allocation"
+      ],
+      "answer": "A truthful resync/expired-cursor response",
+      "explanation": "The client must know that ordinary replay can no longer fill the missing range."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is subscribe-then-replay easier to make safe than an uncoordinated replay-then-subscribe?",
+      "answer": "The first can deliberately overlap and deduplicate events. The second can leave a gap between the two operations. Both still need defined activation, committed boundaries, limits and repair behavior.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can waiting for every sequence integer be wrong in another system?",
+      "answer": "Some sequence allocators leave gaps after aborts, or readers filter events. The cursor protocol must account for legitimate omissions through committed-log semantics, tombstones, watermarks or another explicit mechanism.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Reconnect is not replay because…",
+      "back": "The transport resumes communication but does not supply missed application history."
+    },
+    {
+      "front": "High-water mark purpose?",
+      "back": "Bound one replay pass to a known committed position."
+    },
+    {
+      "front": "Safe contiguous cursor?",
+      "back": "The latest position through which required events have been applied or explicitly accounted for."
+    },
+    {
+      "front": "Slow-consumer rule?",
+      "back": "Bound per-client memory and enter a documented repair path on overflow."
+    },
+    {
+      "front": "Reconnect-storm protection?",
+      "back": "Randomized retries, admission budgets, and bounded replay work."
+    }
+  ],
+  "mentalModel": "Make history and live delivery overlap, then deduplicate; never conceal a gap behind a successful connection.",
+  "sources": [
+    {
+      "title": "IETF — WebSocket protocol",
+      "url": "https://datatracker.ietf.org/doc/html/rfc6455",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Slack Engineering — Real-time messaging",
+      "url": "https://slack.engineering/real-time-messaging/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Discord Engineering — Message storage at scale",
+      "url": "https://discord.com/blog/how-discord-stores-trillions-of-messages",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "bounded-replay-bridge",
+      "title": "Build an overlap that the client can account for",
+      "sectionId": "handoff",
+      "intro": "Use a separate room trace with client cursor 200. The live subscription is confirmed before the committed replay boundary is read.",
+      "steps": [
+        {
+          "title": "Establish the live buffer",
+          "explanation": "The gateway confirms this room subscription is active. Newly committed events can now be retained within its finite allowance.",
+          "state": [
+            {
+              "label": "Applied cursor",
+              "value": "200"
+            },
+            {
+              "label": "Subscription",
+              "value": "active"
+            },
+            {
+              "label": "Buffer",
+              "value": "empty"
+            }
+          ]
+        },
+        {
+          "title": "Read the boundary",
+          "explanation": "The durable log reports H=203. Event 204 commits afterward and enters the live buffer.",
+          "state": [
+            {
+              "label": "Replay boundary",
+              "value": "203"
+            },
+            {
+              "label": "Replay range",
+              "value": "201–203"
+            },
+            {
+              "label": "Buffer",
+              "value": "204"
+            }
+          ]
+        },
+        {
+          "title": "Apply the finite replay",
+          "explanation": "The client applies 201, 202, and 203. Any copies of those same positions from the live path are overlap, not new history.",
+          "state": [
+            {
+              "label": "Applied cursor",
+              "value": "203"
+            },
+            {
+              "label": "Completed replay",
+              "value": "201–203"
+            },
+            {
+              "label": "Buffer after overlap removal",
+              "value": "204"
+            }
+          ]
+        },
+        {
+          "title": "Join the live stream",
+          "explanation": "The next required committed event is 204, which can now be applied. The client is live under the same repair and memory limits.",
+          "state": [
+            {
+              "label": "Applied cursor",
+              "value": "204"
+            },
+            {
+              "label": "Buffer",
+              "value": "empty"
+            },
+            {
+              "label": "Mode",
+              "value": "live with gap and overflow checks"
+            }
+          ]
+        }
+      ],
+      "takeaway": "The high-water mark makes catch-up finite. Stable positions make overlap safe; neither feature permits skipping required history."
+    }
+  ]
+}

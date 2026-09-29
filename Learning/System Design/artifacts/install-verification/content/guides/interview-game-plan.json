@@ -1,0 +1,288 @@
+{
+  "id": "interview-game-plan",
+  "title": "A practical system design interview framework",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 15,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Turn what you know into a clear design conversation, with a complete working flow before optional complexity.",
+  "objectives": [
+    "Ask focused questions that change a design.",
+    "Trace a complete write and read through an API and data model.",
+    "Discuss a bottleneck and an alternative with evidence and assumptions."
+  ],
+  "terms": [
+    {
+      "term": "Functional requirement",
+      "definition": "Something a user or another system must be able to do."
+    },
+    {
+      "term": "Quality requirement",
+      "definition": "A measurable property such as response time, durability, or permitted staleness."
+    },
+    {
+      "term": "Scope",
+      "definition": "The behaviors included in the current design discussion."
+    },
+    {
+      "term": "Deep dive",
+      "definition": "A detailed explanation of an important mechanism or failure path."
+    },
+    {
+      "term": "Tradeoff",
+      "definition": "A choice that improves one property while costing another."
+    }
+  ],
+  "retrieval": [
+    "Trace creation and redirection in your week-8 URL shortener.",
+    "Name one reason to add a cache and one cost of doing so."
+  ],
+  "sections": [
+    {
+      "id": "conversation",
+      "title": "Treat the prompt as a conversation about a product",
+      "markdown": "“Design a URL shortener” is deliberately incomplete. It could mean a personal tool, a public service, or an internal campaign system. Begin with a small interpretation: users create short links and visitors follow them. Ask whether links can expire, whether creators need to edit them, and whether analytics must update immediately. Each answer changes stored fields, caching, or background processing.\n\nDo not spend the whole interview collecting every possible feature. Propose a bounded scope and confirm the important assumptions. In this practice session, include creation, redirection, expiration, and basic abuse checks. Leave a full advertising dashboard out. State quality requirements separately: redirect responses should usually be fast; confirmed creations should survive a process restart; aggregate click counts may lag. These statements connect later choices to a user need."
+    },
+    {
+      "id": "contract",
+      "title": "Put names on the things and operations",
+      "markdown": "Start with a **record** and two **operations**. The record is the information that must survive; an operation is something the service promises to do.\n\n| Item | Small example | Why it matters |\n| --- | --- | --- |\n| Link identity | link_204 | Still identifies the record if display text changes |\n| Public code | maple7 | Visitors use this to find the destination |\n| Destination | https://notes.example/public/trees | The saved address, not a value guessed during a redirect |\n| Creator | user_8 | Checked against the authenticated caller |\n| Expiration | tomorrow at 18:00 UTC | Changes whether a lookup may redirect |\n\nSketch the contracts beside the table:\n\n~~~text\nPOST /links + destination + operation key\n    → accepted short code, or a defined rejection\n\nGET /s/maple7\n    → redirect, expired/not found, or temporarily unavailable\n~~~\n\nAuthentication identifies the caller. Authorization decides whether that caller may act. A body field saying creator=user_8 is not proof of either.\n\nKeep click analytics as a separate record and optional path. A visitor should not wait for an analytics dashboard before reaching the destination.\n\n**Pause and predict:** which field must the redirect handler inspect when expiration becomes a requirement? Point to it in the record before adding another box."
+    },
+    {
+      "id": "flow",
+      "title": "Finish the simple design before expanding it",
+      "markdown": "Draw client, application, and durable database. On create, validate the destination, authorize the creator, choose a code, insert under a uniqueness constraint, and return the stored mapping. If the operation key repeats with the same request, return its saved result; a different request under the same key is a conflict. Explain a code collision as a retry at the uniqueness boundary, not as an impossible event.\n\nOn redirect, look up the code, check expiration and current policy, then return the destination. A cache can serve popular mappings once you define how updates and deletion invalidate or expire cached data. Record analytics asynchronously with the stated loss and delay policy. At this point you have a working design: the data exists somewhere, both user journeys reach a result, and the important constraints are visible. Only now ask which part is likely to need growth."
+    },
+    {
+      "id": "focus",
+      "title": "Choose a deep dive because the requirement demands it",
+      "markdown": "Suppose redirects outnumber creations one hundred to one. Read capacity and hot links are more relevant than optimizing a rarely used administration screen. A cache near redirect handlers may help. Discuss the miss path, maximum retained age, deleted-link behavior, and the consequences of cache loss. “Add Redis” names a possible product but does not explain these decisions.\n\nAn interviewer might instead ask about a viral link that attracts most traffic. Follow that change: a hot key can overload one owner even when total data is evenly partitioned. Replicate safe reads, protect the origin on cache misses, and monitor the hot path. If requirements change to immediate deletion, revisit your freshness strategy. Adapting a previous choice shows more understanding than defending the original drawing as if it were fixed forever."
+    },
+    {
+      "id": "time",
+      "title": "Use time as a guide, not a rigid ritual",
+      "markdown": "For a forty-five-minute practice, try five minutes on scope, five on contracts and data, twelve on the complete flow, fifteen on the most important scaling or failure questions, and the rest on checking and explanation. These are practice allocations, not a universal hiring rubric. Follow the interviewer’s prompts, and keep an eye on whether the basic service is still complete.\n\nUseful estimates belong at decisions. Calculate traffic when it affects server capacity, storage when it affects retention, and amplification when it affects work. Avoid filling a board with arithmetic that leads to no choice. If uncertain, say what assumption you will use and what measurement would replace it. A rough but decision-relevant range is more informative than an exact-looking number with no defensible inputs."
+    },
+    {
+      "id": "close",
+      "title": "End by checking the promised behavior",
+      "markdown": "Walk through one successful create and redirect, then one failure: the response to creation is lost after the database commits. Explain how the operation key prevents creating another logical link on retry. Name remaining weaknesses, such as coordinated deletion across caches or region recovery, and say which requirement would justify the next investment.\n\nAssess your practice using evidence. Did you describe both journeys? Did every stored fact have an owner? Did you justify one important tradeoff? Did you respond to a changed condition? A memorized list of products cannot answer those questions. Record the actual explanation, identify one gap, and repeat with a different constraint. The aim is a clear, defensible conversation; neither a self-rating nor an AI score guarantees an interview outcome."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "interview-flow",
+      "sectionId": "flow",
+      "title": "A complete explanation has a write and a read",
+      "source": "flowchart LR\nC[Creator] -->|POST links with operation key| A[Application]\nA -->|Unique mapping and saved result| D[(Database)]\nV[Visitor] -->|GET short code| R[Redirect handler]\nR --> K[Cache]\nK -->|Miss| D\nR -->|Destination response| V\nR --> E[Optional analytics event]",
+      "steps": [
+        "Explain what creation persists.",
+        "Follow a lookup to the durable mapping on a miss.",
+        "Explain expiration and policy before returning a destination.",
+        "Keep optional analytics outside the required redirect result."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "interview-decision-loop",
+      "sectionId": "focus",
+      "title": "Let a requirement choose the next detail",
+      "source": "flowchart LR\nR[Requirement: fast popular redirects] --> Q[Question: where is read work spent?]\nQ --> M[Estimate and measure the lookup path]\nM --> C[Consider a bounded cache]\nC --> F[Explain misses expiry and deletion]\nF --> R",
+      "caption": "A design conversation is iterative. The cache is a candidate choice, not an automatic answer to every prompt.",
+      "steps": [
+        "Name the product behavior that matters.",
+        "Locate the work that could prevent it.",
+        "Choose a mechanism and state its cost.",
+        "Check whether failure or a changed requirement invalidates the choice."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Explain this shortener in eight minutes using at most six boxes. Then change the requirement: a deleted link must stop redirecting within one minute. Spend five minutes revising the cache behavior and two minutes naming remaining assumptions.",
+    "rubric": [
+      "Define scope and two user journeys.",
+      "Give durable facts an owner and identify duplicate creation.",
+      "Connect the cache freshness rule to the one-minute bound.",
+      "State uncertainty and what must be measured."
+    ],
+    "solution": "Create stores a unique mapping and operation result in durable storage; redirect resolves and checks the mapping. To meet a one-minute deletion bound, use a design whose worst permitted cached age and invalidation behavior fit that bound, including outage behavior. For example, a maximum 60-second cache age may fit only if fill races and policy-check timing cannot extend stale redirects beyond the defined rule. State the clock and observation boundary, and fail safely when freshness cannot be established. Do not merely claim that publishing an invalidation guarantees delivery."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which early question most directly changes redirect caching?",
+      "options": [
+        "Can destinations be edited or deleted?",
+        "Which icon should the logo use?",
+        "What is the company slogan?"
+      ],
+      "answer": "Can destinations be edited or deleted?",
+      "explanation": "Mutable mappings and deletion deadlines determine freshness behavior."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What makes an estimate useful in a design conversation?",
+      "options": [
+        "It has many decimal places",
+        "It changes or tests a design decision",
+        "It uses the largest possible user count"
+      ],
+      "answer": "It changes or tests a design decision",
+      "explanation": "An estimate should justify capacity, layout, retention or another meaningful choice."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A 45-minute practice spends 5 + 5 + 12 + 15 minutes on planned sections. How many minutes remain?",
+      "answer": 8,
+      "unit": "minutes",
+      "tolerance": 0,
+      "explanation": "45 − 37 = 8 minutes for checks, questions and summary."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Explain the lost-response case after creating a link.",
+      "answer": "The database may have committed although the client timed out. Reuse the operation key, verify the request matches, and return the original saved result instead of creating a second logical link.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What evidence would show that a practice explanation improved?",
+      "answer": "A recording or notes showing complete user flows, explicit data ownership, requirement-linked choices, correct failure reasoning, and a response to a new constraint. Identify a concrete change from the previous attempt.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "First job in an ambiguous prompt?",
+      "back": "Bound the user behaviors and confirm the assumptions that change the design."
+    },
+    {
+      "front": "What must a high-level drawing support?",
+      "back": "A complete path for each required operation and ownership of persisted facts."
+    },
+    {
+      "front": "When to estimate?",
+      "back": "When the number helps choose or challenge a design."
+    },
+    {
+      "front": "What is a useful deep dive?",
+      "back": "A mechanism or failure path tied to an important requirement."
+    },
+    {
+      "front": "How to assess practice honestly?",
+      "back": "Use actual explanation evidence and specific gaps, without treating a score as a hiring guarantee."
+    }
+  ],
+  "mentalModel": "Make the service work on paper, then explain the most important reason it might stop working.",
+  "sources": [
+    {
+      "title": "Hello Interview — Delivery framework, optional comparison",
+      "url": "https://www.hellointerview.com/learn/system-design/in-a-hurry/delivery",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "AlgoMaster — Answering framework, optional comparison",
+      "url": "https://algomaster.io/learn/system-design-interviews/answering-framework",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "one-link-two-journeys",
+      "title": "Follow one fact through your explanation",
+      "sectionId": "flow",
+      "intro": "Use different people for creation and reading. Keep the same saved link visible as the story moves.",
+      "steps": [
+        {
+          "title": "The creator makes a request",
+          "explanation": "Maya asks to create a link. The application has received an intention; there is no accepted mapping yet.",
+          "state": [
+            {
+              "label": "Caller",
+              "value": "Maya / user_8"
+            },
+            {
+              "label": "Operation key",
+              "value": "create_52"
+            },
+            {
+              "label": "Mapping",
+              "value": "not accepted"
+            }
+          ]
+        },
+        {
+          "title": "The database accepts the record",
+          "explanation": "Validation and authorization pass. The database accepts the unique code and the result belonging to this operation key.",
+          "state": [
+            {
+              "label": "Link",
+              "value": "link_204"
+            },
+            {
+              "label": "Code",
+              "value": "maple7"
+            },
+            {
+              "label": "Destination",
+              "value": "https://notes.example/public/trees"
+            },
+            {
+              "label": "Operation result",
+              "value": "create_52 → maple7"
+            }
+          ]
+        },
+        {
+          "title": "A visitor follows the code",
+          "explanation": "Arun requests the short code. The handler retrieves the accepted mapping and checks its expiration and policy.",
+          "state": [
+            {
+              "label": "Caller",
+              "value": "Arun"
+            },
+            {
+              "label": "Lookup",
+              "value": "maple7"
+            },
+            {
+              "label": "Mapping",
+              "value": "link_204"
+            },
+            {
+              "label": "Policy",
+              "value": "eligible now"
+            }
+          ]
+        },
+        {
+          "title": "Close the loop",
+          "explanation": "The browser receives a redirect and starts a separate destination request. Optional analytics may still be pending.",
+          "state": [
+            {
+              "label": "Required result",
+              "value": "redirect returned"
+            },
+            {
+              "label": "Next browser request",
+              "value": "destination page"
+            },
+            {
+              "label": "Analytics",
+              "value": "may lag"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A complete explanation shows what is accepted, where it is stored, and how a different request uses it."
+    }
+  ]
+}

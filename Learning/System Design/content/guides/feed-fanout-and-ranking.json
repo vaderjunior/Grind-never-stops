@@ -1,0 +1,290 @@
+{
+  "id": "feed-fanout-and-ranking",
+  "title": "Feeds: fan-out, ranking, and celebrity traffic",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 18,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Handle a celebrity’s uneven audience and introduce ranking as a separate bounded stage, with freshness and access rules intact.",
+  "objectives": [
+    "Estimate fan-out work for ordinary and very large audiences.",
+    "Describe a hybrid pull/push feed without duplicate or visibility mistakes.",
+    "Separate candidate retrieval, filtering, scoring, and page stability."
+  ],
+  "terms": [
+    {
+      "term": "Celebrity account",
+      "definition": "An account whose audience is unusually large relative to the service’s normal workload."
+    },
+    {
+      "term": "Hybrid fan-out",
+      "definition": "Preparing some content on write while fetching other content on read."
+    },
+    {
+      "term": "Candidate",
+      "definition": "A potentially eligible item considered before final ordering and selection."
+    },
+    {
+      "term": "Ranking",
+      "definition": "Scoring or ordering eligible candidates according to the product objective."
+    },
+    {
+      "term": "Feature",
+      "definition": "An input used by a scoring rule or model, such as age or prior interaction."
+    }
+  ],
+  "retrieval": [
+    "Why is a feed index derived rather than authoritative?",
+    "How can average follower count hide a hot part of the system?"
+  ],
+  "sections": [
+    {
+      "id": "skew",
+      "title": "Use two authors instead of one average",
+      "markdown": "Most study-community authors have two hundred followers. One instructor has twenty million. A push design that writes one entry per follower creates two hundred entries for an ordinary post and twenty million for the instructor’s post. One celebrity post therefore requires as many recipient entries as one hundred thousand ordinary posts under these assumptions.\n\nThis is workload skew: a small number of inputs account for much of the work. The average follower count may look manageable while one fan-out job blocks everyone behind it. Split large enumerations into bounded tasks, provide fair scheduling, and monitor oldest job age by class. Adding one huge batch to a queue does not make its cost small. First decide whether every follower needs a prepared entry at all."
+    },
+    {
+      "id": "hybrid",
+      "title": "Pay at write time for some authors and read time for others",
+      "markdown": "A hybrid design pushes ordinary authors’ post IDs into follower feed indexes, while keeping high-audience authors’ recent posts in an author timeline fetched when a follower reads. The reader merges these sources before ordering. This avoids writing twenty million entries for every instructor post, but it adds read work for followers and makes merge behavior part of correctness.\n\nThe threshold should reflect fan-out cost, posting rate, active-reader fraction, storage budget, and acceptable freshness. It is not a universal follower count copied from a diagram. A dormant audience may produce little read demand even though full fan-out would be expensive. Conversely, a frequently read author timeline can become a hot read key that needs safe replication or caching. Explain where the shifted work goes rather than presenting hybrid fan-out as free scaling."
+    },
+    {
+      "id": "transition",
+      "title": "Do not lose content when an author changes category",
+      "markdown": "Suppose the instructor crosses the threshold while a post is being published. Some workers may follow the old push rule while readers follow the new pull rule. If neither path includes the post, it disappears; if both include it, it may repeat. Store a policy version or a transition boundary and define which posts each path covers during migration.\n\nDeliberate overlap can be safe when the final merge deduplicates by stable post ID. Retain the old path until the new one covers the required range, then clean up. Current visibility, deletion, blocks, and follow relationships still apply after merging; a cached celebrity timeline is not permission to show every candidate.\n\nTest the threshold transition while posts are arriving, including rollback to the prior policy. A scaling decision creates a migration problem whenever it changes where readers find data."
+    },
+    {
+      "id": "ranking",
+      "title": "Separate finding candidates from choosing their order",
+      "markdown": "A ranker can only order the candidates it receives. If retrieval misses a useful post, a perfect scoring formula cannot recover it.\n\n| Stage | Example input | Job |\n| --- | --- | --- |\n| Retrieve | Prepared IDs plus followed-author timelines | Gather a bounded candidate set |\n| Deduplicate | p_12 appears through both paths | Keep one logical post |\n| Filter | Current deletion, follow, block, and visibility facts | Remove ineligible content |\n| Score | Eligible post plus age and interaction features | Apply a stated ordering rule |\n| Select | Ordered survivors | Return a bounded page |\n\nFor a first rule, favor recent posts and recent direct interaction while limiting repetition from one author. These are teaching inputs, not a claim about another platform’s production algorithm.\n\nName the product objective: useful discussion, user control, or another outcome. Clicks alone are not identical to learning value.\n\nA learned model adds feature and model operations. It still needs a latency budget and a fallback. Authorization is not a feature the model may choose to ignore."
+    },
+    {
+      "id": "stability",
+      "title": "Keep changing scores from breaking the page experience",
+      "markdown": "Scores change as posts age and interactions arrive. A last-score cursor can therefore point into a different order on the next request.\n\n| Continuity choice | Reader experience | Cost or limit |\n| --- | --- | --- |\n| Short-lived ordered ID list | Continue through one prepared session | Store and expire session state |\n| Deliberately changing feed | New ordering can appear immediately | Explain weaker continuity; deduplicate and refresh |\n\nA session can store IDs such as p_12, p_7, p_9. Later pages follow this list, but still check current eligibility. A stable presentation is not a permission snapshot.\n\nAfter the session expires, ask the client to refresh rather than interpreting an obsolete score cursor as a compatible chronological cursor.\n\n**Pause and predict:** p_7 is deleted between pages. Which promise should win: preserving the original list exactly, or respecting the current deletion? The list can retain the ID for continuity while the response suppresses its content."
+    },
+    {
+      "id": "measure",
+      "title": "Measure relevance and system behavior separately",
+      "markdown": "Suppose candidate collection takes 35 ms, permission and hydration work takes 40 ms, and scoring takes 20 ms sequentially. That is 95 ms before remaining network and rendering costs under this example. If the ranker becomes unavailable, an authorized chronological fallback may preserve useful reading. It should use the same filtering rules and a documented ordering contract, not bypass permissions to improve latency.\n\nMonitor candidate coverage, fan-out lag, duplicate rate, filter rate, page latency, and user feedback about usefulness. Compare experimental ranking changes against a stated objective and guardrails. A higher click count alone does not demonstrate a better learning experience. In an interview, explain the instructor-post path end to end, then switch the constraint: a new post must appear quickly, or the ranking dependency fails. Those changes reveal whether the design’s responsibilities are clear."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "hybrid-feed",
+      "sectionId": "hybrid",
+      "title": "Merge two candidate paths before ranking",
+      "source": "flowchart LR\nN[Ordinary author post] --> P[Push worker]\nP --> I[(Reader feed entries)]\nC[High-audience author post] --> T[(Author timeline)]\nI --> M[Candidate merge and deduplication]\nT --> M\nM --> F[Current permission and deletion checks]\nF --> R[Bounded ranking]\nR --> O[Page and continuity cursor]",
+      "steps": [
+        "Push bounded ordinary fan-out.",
+        "Keep high-audience posts in a read-time source.",
+        "Merge and deduplicate by stable post ID.",
+        "Apply current policy before scoring and returning a page."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "feed-policy-transition",
+      "sectionId": "transition",
+      "title": "Overlap deliberately while a new retrieval path becomes complete",
+      "source": "flowchart LR\nO[Old push policy covers earlier posts] --> M[Merge by stable post identity]\nN[New pull policy covers transition range] --> M\nM --> D[Deduplicate overlapping candidates]\nD --> P[Apply current eligibility]\nP --> V[Verify coverage before retiring old path]",
+      "caption": "This is a coverage plan, not an automatic migration guarantee. Persist a policy version or boundary and verify the required range before cleanup.",
+      "steps": [
+        "Identify the posts each path promises to cover.",
+        "Allow bounded overlap while the new path catches up.",
+        "Deduplicate the same post identity before display.",
+        "Retire the old path only after coverage is verified."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Compare a post to 200 followers with a post to 20 million. Choose a hybrid policy and explain a safe transition for an author crossing its threshold. Then design a fallback when ranking fails, keeping permission checks and page continuity explicit.",
+    "rubric": [
+      "Calculate the 100,000-fold fan-out difference.",
+      "Shift work intentionally to read-time retrieval.",
+      "Use a defined transition boundary or overlap with deduplication.",
+      "Fallback preserves current authorization.",
+      "State how existing page cursors behave."
+    ],
+    "solution": "Twenty million divided by two hundred is 100,000. Push ordinary authors; pull high-audience timelines when followers read, with thresholds chosen from measured work and active readers. During transition, preserve a policy boundary or overlap both paths and deduplicate by post ID until coverage is confirmed. On ranker failure, return an authorized chronological fallback under a clearly new or compatible feed-session contract. Do not interpret an old rank-score cursor as a chronological cursor or skip visibility checks."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "20,000,000 recipient entries divided by 200 entries equals what amplification ratio?",
+      "answer": 100000,
+      "unit": "times",
+      "tolerance": 0,
+      "explanation": "20,000,000 ÷ 200 = 100,000."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which step must remain even when ranking is unavailable?",
+      "options": [
+        "Current authorization and deletion filtering",
+        "The same machine-learning model",
+        "An unlimited candidate fetch"
+      ],
+      "answer": "Current authorization and deletion filtering",
+      "explanation": "Fallback ordering cannot weaken access control."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Why deduplicate a hybrid merge by post ID?",
+      "options": [
+        "Push and pull paths may overlap",
+        "IDs determine learning value",
+        "Followers never change"
+      ],
+      "answer": "Push and pull paths may overlap",
+      "explanation": "A migration or hybrid policy can retrieve the same logical post through two sources."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might a last-score cursor be unstable?",
+      "answer": "Scores and candidate membership change between requests, moving items across the boundary. Use a bounded snapshot/session or explicitly weaker continuity with deduplication and refresh behavior.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What determines a reasonable celebrity threshold?",
+      "answer": "Actual fan-out work, posting frequency, active-reader demand, storage and latency budgets, and transition cost. It is a workload-dependent policy, not a universal follower number.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Why hybrid fan-out?",
+      "back": "Avoid huge write fan-out for some authors while keeping ordinary feed reads efficient."
+    },
+    {
+      "front": "Where does avoided write work go?",
+      "back": "Into read-time candidate retrieval, caching and merging."
+    },
+    {
+      "front": "Candidate retrieval versus ranking?",
+      "back": "Retrieval chooses what can be considered; ranking orders eligible candidates."
+    },
+    {
+      "front": "Safe policy migration pattern?",
+      "back": "Defined coverage boundaries or deliberate overlap with stable-ID deduplication."
+    },
+    {
+      "front": "Ranker failure fallback?",
+      "back": "A useful bounded order that retains authorization and explains cursor continuity."
+    }
+  ],
+  "mentalModel": "An uneven audience changes when you pay for work; ranking changes order, not the authority to show a post.",
+  "sources": [
+    {
+      "title": "Meta Engineering — News Feed ranking",
+      "url": "https://engineering.fb.com/2021/01/26/ml-applications/news-feed-ranking/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "W3C — ActivityPub delivery, optional protocol comparison",
+      "url": "https://www.w3.org/TR/activitypub/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "rank-small-candidates",
+      "title": "See what each feed stage changes",
+      "sectionId": "ranking",
+      "intro": "An illustrative rule scores three eligible posts. Scores are made-up teaching values; the lesson is the separation of stages.",
+      "steps": [
+        {
+          "title": "Merge the sources",
+          "explanation": "The prepared list and a pulled author timeline overlap on p_12.",
+          "state": [
+            {
+              "label": "Prepared IDs",
+              "value": "p_12, p_7"
+            },
+            {
+              "label": "Pulled IDs",
+              "value": "p_12, p_9"
+            },
+            {
+              "label": "Raw candidates",
+              "value": "4 entries"
+            }
+          ]
+        },
+        {
+          "title": "Deduplicate and authorize",
+          "explanation": "Remove the repeated identity and verify the three current records. Assume all three are allowed in this trace.",
+          "state": [
+            {
+              "label": "Unique candidates",
+              "value": "p_12, p_7, p_9"
+            },
+            {
+              "label": "Eligibility",
+              "value": "all allowed now"
+            },
+            {
+              "label": "Logical posts",
+              "value": "3"
+            }
+          ]
+        },
+        {
+          "title": "Apply one explainable score",
+          "explanation": "The chosen age-and-interaction rule assigns scores to the surviving candidates.",
+          "state": [
+            {
+              "label": "p_12 score",
+              "value": "8"
+            },
+            {
+              "label": "p_7 score",
+              "value": "6"
+            },
+            {
+              "label": "p_9 score",
+              "value": "9"
+            },
+            {
+              "label": "Highest first",
+              "value": "p_9, p_12, p_7"
+            }
+          ]
+        },
+        {
+          "title": "Keep presentation and access separate",
+          "explanation": "A short-lived session stores the ordered IDs. Later pages still enforce current policy.",
+          "state": [
+            {
+              "label": "Session order",
+              "value": "p_9, p_12, p_7"
+            },
+            {
+              "label": "Stored meaning",
+              "value": "presentation order"
+            },
+            {
+              "label": "Access checks",
+              "value": "repeated when serving"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Retrieval sets the opportunity, policy sets eligibility, and ranking sets order. A ranking fallback cannot skip the policy stage."
+    }
+  ]
+}

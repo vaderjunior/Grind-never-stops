@@ -1,0 +1,14 @@
+{
+  "path": "D:\\AIOps Infra Path\\Learning\\System Design\\artifacts\\system-design-academy-source.zip",
+  "files": 597,
+  "bytes": 4861130,
+  "sha256": "352c5d76e0eebd99a5d558e21a1b75538739c3e67bb662f3d7046ec01fe94bd5",
+  "excludes": [
+    "learner records",
+    "credentials",
+    "node_modules",
+    "reference-repos",
+    "test databases"
+  ],
+  "integrity": "passed"
+}

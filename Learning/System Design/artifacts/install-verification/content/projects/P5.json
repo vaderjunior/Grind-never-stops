@@ -1,0 +1,107 @@
+{
+  "id": "P5",
+  "title": "Event pipeline",
+  "milestones": [
+    {
+      "lessonId": "109",
+      "number": 1,
+      "title": "[P5.1] Event pipeline: partitioned ingestion and replayable consumers",
+      "focus": "Partitioned ingestion and replayable identity",
+      "task": "Use SHA-256 of account to choose a fixed partition count. Assign increasing offsets transactionally. Repeat the same event ID and payload to obtain the original offset; reject a changed payload. Persist the partition count as immutable configuration.",
+      "failureInjection": "Changing partition count in place can reorder an account and invalidate existing checkpoints. Require a migration instead of silently rehashing a durable log.",
+      "evidence": "Show stable account affinity, increasing offsets, and duplicate ingest returning the original position.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P5_1 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "119",
+      "number": 2,
+      "title": "[P5.2] Event pipeline: projections, duplicate handling, and late-event tests",
+      "focus": "Projection, duplicate and late-event behavior",
+      "task": "Maintain integer account totals. An event with an earlier event_time still changes the total once when it arrives. Store a deduplication marker and advance the partition checkpoint in the same transaction as the total.",
+      "failureInjection": "A checkpoint committed ahead of a projection loses work; projection committed without dedupe can double-apply retries. Keep the transaction boundary explicit.",
+      "evidence": "Apply +10 at time 200 and −3 at time 100, consume twice, and reconcile to exactly 7.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P5_2 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "238",
+      "number": 3,
+      "title": "[P5.3] Event pipeline: checkpoint recovery, batch replay, and reconciliation",
+      "focus": "Crash recovery and safe replay",
+      "task": "Inject a failure after a projection write but before checkpoint persistence. Verify rollback, reopen the database, and consume again. Build a named shadow projection with its own checkpoints, leaving live data available.",
+      "failureInjection": "Rebuilding live state by deleting it first creates an avoidable outage and makes validation difficult. Compare the completed shadow projection before any future cutover.",
+      "evidence": "Show zero partial projection after the injected failure, correct recovery, and a successful independent replay reconciliation.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P5_3 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "239",
+      "number": 4,
+      "title": "[P5.4] Event pipeline: schema/backfill failure tests and evidence report",
+      "focus": "Schema and backfill evidence",
+      "task": "Accept v1 amount and v2 amount_minor_units as explicit schemas with integer money units. Reject unknown versions and same-ID payload conflicts. Recompute expected account sums from source events and compare derived totals.",
+      "failureInjection": "A guessed default for an unknown schema can silently corrupt totals. Quarantine unsupported inputs upstream and make failure visible instead of treating them as zero.",
+      "evidence": "Mix two supported versions, reject a future version, and report expected versus actual totals. Document the rollback condition for a shadow projection cutover.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P5_4 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    }
+  ],
+  "baselineArtifact": "Partitioned ingest, projections, replay, migration tests",
+  "acceptanceEvidence": [
+    "Duplicates",
+    "late events",
+    "restarts",
+    "backfills",
+    "reconciliation against source data"
+  ],
+  "source": "catalog",
+  "version": 1,
+  "status": "reference-tested",
+  "authorship": "original prepared teaching implementation; curriculum names and milestone IDs source-derived",
+  "invariant": "Each accepted event has a stable ID and immutable payload. A projection update, deduplication marker, and checkpoint advance commit atomically within the teaching database.",
+  "requirements": [
+    "Partition events deterministically by account and order ingestion offsets within each partition.",
+    "Apply additive minor-unit deltas correctly even when event-time order differs from arrival order.",
+    "Recover checkpoints, rebuild a separate projection, upcast supported schema versions, and reconcile against the immutable source."
+  ],
+  "architecture": "validated event → immutable partitioned SQL log → bounded consumer batch → atomic applied-ID + account total + checkpoint; replay writes a named shadow projection.",
+  "limitations": "All log/projection state is in one SQLite authority. The transaction is not a promise of exactly-once external effects or a distributed stream processor. Late-event semantics here are additive totals, not event-time windows.",
+  "extensions": [
+    "Add event-time windows, watermarks, and an explicit policy for late corrections.",
+    "Introduce a separate sink to show why cross-database checkpoints need idempotent effects."
+  ],
+  "learnerFile": "projects/learner/events.py",
+  "referenceFile": "projects/reference/events.py",
+  "instructionsFile": "projects/P5.md",
+  "testFile": "projects/tests/test_projects.py",
+  "referenceReveal": "Explicit reveal in the academy; reference source also remains inspectable on disk. Educational spoiler control, not secure examination."
+}

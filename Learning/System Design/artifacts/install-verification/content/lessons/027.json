@@ -1,0 +1,146 @@
+{
+  "id": "027",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Allocate an end-to-end deadline across sequential work.",
+    "Distinguish local timeout from remote outcome.",
+    "Decide whether a retry is semantically safe.",
+    "Prevent retry amplification with ownership, limits, and budgets."
+  ],
+  "retrieval": [
+    "From L001: what can a client infer when a response is lost after saving?",
+    "From L014: what does idempotent mean for the intended effect?"
+  ],
+  "sections": [
+    {
+      "id": "budget",
+      "title": "One user deadline must cover the whole path",
+      "markdown": "Core: retrieval 5, mechanism 18, timeline 8, exercise 10, questions 10, review 4 minutes. A checkout status endpoint has an 800 ms user budget. It spends 50 ms authenticating, calls a local store, optionally consults a provider, and needs time to serialize and return. Giving every dependency an independent 800 ms timeout can make the full request last far longer than 800 ms.\n\nTrack a deadline or remaining budget, using a monotonic clock for elapsed time within a process. If 250 ms have already elapsed and 100 ms is reserved for finishing the response, at most 450 ms remains for a dependency attempt and any retry. Waiting in a local queue consumes the budget too. A request that expires before it reaches a worker should not proceed as though it has a fresh full timeout.\n\nAcross machines, deadline propagation needs a documented representation and clock assumptions. Sending remaining duration avoids some wall-clock interpretation problems but must account for transit and repeated forwarding. Later time lessons examine these subtleties. The immediate lesson is to keep one coherent end-to-end budget rather than resetting it at every hop."
+    },
+    {
+      "id": "uncertainty",
+      "title": "A timeout is an observation by one participant",
+      "markdown": "Three histories can look like the same timeout to a caller: the request never reached the server; it reached the server but failed before the effect; or the effect completed and only the response was lost. The caller usually cannot distinguish them from elapsed time alone. Cancellation similarly requests a stop; it is not proof that another system reversed an accepted effect.\n\nRetrying a read of current status is often reasonable if authorized and within its cost budget. Retrying a command that creates another effect needs a contract. PUT of a chosen representation to a known resource has idempotent intended semantics; POST does not automatically carry that property. An application can define retry-safe creation using an operation identifier, but the guarantee must be implemented at the same authoritative boundary as the effect. The detailed persistent design appears in L093.\n\nIdentical response bytes are not required for idempotence. Deleting an already-deleted resource may return a different status while the intended final state remains absent. Conversely, a server that always returns “OK” while charging twice has identical-looking responses and a non-idempotent business effect."
+    },
+    {
+      "id": "trace",
+      "title": "A safe response to an uncertain reservation",
+      "markdown": "Suppose a client submits reserve(item=42, operation=op7). The server records reservation 81 and its association with op7, but the connection closes before the response arrives. The client should preserve op7 when querying or retrying the same intent. If it generates op8 and treats it as new, the server cannot know the two requests express the same action.\n\nThe authority must reject reusing op7 with a different payload, otherwise a stale client could receive another action's result. Concurrent requests with op7 also need one decision. An in-memory set checked before an unrelated database insert is insufficient across crashes or competing processes. These are requirements for the later mechanism, not a claim that this lesson has implemented it.\n\nNow budget retries: 800 ms total; 50 ms preprocessing; first attempt uses 300 ms; a 50 ms delay; 100 ms reserved response time. Remaining second-attempt allowance is 300 ms. If the second attempt needs a known minimum of 400 ms, retrying is pointless under this contract. Return a clear unresolved state with a way to inspect the operation instead of starting work after the deadline.\n\nUse retry limits and jitter where retries are appropriate. A server outage followed by simultaneous immediate retries can synchronize a new wave of demand. Jitter spreads attempts; it does not make an unsafe side effect safe. Do not automatically retry validation failures or authorization denials that will not improve with time."
+    },
+    {
+      "id": "ownership",
+      "title": "Choose one layer to own retries",
+      "markdown": "If a browser, API client, service, and database wrapper each try up to three times, a single user intent can trigger up to 3^4 = 81 deepest-layer attempts in a simplified nested failure case. The exact amplification depends on when failures occur, but independent retries clearly multiply. Establish which layer owns retry policy and what downstream calls already retry.\n\nCollect attempted requests separately from useful outcomes. A graph that shows high throughput may actually show a retry storm. Include remaining budget and operation IDs in safe diagnostic context, but do not log credentials or sensitive payloads. Distinguish a retryable transport symptom from evidence that the previous effect did not occur.\n\nCommon mistakes are retrying every exception, resetting the timeout at each attempt, creating a new operation key on every retry, equating timeout with rollback, and relying on a cache entry that can disappear before a duplicate arrives. Optional practice: draw the response-loss case at two different points and explain which information would resolve the client's uncertainty."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "uncertain",
+      "title": "The effect can finish before the caller times out",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant A as Service authority\nparticipant D as Persistent state\nC->>A: Reserve item with operation op7\nA->>D: Accept reservation and operation outcome\nD-->>A: Stored reservation 81\nA--xC: Response lost\nNote over C: Timeout means outcome unknown\nC->>A: Query outcome of op7\nA->>D: Read recorded outcome\nD-->>A: Reservation 81\nA-->>C: Existing accepted result",
+      "caption": "The example states a desired authoritative operation record; L093 develops the atomic implementation. A lost response does not erase the stored effect.",
+      "steps": [
+        "The client supplies one identity for the intent.",
+        "The authority records the outcome with the effect.",
+        "Response loss leaves the client uncertain.",
+        "Outcome inspection resolves uncertainty without inventing a new intent."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A request has 1,000 ms total. Preprocessing uses 100 ms, the first attempt 400 ms, retry delay 80 ms, and response work needs 120 ms. Compute remaining retry allowance. Then explain whether a timed-out “send a gift” command can be retried safely without an operation contract.",
+    "minutes": 10,
+    "rubric": [
+      "Subtracts all consumed and reserved time.",
+      "Includes delay in the end-to-end budget.",
+      "Treats timeout as uncertain outcome.",
+      "Requires an effect-level retry contract or outcome inspection."
+    ],
+    "solution": "Remaining retry allowance is 1,000 − 100 − 400 − 80 − 120 = 300 ms. A gift may already have been sent; blind retry can send two. The client needs a stable intent identity and an authority that resolves duplicates with the same effect, or a way to inspect the previous outcome. A transport error and a short backoff do not establish semantic safety."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Three nested layers each make up to three attempts. Simplified maximum deepest-layer attempts?",
+      "answer": 27,
+      "unit": "attempts",
+      "tolerance": 0,
+      "explanation": "3 × 3 × 3 = 27."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A timeout proves:",
+      "options": [
+        "The remote effect failed",
+        "The caller did not receive the required result within its wait budget",
+        "The remote transaction rolled back"
+      ],
+      "answer": "The caller did not receive the required result within its wait budget",
+      "explanation": "The remote outcome may be accepted, rejected, or still unresolved."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "On retrying the same intent, the operation identifier should:",
+      "options": [
+        "Be preserved under the contract",
+        "Always be regenerated",
+        "Be taken from an unrelated prior action"
+      ],
+      "answer": "Be preserved under the contract",
+      "explanation": "A new identifier usually declares a new operation rather than a duplicate attempt."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Does jitter make a payment retry safe?",
+      "answer": "No. It spreads attempt timing and can reduce synchronized load; effect safety still needs the business operation contract.",
+      "explanation": "Separate traffic control from correctness."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can two idempotent attempts return different responses?",
+      "answer": "Idempotence concerns intended effect; the first deletion can report removed and a later one already absent while the final state stays absent.",
+      "explanation": "Do not substitute response equality for effect semantics."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Deadline covers?",
+      "back": "Queueing, processing, downstream calls, retry waits, and response work."
+    },
+    {
+      "front": "Timeout reveals?",
+      "back": "The caller’s wait expired, not a definitive remote outcome."
+    },
+    {
+      "front": "Retry safety depends on?",
+      "back": "The intended effect and authoritative duplicate-handling contract."
+    },
+    {
+      "front": "Jitter solves what?",
+      "back": "Timing synchronization, not duplicate business effects."
+    },
+    {
+      "front": "Retry ownership?",
+      "back": "A chosen layer coordinates attempts and accounts for lower-layer policies."
+    },
+    {
+      "front": "Why preserve an operation ID?",
+      "back": "To connect repeated attempts to the same intent and recorded outcome."
+    }
+  ],
+  "mentalModel": "Spend one deadline; preserve one intent; never infer an absent effect from an absent response.",
+  "sources": [
+    {
+      "title": "IETF RFC 9110: HTTP Semantics, HTTPWG edition",
+      "url": "https://httpwg.org/specs/rfc9110.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

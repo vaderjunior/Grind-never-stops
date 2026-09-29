@@ -1,0 +1,149 @@
+{
+  "id": "039",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Implement the supplied shortener’s persistent create and lookup contract.",
+    "Treat a unique code collision as an authoritative conflict.",
+    "Verify lookup after reopening the database.",
+    "Separate a small teaching baseline from later caching and partition milestones."
+  ],
+  "retrieval": [
+    "From L032: why is SELECT-before-INSERT insufficient for uniqueness?",
+    "From L036: when may a success response acknowledge a stored mapping?",
+    "From L037: distinguish a retryable generated-code collision from retrying a different business intent."
+  ],
+  "sections": [
+    {
+      "id": "scope",
+      "title": "P1.1 begins with one persistent authority",
+      "markdown": "This 60-minute milestone uses projects/learner/shortener.py and the prepared project tests. Budget 5 minutes retrieval, 5 scaffold inspection, 20 implementation, 10 deterministic tests, 10 request tracing, 5 failure notes, and 5 comparison. Setup repair is separate time. Stop when create and database lookup pass the milestone test and you can explain the collision and restart evidence.\n\nThe first milestone accepts an HTTP(S) destination, assigns a short code, persists the mapping, and resolves the code. A real loopback HTTP adapter is supplied for observing creation and redirect behavior. The teaching baseline is local and small; it does not promise public abuse protection, global availability, or internet-scale capacity.\n\nCache behavior belongs to L059, partition simulation to L069, and full architecture evidence to L152. Leave those scaffold functions for their scheduled milestones. A code skeleton's deliberate TODO is student work; the lesson itself supplies the contract, expected behavior, tests, reasoning, and a separate reference implementation for comparison."
+    },
+    {
+      "id": "contract",
+      "title": "Define what a stored short code means",
+      "markdown": "The authority table contains code as primary key, url as required text, and optional expires. A successful create returns a code only after its INSERT has succeeded under the database's transaction behavior. A lookup returns the stored destination for a known usable code; unknown or expired codes produce an explicit miss. The HTTP adapter maps a known code to a 302 Location response and a miss to 404.\n\nDestination validation rejects unsupported schemes such as javascript:, missing hosts, embedded credentials, and oversized values under the supplied contract. This is input hygiene, not a complete public URL-shortener abuse program. The baseline redirects rather than fetching the destination, so it does not need to download a remote page during the test. Public deployment would require further threat modeling and operating controls.\n\nDo not store the map only in a Python dictionary. Reopening the service with the same database path must recover both mappings. The supplied constructor already creates the table, and tests use temporary paths so experiments do not touch the academy's learner database."
+    },
+    {
+      "id": "collision",
+      "title": "Use the primary key as the collision decision",
+      "markdown": "Two generated codes can collide. The important behavior is not “collisions never happen”; it is “a collision never overwrites an existing mapping.” Generate a candidate, try INSERT, and on the relevant uniqueness conflict generate another candidate within a bounded attempt budget. Do not use INSERT OR REPLACE to hide the conflict, because that can redirect someone else's existing link to a new destination.\n\nThe test injects the sequence same, same, next. First creation stores same for URL A. The second first attempts same and must preserve URL A, then succeeds with next for URL B. This is deterministic collision testing rather than waiting for a random collision. Exhausting a bounded generation budget should return an explicit error; an infinite loop is not a recovery plan.\n\nKeep code generation injectable so tests control it. Production-quality randomness and alphabet choices are separate from the uniqueness authority. A case-sensitive or case-insensitive URL path policy must agree with the database key semantics. Validate generated code characters before using them as a path segment. The supplied reference is an instructional baseline; review size and charset limits before any broader use."
+    },
+    {
+      "id": "commands",
+      "title": "Run one milestone, then inspect the actual path",
+      "markdown": "From the repository root, first verify the supplied reference baseline:\n\n~~~powershell\npython projects/tests/test_projects.py Labs.test_P1_1_L039_persistence_collision_and_redirect -v\n~~~\n\nThen select your learner implementation for the same test:\n\n~~~powershell\n$env:ACADEMY_LAB_IMPLEMENTATION = 'learner'\npython projects/tests/test_projects.py Labs.test_P1_1_L039_persistence_collision_and_redirect -v\nRemove-Item Env:ACADEMY_LAB_IMPLEMENTATION\n~~~\n\nThe uncompleted learner skeleton should fail with NotImplementedError. That is an honest starting condition, not a test pass. After implementing create and resolve, expect the collision, reopened-connection lookup, and unsupported-scheme assertions to pass. The reference P1.1 test was actually executed in this build with Python 3.12.14. It demonstrates persistence across reopening, not a destructive disk-failure or power-loss test.\n\nThe optional adapter at projects/serve_shortener.py currently imports the reference implementation. Run it to study the HTTP boundary, then stop with Ctrl+C. Do not mistake its successful response for evidence that your learner code is correct; use the explicit learner test selection above. The project transport test checks 201 creation and 302 Location without following an external destination."
+    },
+    {
+      "id": "evidence",
+      "title": "Explain what would still fail",
+      "markdown": "Trace creation: parse and validate destination, generate candidate, ask the database to insert uniquely, handle collision if needed, and return the accepted code. Trace resolution: read the authority by code, apply any expiry rule, and produce the destination or explicit miss. A short-code lookup is read-oriented; the creation path has a different write and collision workload.\n\nIf the process stops after insertion but before replying, the mapping may exist while the caller does not know its code. This first milestone does not implement client-intent idempotency. Record that limitation rather than claiming generated-code collision retries solve all duplicate creation semantics. Later reliable-effect lessons develop the missing operation contract.\n\nThe test's restart is reopening a connection against the same local file. It does not establish recovery from disk loss, independent replicas, backup quality, or concurrent service capacity. A passing test should be reported with those boundaries. Common mistakes include replacing on collision, using an unbounded generation loop, retaining only RAM state, and running reference tests while claiming the learner implementation passed.\n\nOptional extension outside the hour: add a test for exhausted code generation, repeated identical destination submissions, and a real subprocess restart. Decide the expected semantics before adding code; identical URLs do not necessarily have to share a code."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "create",
+      "title": "A collision must not change the previous mapping",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant S as Shortener\nparticipant D as SQLite authority\nC->>S: Create URL B\nS->>D: INSERT code same with URL B\nD-->>S: Unique conflict, URL A unchanged\nS->>D: INSERT code next with URL B\nD-->>S: Accepted\nS-->>C: Return code next\nC->>S: Resolve next after reopen\nS->>D: SELECT destination by code\nD-->>S: URL B\nS-->>C: Destination for redirect",
+      "caption": "The injected candidate sequence makes the conflict reproducible. Reopening a connection tests file-backed persistence; the sketch does not assert disk-failure recovery.",
+      "steps": [
+        "Attempt a candidate at the unique authority.",
+        "Treat conflict as a rejected candidate, never replacement.",
+        "Return only the accepted stored code.",
+        "Read the same mapping after reopening the database."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Complete only create and database-backed resolve in the learner skeleton. Run the P1.1 test with ACADEMY_LAB_IMPLEMENTATION=learner, save its output, and explain why the injected collision preserves the first URL. State the ambiguity after insertion but before the client receives its code.",
+    "minutes": 20,
+    "rubric": [
+      "Input validation matches the supplied contract.",
+      "Uniqueness conflict triggers bounded new-candidate attempts without replacement.",
+      "Lookup uses persistent authority and handles a miss.",
+      "Evidence identifies learner versus reference execution and the exact restart scope."
+    ],
+    "solution": "A valid implementation parses the URL, enforces the HTTP(S)/host/credential/size rules, computes optional expiry from the injected clock, and tries a generated safe code in an INSERT. It catches the relevant uniqueness conflict and retries a new candidate within a fixed budget, then returns only after successful insertion. resolve selects url and expiry by code, rejects missing/expired rows, and returns the destination. Compare against the separate project reference after submitting your attempt. A lost create response remains uncertain; internal collision handling is not a client-intent idempotency mechanism."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "On a generated-code collision, which behavior preserves prior users?",
+      "options": [
+        "Replace the existing URL",
+        "Try another candidate within a budget",
+        "Delete the old code"
+      ],
+      "answer": "Try another candidate within a budget",
+      "explanation": "The existing accepted mapping is authoritative and must remain unchanged."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "The reference HTTP adapter currently proves your learner skeleton passes:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It imports the reference; learner correctness uses the explicitly selected learner test path."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What does the reopen test establish?",
+      "answer": "The mapping is read from the same file-backed database after a new service connection opens; it does not prove disk-loss recovery or every crash durability boundary.",
+      "explanation": "State exactly which failure model was tested."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why inject code generation into a test?",
+      "answer": "To force collisions and exhaustion deterministically without relying on rare random behavior.",
+      "explanation": "The test challenges the invariant directly."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is a lost create response still unresolved?",
+      "answer": "The mapping may have been stored although the client did not receive its assigned code; the first milestone lacks a stable client-intent outcome lookup.",
+      "explanation": "Generated-code uniqueness and operation idempotency are different problems."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Collision authority?",
+      "back": "The unique key at the persistent store."
+    },
+    {
+      "front": "Why never replace on collision?",
+      "back": "It would change an already accepted link’s destination."
+    },
+    {
+      "front": "Generation retry needs?",
+      "back": "A bounded attempt budget and explicit exhausted outcome."
+    },
+    {
+      "front": "P1.1 stop condition?",
+      "back": "Learner create/lookup pass collision and reopen checks with explained limits."
+    },
+    {
+      "front": "Reopen test versus disk recovery?",
+      "back": "Same file/connection lifecycle evidence, not loss of the storage device."
+    },
+    {
+      "front": "Code collision retry equals intent idempotency?",
+      "back": "No; repeated client creation may still create another mapping."
+    }
+  ],
+  "mentalModel": "A short code is a durable promise: uniqueness chooses a new key, never rewrites someone else’s accepted destination.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Constraints",
+      "url": "https://www.postgresql.org/docs/18/ddl-constraints.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

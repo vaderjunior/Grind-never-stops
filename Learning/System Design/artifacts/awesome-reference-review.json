@@ -1,0 +1,1312 @@
+{
+  "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+  "repository": "https://github.com/ashishps1/awesome-system-design-resources",
+  "commit": "25724090f7dd7746129b7194b55504f9d06f86ed",
+  "linkEntries": 142,
+  "uniqueUrls": 141,
+  "links": [
+    {
+      "category": "Introduction",
+      "label": "AlgoMaster Newsletter",
+      "url": "https://bit.ly/amghsd",
+      "status": null,
+      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)>",
+      "classification": "unverified network/timeout"
+    },
+    {
+      "category": "Introduction",
+      "label": "System Design was HARD until I Learned these 30 Concepts",
+      "url": "https://blog.algomaster.io/p/30-system-design-concepts",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/30-system-design-concepts",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "Scalability",
+      "url": "https://algomaster.io/learn/system-design/scalability",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/scalability",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "Availability",
+      "url": "https://algomaster.io/learn/system-design/availability",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/availability",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "Reliability",
+      "url": "https://algomaster.io/learn/system-design/reliability",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/reliability",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "SPOF",
+      "url": "https://algomaster.io/learn/system-design/single-point-of-failure-spof",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/single-point-of-failure-spof",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "Latency vs Throughput vs Bandwidth",
+      "url": "https://algomaster.io/learn/system-design/latency-vs-throughput",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/latency-vs-throughput",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "Consistent Hashing",
+      "url": "https://algomaster.io/learn/system-design/consistent-hashing",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/consistent-hashing",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "CAP Theorem",
+      "url": "https://algomaster.io/learn/system-design/cap-theorem",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/cap-theorem",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "Failover",
+      "url": "https://www.druva.com/glossary/what-is-a-failover-definition-and-related-faqs",
+      "status": 200,
+      "finalUrl": "https://www.druva.com/learning-center/glossary/failover",
+      "contentType": "text/html;charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚙️ Core Concepts",
+      "label": "Fault Tolerance",
+      "url": "https://www.cockroachlabs.com/blog/what-is-fault-tolerance/",
+      "status": 200,
+      "finalUrl": "https://www.cockroachlabs.com/blog/what-is-fault-tolerance/",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "OSI Model",
+      "url": "https://algomaster.io/learn/system-design/osi",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/osi",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "IP Addresses",
+      "url": "https://algomaster.io/learn/system-design/ip-address",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/ip-address",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "Domain Name System (DNS)",
+      "url": "https://blog.algomaster.io/p/how-dns-actually-works",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/how-dns-actually-works",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "Proxy vs Reverse Proxy",
+      "url": "https://blog.algomaster.io/p/proxy-vs-reverse-proxy-explained",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/proxy-vs-reverse-proxy-explained",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "HTTP/HTTPS",
+      "url": "https://algomaster.io/learn/system-design/http-https",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/http-https",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "TCP vs UDP",
+      "url": "https://algomaster.io/learn/system-design/tcp-vs-udp",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/tcp-vs-udp",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "Load Balancing",
+      "url": "https://blog.algomaster.io/p/load-balancing-algorithms-explained-with-code",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/load-balancing-algorithms-explained-with-code",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🌐 Networking Fundamentals",
+      "label": "Checksums",
+      "url": "https://algomaster.io/learn/system-design/checksums",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/checksums",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "APIs",
+      "url": "https://algomaster.io/learn/system-design/what-is-an-api",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/what-is-an-api",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "API Gateway",
+      "url": "https://blog.algomaster.io/p/what-is-an-api-gateway",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/what-is-an-api-gateway",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "REST vs GraphQL",
+      "url": "https://blog.algomaster.io/p/rest-vs-graphql",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/rest-vs-graphql",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "WebSockets",
+      "url": "https://blog.algomaster.io/p/websockets",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/websockets",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "Webhooks",
+      "url": "https://algomaster.io/learn/system-design/webhooks",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/webhooks",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "Idempotency",
+      "url": "https://algomaster.io/learn/system-design/idempotency",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/idempotency",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "Rate limiting",
+      "url": "https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔌 API Fundamentals",
+      "label": "API Design",
+      "url": "https://abdulrwahab.medium.com/api-architecture-best-practices-for-designing-rest-apis-bf907025f5f",
+      "status": 403,
+      "finalUrl": "https://abdulrwahab.medium.com/api-architecture-best-practices-for-designing-rest-apis-bf907025f5f",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "ACID Transactions",
+      "url": "https://algomaster.io/learn/system-design/acid-transactions",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/acid-transactions",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "SQL vs NoSQL",
+      "url": "https://algomaster.io/learn/system-design/sql-vs-nosql",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/sql-vs-nosql",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "Database Indexes",
+      "url": "https://algomaster.io/learn/system-design/indexing",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/indexing",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "Database Sharding",
+      "url": "https://algomaster.io/learn/system-design/sharding",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/sharding",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "Data Replication",
+      "url": "https://redis.com/blog/what-is-data-replication/",
+      "status": 200,
+      "finalUrl": "https://redis.io/blog/what-is-data-replication/",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "Database Scaling",
+      "url": "https://blog.algomaster.io/p/system-design-how-to-scale-a-database",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/system-design-how-to-scale-a-database",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "Databases Types",
+      "url": "https://blog.algomaster.io/p/15-types-of-databases",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/15-types-of-databases",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "Bloom Filters",
+      "url": "https://algomaster.io/learn/system-design/bloom-filters",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/bloom-filters",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗄️ Database Fundamentals",
+      "label": "Database Architectures",
+      "url": "https://www.mongodb.com/developer/products/mongodb/active-active-application-architectures/",
+      "status": 200,
+      "finalUrl": "https://www.mongodb.com/docs/atlas/architecture/current/",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚡ Caching Fundamentals",
+      "label": "Caching 101",
+      "url": "https://algomaster.io/learn/system-design/what-is-caching",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/what-is-caching",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚡ Caching Fundamentals",
+      "label": "Caching Strategies",
+      "url": "https://algomaster.io/learn/system-design/caching-strategies",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/caching-strategies",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚡ Caching Fundamentals",
+      "label": "Cache Eviction Policies",
+      "url": "https://blog.algomaster.io/p/7-cache-eviction-strategies",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/7-cache-eviction-strategies",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚡ Caching Fundamentals",
+      "label": "Distributed Caching",
+      "url": "https://blog.algomaster.io/p/distributed-caching",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/distributed-caching",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚡ Caching Fundamentals",
+      "label": "Content Delivery Network (CDN)",
+      "url": "https://algomaster.io/learn/system-design/content-delivery-network-cdn",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/content-delivery-network-cdn",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔄 Asynchronous Communication",
+      "label": "Pub/Sub",
+      "url": "https://algomaster.io/learn/system-design/pub-sub",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/pub-sub",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔄 Asynchronous Communication",
+      "label": "Message Queues",
+      "url": "https://algomaster.io/learn/system-design/message-queues",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/message-queues",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🔄 Asynchronous Communication",
+      "label": "Change Data Capture (CDC)",
+      "url": "https://algomaster.io/learn/system-design/change-data-capture-cdc",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/change-data-capture-cdc",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "HeartBeats",
+      "url": "https://blog.algomaster.io/p/heartbeats-in-distributed-systems",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/heartbeats-in-distributed-systems",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "Service Discovery",
+      "url": "https://blog.algomaster.io/p/service-discovery-in-distributed-systems",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/service-discovery-in-distributed-systems",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "Consensus Algorithms",
+      "url": "https://medium.com/@sourabhatta1819/consensus-in-distributed-system-ac79f8ba2b8c",
+      "status": 403,
+      "finalUrl": "https://medium.com/@sourabhatta1819/consensus-in-distributed-system-ac79f8ba2b8c",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "Distributed Locking",
+      "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+      "status": 200,
+      "finalUrl": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+      "contentType": "text/html",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "Gossip Protocol",
+      "url": "http://highscalability.com/blog/2023/7/16/gossip-protocol-explained.html",
+      "status": 200,
+      "finalUrl": "https://highscalability.com/gossip-protocol-explained/",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "Circuit Breaker",
+      "url": "https://medium.com/geekculture/design-patterns-for-microservices-circuit-breaker-pattern-276249ffab33",
+      "status": 403,
+      "finalUrl": "https://medium.com/geekculture/design-patterns-for-microservices-circuit-breaker-pattern-276249ffab33",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "Disaster Recovery",
+      "url": "https://cloud.google.com/learn/what-is-disaster-recovery",
+      "status": 200,
+      "finalUrl": "https://cloud.google.com/learn/what-is-disaster-recovery",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🧩 Distributed System and Microservices",
+      "label": "Distributed Tracing",
+      "url": "https://www.dynatrace.com/news/blog/what-is-distributed-tracing/",
+      "status": 404,
+      "finalUrl": "https://www.dynatrace.com/news/blog/what-is-distributed-tracing/",
+      "classification": "not-found"
+    },
+    {
+      "category": "🖇️ Architectural Patterns",
+      "label": "Client-Server Architecture",
+      "url": "https://algomaster.io/learn/system-design/client-server-architecture",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/client-server-architecture",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🖇️ Architectural Patterns",
+      "label": "Microservices Architecture",
+      "url": "https://medium.com/hashmapinc/the-what-why-and-how-of-a-microservices-architecture-4179579423a9",
+      "status": 403,
+      "finalUrl": "https://medium.com/hashmapinc/the-what-why-and-how-of-a-microservices-architecture-4179579423a9",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "🖇️ Architectural Patterns",
+      "label": "Serverless Architecture",
+      "url": "https://blog.algomaster.io/p/2edeb23b-cfa5-4b24-845e-3f6f7a39d162",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/2edeb23b-cfa5-4b24-845e-3f6f7a39d162",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🖇️ Architectural Patterns",
+      "label": "Event-Driven Architecture",
+      "url": "https://www.confluent.io/learn/event-driven-architecture/",
+      "status": 200,
+      "finalUrl": "https://www.confluent.io/learn/event-driven-architecture/",
+      "contentType": "text/html; charset=UTF-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🖇️ Architectural Patterns",
+      "label": "Peer-to-Peer (P2P) Architecture",
+      "url": "https://www.spiceworks.com/tech/networking/articles/what-is-peer-to-peer/",
+      "status": 200,
+      "finalUrl": "https://www.spiceworks.com/networking/what-is-peer-to-peer/",
+      "contentType": "text/html; charset=UTF-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Top 15 Tradeoffs",
+      "url": "https://blog.algomaster.io/p/system-design-top-15-trade-offs",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/system-design-top-15-trade-offs",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Vertical vs Horizontal Scaling",
+      "url": "https://algomaster.io/learn/system-design/vertical-vs-horizontal-scaling",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/vertical-vs-horizontal-scaling",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Concurrency vs Parallelism",
+      "url": "https://blog.algomaster.io/p/concurrency-vs-parallelism",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/concurrency-vs-parallelism",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Long Polling vs WebSockets",
+      "url": "https://blog.algomaster.io/p/long-polling-vs-websockets",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/long-polling-vs-websockets",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Batch vs Stream Processing",
+      "url": "https://blog.algomaster.io/p/batch-processing-vs-stream-processing",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/batch-processing-vs-stream-processing",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Stateful vs Stateless Design",
+      "url": "https://blog.algomaster.io/p/stateful-vs-stateless-architecture",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/stateful-vs-stateless-architecture",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Strong vs Eventual Consistency",
+      "url": "https://blog.algomaster.io/p/strong-vs-eventual-consistency",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/strong-vs-eventual-consistency",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Read-Through vs Write-Through Cache",
+      "url": "https://blog.algomaster.io/p/59cae60d-9717-4e20-a59e-759e370db4e5",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/59cae60d-9717-4e20-a59e-759e370db4e5",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Push vs Pull Architecture",
+      "url": "https://blog.algomaster.io/p/af5fe2fe-9a4f-4708-af43-184945a243af",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/af5fe2fe-9a4f-4708-af43-184945a243af",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "REST vs RPC",
+      "url": "https://blog.algomaster.io/p/106604fb-b746-41de-88fb-60e932b2ff68",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/106604fb-b746-41de-88fb-60e932b2ff68",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Synchronous vs. asynchronous communications",
+      "url": "https://blog.algomaster.io/p/aec1cebf-6060-45a7-8e00-47364ca70761",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/aec1cebf-6060-45a7-8e00-47364ca70761",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "⚖️ System Design Tradeoffs",
+      "label": "Latency vs Throughput",
+      "url": "https://aws.amazon.com/compare/the-difference-between-throughput-and-latency/",
+      "status": 200,
+      "finalUrl": "https://aws.amazon.com/compare/the-difference-between-throughput-and-latency/",
+      "contentType": "text/html;charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "✅ [How to Answer a System Design Interview Problem](https://algomaster.io/learn/system-design-interviews/answering-framework)",
+      "label": "How to Answer a System Design Interview Problem",
+      "url": "https://algomaster.io/learn/system-design-interviews/answering-framework",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/answering-framework",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design URL Shortener like TinyURL",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-url-shortener",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/design-url-shortener",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Autocomplete for Search Engines",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-instagram",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/design-instagram",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Load Balancer",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-load-balancer",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/design-load-balancer",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Content Delivery Network (CDN)",
+      "url": "https://www.youtube.com/watch?v=8zX0rue2Hic",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=8zX0rue2Hic",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Parking Garage",
+      "url": "https://www.youtube.com/watch?v=NtMvNh0WFVM",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=NtMvNh0WFVM",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Vending Machine",
+      "url": "https://www.youtube.com/watch?v=D0kDMUgo27c",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=D0kDMUgo27c",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Distributed Key-Value Store",
+      "url": "https://www.youtube.com/watch?v=rnZmdmlR-2M",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=rnZmdmlR-2M",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Distributed Cache",
+      "url": "https://www.youtube.com/watch?v=iuqZvajTOyA",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=iuqZvajTOyA",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Authentication System",
+      "url": "https://www.youtube.com/watch?v=uj_4vxm9u90",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=uj_4vxm9u90",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Easy",
+      "label": "Design Unified Payments Interface (UPI)",
+      "url": "https://www.youtube.com/watch?v=QpLy0_c_RXk",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=QpLy0_c_RXk",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design WhatsApp",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-whatsapp",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/design-whatsapp",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Spotify",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-spotify",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/design-spotify",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Instagram",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-instagram",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/design-instagram",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Notification Service",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-notification-service",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/design-notification-service",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Distributed Job Scheduler",
+      "url": "https://blog.algomaster.io/p/design-a-distributed-job-scheduler",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/p/design-a-distributed-job-scheduler",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Tinder",
+      "url": "https://www.youtube.com/watch?v=tndzLznxq40",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=tndzLznxq40",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Facebook",
+      "url": "https://www.youtube.com/watch?v=9-hjBGxuiEs",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=9-hjBGxuiEs",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Twitter",
+      "url": "https://www.youtube.com/watch?v=wYk0xPP_P_8",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=wYk0xPP_P_8",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Reddit",
+      "url": "https://www.youtube.com/watch?v=KYExYE_9nIY",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=KYExYE_9nIY",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Netflix",
+      "url": "https://www.youtube.com/watch?v=psQzyFfsUGU",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=psQzyFfsUGU",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Youtube",
+      "url": "https://www.youtube.com/watch?v=jPKTo1iGQiE",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=jPKTo1iGQiE",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Google Search",
+      "url": "https://www.youtube.com/watch?v=CeGtqouT8eA",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=CeGtqouT8eA",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design E-commerce Store like Amazon",
+      "url": "https://www.youtube.com/watch?v=EpASu_1dUdE",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=EpASu_1dUdE",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design TikTok",
+      "url": "https://www.youtube.com/watch?v=Z-0g_aJL5Fw",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=Z-0g_aJL5Fw",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Shopify",
+      "url": "https://www.youtube.com/watch?v=lEL4F_0J3l8",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=lEL4F_0J3l8",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Airbnb",
+      "url": "https://www.youtube.com/watch?v=YyOXt2MEkv4",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=YyOXt2MEkv4",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Rate Limiter",
+      "url": "https://www.youtube.com/watch?v=mhUQe4BKZXs",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=mhUQe4BKZXs",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Distributed Message Queue like Kafka",
+      "url": "https://www.youtube.com/watch?v=iJLL-KPqBpM",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=iJLL-KPqBpM",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Flight Booking System",
+      "url": "https://www.youtube.com/watch?v=qsGcfVGvFSs",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=qsGcfVGvFSs",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Online Code Editor",
+      "url": "https://www.youtube.com/watch?v=07jkn4jUtso",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=07jkn4jUtso",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design an Analytics Platform (Metrics & Logging)",
+      "url": "https://www.youtube.com/watch?v=kIcq1_pBQSY",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=kIcq1_pBQSY",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design Payment System",
+      "url": "https://www.youtube.com/watch?v=olfaBgJrUBI",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=olfaBgJrUBI",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Medium",
+      "label": "Design a Digital Wallet",
+      "url": "https://www.youtube.com/watch?v=4ijjIUeq6hE",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=4ijjIUeq6hE",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Location Based Service like Yelp",
+      "url": "https://www.youtube.com/watch?v=M4lR_Va97cQ",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=M4lR_Va97cQ",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Uber",
+      "url": "https://www.youtube.com/watch?v=umWABit-wbk",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=umWABit-wbk",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Food Delivery App like Doordash",
+      "url": "https://www.youtube.com/watch?v=iRhSAR3ldTw",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=iRhSAR3ldTw",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Google Docs",
+      "url": "https://www.youtube.com/watch?v=2auwirNBvGg",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=2auwirNBvGg",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Google Maps",
+      "url": "https://www.youtube.com/watch?v=jk3yvVfNvds",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=jk3yvVfNvds",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Zoom",
+      "url": "https://www.youtube.com/watch?v=G32ThJakeHk",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=G32ThJakeHk",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design File Sharing System like Dropbox",
+      "url": "https://www.youtube.com/watch?v=U0xTu6E2CT8",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=U0xTu6E2CT8",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Ticket Booking System like BookMyShow",
+      "url": "https://www.youtube.com/watch?v=lBAwJgoO3Ek",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=lBAwJgoO3Ek",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Distributed Web Crawler",
+      "url": "https://www.youtube.com/watch?v=BKZxZwUgL3Y",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=BKZxZwUgL3Y",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Code Deployment System",
+      "url": "https://www.youtube.com/watch?v=q0KGYwNbf-0",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=q0KGYwNbf-0",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Distributed Cloud Storage like S3",
+      "url": "https://www.youtube.com/watch?v=UmWtcgC96X8",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=UmWtcgC96X8",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "Interview problems / Hard",
+      "label": "Design Distributed Locking Service",
+      "url": "https://www.youtube.com/watch?v=v7x75aN9liM",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/watch?v=v7x75aN9liM",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📇 Courses",
+      "label": "System Design Fundamentals",
+      "url": "https://algomaster.io/learn/system-design/course-introduction",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design/course-introduction",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📇 Courses",
+      "label": "System Design Interviews",
+      "url": "https://algomaster.io/learn/system-design-interviews/introduction",
+      "status": 200,
+      "finalUrl": "https://algomaster.io/learn/system-design-interviews/introduction",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📩 Newsletters",
+      "label": "AlgoMaster Newsletter",
+      "url": "https://blog.algomaster.io/",
+      "status": 200,
+      "finalUrl": "https://blog.algomaster.io/",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📚 Books",
+      "label": "Designing Data-Intensive Applications",
+      "url": "https://www.amazon.in/dp/9352135245",
+      "status": 405,
+      "finalUrl": "https://www.amazon.in/dp/9352135245",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "📺 YouTube Channels",
+      "label": "Tech Dummies Narendra L",
+      "url": "https://www.youtube.com/@TechDummiesNarendraL",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/@TechDummiesNarendraL?cbrd=1&ucbcb=1",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📺 YouTube Channels",
+      "label": "Gaurav Sen",
+      "url": "https://www.youtube.com/@gkcs",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/@gkcs?cbrd=1&ucbcb=1",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📺 YouTube Channels",
+      "label": "codeKarle",
+      "url": "https://www.youtube.com/@codeKarle",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/@codeKarle?cbrd=1&ucbcb=1",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📺 YouTube Channels",
+      "label": "ByteByteGo",
+      "url": "https://www.youtube.com/@ByteByteGo",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/@ByteByteGo?cbrd=1&ucbcb=1",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📺 YouTube Channels",
+      "label": "System Design Interview",
+      "url": "https://www.youtube.com/@SystemDesignInterview",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/@SystemDesignInterview?cbrd=1&ucbcb=1",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📺 YouTube Channels",
+      "label": "sudoCODE",
+      "url": "https://www.youtube.com/@sudocode",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/@sudocode?cbrd=1&ucbcb=1",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📺 YouTube Channels",
+      "label": "Success in Tech",
+      "url": "https://www.youtube.com/@SuccessinTech/videos",
+      "status": 200,
+      "finalUrl": "https://www.youtube.com/@SuccessinTech/videos?cbrd=1&ucbcb=1",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📜 Must-Read Engineering Articles",
+      "label": "How Discord stores trillions of messages",
+      "url": "https://discord.com/blog/how-discord-stores-trillions-of-messages",
+      "status": 200,
+      "finalUrl": "https://discord.com/blog/how-discord-stores-trillions-of-messages",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📜 Must-Read Engineering Articles",
+      "label": "Building In-Video Search at Netflix",
+      "url": "https://netflixtechblog.com/building-in-video-search-936766f0017c",
+      "status": 403,
+      "finalUrl": "https://netflixtechblog.com/building-in-video-search-936766f0017c",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "📜 Must-Read Engineering Articles",
+      "label": "How Canva scaled Media uploads from Zero to 50 Million per Day",
+      "url": "https://www.canva.dev/blog/engineering/from-zero-to-50-million-uploads-per-day-scaling-media-at-canva/",
+      "status": 405,
+      "finalUrl": "https://www.canva.dev/blog/engineering/from-zero-to-50-million-uploads-per-day-scaling-media-at-canva/",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "📜 Must-Read Engineering Articles",
+      "label": "How Airbnb avoids double payments in a Distributed Payments System",
+      "url": "https://medium.com/airbnb-engineering/avoiding-double-payments-in-a-distributed-payments-system-2981f6b070bb",
+      "status": 403,
+      "finalUrl": "https://medium.com/airbnb-engineering/avoiding-double-payments-in-a-distributed-payments-system-2981f6b070bb",
+      "classification": "blocked-or-http-error; not evidence of missing content"
+    },
+    {
+      "category": "📜 Must-Read Engineering Articles",
+      "label": "Stripe’s payments APIs - The first 10 years",
+      "url": "https://stripe.com/blog/payment-api-design",
+      "status": 200,
+      "finalUrl": "https://stripe.dev/blog/payment-api-design",
+      "contentType": "text/html; charset=utf-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "📜 Must-Read Engineering Articles",
+      "label": "Real time messaging at Slack",
+      "url": "https://slack.engineering/real-time-messaging/",
+      "status": 200,
+      "finalUrl": "https://slack.engineering/real-time-messaging/",
+      "contentType": "text/html; charset=UTF-8",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "Paxos: The Part-Time Parliament",
+      "url": "https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf",
+      "status": 200,
+      "finalUrl": "https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "MapReduce: Simplified Data Processing on Large Clusters",
+      "url": "https://research.google.com/archive/mapreduce-osdi04.pdf",
+      "status": 200,
+      "finalUrl": "https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "The Google File System",
+      "url": "https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf",
+      "status": 200,
+      "finalUrl": "https://static.googleusercontent.com/media/research.google.com/en//archive/gfs-sosp2003.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "Dynamo: Amazon’s Highly Available Key-value Store",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "status": 200,
+      "finalUrl": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "Kafka: a Distributed Messaging System for Log Processing",
+      "url": "https://notes.stephenholiday.com/Kafka.pdf",
+      "status": 200,
+      "finalUrl": "https://notes.stephenholiday.com/Kafka.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "Spanner: Google’s Globally-Distributed Database",
+      "url": "https://static.googleusercontent.com/media/research.google.com/en//archive/spanner-osdi2012.pdf",
+      "status": 200,
+      "finalUrl": "https://static.googleusercontent.com/media/research.google.com/en//archive/spanner-osdi2012.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "Bigtable: A Distributed Storage System for Structured Data",
+      "url": "https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf",
+      "status": 200,
+      "finalUrl": "https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "ZooKeeper: Wait-free coordination for Internet-scale systems",
+      "url": "https://www.usenix.org/legacy/event/usenix10/tech/full_papers/Hunt.pdf",
+      "status": 200,
+      "finalUrl": "https://www.usenix.org/legacy/event/usenix10/tech/full_papers/Hunt.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "The Log-Structured Merge-Tree (LSM-Tree)",
+      "url": "https://www.cs.umb.edu/~poneil/lsmtree.pdf",
+      "status": null,
+      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1010)>",
+      "classification": "unverified network/timeout"
+    },
+    {
+      "category": "🗞️ Must-Read Distributed Systems Papers",
+      "label": "The Chubby lock service for loosely-coupled distributed systems",
+      "url": "https://static.googleusercontent.com/media/research.google.com/en//archive/chubby-osdi06.pdf",
+      "status": 200,
+      "finalUrl": "https://static.googleusercontent.com/media/research.google.com/en//archive/chubby-osdi06.pdf",
+      "contentType": "application/pdf",
+      "classification": "reachable; content access not established"
+    }
+  ],
+  "pythonParsed": [
+    "implementations\\python\\consistent_hashing\\consistent-hashing.py",
+    "implementations\\python\\load_balancing_algorithms\\ip_hash.py",
+    "implementations\\python\\load_balancing_algorithms\\least_connections.py",
+    "implementations\\python\\load_balancing_algorithms\\least_response_time.py",
+    "implementations\\python\\load_balancing_algorithms\\round_robin.py.py",
+    "implementations\\python\\load_balancing_algorithms\\weighted_round_robin.py",
+    "implementations\\python\\rate_limiting\\fixed_window_counter.py",
+    "implementations\\python\\rate_limiting\\leaky_bucket.py",
+    "implementations\\python\\rate_limiting\\sliding_window_counter.py",
+    "implementations\\python\\rate_limiting\\sliding_window_log.py",
+    "implementations\\python\\rate_limiting\\token_bucket.py"
+  ],
+  "javaFilesRead": 11,
+  "dynamicChecks": {
+    "slidingCounterAfterThreeIdleWindows": {
+      "expected": true,
+      "actual": false
+    },
+    "negativeTokenRequest": {
+      "expected": "reject invalid cost",
+      "actualAllowed": true,
+      "tokensAfter": 13
+    },
+    "duplicateHashNodeAddThenRemove": {
+      "expectedOrphanPositions": 0,
+      "actualOrphanPositions": 3,
+      "keyErrorObserved": true
+    }
+  },
+  "limits": [
+    "HEAD reachability does not establish free access, correct topic or complete page quality.",
+    "No Java compilation/execution performed.",
+    "No linked video was watched; video quality remains unverified.",
+    "Reference clone was not modified."
+  ]
+}

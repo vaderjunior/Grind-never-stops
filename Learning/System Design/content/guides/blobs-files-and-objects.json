@@ -1,0 +1,337 @@
+{
+  "id": "blobs-files-and-objects",
+  "title": "Files, blocks, objects, and the metadata around them",
+  "version": 2,
+  "week": 4,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Follow one photo from upload to deletion while distinguishing raw blocks, named files, stored objects, and the database records describing them.",
+  "objectives": [
+    "Explain block, file, and object interfaces without confusing them with physical media.",
+    "Separate content bytes from searchable metadata.",
+    "Trace upload, publication, and cleanup across two stores.",
+    "Apply the same reasoning to AI model artifacts and datasets."
+  ],
+  "terms": [
+    {
+      "term": "Byte",
+      "definition": "A small unit of digital data; files are represented as sequences of bytes."
+    },
+    {
+      "term": "Blob",
+      "definition": "Binary large object: a piece of binary content such as an image or model file."
+    },
+    {
+      "term": "Metadata",
+      "definition": "Information describing content, such as owner, size, type, or storage key."
+    },
+    {
+      "term": "Block storage",
+      "definition": "A storage interface exposing addressable blocks, commonly used beneath a filesystem or database."
+    },
+    {
+      "term": "File storage",
+      "definition": "Storage accessed through files and directories with filesystem operations."
+    },
+    {
+      "term": "Object storage",
+      "definition": "Storage accessed through named objects and service operations, often over a network API."
+    },
+    {
+      "term": "Checksum",
+      "definition": "A value computed from content to help detect whether those bytes changed or were corrupted."
+    }
+  ],
+  "retrieval": [
+    "Why does a note-list screen need a photo reference without always downloading the full photo?",
+    "What happens when a database transaction tries to include an unrelated external service?"
+  ],
+  "sections": [
+    {
+      "id": "photo",
+      "title": "One photo has content and facts about content",
+      "markdown": "Maya adds a garden photo to note 41. The photo’s bytes encode the image itself. Its metadata says who owns it, which note uses it, its size, and where to retrieve it. A database can search the metadata without loading the full image into every query result.\n\nThe representation changes the amount of data needed:\n\n| Data requested | One photo | Fifty photos |\n| --- | --- | --- |\n| Searchable metadata | 1 kB | About 50 kB |\n| Full image bytes | 4 MB | About 200 MB |\n\nThese are decimal teaching values. The list can fetch small information first, then the needed preview or full content. The saving comes from requesting less data, not a magical product.\n\nBlob is a name for binary content, not a separate physical storage technology. A database may store blobs, a filesystem may store image files, and an object service may hold them. The next question is how the application accesses and manages those bytes."
+    },
+    {
+      "id": "blocks",
+      "title": "Blocks are addressed pieces of storage",
+      "markdown": "Block storage presents a volume: a sequence of addressable storage blocks. A filesystem or database can place its structures on that volume and read or write locations. A familiar analogy is blank numbered pages: a higher layer decides where a chapter begins and how to find its contents.\n\nThe analogy has limits. Actual storage has failure, durability, sharing, and performance behavior; a numbered address is not a guarantee that a write survives power loss. Applications normally use a filesystem or database above the block interface rather than inventing their own file directory from raw blocks.\n\nA cloud block volume is not necessarily a physical disk plugged into the same machine. It may be a network service. Likewise, SSD and hard drive describe media, while block, file, and object describe interfaces. Keep those two classifications separate when reading an architecture diagram."
+    },
+    {
+      "id": "files",
+      "title": "Files add names, directories, and familiar operations",
+      "markdown": "A filesystem lets a program open a path such as photos/garden.jpg, read bytes, write content, and manage directories. A local filesystem may sit on a block volume. A network file service exposes filesystem access to other machines. Its exact locking, rename, permission, and sharing semantics depend on the service and protocol.\n\nFile access is convenient for software expecting ordinary paths. An image tool can read a file; a database can manage its files on appropriate storage. But sharing a directory between several servers does not automatically make every concurrent application update safe. The program still needs the filesystem’s documented behavior and its own coordination rules.\n\nFor a local Pocket Notes prototype, controlled image files plus database references can be perfectly reasonable. Generate safe internal filenames instead of using arbitrary user-provided paths. A user’s filename is display metadata; it should not let them choose another user’s file or escape the permitted directory."
+    },
+    {
+      "id": "objects",
+      "title": "Objects use keys and service requests",
+      "markdown": "An object store organizes content under keys, commonly inside a container called a bucket. The application can ask to put an object at a key, get its bytes, or delete it. A key such as photos/81/original resembles a path, but slashes can be part of a flat key namespace rather than real directory objects.\n\nDo not assume it supports every filesystem operation. An ordinary object upload commonly creates or replaces an object representation; arbitrary in-place byte edits, atomic directory renames, and append behavior depend on the specific product and API. Software expecting a mounted filesystem may require adaptation.\n\nObject storage is useful for content retrieved by identity, such as images, backups, datasets, and model artifacts. It does not automatically answer “find all photos belonging to notebooks shared with Arun.” Store that searchable relationship in an appropriate database or index, then use the resulting object keys to retrieve permitted content.\n\n> **Common mistake:** “The key contains an owner ID, so it is private.” A label helps organize content; storage policy and application access checks decide who may retrieve it. A guessed or leaked key must not bypass the intended access rule."
+    },
+    {
+      "id": "compare",
+      "title": "Compare access interfaces, not quality labels",
+      "markdown": "| Interface | Application-facing idea | Typical investigation |\n| --- | --- | --- |\n| Block | Read or write locations in a volume | Storage underneath a filesystem or database |\n| File | Open and manipulate named paths | Existing tools that need filesystem operations |\n| Object | Put/get/delete named content through a service API | Large content with metadata and lifecycle rules |\n\nThese layers can coexist. A file server can use block volumes internally. An object service uses some physical storage underneath. The app’s choice concerns the contract it needs, not which label sits closest to a disk.\n\nAsk about maximum object or file sizes, supported updates, concurrent writers, expected access frequency, recovery needs, and cost at the intended workload. Performance claims require measurement. “Objects are always slow” and “files cannot scale” are too broad to guide a real choice."
+    },
+    {
+      "id": "upload",
+      "title": "Walk through an upload before displaying it",
+      "markdown": "Use states with observable meanings:\n\n| State | What the app knows | Show as a completed photo? |\n| --- | --- | --- |\n| uploading | Attachment identity exists; content is not yet accepted as complete | No |\n| ready | Required content checks passed and metadata was updated | Yes, to permitted callers |\n| failed | This attempt did not complete under the policy | No |\n\nThe server first checks Maya’s permission and creates an uploading record with a generated key. It uploads the content, verifies expected size and content properties, and only then marks the attachment ready.\n\nThis sequence crosses a database and a content store. They do not share our ordinary database transaction. If bytes arrive but the final database update fails, an object may exist while the record still says uploading. If a record exists but upload fails, it must not pretend that the photo is ready.\n\nA recovery process can inspect old unfinished records, verify whether content exists, complete valid pending work, or remove abandoned content according to a retention policy. Give the upload an identity so a retry continues or recognizes the intended attempt instead of accidentally producing unlimited unrelated copies."
+    },
+    {
+      "id": "delivery",
+      "title": "Retrieve only the content the caller may use",
+      "markdown": "For a private photo, the application first checks notebook membership. It can then stream the permitted bytes itself or issue a narrowly scoped, expiring access link if the object service supports it. Such a link acts like a temporary capability: whoever holds it may be able to use it until its conditions expire. Do not place it in public logs or assume obscurity alone protects the original object.\n\nThumbnails are smaller derived versions of a source image. Give each representation a clear identity and record which original revision produced it. Replacing a photo’s bytes while reusing one forever-cached name can show an old image. A new versioned key makes the changed content explicit, although later cache lessons will explain the remaining policies.\n\nValidate content using more than the filename extension. Limit size, check supported formats, and process untrusted files with appropriate isolation. Storage type does not make uploaded content trustworthy."
+    },
+    {
+      "id": "delete",
+      "title": "Deletion, backup, and lifecycle are separate promises",
+      "markdown": "When Maya deletes an attachment, remove it from the visible application according to the product rule and arrange deletion of its stored representations. If deletion crosses stores, track pending cleanup and retry it. A metadata row disappearing does not prove that the original bytes, thumbnails, old versions, and backups all disappeared at the same instant.\n\nA lifecycle policy automatically transitions or removes eligible stored content under defined age or state rules. It can control abandoned uploads or old versions, but it must not delete bytes still referenced by live records. Check the actual object/version behavior before making a privacy or retention promise.\n\nCopies for availability are also different from recoverable historical backups. An accidental deletion may affect the live copies. Versioning and backups can help recovery when configured, retained, and tested, but preserving old versions also changes deletion and cost expectations. Make those requirements visible rather than treating “stored in the cloud” as a complete recovery plan."
+    },
+    {
+      "id": "ai",
+      "title": "Worked example: publishing an AI model artifact",
+      "markdown": "An AI team trains model version 12. Its parameter files total 6 GB; a registry record describing owner, version, checksum, and storage keys is only a few kilobytes. The registry’s list page should retrieve those records, not download every model file. A deployment fetches the actual versioned artifact when it needs to run that model.\n\nStep one: create an unpublished artifact record and upload all required files under a new version identity. Step two: verify expected files, sizes, and checksums. Step three: mark version 12 ready with its manifest—a list of the files belonging to that version. Step four: let deployments reference the ready version. Do not silently replace its bytes later while keeping the same version label.\n\nIf publication fails midway, no deployment should interpret a half-uploaded directory as a complete model. Retry or clean up the unfinished version. Training software that needs filesystem paths can stage the verified files locally or use a suitable file interface; an object key alone is not an ordinary local path. The same small-photo reasoning now protects a much larger artifact."
+    },
+    {
+      "id": "checkpoint",
+      "title": "Use a lifecycle story to check your choice",
+      "markdown": "For any blob, tell the whole story: who creates it, where the bytes live, which record describes them, when it becomes visible, who may retrieve it, and how it is eventually removed or recovered. Draw failures between each pair of steps. These questions are more useful than saying “put images in object storage” without the connecting behavior.\n\nCommon mistakes are exposing a storage bucket because the database knows the owner, assuming a slash-containing key behaves like a directory, and marking an upload complete before verifying the content. Another is claiming a database rollback deletes a separately uploaded object. You can now identify each missing promise without needing cloud deployment experience."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "interfaces",
+      "title": "Interfaces sit above physical storage",
+      "source": "flowchart TB\nA[Application needs bytes] --> F[File paths and operations]\nA --> O[Object keys and service API]\nF --> FS[Filesystem or file service]\nFS --> B[Block interface where applicable]\nB --> P[Underlying storage hardware and service]\nO --> OS[Object service implementation]\nOS --> P",
+      "caption": "Conceptual layering only. The diagram does not assert that every service has the same internal architecture.",
+      "steps": [
+        "Choose the interface the application expects.",
+        "Distinguish a path from an object key.",
+        "Recognize that files may sit above block storage.",
+        "Evaluate the documented durability and update contract of the actual service."
+      ],
+      "sectionId": "compare"
+    },
+    {
+      "id": "lifecycle",
+      "title": "Keep incomplete content out of the ready view",
+      "source": "flowchart LR\nA[Authorize and create uploading record] --> B[Upload bytes to generated key]\nB --> C[Verify expected content]\nC --> D[Mark metadata ready]\nD --> E[Display completed attachment]\nB -.->|Interrupted or uncertain| R[Inspect pending upload]\nC -.->|Verification fails| R\nR -->|Verified complete content| D\nR -->|Retry same pending upload| B\nR -->|Abandoned attempt| F[Mark failed and arrange cleanup]",
+      "caption": "The database and content store have separate commits. Recovery inspects a stable upload identity rather than assuming either side rolled back.",
+      "steps": [
+        "Record the pending upload.",
+        "Store and verify its bytes.",
+        "Make readiness explicit in metadata.",
+        "Recover unfinished attempts without exposing them as completed content."
+      ],
+      "sectionId": "upload"
+    },
+    {
+      "id": "private-photo-read",
+      "sectionId": "delivery",
+      "title": "Metadata helps locate bytes; permission controls delivery",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant A as Application\nparticipant D as Metadata database\nparticipant O as Content store\nB->>A: Open attachment 81\nA->>D: Check membership and ready attachment\nD-->>A: Permitted record and storage key\nA->>O: Get content using server access\nO-->>A: Image bytes\nA-->>B: Permitted image response",
+      "caption": "This drawing chooses server-mediated delivery. A scoped expiring-link design has a different content path and must protect the link as a capability.",
+      "steps": [
+        "Identify the attachment through the application.",
+        "Check access and readiness using the metadata relationship.",
+        "Retrieve and deliver bytes only under the chosen access policy."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "A 6 GB model upload finishes, but the registry update to ready fails. The deployment loader reads only ready versions. Explain what it sees, how a recovery process can finish or clean up the upload, and why the checksum does not replace permission checks.",
+    "rubric": [
+      "Keeps the incomplete publication out of ready results.",
+      "Uses stable version identity and content verification in recovery.",
+      "Separates integrity from access control."
+    ],
+    "solution": "The loader does not use the unfinished version even though bytes exist. Recovery inspects that version’s expected manifest, verifies stored content, and can mark it ready if all conditions hold; otherwise it retries or removes abandoned content according to policy. A checksum helps detect unexpected content changes. It does not establish that a caller is authorized to obtain the model."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does an object key containing slashes necessarily imply?",
+      "options": [
+        "Real filesystem directories exist",
+        "Only that the key includes those characters",
+        "All objects share one transaction"
+      ],
+      "answer": "Only that the key includes those characters",
+      "explanation": "Directory-like display is not a guarantee of filesystem semantics."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which is metadata?",
+      "options": [
+        "The owner identifier and storage key",
+        "Only the raw image pixels",
+        "The complete 6 GB model file"
+      ],
+      "answer": "The owner identifier and storage key",
+      "explanation": "Those facts describe and locate content."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A separate database rollback automatically deletes an uploaded object:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The stores need an explicit recovery or cleanup workflow."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might a versioned artifact key help deployment correctness?",
+      "answer": "It binds a deployment to identified content and avoids silently changing bytes behind an unchanged version label.",
+      "explanation": "Verification and access controls remain necessary."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What must a deletion promise consider beyond one visible metadata row?",
+      "answer": "Original bytes, derived previews, object versions, pending cleanup, caches, backups, and applicable retention rules.",
+      "explanation": "The application should state which visibility and retention boundaries its promise covers."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Block versus media?",
+      "back": "Block is an access interface; SSD or disk is a storage medium."
+    },
+    {
+      "front": "File interface?",
+      "back": "Named paths with documented filesystem operations."
+    },
+    {
+      "front": "Object interface?",
+      "back": "Named content accessed through service operations."
+    },
+    {
+      "front": "Ready means?",
+      "back": "The required content has been verified and publication metadata accepted."
+    },
+    {
+      "front": "Checksum versus authorization?",
+      "back": "Integrity evidence versus permission to access content."
+    }
+  ],
+  "mentalModel": "Separate the bytes from the facts describing them, then account for every state between creation and deletion.",
+  "sources": [
+    {
+      "title": "Amazon EBS: block storage overview",
+      "url": "https://docs.aws.amazon.com/ebs/latest/userguide/what-is-ebs.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon EFS: file storage overview",
+      "url": "https://docs.aws.amazon.com/efs/latest/ug/whatisefs.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon S3: object storage concepts",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon S3: object lifecycle",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon S3: object integrity",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "photo-ready-state",
+      "sectionId": "upload",
+      "title": "Follow attachment 81 from identity to ready content",
+      "intro": "A normal 4 MB garden-photo upload shows why a record, stored bytes, and readiness are separate facts.",
+      "steps": [
+        {
+          "title": "Reserve an attachment identity",
+          "explanation": "After checking access to note 41, create a stable attempt with a generated storage key.",
+          "state": [
+            {
+              "label": "Attachment",
+              "value": "81, note 41"
+            },
+            {
+              "label": "State",
+              "value": "uploading"
+            },
+            {
+              "label": "Key",
+              "value": "photos/81/original-v1"
+            }
+          ]
+        },
+        {
+          "title": "Transfer the bytes",
+          "explanation": "Stored bytes may exist while the metadata remains uploading. Existence alone is not the completed-app state.",
+          "state": [
+            {
+              "label": "Content size",
+              "value": "4 MB expected"
+            },
+            {
+              "label": "Stored bytes",
+              "value": "Upload completed"
+            },
+            {
+              "label": "Metadata state",
+              "value": "uploading"
+            }
+          ]
+        },
+        {
+          "title": "Verify the representation",
+          "explanation": "Check required size and supported content properties. A matching filename alone is insufficient.",
+          "state": [
+            {
+              "label": "Expected size",
+              "value": "4 MB"
+            },
+            {
+              "label": "Observed size",
+              "value": "4 MB"
+            },
+            {
+              "label": "Content checks",
+              "value": "Passed for this example"
+            }
+          ]
+        },
+        {
+          "title": "Publish readiness",
+          "explanation": "Accept the ready metadata update before presenting the attachment as complete. Retrieval still checks permission.",
+          "state": [
+            {
+              "label": "Metadata state",
+              "value": "ready"
+            },
+            {
+              "label": "Visible attachment",
+              "value": "81"
+            },
+            {
+              "label": "Access rule",
+              "value": "Permitted notebook member"
+            }
+          ]
+        }
+      ],
+      "takeaway": "“Some bytes exist” and “the app has accepted a complete attachment” are different states. Give their transition a clear rule."
+    }
+  ]
+}

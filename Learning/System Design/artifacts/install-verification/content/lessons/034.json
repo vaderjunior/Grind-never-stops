@@ -1,0 +1,145 @@
+{
+  "id": "034",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Read estimated versus observed plan work.",
+    "Explain selectivity and why distribution affects plans.",
+    "Diagnose an N+1 query pattern separately from a slow query.",
+    "Choose a bounded join or batch without multiplying result rows accidentally."
+  ],
+  "retrieval": [
+    "From L033: why may a sequential scan be reasonable?",
+    "From L004: how can one user action amplify internal work?"
+  ],
+  "sections": [
+    {
+      "id": "evidence",
+      "title": "Ask where the database spends work",
+      "markdown": "Core 55 minutes: retrieval 5, explanation 18, worked plan 8, exercise 10, questions 10, review 4. A “slow database” report may mean one expensive scan, thousands of cheap round trips, waiting for a lock, or waiting for a connection. Separate those intervals before changing a schema or buying a larger machine.\n\nEXPLAIN shows the plan selected by the optimizer, including estimated rows and cost. EXPLAIN ANALYZE executes the statement and reports observed timing/row counts. In PostgreSQL, costs are planner units, not milliseconds. For a mutation, ANALYZE really performs the mutation; use an appropriate test database or a deliberate rollback workflow and understand any effects that rollback does not reverse. Do not run it casually on production writes.\n\nRead a plan from the work-producing nodes upward. A scan finds rows; filters discard candidates; joins combine inputs; sorts establish order; limits may stop work early depending on the plan. Compare estimated and actual row counts at the point they diverge. Multiply per-loop work by loops where appropriate; a tiny node executed thousands of times can dominate."
+    },
+    {
+      "id": "selectivity",
+      "title": "The same predicate can describe very different work",
+      "markdown": "Selectivity is the fraction of rows matching a condition under the relevant population. tenant_id=7 might match 100 rows for a small department or half the table for a giant tenant. status='open' might be rare in one service and nearly universal in another. Statistics help the optimizer choose among scans and joins, but stale or incomplete statistics can misrepresent correlations and skew.\n\nFor an invented example, a plan estimates 100 rows after filtering but actually produces 800,000. The join strategy and memory decisions downstream were made from a very different expected workload. Investigate data distribution, stale statistics, parameter values, and correlated predicates before forcing a specific operator. The error is evidence of a model mismatch, not proof of a particular remedy.\n\nA filter that returns 20 rows after scanning ten million may indicate an index opportunity. A query returning eight million of ten million rows may reasonably scan broadly. Selectivity alone is not the full cost model: row width, required ordering, page locality, cache state, and index maintenance matter too."
+    },
+    {
+      "id": "nplusone",
+      "title": "A fast query repeated 101 times is still expensive",
+      "markdown": "Suppose GET /loans first fetches 100 loans, then fetches each borrower's name with one separate query. That is 101 queries. At an illustrative 2 ms of serial round-trip overhead per query, communication overhead alone is about 202 ms, before useful database work. A join or batched borrower lookup could reduce the round trips to one or two. These are derived arithmetic assumptions, not measured performance.\n\nA joined query for one borrower per loan might be:\n\n~~~sql\nSELECT l.loan_id, l.opened_at, b.display_name\nFROM loans AS l\nJOIN borrowers AS b\n  ON b.department_id = l.department_id\n AND b.borrower_id = l.borrower_id\nWHERE l.department_id = :department\nORDER BY l.opened_at DESC, l.loan_id DESC\nLIMIT 100;\n~~~\n\nJoin cardinality matters. If you also join each loan to many audit events, one loan can appear several times. Applying LIMIT 100 to the multiplied rows may return far fewer than 100 distinct loans and truncate child collections. Page parent identities first, then fetch related rows in a bounded batch or use a query structure that preserves the desired result contract.\n\nFor the one-to-many case, a two-query pattern can be clearer: retrieve the 100 parent rows under the cursor contract; collect their IDs; fetch children WHERE parent_id IN (...) under the same authorized scope. The batch itself needs a size bound and a consistency policy if rows change between queries."
+    },
+    {
+      "id": "measurement",
+      "title": "Measure the workload, not a lucky warm request",
+      "markdown": "Record query text shape, parameters or safe distributions, row counts, index definitions, statistics state, cache conditions, concurrency, and transaction boundaries. Compare p50/p95/p99 where the sample supports them, plus lock wait and connection-pool wait. One warm single-client run cannot establish a multi-user service objective.\n\nFailure scenarios: an ORM lazily loads a relationship during serialization; a count query scans a full dataset on every page; a tenant-filter omission makes both a performance and isolation incident; a join multiplies parent rows; a query plan changes after data growth. Each has a different correction. Merely adding a cache can preserve the wrong result or hide the root cause temporarily.\n\nCommon misconceptions: optimizer cost equals elapsed milliseconds; ANALYZE only simulates; all joins are slower than separate queries; an index scan always means a good plan; a small returned page implies little scanned work. Optional practice: run EXPLAIN QUERY PLAN on the local SQLite fixture and compare before/after index creation. Label it SQLite evidence, and do not infer PostgreSQL operator behavior from it."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "amplification",
+      "title": "One page can create a hundred extra round trips",
+      "source": "flowchart LR\nP[One page request] --> L[Query 100 loans]\nL --> N[100 separate borrower queries]\nN --> R[Assemble response]\nP -.->|Alternative bounded path| B[One joined query or two batched queries]\nB --> R",
+      "caption": "The diagram compares query-count shapes. It does not claim joins are universally faster; cardinality, plans, and consistency still need review.",
+      "steps": [
+        "Count queries per user action.",
+        "Separate round-trip overhead from execution time.",
+        "Choose a bounded join or batch matching relationship cardinality.",
+        "Measure the full endpoint again, including authorization and serialization."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "An endpoint returns 50 projects, then loads each project’s owner and ten recent events separately. It runs 101 queries: one project query plus 50 owner and 50 event queries. Propose a bounded alternative and explain why a naive project-owner-event join with LIMIT 50 can change the page semantics.",
+    "minutes": 10,
+    "rubric": [
+      "Recognizes round-trip amplification.",
+      "Pages parent identities before one-to-many expansion.",
+      "Batches related data with limits and authorization scope.",
+      "States consistency and measurement assumptions."
+    ],
+    "solution": "Fetch the 50 projects under a stable parent cursor. Join owners if each project has one owner, or batch distinct owner IDs. Fetch bounded recent events for those project IDs with an explicit per-parent limit using a suitable query or prepared fixture. A naive join creates up to many rows per project; LIMIT 50 limits joined rows, not 50 projects. Preserve the result contract and test query count, row count, and endpoint latency under representative concurrency."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "PostgreSQL EXPLAIN ANALYZE on an UPDATE:",
+      "options": [
+        "Only predicts the mutation",
+        "Actually executes it",
+        "Cannot show row counts"
+      ],
+      "answer": "Actually executes it",
+      "explanation": "Use a safe test setting and understand rollback limitations."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "1 page query plus 80 serial lookups, each with 3 ms round-trip overhead: overhead alone?",
+      "answer": 243,
+      "unit": "ms",
+      "tolerance": 0.01,
+      "explanation": "81 × 3 = 243 ms under the stated serial model."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "LIMIT 20 after a one-to-many join always returns 20 parents:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It limits joined result rows unless the query deliberately preserves parent pagination."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why compare estimated and actual row counts?",
+      "answer": "A large divergence identifies where the planner’s data model differs from observed workload, affecting subsequent operator choices.",
+      "explanation": "Investigate statistics, skew, and correlations before forcing a plan."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What can make a small response expensive?",
+      "answer": "Scanning or sorting many discarded rows, repeated lookups, lock/pool waits, or large one-to-many intermediate results.",
+      "explanation": "Returned row count alone does not measure work."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "EXPLAIN versus ANALYZE?",
+      "back": "Plan estimates versus executing and observing the statement."
+    },
+    {
+      "front": "Planner cost units?",
+      "back": "An optimizer model, not elapsed milliseconds."
+    },
+    {
+      "front": "Selectivity?",
+      "back": "Fraction of the relevant row population matching a predicate."
+    },
+    {
+      "front": "N+1?",
+      "back": "One collection query followed by one extra query per result, often amplified further."
+    },
+    {
+      "front": "One-to-many pagination risk?",
+      "back": "LIMIT may count expanded joined rows rather than parent entities."
+    },
+    {
+      "front": "Useful plan discrepancy?",
+      "back": "A large estimated-versus-actual row mismatch at a work-producing node."
+    }
+  ],
+  "mentalModel": "Count work at every level: requests, queries, loops, scanned rows, joined rows, and waits.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Using EXPLAIN",
+      "url": "https://www.postgresql.org/docs/18/using-explain.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

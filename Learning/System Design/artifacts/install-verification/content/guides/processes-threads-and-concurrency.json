@@ -1,0 +1,317 @@
+{
+  "id": "processes-threads-and-concurrency",
+  "title": "Processes, threads, and doing several things at once",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 2,
+  "level": "beginner",
+  "minutes": 60,
+  "summary": "Understand what actually runs inside a server: CPU work, processes, threads, waiting, and overlapping requests.",
+  "objectives": [
+    "Explain process, thread, concurrency and parallelism using one server.",
+    "Trace blocking and asynchronous waiting without assuming async means faster computation.",
+    "Identify a shared-state race and choose a bounded place for expensive work."
+  ],
+  "terms": [
+    {
+      "term": "CPU core",
+      "definition": "A hardware execution resource that runs instructions; actual throughput depends on the work and processor."
+    },
+    {
+      "term": "Process",
+      "definition": "A running program with its own virtual address space and operating-system resources."
+    },
+    {
+      "term": "Thread",
+      "definition": "A schedulable execution path within a process; threads in that process share much of its memory."
+    },
+    {
+      "term": "Concurrency",
+      "definition": "Several tasks are in progress during overlapping periods."
+    },
+    {
+      "term": "Parallelism",
+      "definition": "Work executes at the same time on multiple execution resources."
+    },
+    {
+      "term": "Blocking",
+      "definition": "An execution path waits and cannot perform other work during that interval."
+    },
+    {
+      "term": "Event loop",
+      "definition": "A runtime mechanism that dispatches ready work and callbacks, often on one principal language execution thread."
+    },
+    {
+      "term": "Race condition",
+      "definition": "The result depends on the timing or ordering of competing operations."
+    }
+  ],
+  "retrieval": [
+    "What work does the application server perform between receiving a request and replying?",
+    "Where does a saved note live after the server process restarts?"
+  ],
+  "sections": [
+    {
+      "id": "machine",
+      "title": "Zoom inside the server rectangle",
+      "markdown": "Your earlier diagram has a browser, a server, and a database. Now zoom inside the application server. It receives bytes, parses a request, checks a user, waits for data, formats a response, and sends bytes back. Some of these steps use the CPU actively. Others mostly wait for storage, another machine, or a network connection. This difference determines how the server can handle another request meanwhile.\n\nA CPU executes instructions. Memory holds working data and program state; persistent storage keeps data beyond a process lifetime under its storage guarantees. Several CPU cores can do work in parallel, but adding cores does not automatically divide one sequential calculation among them. The program and runtime must expose work that can use those resources.\n\nFor this guide, imagine an ordinary laptop running a small API. We are learning its behavior, not tuning an operating system or choosing a particular processor."
+    },
+    {
+      "id": "process",
+      "title": "A program file and a running process are different",
+      "markdown": "A program file is a recipe for behavior. Starting it creates a process with its own view of memory, references to open files or connections, and the state needed to execute instructions. The technical names for these include a virtual address space, handles, and an execution context.\n\nTwo instances of the same API program can run as separate processes. Each normally has its own application memory. Assigning a variable in process A does not update the corresponding variable in process B.\n\nThat explains an important scaling surprise. If an API stores a user's shopping basket only in a process-local dictionary, a later request routed to another process may not find it. Shared access needs an explicit mechanism: a database, a cache service, shared memory with coordination, or messages between processes.\n\nA process boundary offers useful separation but does not automatically provide durability. When the process exits, its ordinary in-memory dictionary disappears. A server machine can run multiple processes, and one service can span multiple machines."
+    },
+    {
+      "id": "thread",
+      "title": "Threads share a room and need rules for shared objects",
+      "markdown": "Within a process, threads provide separate paths of execution. They share the process's view of memory and many resources while keeping their own execution state. For example, each has a stack that tracks its active function calls. Think of two workers sharing a workshop: they can use the same shelves, so one can see objects another placed there. That convenience creates coordination responsibilities when both update the same object.\n\nA thread pool is a bounded set of workers that receive tasks. A process pool uses separate process instances, which may offer stronger isolation but usually requires explicit communication and extra memory.\n\nRuntime details matter: different languages and implementations have different rules for executing language code on multiple cores. Do not assume that adding ten threads makes every Python, JavaScript, or Java program ten times faster. Ask which work is parallelizable, which runtime executes it, and whether the bottleneck is computation or waiting."
+    },
+    {
+      "id": "overlap",
+      "title": "Concurrency is about progress; parallelism is about simultaneous execution",
+      "markdown": "Imagine one cook preparing two dishes. While soup simmers without attention, the cook chops vegetables for the second dish. Both dishes are in progress, but the cook is actively doing one manual task at a time. This illustrates concurrency. Two cooks chopping independently at the same moment illustrate parallelism. The analogy has limits, but it separates the two questions clearly.\n\nA single execution thread can manage many concurrent network requests if it yields while waiting and later resumes ready work. Multiple cores can execute independent computation in parallel if the program uses an appropriate execution model. A system can have both:\n\n| Situation | Concurrent work? | Parallel CPU work? |\n| --- | --- | --- |\n| One thread starts B while A waits for the database | Yes: both requests are in progress | Not on that single execution thread |\n| Two cores execute independent calculations at once | Yes | Yes |\n| Many requests wait behind one blocked worker | They may be pending together | No useful CPU parallelism follows from the queue alone |\n\nNeither promises unlimited throughput: requests still consume memory, connections, CPU and downstream capacity. Concurrency is not a synonym for speed. Sometimes it improves resource use; sometimes too much concurrent work increases contention and makes every response slower."
+    },
+    {
+      "id": "waiting",
+      "title": "Work through a blocking request timeline",
+      "markdown": "Suppose a handler performs 10 ms of CPU work, waits 90 ms for a database response, then uses 5 ms of CPU to finish. These are invented measurements for a simple example. One request takes about 105 ms when it runs alone. If a single worker blocks through the entire database wait, a second request cannot start on that worker until the first finishes. Two requests then take roughly 210 ms in total, ignoring overhead.\n\nWith nonblocking database I/O, the first handler does its initial CPU work from 0 to 10 ms and starts the database request. The execution thread can start the second handler from 10 to 20 ms and initiate its database request.\n\nIf each database operation independently waits 90 ms, the first result is ready at 100 ms and the second at 110 ms. Their 5 ms finishing steps can complete around 105 and 115 ms. We overlapped waiting; we did not make either database operation intrinsically faster."
+    },
+    {
+      "id": "event-loop",
+      "title": "An event loop helps only when callbacks give it time",
+      "markdown": "An event-driven runtime dispatches ready callbacks or tasks. When supported asynchronous I/O starts, the runtime arranges to learn when it is ready, and the application can return control instead of waiting on the same execution thread. The runtime may use operating-system readiness mechanisms or worker threads for particular operations; “asynchronous” does not mean every operation uses the same mechanism.\n\nIn a typical Node.js application, long-running JavaScript on the main event-loop thread delays other JavaScript callbacks on that thread. Marking a function async or wrapping a calculation in a Promise does not move that calculation to another CPU. A 500 ms synchronous loop can still delay a small health response queued behind it.\n\nMove suitable CPU-heavy work to explicitly managed workers or processes, divide it into bounded cooperative pieces when appropriate, or place it behind an asynchronous job service. Each choice needs limits and error handling.\n\n> **Common mistake:** “I added async, so the long calculation runs elsewhere.” Async syntax can make waiting easier to express; it does not itself provide another CPU execution resource. Identify what actually runs the calculation."
+    },
+    {
+      "id": "cpu",
+      "title": "Distinguish waiting capacity from computation capacity",
+      "markdown": "Assume a calculation needs 20 ms of CPU time on one execution resource under a measured workload. One such resource has an ideal upper bound of about fifty calculations per second because 1,000 ms divided by 20 ms is fifty. Real overhead reduces that bound. Starting a thousand concurrent calculations does not create more CPU time; it creates waiting, memory pressure, or scheduling overhead.\n\nBy contrast, an I/O-heavy service may keep the CPU useful by overlapping many waits. That still has a limit: a database connection pool of twenty cannot give every one of ten thousand requests a simultaneous connection. Place bounds on in-flight requests, queued work, and worker count.\n\nMeasure CPU utilization, queue delay, memory use and downstream waiting separately. A busy CPU suggests one investigation; low CPU with long connection waits suggests another. Do not choose more threads until you know which resource is limiting useful work."
+    },
+    {
+      "id": "race",
+      "title": "A tiny shared-state example exposes the danger",
+      "markdown": "There is one available study-session seat. Request A reads available = 1. Before A updates it, request B also reads 1. A accepts a booking and writes 0; B accepts another booking and writes 0. The final counter looks plausible, yet two bookings were accepted for one seat. Each request's individual instructions were ordinary; their interleaving violated the business rule.\n\nProtect the whole check-and-reserve decision where the accepted seat count is managed. That is the authoritative state boundary: the place other components must treat as the official record. Inside one process that may involve a lock or another synchronization primitive.\n\nAcross API processes, a process-local lock is insufficient: use a database transaction, atomic conditional update, or another shared concurrency mechanism with the required guarantee. Avoid holding scarce local locks or database connections through unnecessary remote waits. Even a single-threaded event loop can have logical races when a function yields between reading state and using that stale state later."
+    },
+    {
+      "id": "design",
+      "title": "Apply the distinction to a small AI feature",
+      "markdown": "Our notes app adds “summarize this document.” Parsing a huge document synchronously on the same event-loop thread can delay unrelated note reads. Sending a remote model request is primarily a wait from the API's perspective, but each in-flight request still holds state and may consume provider quota. If a local model runs, its computation uses separate CPU or GPU resources whose capacity must also be bounded.\n\nA reasonable first design validates a bounded request, records a job, and returns a job identity. A bounded worker pool performs expensive parsing and summarization, then saves a result the client can retrieve.\n\nThis adds a queue and status lifecycle, so use it when the latency and workload justify it. For a tiny quick operation, a simpler synchronous response may be fine. Explain the resource being protected, the waiting limit, and the failure behavior. Those are the design skills these operating-system words are meant to support."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "process-memory",
+      "sectionId": "process",
+      "title": "One machine can contain independent application processes",
+      "source": "flowchart TB\nM[Server machine with CPU and memory] --> A[API process A]\nM --> B[API process B]\nA --> TA[Threads share memory inside A]\nB --> TB[Threads share memory inside B]\nA --> D[(Explicit shared database)]\nB --> D",
+      "steps": [
+        "Starting the program twice creates separate process instances.",
+        "Threads within an instance share its application memory.",
+        "Cross-process state requires an explicit shared mechanism."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "overlap-waits",
+      "sectionId": "waiting",
+      "title": "The execution thread can use another request’s waiting time",
+      "source": "sequenceDiagram\nparticipant E as Execution thread\nparticipant D as Database\nE->>D: A starts query after 10 ms CPU\nNote over E: Start B using another 10 ms CPU\nE->>D: B starts query\nD-->>E: A result ready around 100 ms\nNote over E: Finish A in 5 ms\nD-->>E: B result ready around 110 ms\nNote over E: Finish B in 5 ms",
+      "steps": [
+        "A begins I/O and yields.",
+        "B uses the thread while A is waiting.",
+        "Ready responses resume bounded CPU work."
+      ],
+      "caption": "Illustrative independent database waits; real capacity, scheduling, and contention can change these timings."
+    },
+    {
+      "id": "blocked-loop",
+      "sectionId": "event-loop",
+      "title": "One long callback delays other ready work",
+      "source": "flowchart LR\nL[Long synchronous calculation starts] --> W[Main execution thread occupied]\nH[Health request arrives] --> Q[Ready callback waits]\nW --> F[Calculation finishes]\nF --> Q\nQ --> R[Health callback can run]",
+      "caption": "This describes JavaScript work on one main event-loop thread. Other threads or processes can do independent work, but async syntax alone does not move this calculation.",
+      "steps": [
+        "A long callback keeps the main thread busy.",
+        "Another request can arrive while its callback waits to run.",
+        "Only yielding or finishing releases that thread for the next callback."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "On paper, trace two requests that each need 10 ms CPU, 90 ms independent I/O wait, and 5 ms CPU. Compare one fully blocking worker with nonblocking waiting. Then explain what changes if each request instead needs 100 ms of uninterrupted CPU. Finally trace two callers competing for one remaining seat.",
+    "rubric": [
+      "Separate response duration from CPU time.",
+      "Overlap waits without claiming the database became faster.",
+      "Do not assume async creates CPU parallelism.",
+      "Protect the whole seat check and reservation."
+    ],
+    "solution": "Fully blocking execution takes roughly 210 ms for two requests. Under the stated independent-I/O timeline, nonblocking handling can finish them around 105 and 115 ms. If each requires 100 ms of uninterrupted CPU on one execution thread, the work still needs about 200 ms total before overhead; async syntax alone does not parallelize it. The seat race permits both callers to read one and both accept. Use a transaction or atomic conditional reservation at the shared state authority; a local lock does not coordinate separate processes."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which pair normally shares one process’s address space?",
+      "options": [
+        "Two threads in the same process",
+        "Any two processes on the same host",
+        "Two unrelated machines"
+      ],
+      "answer": "Two threads in the same process",
+      "explanation": "Threads within a process share much of its memory, which makes synchronization important."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "A calculation needs 20 ms CPU on one execution resource. Ideal calculations/s before overhead?",
+      "answer": 50,
+      "unit": "calculations/s",
+      "tolerance": 0,
+      "explanation": "1,000 ÷ 20 = 50; concurrency alone does not raise this bound."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Does adding async to a CPU-heavy function automatically move it off the event-loop thread?",
+      "options": [
+        "No",
+        "Yes, always",
+        "Only when the function has a long name"
+      ],
+      "answer": "No",
+      "explanation": "Execution moves only through an explicit mechanism or runtime behavior that actually schedules it elsewhere."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can a single-threaded event loop still have a logical lost-update race?",
+      "answer": "A handler can read state, yield for I/O, then resume after another handler changed it. The earlier read is stale; protect the full authoritative decision.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When would you move summarization into a bounded worker job?",
+      "answer": "When expensive or long-running processing would exceed request deadlines or monopolize request-serving resources. Persist job state, cap concurrency/queue age, return a job identity and describe retries and results.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Process versus program file?",
+      "back": "A process is a running instance with its own resources; the file describes the program."
+    },
+    {
+      "front": "Thread memory boundary?",
+      "back": "Threads share their process’s memory and need rules for concurrent updates."
+    },
+    {
+      "front": "Concurrency versus parallelism?",
+      "back": "Overlapping progress versus simultaneous execution on multiple resources."
+    },
+    {
+      "front": "Async I/O improves what?",
+      "back": "It can overlap waiting with other work; it does not itself speed CPU computation."
+    },
+    {
+      "front": "Shared check-and-update rule?",
+      "back": "The complete decision must be protected at the authoritative shared state boundary."
+    }
+  ],
+  "mentalModel": "Ask whether a request is using a processor, waiting for something else, or waiting its turn—and never assume more tasks create more resources.",
+  "sources": [
+    {
+      "title": "Microsoft — Processes and threads",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/procthread/about-processes-and-threads",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Node.js — Do not block the event loop or worker pool",
+      "url": "https://nodejs.org/en/learn/asynchronous-work/dont-block-the-event-loop",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "two-process-baskets",
+      "sectionId": "process",
+      "title": "Why the second process cannot see the first dictionary",
+      "intro": "Two independent application processes run the same code. This example starts with baskets held only in their ordinary local memory.",
+      "steps": [
+        {
+          "title": "Start two processes",
+          "explanation": "The same program file creates two running instances with separate dictionaries.",
+          "state": [
+            {
+              "label": "Process A basket",
+              "value": "Empty"
+            },
+            {
+              "label": "Process B basket",
+              "value": "Empty"
+            },
+            {
+              "label": "Shared storage",
+              "value": "None"
+            }
+          ]
+        },
+        {
+          "title": "Add an item through A",
+          "explanation": "The first request updates A’s dictionary. It does not mutate B’s memory.",
+          "state": [
+            {
+              "label": "Request destination",
+              "value": "A"
+            },
+            {
+              "label": "A: account 7",
+              "value": "Notebook"
+            },
+            {
+              "label": "B: account 7",
+              "value": "Missing"
+            }
+          ]
+        },
+        {
+          "title": "Read through B",
+          "explanation": "A later request reaches B and cannot find the basket stored only in A.",
+          "state": [
+            {
+              "label": "Request destination",
+              "value": "B"
+            },
+            {
+              "label": "B response",
+              "value": "No local basket"
+            },
+            {
+              "label": "A still holds",
+              "value": "Notebook"
+            }
+          ]
+        },
+        {
+          "title": "Choose an explicit shared mechanism",
+          "explanation": "For a durable basket, both processes can read and write an appropriate shared database with the required rules.",
+          "state": [
+            {
+              "label": "Saved basket",
+              "value": "7 → Notebook"
+            },
+            {
+              "label": "A and B",
+              "value": "Use shared database"
+            },
+            {
+              "label": "Local dictionary",
+              "value": "No longer the sole record"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Running more copies of the program creates more execution capacity, not automatic sharing or durability of local variables."
+    }
+  ]
+}

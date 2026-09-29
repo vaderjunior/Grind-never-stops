@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "052",
+  "objectives": [
+    "Explain what horizontal scaling requires of request state.",
+    "Compare vertical and horizontal scaling with failure capacity.",
+    "Choose explicit session placement and migration behavior."
+  ],
+  "retrieval": [
+    "L028: which boundary owns each piece of state?",
+    "L008: how much capacity remains after one failure?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Two copies of a process are not two copies of its memory",
+      "markdown": "An API stores login sessions and uploaded-file progress in a process-local dictionary. Adding a second API instance makes some users appear logged out and some uploads disappear. Traffic is now reaching a process that never saw the earlier state. The failure is architectural state placement, not a load-balancer algorithm bug.\n\nVertical scaling gives one machine more CPU, memory, or I/O capability. Horizontal scaling adds instances. Neither is inherently the correct next step. Use the measured constrained resource and required failure behavior. A larger machine may be the simplest way to fit a working set; more stateless workers may improve throughput and instance-failure tolerance."
+    },
+    {
+      "id": "mechanism",
+      "title": "Stateless means no required private continuity",
+      "markdown": "A stateless request-serving tier can handle a request correctly without relying on private mutable state from an earlier request on that same instance. It may still keep caches, connection pools, code, temporary buffers, and configuration. The key question is whether losing or changing the instance loses authoritative user progress or violates the next request's contract.\n\nSession options include a shared server-side store keyed by an opaque cookie, a carefully designed verifiable client token, or sticky routing to local state. Shared state adds dependency latency/availability requirements. Client tokens introduce size, expiry, revocation, and key-management tradeoffs; signing is not encryption. Sticky routing reduces cross-node lookup needs but keeps a coupling that instance failure or rebalancing exposes. Later security modules study these details; do not invent a token format here.\n\nUploads can use durable chunk/object identifiers and a persisted upload session. The next worker can resume from an authoritative record. Temporary buffers may remain local if the operation explicitly permits restart. Distinguish in-flight scratch space from acknowledged durable progress."
+    },
+    {
+      "id": "worked",
+      "title": "Scale the limiting resource and keep failure headroom",
+      "markdown": "Assume measured safe capacity is 200 requests/s per API instance at the desired latency and mix. Demand peaks at 500 requests/s. Three instances provide 600 requests/s in normal operation, but losing one leaves 400 and violates the target. Four leave 600 after one failure. This calculation assumes even distribution and a dependency that supports the aggregate load; both need testing.\n\nSuppose each request performs 4 ms of CPU work and waits 20 ms on a database. Adding workers may help if CPU is the bottleneck and the database has spare capacity. If database wait grows with aggregate concurrency, extra workers can make response times worse. Observe the bottleneck, do not infer it from the language or deployment size.\n\nVertical scaling may change per-instance safe capacity but also the failure increment and replacement time. A single 800-RPS server is not equivalent to four 200-RPS servers when the availability requirement includes an instance failure. Conversely, four instances sharing one fragile disk are not four independent durability domains."
+    },
+    {
+      "id": "failure",
+      "title": "Scaling changes more than CPU count",
+      "markdown": "Configuration, secrets, caches, and software versions may differ during a rolling change. A request must not require that every instance updates simultaneously. Use compatible contracts and a clear source of configuration truth. Watch for per-instance pool sizes multiplying dependency connections and for cold-cache bursts when many instances start at once.\n\nRemoving an instance requires draining, not immediate termination if accepted work is still running. A graceful deadline bounds waiting; durable operation state lets retries resume safely. Keep the contract honest about what was acknowledged before shutdown.\n\nMisconceptions include “stateless means no database,” “horizontal scaling always improves availability,” and “a load balancer replicates session memory.” State remains somewhere, and its owner can remain the limiting failure domain. Optional depth: compare moving a tenant to a larger node with adding shards; they solve different capacity constraints."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and additional practice",
+      "markdown": "Core 55 minutes: retrieve prior concepts for 5, study explanation and diagrams for 18, work the trace for 8, exercise for 10, attempt Q1–Q3 for 10, compare reasoning and review cards for 4. Q4–Q5 are an optional practice bank. Estimates are illustrative; do not treat model output as a production benchmark."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "state",
+      "title": "Move continuity out of a disposable worker",
+      "source": "flowchart LR\nC[Client with opaque session ID] -->|Any eligible request| L[Load balancer]\nL --> A[API instance A]\nL --> B[API instance B]\nA -->|Read authorized session| S[(Shared session authority)]\nB -->|Read authorized session| S\nA -->|Persist upload progress| D[(Durable upload state)]\nB -->|Resume by upload ID| D",
+      "caption": "The workers are replaceable only because required continuity lives behind an explicit shared contract. Shared stores now need their own failure plan.",
+      "steps": [
+        "Client carries a session identifier.",
+        "Either worker validates it against the chosen authority.",
+        "Acknowledged upload progress is persisted outside private memory.",
+        "A replacement resumes from the authoritative upload record."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A photo service stores login sessions and upload offsets in RAM. You must survive one API instance failure at 500 RPS with 200 safe RPS per instance. Draw state ownership and size the API tier. State one dependency assumption that could invalidate the sizing.",
+    "rubric": [
+      "Four instances under the stated one-failure assumptions.",
+      "Move acknowledged progress to durable shared state.",
+      "Discuss dependency and skew limits."
+    ],
+    "solution": "Provision at least four equal 200-RPS instances to leave three after one loss. Store login/session authority and acknowledged upload offsets/chunk identities through shared durable contracts. Keep local scratch buffers disposable and define re-upload of unacknowledged chunks. The database/object path must sustain peak aggregate load; connection skew, a shared storage bottleneck, or correlated failure can invalidate the simple capacity arithmetic."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What makes a tier stateless for routing purposes?",
+      "options": [
+        "It allocates no memory",
+        "Requests do not depend on private prior-request continuity in one instance",
+        "It has no persistent data anywhere"
+      ],
+      "answer": "Requests do not depend on private prior-request continuity in one instance",
+      "explanation": "Caches and buffers may still exist; required authoritative continuity lives elsewhere or in the request contract."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "500 peak RPS, 200 safe RPS per replica, one replica failure: minimum replicas?",
+      "answer": 4,
+      "unit": "replicas",
+      "tolerance": 0.01,
+      "explanation": "ceil(500/200)+1 = 4."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Does a load balancer replicate process-local sessions?",
+      "options": [
+        "Yes",
+        "No",
+        "Only under round robin"
+      ],
+      "answer": "No",
+      "explanation": "Routing and state replication are separate mechanisms."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When can vertical scaling be justified?",
+      "answer": "When a measured memory/CPU/I/O constraint can be met simply and failure/recovery requirements remain acceptable. Record its ceiling and replacement implications.",
+      "explanation": "When a measured memory/CPU/I/O constraint can be met simply and failure/recovery requirements remain acceptable. Record its ceiling and replacement implications."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What does sticky routing trade away?",
+      "answer": "It preserves node affinity but retains state coupling, uneven load, and disruption when the owning instance fails or drains.",
+      "explanation": "It preserves node affinity but retains state coupling, uneven load, and disruption when the owning instance fails or drains."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Stateless request tier?",
+      "back": "No required private continuity from prior requests on the same instance."
+    },
+    {
+      "front": "Vertical scaling?",
+      "back": "Increase one machine’s resources."
+    },
+    {
+      "front": "Horizontal scaling?",
+      "back": "Add instances and manage shared state/routing/dependency demand."
+    },
+    {
+      "front": "Failure headroom formula?",
+      "back": "ceil(peak/safe per-instance capacity) plus tolerated failed instances, under explicit assumptions."
+    },
+    {
+      "front": "Sticky sessions replicate data?",
+      "back": "No; they route to the data owner and preserve that dependency."
+    }
+  ],
+  "mentalModel": "Scale computation only after naming where continuity lives and what survives an instance loss.",
+  "sources": [
+    {
+      "title": "Google SRE — Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

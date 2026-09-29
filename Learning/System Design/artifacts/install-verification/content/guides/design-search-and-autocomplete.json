@@ -1,0 +1,290 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 20,
+  "title": "Design search and autocomplete",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "design-search-and-autocomplete",
+  "summary": "Help people find a document without scanning every document. Then build suggestions that are fast, fresh enough, and safe to show.",
+  "objectives": [
+    "Explain an inverted index using a few real words and documents.",
+    "Separate authoritative documents from their searchable derived representation.",
+    "Design prefix suggestions without exposing private or stale content."
+  ],
+  "terms": [
+    {
+      "term": "Inverted index",
+      "definition": "A lookup from a word to the documents containing that word."
+    },
+    {
+      "term": "Token",
+      "definition": "A unit of text produced by analysis, often a word or part of a word."
+    },
+    {
+      "term": "Ranking",
+      "definition": "Ordering possible results by a chosen relevance rule."
+    },
+    {
+      "term": "Prefix",
+      "definition": "The beginning of a string, such as “sys” in “system.”"
+    },
+    {
+      "term": "Index freshness",
+      "definition": "How far the searchable representation may lag behind accepted document changes."
+    }
+  ],
+  "retrieval": [
+    "Why are some views rebuilt from an authoritative store?",
+    "What does a cache make faster, and what can it make stale?"
+  ],
+  "sections": [
+    {
+      "id": "analogy",
+      "title": "Use the index at the back of a book",
+      "markdown": "A book’s index lists the pages discussing a word. A search index similarly maps terms to document identities so each query need not reopen every document.\n\nOur team knowledge base has saved articles, text search, and title suggestions. Search may trail an ordinary edit by a few seconds; private content must not be disclosed to unauthorized people. Keep freshness and permission requirements separate.\n\n| Document | Text |\n| --- | --- |\n| A | system design notes |\n| B | design interview |\n| C | system reliability |\n\nInvert that information into a lookup:\n\n| Term | Matching document identities |\n| --- | --- |\n| system | A, C |\n| design | A, B |\n| reliability | C |\n\nFor “system AND design,” intersect the two lists: A appears in both. The index locates a candidate; serving it still needs the applicable access checks.\n\n**Pause and predict:** which lookup row changes when a new article containing “reliability” is added? Identify the mechanism before choosing a search product."
+    },
+    {
+      "id": "index",
+      "title": "The index is a useful copy with a specific job",
+      "markdown": "The document database remains authoritative for the article, its version, and access policy. When a document changes, a durable update path sends its identity and version to an indexing worker. The worker analyzes text, builds searchable entries, and records which version they represent.\n\nDo not require the user-facing write to independently succeed in two unrelated stores and assume failures never fall between them. An outbox saved with the document change or a database change stream can provide a recoverable handoff. Repeated updates should not duplicate documents, and an old update must not overwrite a newer indexed version.\n\nWhen a user searches, the index finds candidate identities and relevance signals. The service enforces the applicable permissions and returns allowed snippets or fetches current authoritative records. A copied access list can become stale after a revocation. Choose a permission propagation/check policy that meets the product's security promise, including before producing private snippets."
+    },
+    {
+      "id": "suggest",
+      "title": "Autocomplete solves a smaller, different problem",
+      "markdown": "Autocomplete answers a narrower question: “Which allowed completions begin with what the user has typed?”\n\n~~~text\ns → y → s\n        ├→ system design\n        └→ system reliability\n~~~\n\nThis is the idea behind a trie, a branching character structure. A specialized completion field or a small precomputed prefix table can serve the same product need. No single structure is required for every catalog.\n\nKeep only a bounded useful set for each common prefix, ordered by an explicit signal within the allowed audience. Prefix identity, language, tenant, and permission scope can affect cache reuse.\n\nWait briefly for typing to settle before requesting suggestions. Tag each request and ignore replies for an older input. Cancellation can reduce wasted work, but it may arrive too late to prevent an old response.\n\n**Common mistake:** making all previous query text a public suggestion source. Query logs can contain names, secrets, and sensitive interests. Apply collection, moderation, and audience policies before exposing suggestions."
+    },
+    {
+      "id": "trace",
+      "title": "Follow a rename and a permission change",
+      "markdown": "A document titled “System checklist” becomes “System design checklist,” moving from version 8 to 9. The authoritative write succeeds. During the allowed indexing delay, an old title may still appear. Once the index receives version 9, it updates the title and completion entries. A delayed version 8 event must not revert that update.\n\nNow the owner makes the document private. It is not enough to say “the index is eventually consistent” and continue exposing its title or snippet. Recheck permission before returning sensitive content, or enforce a documented revocation strategy that the product explicitly accepts. Cached results and autocomplete entries need the same scope rules.\n\nSuppose there are 100,000 title entries and a very common prefix accounts for 40% of suggestion traffic. Caching that prefix can reduce repeated ranking work. Cache keys must include the relevant tenant, permission scope, language, and index generation where required. The optimization should not merge audiences that may see different results."
+    },
+    {
+      "id": "measure",
+      "title": "Measure usefulness as well as speed",
+      "markdown": "A search service can respond quickly with useless results. Keep a small judged set of realistic queries and expected relevant documents. Inspect whether useful results appear near the top, whether typos and languages behave sensibly, and whether forbidden documents remain hidden. Then measure response latency, update lag, and index rebuild health.\n\nFor an interview, trace one query through candidate lookup, ranking, permission enforcement, and response. Trace one edit through the update pipeline. Explain how you rebuild a lost index from authoritative documents while catching up later changes. This demonstrates the role of each component.\n\nSemantic search, embeddings, advanced ranking models, and globally distributed indexes are extensions. The first design should already answer what is indexed, how it changes, who can see a result, and how to recover the derived copy."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "search-write",
+      "title": "Accepted document changes feed a recoverable index",
+      "source": "flowchart LR\nW[Save document] --> DB[(Document authority)]\nDB -->|Durable versioned changes| Q[Update stream]\nQ --> I[Indexing worker]\nI --> X[(Search index)]\nDB -->|Rebuild snapshot plus catch-up| I",
+      "caption": "The index is derived. The durable handoff must come from a mechanism consistent with the authoritative write.",
+      "steps": [
+        "Save the document and a recoverable change record.",
+        "Send its identity and version to indexing.",
+        "Apply newer versions without being regressed by older events.",
+        "Rebuild the derived index from authoritative state when necessary."
+      ],
+      "sectionId": "index"
+    },
+    {
+      "id": "search-read",
+      "title": "A relevant result still needs permission",
+      "source": "flowchart LR\nQ[User query and identity] --> S[Search service]\nS --> I[(Index: candidate documents)]\nI --> A[Enforce current access policy]\nA --> R[Allowed ranked results and snippets]\nS --> C[Scope-aware prefix cache]\nC --> A",
+      "caption": "Search and autocomplete both respect audience scope. A cached title can itself reveal private information.",
+      "steps": [
+        "Identify the user and search scope.",
+        "Find candidate documents or prefix suggestions.",
+        "Enforce the required access policy before exposing content.",
+        "Return allowed results and measure relevance and freshness."
+      ],
+      "sectionId": "trace"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Make an inverted index for A:“red bicycle”, B:“blue bicycle”, C:“red helmet”. Answer “red AND bicycle.” Then explain what changes when A becomes private, including cached autocomplete results.",
+    "rubric": [
+      "Intersect red={A,C} and bicycle={A,B} to get A.",
+      "Keep A authoritative while changing allowed audience.",
+      "Prevent stale search snippets and suggestion caches from exposing A."
+    ],
+    "solution": "The intersection is A. The index is a derived lookup, so a permission change must affect the search-serving policy as well as the next index update. Enforce current permission before producing private result details, and invalidate or scope cached results and suggestions according to the chosen revocation contract. A fast answer containing A’s private title is still a security failure."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "An inverted index maps…",
+      "options": [
+        "Words to documents containing them",
+        "Every user to a password",
+        "Files only to their byte sizes"
+      ],
+      "answer": "Words to documents containing them",
+      "explanation": "It prepares a lookup for search terms instead of scanning every document at query time."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "An older indexing event should…",
+      "options": [
+        "Replace any newer version",
+        "Be prevented from regressing the indexed version",
+        "Always be applied twice"
+      ],
+      "answer": "Be prevented from regressing the indexed version",
+      "explanation": "Version-aware updates help reordered delivery remain safe."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A private document’s title may safely appear in public autocomplete.",
+      "options": [
+        "Always",
+        "Only if the cache is fast",
+        "No: the title itself may be sensitive"
+      ],
+      "answer": "No: the title itself may be sensitive",
+      "explanation": "Authorization applies before exposing suggestions as well as full documents."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What is the difference between low search latency and good relevance?",
+      "answer": "Latency is how long the response takes. Relevance is whether useful documents are found and ranked well for the user’s query. Both need evaluation.",
+      "explanation": "Latency is how long the response takes. Relevance is whether useful documents are found and ranked well for the user’s query. Both need evaluation."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "How can the service recover a lost search index?",
+      "answer": "Rebuild it from authoritative documents with a consistent snapshot and a catch-up change stream, validate the new index, then switch serving to it.",
+      "explanation": "Rebuild it from authoritative documents with a consistent snapshot and a catch-up change stream, validate the new index, then switch serving to it."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Inverted index example?",
+      "back": "The term design points to identities of documents containing design."
+    },
+    {
+      "front": "Where is the authoritative article?",
+      "back": "In the source document store; the search index is a specialized derived view."
+    },
+    {
+      "front": "Autocomplete ordering risk?",
+      "back": "An older request can return later and replace suggestions for a newer prefix."
+    },
+    {
+      "front": "Freshness versus permission?",
+      "back": "Tolerating an old title is different from permitting unauthorized disclosure."
+    },
+    {
+      "front": "Useful search metrics?",
+      "back": "Relevance on representative queries, latency, indexing lag, and unauthorized-result checks."
+    }
+  ],
+  "mentalModel": "Prepare a lookup to find candidates quickly, then return only useful results that this user may see.",
+  "sources": [
+    {
+      "title": "Elastic — Full-text search concepts",
+      "url": "https://www.elastic.co/docs/solutions/search/full-text",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Microsoft — Query-time access control in search",
+      "url": "https://learn.microsoft.com/en-us/azure/search/search-query-access-control-rbac-enforcement",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Debezium — PostgreSQL change capture",
+      "url": "https://debezium.io/documentation/reference/stable/connectors/postgresql.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "latest-prefix-wins",
+      "title": "An older response must not replace newer suggestions",
+      "sectionId": "suggest",
+      "intro": "The user types two prefixes in quick succession. Request identities keep the display tied to the current input even if the network reorders replies.",
+      "steps": [
+        {
+          "title": "Request the first prefix",
+          "explanation": "The client sends one suggestion request and records its identity.",
+          "state": [
+            {
+              "label": "Input",
+              "value": "s"
+            },
+            {
+              "label": "Request ID",
+              "value": "41"
+            },
+            {
+              "label": "Latest request",
+              "value": "41"
+            }
+          ]
+        },
+        {
+          "title": "The user keeps typing",
+          "explanation": "The client issues a newer request. It may cancel the old one, but correctness must not depend on cancellation succeeding.",
+          "state": [
+            {
+              "label": "Input",
+              "value": "syst"
+            },
+            {
+              "label": "Request ID",
+              "value": "42"
+            },
+            {
+              "label": "Latest request",
+              "value": "42"
+            },
+            {
+              "label": "Old request",
+              "value": "cancellation best effort"
+            }
+          ]
+        },
+        {
+          "title": "The newer reply arrives",
+          "explanation": "The response belongs to request 42 and the current permitted scope, so the client may show it.",
+          "state": [
+            {
+              "label": "Reply",
+              "value": "42 / syst"
+            },
+            {
+              "label": "Latest request",
+              "value": "42"
+            },
+            {
+              "label": "Display",
+              "value": "allowed syst suggestions"
+            }
+          ]
+        },
+        {
+          "title": "The old reply arrives afterward",
+          "explanation": "Request 41 is no longer current. Ignore it instead of replacing suggestions for the newer input.",
+          "state": [
+            {
+              "label": "Reply",
+              "value": "41 / s"
+            },
+            {
+              "label": "Latest request",
+              "value": "42"
+            },
+            {
+              "label": "Display",
+              "value": "unchanged"
+            },
+            {
+              "label": "Action",
+              "value": "discard obsolete reply"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Response order is not input order. The latest input identity decides which result may update the interface."
+    }
+  ]
+}

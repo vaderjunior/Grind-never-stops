@@ -1,0 +1,155 @@
+{
+  "id": "074",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "State the CAP tradeoff with its actual failure assumption and operation semantics.",
+    "Distinguish formal availability from uptime and ACID consistency from linearizability.",
+    "Construct the indistinguishable executions behind the partition argument.",
+    "Use PACELC to discuss normal-path replication latency without permanent product labels."
+  ],
+  "retrieval": [
+    "L071: why can silence leave two executions indistinguishable?",
+    "L072: what real-time order must a linearizable register preserve?",
+    "L073: how can a constrained read reduce availability?"
+  ],
+  "sections": [
+    {
+      "id": "precise",
+      "title": "The theorem concerns a guarantee under a communication failure",
+      "markdown": "For the register model used here, CAP consistency means atomic/linearizable behavior. Availability means every request at a non-failing node eventually receives a valid response under the specified service, even when communication is partitioned. Partition tolerance places executions with lost inter-node communication inside the failure model. Under these assumptions, a system cannot guarantee both linearizability and that availability for every execution.\n\nThis does not mean every operational design can select any two attractive product features. If communication can fail, excluding partitions from a diagram does not remove that possibility from deployment. A single unavailable service can sacrifice both useful progress and freshness; CAP is not a promise that one good property always survives.\n\nSpend 5 minutes retrieval, 15 on the proof scenario, 15 on operation choices and latency, 10 exercise, and 10 questions/cards. State the read/write object and failure boundary before attaching any labels."
+    },
+    {
+      "id": "proof",
+      "title": "Why a remote read cannot know the completed write",
+      "markdown": "East and West hold x=0, and all East–West messages are now lost. In execution A, an East client completes write(7). In execution B, it completes write(9). After that completion, a West client starts a read. West’s local state and received messages are identical in A and B. It has not learned which write occurred.\n\nIf West must return a valid register value eventually in both executions while the partition persists, the same local evidence cannot guarantee returning 7 in A and 9 in B. Returning its old 0 violates the completed-write order in both. If West waits for missing information, it preserves the possibility of correct ordering but cannot promise completion under the persistent partition. Rejecting the read preserves a clear operational failure but does not fulfill formal availability for the read service.\n\nAnother design can decline to complete East’s writes without cross-partition authority. Then no successful write must be reflected on West, but the blocked East write is the availability sacrifice. Move the sacrifice between operations or sides as the protocol permits; do not claim it has disappeared."
+    },
+    {
+      "id": "terms",
+      "title": "Three tempting definitions change the question",
+      "markdown": "First, an HTTP503 is a network response, but not a successful value for the register operation. Defining availability as “some bytes returned” makes the theorem’s service guarantee meaningless. In operations work, an SLO may explicitly count certain rejections and degraded results; that is useful, but it is a different quantified definition.\n\nSecond, ACID consistency refers to preserving declared database/application constraints. CAP’s consistency term here is the real-time behavior of a replicated register. A database may preserve a local foreign key while remote reads are stale. Saying “it has transactions, so it is CAP consistent” omits the actual history.\n\nThird, partitions may affect selected paths rather than every node pair. A majority side may continue some operations while a minority side cannot. This is partial service availability, not the formal guarantee that every non-failing node serves every request. Report the affected operations and clients instead of claiming an entire product is permanently CP or AP regardless of configuration."
+    },
+    {
+      "id": "operation",
+      "title": "Choose behavior per operation and invariant",
+      "markdown": "In the repair service, an exclusive generator allocation cannot be finally accepted twice. If authority cannot be established, return a pending intent or explicit inability to allocate. A cached equipment description can remain readable with a freshness indication. A technician’s append-only local note can be accepted for later synchronization if its product semantics tolerate delayed visibility and defined conflict handling.\n\nThe response must distinguish “intent recorded locally” from “exclusive allocation confirmed.” That distinction is not wordplay: downstream dispatch may depend on the confirmation. If both disconnected sites promise the final generator to different jobs, later merging records cannot make both earlier promises true. Resolve the invariant before advertising availability.\n\nRecovery also needs a policy. Which writes were acknowledged, which remain provisional, how are conflicts reconciled, and how does a returning replica become eligible to serve? A partition discussion that stops when packets resume leaves users’ contradictory observations unexplained. The CAP theorem identifies a limit; it does not design the recovery workflow for you."
+    },
+    {
+      "id": "pacelc",
+      "title": "The normal path still has a latency decision",
+      "markdown": "PACELC extends the discussion: during a partition, consider availability versus consistency; else, consider the latency cost of the chosen consistency path. Replicas separated by distance need communication to establish some guarantees, even when none have failed. The tradeoff depends on operation routing, acknowledgments, placement, and protocol; it is not a universal ranking of database brands.\n\nAn original planning example: a local storage acceptance takes 4 ms and the required remote acknowledgment path takes 70 ms. If sent in parallel and completion requires both, the critical path is approximately max(4,70)=70 ms, plus unmodeled coordination and application overhead. If the protocol first finishes the local stage and only then starts the remote stage, the estimate is 74 ms. Writing 4+70 without identifying the dependency graph is as careless as claiming remote replication is free.\n\nA nearby leader may offer low-latency reads while distant writers pay more. A stale local read may be cheap but unable to honor an immediate read-after-remote-write promise. Ask which clients, operations, and percentiles the latency target covers. Do not use PACELC to claim weaker consistency is always necessary for fast systems; remove needless round trips and choose placement before changing a required guarantee.\n\nIn an interview, replace “choose two” with a concrete history, partition behavior, response meaning, and measured or estimated normal-path communication cost. Those four items reveal whether the tradeoff was actually understood."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "partition",
+      "title": "West cannot distinguish the two completed East writes",
+      "source": "flowchart LR\nE1[Execution A: East acknowledges x = 7] --> P1[Messages to West lost]\nE2[Execution B: East acknowledges x = 9] --> P2[Messages to West lost]\nP1 --> W[West has identical local evidence: x = 0]\nP2 --> W\nW --> R[Read begins after East completion]\nR --> V[Return without new information: cannot ensure correct value in both]\nR --> B[Wait or reject: sacrifices operation availability]",
+      "caption": "The two boxes on the left are alternative executions, not two writes in one execution. The read must follow the completed East write in each case.",
+      "steps": [
+        "Compare two executions with different remote accepted values.",
+        "Keep West’s observations identical.",
+        "Require the post-completion read to respect real-time order.",
+        "Identify why either unknown-value response or indefinite wait loses a required guarantee."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Correct this claim: “Our two-region reservation system is CA because both servers are alive; on a partition we return200 with each region’s locally available stock. Replication is asynchronous so users always get the latest data within one second.” Give a valid replacement contract for final allocations and for catalog reads. Then estimate parallel local4ms/remote70ms acknowledgment latency.",
+    "minutes": 10,
+    "rubric": [
+      "Recognizes communication failure despite live servers.",
+      "Separates final exclusive allocation from a stale informational read.",
+      "Rejects an unsupported one-second bound.",
+      "Computes the parallel critical path with scope limits."
+    ],
+    "solution": "Live processes can be partitioned. Returning conflicting final allocations from both sides cannot preserve the exclusive invariant; require established authority for final acceptance, otherwise return pending/unavailable under explicit semantics. Catalog reads may return documented stale data if the product allows it. Asynchronous replication alone supplies no one-second freshness bound; enforce such a bound or describe an SLO instead. If both acknowledgment paths begin together and both are required, the modeled critical path is70ms, plus overhead; serial dependency would be74ms."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Does returning HTTP503 for every read satisfy CAP availability for a read/write register?",
+      "options": [
+        "Yes, bytes were returned",
+        "No, the specified read service did not complete successfully"
+      ],
+      "answer": "No, the specified read service did not complete successfully",
+      "explanation": "The formal property is not merely a TCP/HTTP response."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Does CAP consistency mean all ACID constraints are enforced?",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Here it means atomic/linearizable register behavior, not the database C in ACID."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Two required acknowledgment paths start together and take4ms and70ms. What is the modeled critical path before extra overhead?",
+      "answer": 70,
+      "unit": "ms",
+      "tolerance": 0,
+      "explanation": "Parallel required paths contribute their maximum, not their sum."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is “both nodes are alive” insufficient to dismiss a partition?",
+      "answer": "Their communication path can fail even while both processes continue accepting local requests.",
+      "explanation": "The failure model concerns communication as well as process crashes."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What question does PACELC add when no partition occurs?",
+      "answer": "What latency cost the normal operation path pays to provide the selected consistency behavior.",
+      "explanation": "Replication communication and placement matter outside failures too."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "CAP C in this lesson?",
+      "back": "Linearizable behavior of the specified read/write object."
+    },
+    {
+      "front": "CAP A?",
+      "back": "Every non-failing node’s requested operation eventually gets a valid service response."
+    },
+    {
+      "front": "A partition requires crashed servers?",
+      "back": "No. Communication can fail between live participants."
+    },
+    {
+      "front": "503 preserves formal availability?",
+      "back": "No; a clear error may be correct operational behavior while sacrificing the requested service."
+    },
+    {
+      "front": "PACELC’s else branch?",
+      "back": "Normal-path latency versus the chosen consistency requirement."
+    },
+    {
+      "front": "Best way to explain the limit?",
+      "back": "Use indistinguishable remote-write executions and a later read."
+    }
+  ],
+  "mentalModel": "During lost communication, a node cannot safely answer a question whose required truth it cannot distinguish; normal communication still has a cost.",
+  "sources": [
+    {
+      "title": "Gilbert and Lynch — Perspectives on the CAP Theorem",
+      "url": "https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Abadi — Consistency Tradeoffs in Modern Distributed Database System Design (2012)",
+      "url": "https://www.cs.umd.edu/~abadi/papers/abadi-pacelc.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

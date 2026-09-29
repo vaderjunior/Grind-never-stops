@@ -1,0 +1,12 @@
+{
+  "lessonId": "012",
+  "sha256": "cd4a4bdbc93996ffc30e137ac2bbe18f86ed66a93492699c1e5fa3029ef87134",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: TCP stream ordering, UDP message behavior, receiver flow control, and network congestion are correctly separated.",
+    "Bandwidth-delay arithmetic checked: 100 Mbit/s × 40 ms = 500000 bytes; transport ACK is not a business commit."
+  ]
+}

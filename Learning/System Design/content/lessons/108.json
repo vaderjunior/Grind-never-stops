@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "108",
+  "objectives": [
+    "Distinguish event time, processing time, and arrival order.",
+    "Use windows and watermarks under explicit lateness assumptions.",
+    "Design corrections and idle-source behavior."
+  ],
+  "retrieval": [
+    "L078: can wall clocks prove causal order?",
+    "L102: how can replay change arrival order?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "The bus arrives late, but the sale happened earlier",
+      "markdown": "A shop sells three items at09:59 while its network is down. The events reach analytics at10:07. A processing-time counter places them after10:00; an event-time report assigns them to the earlier business interval. Neither timestamp is universally correct. State what the metric means and which timestamp is sufficiently trustworthy for it.\n\nEvent time records when the domain says an action happened. Processing time is the processor's clock when it handles the record. Ingestion time is another boundary, often when a platform accepted the event. Clock error, offline devices, retries, and batching can make these differ substantially. Keep the original evidence needed to explain the difference."
+    },
+    {
+      "id": "mechanism",
+      "title": "Windows bound an otherwise unending aggregation",
+      "markdown": "A tumbling window partitions time into nonoverlapping intervals, such as[10:00,10:05). A sliding window overlaps intervals, such as a five-minute count emitted every minute. A session window groups activity separated by a chosen inactivity gap. The window definition is part of the result's meaning, including boundary inclusivity and time zone conventions where relevant.\n\nA watermark expresses the processor's progress assumption about event time. It is not proof that no older event can ever arrive. One common bounded-disorder model advances a watermark behind the maximum observed event time by a chosen allowance. If the real source violates that allowance, the pipeline needs a late-data policy.\n\nFor multiple active input partitions, downstream progress often depends on the slowest relevant watermark. A silent partition can stall windows; marking a source idle permits progress but means its later old records need the late-data policy. Too aggressive an idle timeout can turn temporary delay into corrections or drops. Record these choices with the freshness objective."
+    },
+    {
+      "id": "worked",
+      "title": "Close a window and then revise it honestly",
+      "markdown": "Use a teaching rule: window[10:00,10:05), watermark = maximum observed event time minus two minutes, and close the initial result when the watermark reaches10:05. Events arrive with times10:01(value4),10:04(value6), and10:07(value1). The first window's initial sum is10, and max10:07 yields watermark10:05. The value1 belongs to the next window.\n\nNow a delayed event arrives with time10:03(value5). It belongs to the closed interval. Under a ten-minute allowed-correction policy, revise the first result from10 to15 and emit a versioned update or retraction/addition that downstream readers understand. Under a drop-late policy, retain a late counter and explain that the published sum intentionally excludes it. Silent acceptance without updating downstream output creates conflicting truths.\n\nMemory is also a design consequence. At100,000 active keys,12 simultaneously retained windows per key, and64bytes of raw aggregate state, the model requires76.8MB before map/object overhead, checkpoint copies, timers, and recovery headroom. Increasing lateness tolerance may retain more state. This is arithmetic for intuition, not a Flink memory benchmark."
+    },
+    {
+      "id": "failure",
+      "title": "Late handling is a product decision",
+      "markdown": "For an operational dashboard, early approximate results with corrections may be useful. For a monthly reconciliation report, wait longer or reconcile against an authoritative batch. Billing or compliance requirements need explicit accountable rules; a watermark tuning knob cannot decide business policy. The lesson's numerical examples are not financial or legal advice.\n\nUse stable event identities so retries do not double-count. A corrected event needs a defined replacement/reversal protocol rather than reusing an ID with a different payload silently. Checkpoint operator state consistently with input progress under the selected engine's guarantees, then separately handle sink semantics from L107.\n\nCommon misconceptions: event time is perfectly accurate; watermarks sort every event; a closed window can never change; and idle partitions can be ignored without consequence. Test out-of-order arrival, exact boundaries, duplicate IDs, a silent partition returning, clock-skewed events, and a restart while state is retained. Optional depth: compare session-window merging and retraction semantics in the selected stream engine."
+    },
+    {
+      "id": "schedule",
+      "title": "A bounded learning session",
+      "markdown": "Core55 minutes: retrieval5, explanation18, trace8, exercise10, scheduled Q1–Q3 ten minutes, comparison/cards4. Q4–Q5 and product deployment are optional depth outside this session. Diagrams and numeric workloads are original teaching models, not measurements of a deployed service."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "late",
+      "title": "Arrival order and business-time placement are separate",
+      "source": "sequenceDiagram\nparticipant S as Source\nparticipant P as Window processor\nparticipant V as Versioned view\nS->>P: event_time 10:01, value 4\nS->>P: event_time 10:04, value 6\nS->>P: event_time 10:07, value 1\nP->>V: Window 10:00-10:05, v1 sum 10\nS->>P: delayed event_time 10:03, value 5\nP->>V: Allowed correction, v2 sum 15",
+      "caption": "Original bounded-disorder example. The watermark rule and allowed-correction policy are assumptions, not guarantees from timestamps alone.",
+      "steps": [
+        "Assign records by event-time window.",
+        "Advance the modeled watermark as evidence arrives.",
+        "Publish an initial window result.",
+        "Apply or account for a late event under the declared policy."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "For window[0,60), max-event-time minus10s watermark, events(time,value) arrive as(20,2),(55,3),(75,9),(40,4). State when the initial window can close, its sum, the corrected sum if late updates are allowed, and a test for an idle partition.",
+    "rubric": [
+      "Respect half-open boundaries and watermark model.",
+      "Separate initial result from late correction.",
+      "Explain slowest-input/idle policy."
+    ],
+    "solution": "After time75 is observed, the modeled watermark is65, past the window end60, so the initial[0,60) sum is2+3=5. The time75 record belongs elsewhere. The delayed time40 record changes the first sum to9 if the correction policy still allows it; emit a versioned replacement or equivalent retraction. For an idle partition, hold its watermark below60 and observe stalled closure; then mark it idle under the chosen timeout and later deliver an old record, verifying the explicit late policy rather than silently discarding it."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A watermark proves no older record can ever arrive?",
+      "options": [
+        "Yes",
+        "No",
+        "Only for multiple partitions"
+      ],
+      "answer": "No",
+      "explanation": "It expresses progress under source/engine assumptions; late data can violate the modeled allowance."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Event time and processing time differ because of what?",
+      "options": [
+        "Only syntax",
+        "Delay, retries, clock error, and offline sources",
+        "Only replication count"
+      ],
+      "answer": "Delay, retries, clock error, and offline sources",
+      "explanation": "The timestamps refer to different boundaries and clocks."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "50,000 keys ×4 windows ×80bytes: raw state in decimal MB?",
+      "answer": 16,
+      "unit": "MB",
+      "explanation": "50,000×4×80=16,000,000bytes, before overhead/checkpoints.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When choose early results plus corrections?",
+      "answer": "When timely approximate visibility is useful and consumers can interpret versions/retractions. Define lateness, state retention, and eventual reconciliation.",
+      "explanation": "When timely approximate visibility is useful and consumers can interpret versions/retractions. Define lateness, state retention, and eventual reconciliation."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can an idle source policy affect correctness?",
+      "answer": "Ignoring its watermark allows progress; when it resumes with old events, those records need a defined correction or drop policy and observable accounting.",
+      "explanation": "Ignoring its watermark allows progress; when it resumes with old events, those records need a defined correction or drop policy and observable accounting."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Event time?",
+      "back": "When the domain says the event happened."
+    },
+    {
+      "front": "Processing time?",
+      "back": "When the processor handles it under its clock."
+    },
+    {
+      "front": "Tumbling window?",
+      "back": "Nonoverlapping intervals with explicit boundaries."
+    },
+    {
+      "front": "Watermark?",
+      "back": "A progress assumption used to manage event-time work, not proof of no late events."
+    },
+    {
+      "front": "Late result update?",
+      "back": "A declared correction/retraction/version policy that downstream consumers understand."
+    }
+  ],
+  "mentalModel": "Time-based results combine timestamp meaning, progress assumptions, and a policy for evidence that arrives late.",
+  "sources": [
+    {
+      "title": "Apache Flink — Timely stream processing",
+      "url": "https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/time/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Flink — Generating watermarks and idle sources",
+      "url": "https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/event-time/generating_watermarks/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

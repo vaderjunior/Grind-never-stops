@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "019",
+  "objectives": [
+    "Choose polling, long polling, SSE, or WebSockets from direction and latency.",
+    "Design reconnect cursors independently of live transport.",
+    "Bound connection memory and slow-consumer backlog."
+  ],
+  "retrieval": [
+    "L006: calculate bytes per second before optimizing transport.",
+    "L017: what happens to long-lived sockets during draining?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Live transport is not durable history",
+      "markdown": "A build dashboard should show state within a few seconds. A chat should deliver messages promptly and recover after a laptop sleeps. A stock ticker may tolerate missing intermediate values while a chat history may not. The word real-time is too vague to choose a transport. Ask for acceptable delay, event rate, direction, connection count, and recovery semantics.\n\nThe durable record and the delivery channel solve different problems. A WebSocket can move data both ways quickly but does not retain messages after a server crash. SSE can reconnect but cannot invent events that the server discarded. Begin with an authoritative state/history contract, then choose how to notify connected clients."
+    },
+    {
+      "id": "mechanism",
+      "title": "Four communication patterns",
+      "markdown": "Polling issues ordinary requests at intervals. It is simple and resilient to many intermediaries, but repeated empty responses consume resources and the interval bounds freshness. Long polling holds a request until data arrives or a timeout occurs, then the client opens another. It lowers empty request frequency at the cost of concurrent waiting requests and timeout/reconnect behavior.\n\nServer-Sent Events use an HTTP response carrying a text event stream from server to client. A browser EventSource can reconnect and carry a last event identifier according to its API behavior. The server must implement replay or a resynchronization response; an ID alone is not a retained log. Client-to-server changes can use separate ordinary HTTP requests.\n\nWebSockets establish a bidirectional message channel. They fit interactive exchanges when both directions need continuous low-latency messages. The application still defines authentication, message schema, heartbeat/idle rules, flow limits, delivery acknowledgments if required, and reconnect behavior. Supporting a socket does not imply every proxy timeout and deployment path has been configured correctly."
+    },
+    {
+      "id": "trace",
+      "title": "Estimate polling, then design reconnect",
+      "markdown": "Suppose 20,000 active dashboards poll every five seconds. Ignoring synchronized spikes, they create 4,000 requests/s even if nothing changes. At 800 response bytes each, response-body traffic is 3.2 MB/s or 25.6 Mbit/s before headers and transport overhead. Uniform polling gives an average detection delay around half the interval, 2.5 seconds, if events occur independently of poll times. A strict one-second freshness goal is therefore not met by five-second polling.\n\nFor an event stream, persist each relevant event with a per-feed monotonically increasing cursor. The client remembers the last applied cursor. After disconnect it requests events after that position and deduplicates by event ID. If history has been compacted beyond the cursor, return an explicit resnapshot requirement. Read the snapshot and subsequent stream from a compatible boundary; otherwise an update between snapshot and subscription can disappear.\n\nAt 20,000 sockets and an illustrative 16 KiB application buffer cap per connection, maximum application buffering alone is roughly 312.5 MiB. This excludes OS buffers, runtime objects, TLS state, and shared indexes. A connection count is a resource commitment even when event traffic is low."
+    },
+    {
+      "id": "failure",
+      "title": "Slow consumers need a policy",
+      "markdown": "A client with poor connectivity can accumulate more events than it drains. Do not buffer forever. For a dashboard of current values, coalesce updates by key and force a fresh snapshot when needed. For durable chat messages, retain history in storage and disconnect/resume a slow client from its cursor instead of keeping unlimited connection memory. Keep control messages bounded too.\n\nAuthentication can expire during a long-lived stream. Define whether to reauthenticate, terminate, or renew through a supported mechanism. Recheck object permissions when subscriptions change and when relevant policy changes occur. Knowing a feed name is not authorization. On reconnect, validate the user against the feed again.\n\nAvoid claiming TCP ordering gives global message ordering across servers. Ordering scope must be explicit: a connection, conversation, partition, or another authoritative sequence. Optional depth: separate transient typing indicators from durable messages and give them different retention/recovery policies."
+    },
+    {
+      "id": "budget",
+      "title": "Practice boundary",
+      "markdown": "Core 55 minutes: retrieval 5, explanation and diagrams 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Stop after the stated artifact rather than expanding the task into a full implementation."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "reconnect",
+      "title": "A live channel backed by a recoverable cursor",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant G as Stream gateway\nparticipant H as Durable history\nC->>G: Subscribe after cursor 41 with identity\nG->>H: Authorize and read events after 41\nH-->>G: Event 42\nG-->>C: Event 42\nNote over C,G: Connection breaks\nC->>G: Reconnect after last applied cursor 42\nG->>H: Read events after 42\nH-->>G: Events 43 and 44\nG-->>C: Replay 43 and 44",
+      "caption": "Dashed replies carry delivered events; durability comes from history, not the connection. Duplicate application is prevented using IDs/cursors.",
+      "steps": [
+        "Persist the event before relying on recovery.",
+        "Apply it and remember the cursor.",
+        "Treat disconnect as expected.",
+        "Authorize again and replay after the last applied cursor."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Choose a transport for a build-status page updated once per minute and a collaborative chat requiring interactive messages. For each, specify freshness, disconnect recovery, slow-consumer limits, and authorization behavior. Include one reason your choice might change.",
+    "rubric": [
+      "Match direction and latency without assuming every app needs a socket.",
+      "Use retained state/history and a cursor or snapshot for recovery.",
+      "State bounded memory and authorization rules."
+    ],
+    "solution": "For a build page with a 5–10 second freshness tolerance, jittered polling can be sufficient; SSE is reasonable if lower notification delay or many mostly idle clients justify long-lived connections. For chat, WebSockets can carry bidirectional traffic, with durable message IDs/cursors and replay after reconnect. A slow build client can coalesce snapshots; a slow chat client can disconnect and recover from history. Reauthorize subscriptions/reconnects. If chat sending is infrequent, SSE plus HTTP sends is also defensible; support/tooling and required latency decide."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does an SSE event ID alone guarantee?",
+      "options": [
+        "Permanent event storage",
+        "A recoverable server replay implementation",
+        "Neither; the server must implement retention/replay"
+      ],
+      "answer": "Neither; the server must implement retention/replay",
+      "explanation": "Client reconnect metadata does not create durable history."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "20,000 clients polling every 5 seconds produce what average request rate?",
+      "answer": 4000,
+      "unit": "requests/s",
+      "tolerance": 0.01,
+      "explanation": "20,000 / 5 = 4,000 requests/s, excluding retries and synchronization bursts."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which built-in direction best describes SSE?",
+      "options": [
+        "Bidirectional messages in one EventSource stream",
+        "Server-to-client event stream",
+        "Only client-to-server"
+      ],
+      "answer": "Server-to-client event stream",
+      "explanation": "Client writes can use separate HTTP requests."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is polling a good choice?",
+      "answer": "When freshness tolerance and active-client count make its cost acceptable and simple operations/tool support are valuable. Jitter and conditional responses can reduce bursts/bytes.",
+      "explanation": "When freshness tolerance and active-client count make its cost acceptable and simple operations/tool support are valuable. Jitter and conditional responses can reduce bursts/bytes."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why disconnect a slow consumer rather than buffer indefinitely?",
+      "answer": "Bound memory and protect other users. Durable history plus cursors provides recovery; ephemeral updates can be coalesced or dropped under an explicit policy.",
+      "explanation": "Bound memory and protect other users. Durable history plus cursors provides recovery; ephemeral updates can be coalesced or dropped under an explicit policy."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Polling rate?",
+      "back": "Active clients divided by poll interval, before retries."
+    },
+    {
+      "front": "SSE direction?",
+      "back": "Server to client over an HTTP event stream."
+    },
+    {
+      "front": "WebSocket durability?",
+      "back": "None by itself; persist history separately."
+    },
+    {
+      "front": "Reconnect cursor?",
+      "back": "A stable position identifying what was last applied; server retention/replay must honor it."
+    },
+    {
+      "front": "Slow consumer policy?",
+      "back": "Bound buffers; coalesce expendable state or disconnect and replay durable history."
+    }
+  ],
+  "mentalModel": "Choose the live channel for interaction; choose history and cursors for recovery.",
+  "sources": [
+    {
+      "title": "WHATWG — Server-Sent Events",
+      "url": "https://html.spec.whatwg.org/multipage/server-sent-events.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 6455 — WebSocket protocol",
+      "url": "https://datatracker.ietf.org/doc/html/rfc6455",
+      "checked": "2026-09-29"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "id": "047",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain how inverted postings differ from a row-by-row substring scan.",
+    "Trace token analysis, candidate retrieval, ranking, and visibility.",
+    "Separate searchable freshness from authoritative durability and authorization."
+  ],
+  "retrieval": [
+    "L033: how does an index avoid examining every row?",
+    "L041: why are accepted persistence and visible results distinct events?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Find relevant documents without reading every document",
+      "markdown": "A support team searches a million incident reports for “payment timeout.” Scanning every full body for every query is expensive, and raw substring matching treats punctuation, word forms, and relevance poorly. An inverted index maps a term to the documents that contain its analyzed representation. For the two-term query, the engine can combine candidate lists instead of reading every body.\n\nRetrieval and ranking are separate. Retrieval chooses plausible candidates under the query semantics. Ranking orders them using a declared relevance model and signals. A high score means useful according to that model; it is neither a factual correctness guarantee nor proof that a document is current or authorized for the caller."
+    },
+    {
+      "id": "mechanism",
+      "title": "Analyze both sides of the lookup",
+      "markdown": "An analyzer can tokenize text, normalize case, and apply language-specific transformations. The index records terms, document IDs, and often positions or frequencies. Query analysis must be compatible with the indexed representation. A keyword field used for exact identifiers should not necessarily use the same transformations as a prose field. Lowercasing may be reasonable for a title and wrong for a case-sensitive credential or opaque identifier.\n\nFor AND semantics, intersect postings; for OR, union them. Phrase search requires positional information rather than mere co-occurrence. Ranking may account for term frequency, document length, rarity, business signals, or a learned model. This lesson's toy intersection intentionally does none of that. An API must say whether filters, ranking, and pagination create a stable experience under concurrent index updates.\n\nSearch engines often make accepted changes searchable through a refresh of search-visible structures. Elastic describes this as near real-time search; its configured refresh behavior is not a universal one-second promise. Persistence, replication, and search visibility have distinct mechanisms. A database row may already be authoritative while the derived search index still lacks it. The UI can show “saved, indexing” rather than claiming the write vanished."
+    },
+    {
+      "id": "worked",
+      "title": "A tiny original index with inspectable behavior",
+      "markdown": "These three reports use intentionally simple whitespace tokens. Punctuation handling, stemming, stop words, phrase positions, deletion, concurrency, and relevance are omitted. Run the complete Python block to inspect the mechanism.\n\n```python\nfrom collections import defaultdict\n\ndocuments = {1: \"payment timeout retry\", 2: \"payment approved\",\n             3: \"image timeout retry\"}\npostings: dict[str, set[int]] = defaultdict(set)\nfor document_id, text in documents.items():\n    for term in set(text.lower().split()):\n        postings[term].add(document_id)\n\ndef search_all(query: str) -> list[int]:\n    terms = query.lower().split()\n    if not terms:\n        return []\n    sets = [postings.get(term, set()) for term in terms]\n    return sorted(set.intersection(*sets))\n\nassert search_all(\"payment timeout\") == [1]\nassert search_all(\"timeout retry\") == [1, 3]\nassert search_all(\"payments\") == []  # no stemming is implemented\nprint(search_all(\"payment timeout\"))\n```\n\nExpected output is [1]. For a phrase “timeout payment,” report 1 contains both words but not in that order; our AND function would still return it. That is a query-contract mismatch, not an inverted-index failure. Supporting phrases requires stored positions and a different predicate.\n\nIf an index contains 2 million documents with 120 distinct indexed terms each, it has roughly 240 million term-document associations before positional/frequency data, dictionaries, and compression. This estimate is not 240 million separate disk reads; compressed posting lists and skip structures change access work. High-frequency terms produce much larger candidate sets than rare identifiers."
+    },
+    {
+      "id": "failure",
+      "title": "A searchable copy is a new lifecycle responsibility",
+      "markdown": "Suppose report 1 changes from public to private in the source database while its indexed access fields lag. Search snippets can leak content if authorization trusts only the stale copy. Use a visibility design that meets the product's security contract: enforce access at the appropriate authoritative boundary and avoid revealing unauthorized snippets before filtering. Measure index lag and define deletion/update propagation, reconciliation, and rebuild procedures. Later modules cover reliable event propagation.\n\nA missing recent document may reflect ingestion delay, refresh delay, analyzer mismatch, a query filter, or stale pagination—not necessarily lost storage. Investigate each boundary with document ID, source version, ingest status, and searchable version. Deleting a source row without deleting its indexed representation leaves stale content behind.\n\nCommon misconceptions: a search score proves truth, refreshing makes a cross-system update atomic, or adding Elasticsearch/OpenSearch means the source database is unnecessary. Search can own data in some designs, but that choice must explicitly carry transactional, audit, authorization, and recovery responsibilities. For a modest text corpus, existing database full-text features may be the simpler baseline. Add a separate search service only when its query behavior and operational burden are justified."
+    },
+    {
+      "id": "session-budget",
+      "title": "Core time and optional practice",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation/diagrams, 8 worked example, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and extension questions are optional. The examples use explicitly bounded data and do not establish vendor throughput, durability, or scaling claims."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "search-path",
+      "title": "Accepted data and searchable data have different boundaries",
+      "source": "flowchart LR\nW[Document write] -->|Commit| D[(Authoritative document store)]\nD -.->|Versioned projection update| A[Analyzer]\nA --> P[(Derived postings and fields)]\nP -->|Refresh visibility| V[Searchable view]\nQ[User query] --> QA[Compatible query analysis]\nQA -->|Candidate terms| V\nV --> R[Rank and enforce visibility contract]\nR --> O[Authorized results]",
+      "caption": "The dashed projection edge is asynchronous in this exercise. Permission changes must not rely on an unspecified stale index for a strict access guarantee.",
+      "steps": [
+        "Persist the authoritative document and its version.",
+        "Analyze and update a derived representation.",
+        "Make that representation visible to search.",
+        "Retrieve, rank, and apply the required authorization contract before exposing content."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Your write API confirms a report immediately, but search finds it only later. List three boundaries to inspect. Then explain why changing a report from public to private needs more than eventually deleting a search result. For the provided Python model, distinguish AND search from phrase search.",
+    "rubric": [
+      "Separate source persistence, projection ingestion, and searchable refresh.",
+      "Prevent unauthorized snippets/results during stale-index windows.",
+      "Use positions for phrase order, not just posting intersection."
+    ],
+    "solution": "Record the source commit/version, projection ingestion checkpoint/version, and search-visible version after refresh. Confirm query analysis and filters as additional possibilities. A public-to-private update can leave indexed text visible temporarily; a strict authorization contract must prevent exposure at response/snippet construction or coordinate visibility conservatively until the permission change is enforced. Eventual cleanup alone admits an unauthorized window. The toy AND search only proves every query term occurs somewhere; phrase search needs positions and adjacency/order checks. Refreshing one index cannot atomically commit another database."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does an inverted index map?",
+      "options": [
+        "Each term to candidate documents or occurrences",
+        "Each user to a server only",
+        "Every row to its physical RAM address"
+      ],
+      "answer": "Each term to candidate documents or occurrences",
+      "explanation": "The mapping reverses document-to-terms into term-to-documents for selective retrieval."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What extra information does phrase matching need beyond term co-occurrence?",
+      "options": [
+        "Word positions/order",
+        "Only document count",
+        "A larger Boolean flag"
+      ],
+      "answer": "Word positions/order",
+      "explanation": "Both terms can occur in different places or reversed order without forming the requested phrase."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Two million documents × 120 distinct indexed terms gives how many million term-document associations?",
+      "answer": 240,
+      "unit": "million associations",
+      "tolerance": 0,
+      "explanation": "2×120=240 million before positions, dictionaries and compression."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Can a successful write be durable but not searchable yet?",
+      "answer": "Yes, projection ingestion and refresh visibility may occur after the authoritative write.",
+      "explanation": "Investigate each boundary and state the user-visible freshness contract."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is a stale permission field dangerous?",
+      "answer": "It can admit a document or snippet after access was revoked; enforce the required authorization before disclosure.",
+      "explanation": "Search freshness is allowed to vary only within a defined correctness and security contract."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Inverted index?",
+      "back": "Terms point to matching documents or occurrences."
+    },
+    {
+      "front": "AND query?",
+      "back": "Intersect candidate postings for all required terms."
+    },
+    {
+      "front": "Phrase query?",
+      "back": "Check positions and ordering, not just co-occurrence."
+    },
+    {
+      "front": "Index refresh?",
+      "back": "Makes newly indexed structures searchable; not a cross-system transaction."
+    },
+    {
+      "front": "Search ranking versus authority?",
+      "back": "Relevance orders candidates; correctness, freshness, and authorization need their own contracts."
+    }
+  ],
+  "mentalModel": "Search is analyzed retrieval over a particular visible copy; relevance, recency, and authority are separate questions.",
+  "sources": [
+    {
+      "title": "Elastic — Full-text search",
+      "url": "https://www.elastic.co/docs/solutions/search/full-text",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Elastic — Near real-time search",
+      "url": "https://www.elastic.co/docs/manage-data/data-store/near-real-time-search",
+      "checked": "2026-09-29"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "id": "088",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Separate configuration authority from request-serving data paths.",
+    "Design revisioned conditional updates and resumable watches.",
+    "Recover after watch history is compacted."
+  ],
+  "retrieval": [
+    "L083: a local read may lag committed state.",
+    "L084 optional: what does compaction remove from historical access?"
+  ],
+  "sections": [
+    {
+      "id": "planes",
+      "title": "Configuration has a different workload from ordinary requests",
+      "markdown": "Core 55 minutes: retrieval 5, mechanisms18, worked watch8, exercise10, questions10, review4. A fleet of API servers needs a routing policy and a list of healthy backend addresses. Configuration changes perhaps ten times a minute; the fleet handles thousands of ordinary requests each second. Sending every user request through the configuration database would turn a low-rate coordination authority into a high-rate dependency.\n\nThe control plane validates and stores desired configuration, versions, ownership and membership information. The data plane uses an applied local configuration to route or serve traffic. A failure of the control plane may delay new configuration while existing safe configuration continues serving. Whether that is acceptable depends on the data: a routing preference may tolerate staleness, while a revoked credential or safety shutdown may require a stricter policy.\n\nService discovery is also a contract about freshness, not a guarantee that every listed endpoint is alive. A record can outlive a crashed instance until its lease or health timeout expires. Clients still need bounded connection attempts and error handling. Do not confuse a directory entry with current end-to-end readiness."
+    },
+    {
+      "id": "updates",
+      "title": "Use revision checks to preserve operator intent",
+      "markdown": "Represent a configuration object as value plus monotonically increasing revision. An editor reads revision37, makes a change and submits compare-revision=37 with the new value. If another editor already produced38, reject the stale update rather than overwriting it. This is the same optimistic concurrency principle from L037 applied to operational state.\n\nValidation belongs before publication: parse the schema, check ranges and referential constraints, authorize the actor, and record the change identity. Clients may apply a new configuration atomically to avoid a half-updated routing table. Keep the last known valid version available for recovery. Rolling back content should still produce a new revision; revisions order events, so changing the contents back does not mean decreasing the revision number.\n\nSmall configuration values suit a consensus-backed metadata service. Large binaries or model weights typically belong in object storage, with the control plane publishing a versioned reference and integrity digest. This splits agreement about “which artifact” from bulk transfer. Data-plane clients should verify the artifact before switching, and report desired versus applied version separately."
+    },
+    {
+      "id": "watch",
+      "title": "A watch is a change stream with a recovery position",
+      "markdown": "A watch avoids polling full configuration repeatedly. The client first reads a snapshot and its revisionR, installs it, then watches changes afterR. On receiving an event it applies the complete revision and records its progress. If the connection drops, it reconnects after its last applied revision. The exact API's snapshot/watch semantics must close the race between the initial read and subscription.\n\nIn etcd's documented API, watch events are ordered by revision and resumable within retained history; watch operations themselves do not provide the same linearizability contract as default key/value operations. This is why a client tracks revisions rather than treating every socket arrival as proof of a globally fresh state. A progress notification can be useful for tracking the stream's known progress, but it is not a universal wall-clock freshness guarantee.\n\nSuppose a client applied revision120 and disconnects. The service compacts history through150. A resume from121 can no longer recover the missing history. The client should read a fresh complete snapshot atR, replace its local derived state consistently, and resume afterR. Blindly skipping to the newest watch event can miss a deletion or create an invalid combination of keys. Document what happens when the data plane cannot refresh at all."
+    },
+    {
+      "id": "trace",
+      "title": "A safe configuration rollout is observable",
+      "markdown": "Worked flow: an operator validates routes v2 against a schema, conditionally writes it at revision88, and records a change reason. Instance A downloads the referenced artifact, checks its digest, builds the new routing table off to the side and atomically swaps it in. Instance B fails validation locally and retains87 while reporting desired88/applied87/error. A rollout controller can halt or issue a new revision restoring the previous content. A “write successful” response alone does not prove fleet-wide adoption.\n\nMonitor revision lag, refresh age, failed applications, endpoint connection failures and the fraction of instances still on old configuration. Protect control-plane writes more strongly than ordinary reads: a valid but malicious route update can redirect an entire fleet. Use scoped identities and audit records. Avoid putting secrets into globally readable discovery entries.\n\nCommon mistakes include treating watch streams as durable forever, assuming every disconnected node can replay any old cursor, using presence as authorization, and failing open on safety-critical configuration without an explicit product decision. Optional depth: specify different staleness budgets for routing preferences, feature flags and credential revocation."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Snapshot plus revisioned watch feeds a local data plane",
+      "source": "flowchart LR\nO[Authorized operator] -->|conditional update at revision| C[Configuration authority]\nC -->|snapshot plus revision R| L[Local validated configuration]\nC -.->|watch events after R| L\nL -->|atomic version switch| D[Data-plane requests]\nD -->|applied version and errors| M[Operational visibility]",
+      "caption": "Ordinary requests use validated local state. Desired control-plane revision and applied data-plane revision are separate observables.",
+      "steps": [
+        "Validate and authorize a conditional update.",
+        "Read/install a complete snapshot with a revision.",
+        "Apply ordered changes and retain the last applied position.",
+        "On history loss, refresh a complete snapshot instead of guessing."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A client last applied revision40, but history through60 has been compacted. It also failed to apply a newly downloaded artifact because the checksum differed. Describe recovery and what status it should expose.",
+    "rubric": [
+      "Uses full snapshot after compacted cursor.",
+      "Does not install invalid artifact.",
+      "Separates desired/applied revisions and refresh age."
+    ],
+    "solution": "The old cursor cannot reconstruct removed changes. Read a fresh consistent snapshot with revisionR, obtain and verify any referenced artifact, and atomically install only a valid complete version before watching afterR. A checksum mismatch must retain the prior safe configuration or enter the explicitly chosen failure mode, not silently accept bytes. Report desired revision, actual applied revision, verification error and last successful refresh age so operators can distinguish authority publication from fleet adoption."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A successful configuration write proves all servers applied it:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Each data-plane instance must validate, fetch and apply the new revision; some may fail."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "After fully applying revision88, the next watch starts after which revision?",
+      "answer": 88,
+      "unit": "revision",
+      "tolerance": 0,
+      "explanation": "Resume after the last completely applied revision, subject to the API’s cursor semantics."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "If required watch history is compacted, use:",
+      "options": [
+        "Only the newest event",
+        "A fresh complete snapshot and a new watch position"
+      ],
+      "answer": "A fresh complete snapshot and a new watch position",
+      "explanation": "Skipping missing events can omit deletions or combine incompatible state."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can control-plane outage be tolerable for routing but dangerous for revocation?",
+      "answer": "Last-known routing may continue useful service; accepting revoked credentials from stale policy can violate security, so staleness/failure policy must depend on the configuration’s meaning.",
+      "explanation": "Last-known routing may continue useful service; accepting revoked credentials from stale policy can violate security, so staleness/failure policy must depend on the configuration’s meaning."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Control plane?",
+      "back": "Owns desired policy, identities, revisions and coordination."
+    },
+    {
+      "front": "Data plane?",
+      "back": "Serves ordinary requests using applied configuration."
+    },
+    {
+      "front": "Conditional config update?",
+      "back": "Compare the expected revision so a stale editor cannot overwrite newer intent."
+    },
+    {
+      "front": "Watch resume after compaction?",
+      "back": "Refresh a complete snapshot and continue from its revision."
+    },
+    {
+      "front": "Desired versus applied?",
+      "back": "Published configuration and successfully installed configuration may differ."
+    }
+  ],
+  "mentalModel": "Publish desired state safely, apply it explicitly, and make stale or failed adoption visible.",
+  "sources": [
+    {
+      "title": "etcd v3.5 API guarantees: revisions, watches, leases and consistency modes",
+      "url": "https://etcd.io/docs/v3.5/learning/api_guarantees/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

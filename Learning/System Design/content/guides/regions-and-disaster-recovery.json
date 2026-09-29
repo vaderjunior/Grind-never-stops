@@ -1,0 +1,280 @@
+{
+  "id": "regions-and-disaster-recovery",
+  "title": "Regions, recovery targets, and failover",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 14,
+  "level": "intermediate",
+  "minutes": 45,
+  "summary": "Choose a recovery design from a specific downtime and data-loss promise, and walk through a region failing.",
+  "objectives": [
+    "Distinguish RTO from RPO using a timeline.",
+    "Compare backup restore, standby, and active deployments.",
+    "Explain safe writer promotion and the need to rehearse failback."
+  ],
+  "terms": [
+    {
+      "term": "Region",
+      "definition": "A provider-defined geographic deployment area containing infrastructure."
+    },
+    {
+      "term": "Recovery time objective (RTO)",
+      "definition": "A target upper bound on time to restore the required service after disruption."
+    },
+    {
+      "term": "Recovery point objective (RPO)",
+      "definition": "A target bound on how far back recovered data may fall, expressed as time."
+    },
+    {
+      "term": "Standby",
+      "definition": "Prepared infrastructure intended to take over when the primary fails."
+    },
+    {
+      "term": "Fencing",
+      "definition": "Preventing an old owner from continuing protected work after ownership changes."
+    }
+  ],
+  "retrieval": [
+    "What is the difference between inability to read data and losing data?",
+    "Why can an asynchronous replica be behind its primary?"
+  ],
+  "sections": [
+    {
+      "id": "promise",
+      "title": "Ask how long and how much before asking where",
+      "markdown": "A club uses Pocket Notes to keep meeting minutes. It can tolerate a few hours of interruption, but would prefer not to lose a whole day of editing. A live dispatch service may have a very different tolerance. “Use two regions” does not capture either product’s promise. Ask how quickly useful service must return and how much recent work may be absent after recovery.\n\nRTO is the recovery-time target. RPO describes the acceptable recovery point relative to the disruption. For a teaching example, choose an RTO of thirty minutes and an RPO of five minutes. These are agreed targets, not measurements or guarantees. The design must later demonstrate whether it can meet them. A business may also require certain writes to be protected more strongly than optional analytics events."
+    },
+    {
+      "id": "timeline",
+      "title": "Put the target on a clock",
+      "markdown": "Put the target and the observed recovery on a clock. In this example, the outage starts at 14:00, the latest usable recovery point is 13:57, and useful service returns at 14:24.\n\n| Measurement | Observation | What it tells us |\n| --- | --- | --- |\n| Recovery point gap | 14:00 − 13:57 = 3 minutes | Up to this recent interval may be absent, depending on retained writes |\n| Service interruption | 14:24 − 14:00 = 24 minutes | End-to-end recovery under our start/finish definitions |\n| Agreed targets | RPO 5 minutes, RTO 30 minutes | Both met in this one illustrated drill |\n\nNow account for the 24 minutes: detection 4, decision 3, access to resources 2, data recovery 8, validation 5, traffic movement 2. Fast database promotion alone is only part of that journey.\n\nDNS caches, client reconnects, missing keys, and verification can dominate recovery. A configured replication interval is not proof of the actual worst gap while the system is busy or broken. Measure usable recovery state and rehearse the whole path.\n\nTargets are intentions until tested. Describe a target as demonstrated only for the scenario and workload that produced the evidence."
+    },
+    {
+      "id": "options",
+      "title": "Buy preparation according to the requirement",
+      "markdown": "Buy preparation according to the tolerated interruption and data gap. These labels name families of designs; inspect what is actually ready.\n\n| Approach | Prepared before failure | Work still likely during recovery |\n| --- | --- | --- |\n| Backups and rebuild | Retained copies and recovery instructions | Restore data and reconstruct service capacity |\n| Pilot light | Essential data and a small running core | Start or expand the rest of the service |\n| Warm standby | Reduced working environment | Increase capacity and establish serving authority |\n| Full service in multiple regions | More serving capacity already running | Resolve state/ownership and shared dependency failures |\n\nMore continuous preparation can remove recovery steps, but it costs money and operational work. Multi-region writes also require explicit consistency, conflict, or ownership rules.\n\nTwo application regions sharing one unavailable database region are not independent write services. A modest notes app may meet its stated target with backups and rehearsed restoration; another product may require more prepared capacity.\n\n**Interview phrasing:** “First I will define RTO and RPO for the user journey, then compare the preparation needed to demonstrate them. A region count alone is not the guarantee.”"
+    },
+    {
+      "id": "promotion",
+      "title": "Move write authority, not only network traffic",
+      "markdown": "For our example, region A owns writes and region B has an asynchronous copy. When A becomes unreachable, the team cannot assume it has stopped. The network between observers and A may be broken while A still accepts writes from some clients. Promoting B without an ownership rule can create two writers that disagree.\n\nA safe promotion needs a way to establish and enforce the new authority, such as a quorum-based database protocol or a carefully managed fencing mechanism appropriate to the system. An operator pressing a button is not itself a technical guarantee. State which database mechanism you rely on and what happens if it cannot establish authority. It may be safer to keep writes unavailable than to accept conflicting edits under a contract that forbids them. Reads can have a different, explicitly bounded behavior."
+    },
+    {
+      "id": "dependencies",
+      "title": "Recover the whole user journey",
+      "markdown": "A standby can have current database rows and still fail because its secret is expired, its encryption key is unavailable, its network rule blocks storage, or its capacity quota is exhausted. List dependencies along the user journey: routing, identity, application binary, configuration, data, object files, keys, and external services. Decide which are independently accessible during the primary-region failure.\n\nAlso distinguish disaster recovery from protection against accidental deletion. An asynchronous copy may replicate the bad deletion promptly. Retained history or backups help address that different failure. Keep recovery copies protected from the same accidental or unauthorized changes that threaten the live data. In this course, demonstrate the concept with separate local directories and a staged failure narrative; no paid multi-region cloud deployment is required to reason correctly."
+    },
+    {
+      "id": "return",
+      "title": "Plan the trip back as carefully as the escape",
+      "markdown": "After B accepts writes, it contains new authoritative data. Returning traffic to A merely because its machines are healthy can discard or split that work. Rebuild or reconcile A using a documented procedure, verify its state, and deliberately move authority if returning is actually useful. This return operation is called failback. Sometimes staying in the recovery region temporarily is the lower-risk decision.\n\nFinish a drill with a timeline, observed data gap, successful application checks, and unresolved limitations. Mark a target as demonstrated only for the tested scenario and workload. In an interview, explain one tradeoff: asynchronous cross-region replication can reduce normal write waiting compared with cross-region synchronous confirmation, but it leaves a possible recent-data gap. The choice is meaningful only when paired with the service’s loss tolerance and ownership rules."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "region-promotion",
+      "sectionId": "promotion",
+      "title": "A secondary copy needs explicit authority before writes",
+      "source": "flowchart LR\nU[Clients] --> A[Region A writer]\nA -->|Asynchronous copy| B[Region B standby]\nF[Failure detected] --> C[Establish authority and fence old writer]\nC --> V[Validate data and application]\nV --> R[Move traffic to B]",
+      "steps": [
+        "Normal writes go to one authority.",
+        "The standby may lag.",
+        "Confirm authority and validate before moving write traffic.",
+        "Clients reconnect to the recovered service."
+      ],
+      "caption": "Conceptual single-writer recovery. The storage system must provide the actual fencing or consensus mechanism."
+    },
+    {
+      "id": "recovery-journey",
+      "title": "Data promotion is only one stage of recovery time",
+      "sectionId": "timeline",
+      "source": "flowchart LR\nF[Failure begins] --> D[Detect and decide]\nD --> A[Obtain keys credentials and capacity]\nA --> R[Recover data and valid write authority]\nR --> V[Validate application behavior]\nV --> T[Move traffic and reconnect clients]\nT --> S[Useful service restored]",
+      "caption": "The elapsed interval spans the whole chain under a declared start and finish definition. Parallel work may overlap; do not double-count it when measuring a real drill.",
+      "steps": [
+        "Start from the user-visible disruption definition.",
+        "Include access and capacity prerequisites.",
+        "Recover both suitable data and enforceable authority.",
+        "Validate the complete journey and move clients before declaring restoration."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "A service fails at 10:00, recovers at 10:22, and its newest restored data is from 09:56. Targets are RTO 30 minutes and RPO 5 minutes. Evaluate this drill, then list three non-database dependencies and explain what must happen before an old primary can accept writes again.",
+    "rubric": [
+      "Compute 22 minutes interruption and 4 minutes recovery-point gap.",
+      "Separate observed result from universal guarantee.",
+      "Include routing, identity/keys, configuration or capacity.",
+      "Protect writes made in the recovery region during failback."
+    ],
+    "solution": "This drill meets the stated targets: 22 ≤ 30 minutes and 4 ≤ 5 minutes. That observation does not cover every failure or peak workload. Check independent routing, identity/key access, application/configuration compatibility and available capacity. Before the old primary accepts writes, rebuild or reconcile it from current authority, validate it, and perform a controlled ownership transfer so both regions cannot independently write conflicting state."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Failure at 10:00 and service restored at 10:22: observed interruption?",
+      "answer": 22,
+      "unit": "minutes",
+      "tolerance": 0,
+      "explanation": "The elapsed interval is 22 minutes."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which statement describes RPO?",
+      "options": [
+        "Target time to detect an error",
+        "Acceptable recovery-point age relative to disruption",
+        "Number of regions"
+      ],
+      "answer": "Acceptable recovery-point age relative to disruption",
+      "explanation": "RPO concerns potentially missing recent data, not service restoration duration."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Why is an unreachable primary not proof that promotion is safe?",
+      "options": [
+        "It may still serve clients elsewhere",
+        "All replicas are always current",
+        "DNS automatically prevents conflicting writes"
+      ],
+      "answer": "It may still serve clients elsewhere",
+      "explanation": "A partition can separate observers while the old writer remains active."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might restoring from backup fit a small service better than active-active deployment?",
+      "answer": "If the measured restore process meets accepted downtime and loss targets, it can avoid continuous cost and conflict complexity. The requirements and tested recovery behavior decide.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What data must be protected during failback?",
+      "answer": "Writes accepted by the new authority during the incident must not be discarded. Rebuild/reconcile the returning region and transfer authority deliberately.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "RTO?",
+      "back": "Target recovery duration for required service."
+    },
+    {
+      "front": "RPO?",
+      "back": "Target maximum age of the recoverable data point."
+    },
+    {
+      "front": "Does asynchronous replication imply zero lost writes?",
+      "back": "No. A lagging copy may miss acknowledged recent writes."
+    },
+    {
+      "front": "Why fence a former writer?",
+      "back": "It may resume or remain reachable after another writer takes authority."
+    },
+    {
+      "front": "Why test failback?",
+      "back": "The recovery region has accepted new authoritative writes that the old region must preserve."
+    }
+  ],
+  "mentalModel": "Draw a timeline of lost time and potentially missing data, then explain who is allowed to write at every step.",
+  "sources": [
+    {
+      "title": "AWS — Disaster recovery options in the cloud",
+      "url": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Managing critical state",
+      "url": "https://sre.google/sre-book/managing-critical-state/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "regional-drill",
+      "title": "Measure the gap and the full restoration, not only promotion",
+      "sectionId": "timeline",
+      "intro": "A separate fictional drill targets RPO 2 minutes and RTO 20 minutes. The latest verified usable recovery state is 09:59; failure begins at 10:00.",
+      "steps": [
+        {
+          "title": "Define the evidence at failure",
+          "explanation": "The team records the disruption boundary and the latest usable recovery point rather than inferring it from a scheduled copy interval.",
+          "state": [
+            {
+              "label": "FailureStart",
+              "value": "10:00"
+            },
+            {
+              "label": "UsableRecoveryPoint",
+              "value": "09:59"
+            },
+            {
+              "label": "PotentialGap",
+              "value": "Up to 1 minute under this model"
+            }
+          ]
+        },
+        {
+          "title": "Recover under valid authority",
+          "explanation": "Access, capacity, data checks, and the system’s ownership protocol are completed. A new writer is not declared safe solely because a button was pressed.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "10:11"
+            },
+            {
+              "label": "WriteAuthority",
+              "value": "Established by the selected protocol"
+            },
+            {
+              "label": "UserService",
+              "value": "Not yet declared restored"
+            }
+          ]
+        },
+        {
+          "title": "Complete the user journey",
+          "explanation": "Application checks pass and clients reconnect through the new serving path at 10:16.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "10:16"
+            },
+            {
+              "label": "MeasuredInterruption",
+              "value": "16 minutes"
+            },
+            {
+              "label": "UserCheck",
+              "value": "Read and permitted write succeed"
+            }
+          ]
+        },
+        {
+          "title": "Compare and preserve the limits",
+          "explanation": "Both targets were met in this scenario. Failback still needs to preserve writes accepted by the new authority.",
+          "state": [
+            {
+              "label": "RTOComparison",
+              "value": "16 ≤ 20 minutes"
+            },
+            {
+              "label": "RPOComparison",
+              "value": "1 ≤ 2 minutes"
+            },
+            {
+              "label": "Scope",
+              "value": "This drill only; not every disaster"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Recovery time measures useful service, and recovery point measures usable data. Both require evidence and definitions beyond the topology."
+    }
+  ]
+}

@@ -1,0 +1,327 @@
+{
+  "id": "queue-broker-fundamentals",
+  "title": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 8,
+  "level": "intermediate",
+  "minutes": 60,
+  "summary": "Choose messaging behavior before choosing a broker: competing workers, independent subscribers, retained logs, acknowledgements, and replay.",
+  "objectives": [
+    "Distinguish a work queue, publish/subscribe routing, and a retained event log.",
+    "Compare RabbitMQ, SQS, Kafka, Redis Pub/Sub and Redis Streams by required behavior.",
+    "Trace a durable AI job across publication, processing, retry and acknowledgement failures."
+  ],
+  "terms": [
+    {
+      "term": "Producer",
+      "definition": "A program that publishes work or events."
+    },
+    {
+      "term": "Consumer",
+      "definition": "A program that receives and processes published work or events."
+    },
+    {
+      "term": "Broker",
+      "definition": "Software or a managed service that mediates message storage, routing or delivery."
+    },
+    {
+      "term": "Acknowledgement",
+      "definition": "A signal that a specifically defined delivery or processing step completed."
+    },
+    {
+      "term": "Visibility timeout",
+      "definition": "A period during which a received SQS message is hidden from ordinary competing receives."
+    },
+    {
+      "term": "Offset",
+      "definition": "A position within a retained log partition."
+    },
+    {
+      "term": "Consumer group",
+      "definition": "A coordination unit whose members share consumption work under the system’s rules."
+    },
+    {
+      "term": "Replay",
+      "definition": "Reading retained events again from an earlier position."
+    }
+  ],
+  "retrieval": [
+    "What does Redis do when used as a cache, and why is that a separate role from durable job storage?",
+    "Why should expensive document processing have a bounded amount of concurrent work?"
+  ],
+  "sections": [
+    {
+      "id": "why",
+      "title": "A queue changes when the work happens",
+      "markdown": "A learner uploads a document and asks for an AI summary. Parsing and inference may take longer than a comfortable interactive request. The API can accept a bounded job, save its identity and status, and arrange for a worker to process it later. The browser receives a job ID and can return to useful work while it waits. This changes the interface from “here is the finished summary” to “your job was accepted; here is how to observe it.”\n\nThe queue is a waiting mechanism between producers and consumers. It can absorb a temporary burst when workers are busy, but it cannot make permanently insufficient capacity sufficient. If twenty jobs arrive per second while workers complete ten, waiting work grows by ten jobs each second. Set an admission policy, maximum wait, and failure response. Otherwise “asynchronous” becomes a polite label for an ever-growing delay."
+    },
+    {
+      "id": "patterns",
+      "title": "Separate three messaging questions",
+      "markdown": "Ask what each consumer should receive before choosing a product.\n\n| Need | Useful model | Document-upload example |\n| --- | --- | --- |\n| One logical job handled by a worker | Work queue | One accepted summary, though attempts may repeat |\n| Several applications react independently | Publish/subscribe | Indexing and audit both receive the upload fact |\n| Readers resume or reread retained history | Log | Analytics replays last week's retained events |\n\nThese models can combine. An exchange or topic can route copies into several queues. Members of one consumer group can divide a log's partitions, while another group reads the same history independently.\n\n**Intended recipient is different from physical delivery count.** A queue intended for one worker can still redeliver after an uncertain acknowledgement. A log retained for replay can still lose needed history when retention expires.\n\nBefore drawing arrows, complete three statements: who should get this fact, who owns progress, and how long can it be read again? Product words such as topic and stream do not answer those questions by themselves."
+    },
+    {
+      "id": "ack",
+      "title": "There are two different acknowledgement boundaries",
+      "markdown": "A publisher wants evidence that the broker accepted its publication under the configured durability rules. A worker wants to tell the broker that it has finished handling a delivery. Those are different acknowledgements. A broker accepting a job does not prove the worker produced a summary, and a worker receiving bytes does not prove its result was saved.\n\nConsider a crash after the worker saves the result but before it acknowledges the delivery. The broker may redeliver, so the next attempt must recognize that the job already has a valid result. Acknowledging before saving creates the opposite risk: a crash can lose the only opportunity to finish the work. Durable state plus idempotent processing makes the repeated-attempt boundary manageable. External model calls or other side effects may need additional provider-specific identities or reconciliation; a broker label cannot promise exactly-once effects everywhere."
+    },
+    {
+      "id": "rabbit",
+      "title": "RabbitMQ: route messages into consumable queues",
+      "markdown": "RabbitMQ can route publications through exchanges to queues using configured bindings. This is useful when applications need explicit routing and work distribution. In the common queue model, consumers acknowledge processed deliveries, and unacknowledged work can be redelivered after the relevant consumer connection or channel fails. Publisher confirms are a separate mechanism for publication evidence. Configure the queue type, durability and message persistence according to the required failure tolerance.\n\nUse a prefetch or equivalent in-flight limit so one consumer does not hold far more uncompleted work than it can process. A repeated negative acknowledgement without delay can create a hot retry loop rather than recovery. RabbitMQ also offers streams and other capabilities, so do not reduce the entire product to one queue abstraction. For a first job system, explain the chosen queue semantics and failure configuration before claiming that installing the broker made every message durable."
+    },
+    {
+      "id": "sqs",
+      "title": "SQS: managed queue delivery with a visibility lease",
+      "markdown": "Amazon SQS provides managed queues. After a receive, a message is normally hidden for a visibility timeout while the worker handles it. The worker deletes it after successful handling. If it is not deleted before the visibility period expires, it becomes eligible for another receive. A long-running job may need a bounded visibility extension policy, but extending invisibility is not the same as committing a business result.\n\nStandard queues permit duplicate delivery and do not promise strict ordering. FIFO queues provide different ordering and deduplication features with their own scope and limits; they still do not make arbitrary downstream side effects transactional. Choose based on required behavior, throughput, operations and environment. For our AI example, if a ten-minute job has a thirty-second visibility period with no extension, concurrent repeated processing is predictable. Match the lease policy to observed work, retain a stable job identity, and handle worker loss explicitly."
+    },
+    {
+      "id": "kafka",
+      "title": "Kafka: retained partitioned history and independent progress",
+      "markdown": "Kafka organizes retained records into topic partitions. A partition is an ordered sequence, and consumer progress is represented by offsets. Consumers can read retained records again rather than deleting each record when it is processed. Independent applications can maintain independent progress, while members of a normal consumer group distribute assigned partitions. Retention and compaction policies determine which history remains available; a log is not automatically an eternal archive.\n\nThis fits a stream of document lifecycle events that indexing, analytics and audit applications need to consume independently or reprocess. Ordering is scoped to a partition, not an automatic global order over the topic. The key and partitioning choice therefore matter. A consumer committing an offset before its result is durable can skip work after a crash; committing afterward can repeat work. Kafka has transaction capabilities for defined Kafka workflows, but writing an external database or calling an external AI provider still requires its own end-to-end reasoning."
+    },
+    {
+      "id": "redis",
+      "title": "Redis messaging is more than one feature",
+      "markdown": "Redis Pub/Sub distributes messages to currently subscribed clients. Its documented delivery is at most once: a disconnected subscriber does not later retrieve missed publications from Pub/Sub history. That can fit disposable live hints, such as “refresh this view,” when the client can read authoritative state afterward. It is a poor sole durable record for a paid summary job that must survive consumer downtime.\n\nRedis Streams is a different data structure with retained entries, IDs, consumer-group features and pending-message handling. It can support replay and coordinated work patterns when persistence, replication, retention and recovery are configured appropriately. A Redis cache entry, a Pub/Sub publication and a stream record are three distinct choices. Sharing the Redis product name does not give them identical guarantees. If cache eviction policies might remove job state, examine that interaction instead of assuming all data in Redis has the same acceptable loss policy."
+    },
+    {
+      "id": "worked",
+      "title": "Trace the AI job through a complete durable flow",
+      "markdown": "The API authenticates the user, verifies document access, assigns job J17 and saves pending status plus publication intent atomically in its database. A publisher sends the durable job reference to the chosen queue; duplicate publication remains possible. A worker receives J17, checks whether a final result already exists, claims work through a defined concurrency rule, and loads only the authorized document reference. Keep large document bytes out of the message unless there is a specific reason to carry them there.\n\nThe worker performs bounded parsing and an allowed model call, then saves the result and completed status before acknowledging or deleting the delivery. A crash after save is recovered by recognizing the completed job. A crash during a model call may leave an uncertain charged operation, so choose a retry/reconciliation policy that limits duplicate cost. The browser reads status from the durable job store. A transient progress publication can improve responsiveness without becoming the sole evidence that the job exists."
+    },
+    {
+      "id": "operate",
+      "title": "Choose from the failure questions, then operate the backlog",
+      "markdown": "Choose by required behavior, then check the selected product's exact mode and configuration.\n\n| Candidate role | Useful starting question | Limit that still needs design |\n| --- | --- | --- |\n| RabbitMQ queue | Do routing and explicit consumer acknowledgements fit? | Queue type, persistence, confirms, retries |\n| SQS queue | Does managed task delivery fit the environment? | Standard versus FIFO contract, visibility, deletion |\n| Kafka log | Do several readers need partitioned retained history? | Key ordering, offsets, retention, sink effects |\n| Redis Pub/Sub | Is a missed live hint acceptable? | Disconnected subscribers miss publications |\n| Redis Streams | Do retained entries and consumer progress fit? | Persistence, retention, pending work, recovery |\n\nThis is a comparison of **roles**, not a universal ranking. RabbitMQ has streams too; Redis messaging features have different contracts. Use the preceding sections to inspect the chosen mode rather than infer behavior from a logo.\n\nFor independent AI jobs, a managed work queue may be sufficient. Several applications replaying lifecycle events may justify a retained log. Keep the model call's uncertain outcome and cost separate from broker delivery guarantees.\n\nObserve oldest-job age, arrival/completion rates, in-flight work, retries, dead-letter reasons, and provider quotas. Test publication failure, duplicate delivery, worker loss before and after result save, slow inference, and expired credentials. A failed-job replay keeps its logical identity and an explicit operator decision; deleting stuck work is not recovery."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "messaging-patterns",
+      "title": "Same upload, three different delivery intentions",
+      "sectionId": "patterns",
+      "source": "flowchart TB\nD[Document uploaded] --> Q[Summary work queue]\nQ --> W[One logical summary handled by workers]\nD --> P[Publish event to interested applications]\nP --> I[Index application]\nP --> A[Audit application]\nD --> L[Retained event log]\nL --> C[Counter reader with its own offset]\nL --> R[Rebuild reader with its own offset]",
+      "caption": "These are alternative or combined logical models, not a requirement to install three brokers. Retries, retention, and publication durability remain explicit.",
+      "steps": [
+        "Choose whether a task should have one logical effect.",
+        "Choose whether separate applications each need the event.",
+        "Choose whether retained rereading is required.",
+        "Configure progress and recovery for the selected model."
+      ]
+    },
+    {
+      "id": "durable-ai-job",
+      "sectionId": "worked",
+      "title": "The durable job store defines accepted and completed",
+      "source": "flowchart LR\nU[Submit authorized document] --> A[API]\nA --> D[(Job and publication intent)]\nD --> P[Publisher]\nP --> Q[Chosen broker]\nQ --> W[Bounded worker]\nW --> M[Model call]\nW --> R[(Result and completed status)]\nR --> K[Acknowledge delivery]\nU --> S[Read durable job status]",
+      "steps": [
+        "Persist the job before claiming acceptance.",
+        "Publish with a stable job identity.",
+        "Save the completed result before acknowledging work.",
+        "Treat uncertain external calls separately from broker delivery."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Pick a messaging pattern for: distributing summary jobs, sending upload events independently to indexing and audit, and reprocessing a week of retained lifecycle events. Then trace J17 when the worker saves its result and crashes before acknowledging. Explain why Redis Pub/Sub alone does not preserve the job.",
+    "rubric": [
+      "Differentiate competing work, independent delivery, and retained replay.",
+      "Acknowledge only after the chosen durable result boundary.",
+      "Recognize repeated work with stable job identity.",
+      "Explain Pub/Sub loss during subscriber downtime."
+    ],
+    "solution": "Summary attempts fit a work queue. Indexing and audit need independent subscriptions or consumer groups. Reprocessing needs retained history and a cursor/reset policy, such as a suitably configured log. After J17 is saved and the acknowledgement is lost, redelivery checks the durable completed result and returns/acknowledges without repeating the logical effect. Redis Pub/Sub has no stored replay for a disconnected subscriber; retain the job in a durable store and use a queue/stream configuration matching the recovery requirement. An external paid call may still need provider-specific duplicate-cost handling."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A publisher confirmation proves which boundary?",
+      "options": [
+        "The broker accepted publication under its configured rules",
+        "The user read the finished result",
+        "Every external side effect happened exactly once"
+      ],
+      "answer": "The broker accepted publication under its configured rules",
+      "explanation": "Publication evidence and completed consumer work are distinct."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Twenty jobs/s arrive and ten jobs/s finish. Backlog growth?",
+      "answer": 10,
+      "unit": "jobs/s",
+      "tolerance": 0,
+      "explanation": "20 − 10 = 10 jobs/s; a queue cannot fix a sustained capacity deficit."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which Redis feature is suitable for retained-entry replay when correctly configured?",
+      "options": [
+        "Redis Streams",
+        "Redis Pub/Sub alone",
+        "An evictable temporary cache key with no policy"
+      ],
+      "answer": "Redis Streams",
+      "explanation": "Streams retains entries and supports consumption state; durability and retention still require configuration."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What happens when SQS visibility expires while a worker is still computing?",
+      "answer": "The message becomes eligible for another receive, so overlapping repeated work can occur. Use suitable bounded extensions and a stable authoritative job/claim protocol; do not rely on invisibility as a permanent lock.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why does Kafka partition ordering not give all records one global order?",
+      "answer": "Each partition has its own ordered log. Choosing keys and partition mapping scopes the ordering; consuming several partitions introduces separate sequences and processing schedules.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Work queue question?",
+      "back": "Which available worker processes this task attempt?"
+    },
+    {
+      "front": "Pub/sub question?",
+      "back": "Which independent interested applications should receive the event?"
+    },
+    {
+      "front": "Retained log question?",
+      "back": "Where is ordered history kept so consumers can track positions and replay?"
+    },
+    {
+      "front": "Result-save before acknowledgement creates what crash case?",
+      "back": "Repeated delivery after a saved result; recognize it with stable identity and idempotent handling."
+    },
+    {
+      "front": "Queue health beyond length?",
+      "back": "Oldest age, arrival/completion rate, in-flight work, retries and downstream capacity."
+    }
+  ],
+  "mentalModel": "Choose who should see the message, how long it survives, and what acknowledgement proves—then choose the broker.",
+  "sources": [
+    {
+      "title": "RabbitMQ — Consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon SQS — Visibility timeout",
+      "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Kafka — Introduction and main concepts",
+      "url": "https://kafka.apache.org/42/getting-started/introduction/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis — Pub/Sub delivery semantics",
+      "url": "https://redis.io/docs/latest/develop/pubsub/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis — Streams",
+      "url": "https://redis.io/docs/latest/develop/data-types/streams/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "AWS — Transactional outbox pattern",
+      "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "independent-readers",
+      "title": "A delayed audit consumer does not stop summary work",
+      "sectionId": "patterns",
+      "intro": "A document event E70 is routed to two durable application queues. Each application has its own completion boundary; this is one possible publish/subscribe implementation.",
+      "steps": [
+        {
+          "title": "Publish one fact",
+          "explanation": "A recoverable publisher sends the accepted upload event. Routing creates work for summary and audit independently.",
+          "state": [
+            {
+              "label": "Event",
+              "value": "E70, document d8 version 2"
+            },
+            {
+              "label": "SummaryQueue",
+              "value": "[E70]"
+            },
+            {
+              "label": "AuditQueue",
+              "value": "[E70]"
+            }
+          ]
+        },
+        {
+          "title": "Summary finishes",
+          "explanation": "The summary worker saves its result and acknowledges only its own delivery.",
+          "state": [
+            {
+              "label": "SummaryQueue",
+              "value": "[]"
+            },
+            {
+              "label": "SummaryResult",
+              "value": "Saved for E70"
+            },
+            {
+              "label": "AuditQueue",
+              "value": "[E70] waiting"
+            }
+          ]
+        },
+        {
+          "title": "Audit resumes later",
+          "explanation": "The audit worker consumes its durable backlog. The earlier summary acknowledgement did not consume this application’s copy.",
+          "state": [
+            {
+              "label": "SummaryResult",
+              "value": "Unchanged"
+            },
+            {
+              "label": "AuditQueue",
+              "value": "E70 in flight"
+            },
+            {
+              "label": "AuditRecord",
+              "value": "Not committed yet"
+            }
+          ]
+        },
+        {
+          "title": "Audit records the fact",
+          "explanation": "Audit commits its protected effect and acknowledges. Both intended applications now have their own accepted outcome.",
+          "state": [
+            {
+              "label": "SummaryQueue",
+              "value": "[]"
+            },
+            {
+              "label": "AuditQueue",
+              "value": "[]"
+            },
+            {
+              "label": "Outcomes",
+              "value": "Summary result and audit record"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A competing work queue divides work; an independent subscription gives each application its own work and progress. The two intentions are not interchangeable."
+    }
+  ]
+}

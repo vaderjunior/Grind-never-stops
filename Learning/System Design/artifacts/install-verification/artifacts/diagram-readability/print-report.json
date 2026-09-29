@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-09-29T14:44:30.740997+00:00",
+  "redisPages": 16,
+  "tallDiagramPages": 2,
+  "visuallyInspected": {
+    "redis": [
+      4,
+      9,
+      11
+    ],
+    "tallDiagram": [
+      1,
+      2
+    ]
+  },
+  "scope": "Representative diagram pages, full label text and diagram narration. Not an exhaustive check of every chapter pagination."
+}

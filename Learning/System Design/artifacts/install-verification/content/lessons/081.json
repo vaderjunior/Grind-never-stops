@@ -1,0 +1,131 @@
+{
+  "id": "081",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish agreement safety from progress liveness.",
+    "Explain why deterministic execution follows a committed command order.",
+    "State which failures a crash-fault consensus system covers."
+  ],
+  "retrieval": [
+    "L076–080: can a replica answer a stale read while all stored copies are durable?",
+    "L036: what is atomic within one database transaction?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Three copies do not define one history",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, worked history 8, exercise 10, scheduled questions 10, review 4. A campus equipment service has one remaining camera. Two servers each read available=1 and each approve a different borrower. Both machines may durably store their answers. The problem is not missing copies; it is the absence of a common decision order that protects the one-loan invariant.\n\nA replicated state machine separates two responsibilities. An ordering layer establishes a committed sequence of commands. Each replica's application state machine applies those commands, in that order, from the same starting state. If execution is deterministic, the resulting states agree. Determinism includes seemingly harmless operations: calling the local clock or generating a random identifier separately on every replica can produce different output from the same command. Include a chosen timestamp or identifier in the agreed command when the application needs one.\n\nThis does not require placing every large binary object into a consensus log. A metadata service might agree on ownership and object references while bulk bytes follow another durability path. Identify exactly which decisions require common order and which data can remain outside that authority."
+    },
+    {
+      "id": "properties",
+      "title": "Safety can hold while no request completes",
+      "markdown": "Agreement means replicas do not decide incompatible values for the same position. A state-machine safety property can say that two replicas never apply different commands at the same committed log index. Application safety adds domain invariants, such as never approving two current loans for one item. Consensus cannot rescue a state transition that is itself wrong: if every replica deterministically approves an overdraft, their agreement is perfectly consistent and the application is still incorrect.\n\nLiveness asks whether requests eventually make progress under stated conditions. During a partition, a minority may refuse writes indefinitely while the majority continues. That is a loss of availability for minority-connected clients, not a safety violation. The safety argument must not depend on an operator confidently declaring a silent machine dead; it might merely be delayed.\n\nThe baseline in this module assumes crash/recovery faults, authenticated nonmalicious members, durable persisted protocol state, and a network that may delay, duplicate, reorder or lose messages. It does not tolerate arbitrary malicious replicas lying about their state. Progress also needs a sufficiently stable communication period and a functioning quorum. Saying “works under any failure” hides these boundaries."
+    },
+    {
+      "id": "trace",
+      "title": "From command to applied state",
+      "markdown": "Use a register-like state machine with an item and a request result table. Start with item42 unclaimed. Command at index 7 is reserve(item42, alice, requestA). It sees no current owner, stores alice, and records success for requestA. Index 8 is reserve(item42, bob, requestB). It sees alice and records a conflict. Every replica applies the same commands and returns the same results. A retry of requestA returns its stored result instead of making a second reservation.\n\nThe teaching transition below is executable Python but is an in-memory state-machine function, not a replication protocol:\n\n~~~python\ndef reserve(state, request_id, item, actor):\n    if request_id in state['results']:\n        return state['results'][request_id]\n    ok = item not in state['owners']\n    if ok:\n        state['owners'][item] = actor\n    state['results'][request_id] = ok\n    return ok\n~~~\n\nThe production command contract must additionally fingerprint a request ID's payload, so reusing requestA for a different item is rejected. The log establishes order; the request table establishes retry identity; the transition protects the domain invariant. They solve different problems.\n\nWith five voting replicas a majority is three. The group can continue if any three voters can communicate under the protocol's progress assumptions. Two isolated machines cannot safely invent a separate authoritative history. That arithmetic describes one group, not unlimited availability of every dependency in the product."
+    },
+    {
+      "id": "cost",
+      "title": "Place coordination where the invariant lives",
+      "markdown": "Every globally ordered mutation pays communication, persistence and contention costs at its ordering authority. A tiny configuration service can accept that cost; a high-rate analytics stream may partition independent keys and accept weaker cross-key guarantees. Separate consensus groups can scale independent state, but an invariant spanning groups needs an additional coordination or compensation design.\n\nA common misconception is that consensus means every replica is always identical. Followers can lag while committed history remains safe. Another is that leader election alone establishes safe state: the elected leader must also preserve previously committed decisions. L082 and L083 add the election and log rules that make those claims fit together. Optional depth: contrast crash-fault consensus with Byzantine agreement; the membership assumptions and quorum arithmetic are different."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Agreed order precedes deterministic application",
+      "source": "flowchart LR\nC[Client command] -->|proposal| O[Consensus order]\nO -->|committed prefix| A[Replica A state machine]\nO -->|same prefix| B[Replica B state machine]\nO -->|same prefix| D[Replica C state machine]",
+      "caption": "Replicas may apply at different speeds, but a committed position must not mean different commands. The diagram does not show a complete consensus protocol.",
+      "steps": [
+        "Validate a command and its retry identity.",
+        "Establish a committed order.",
+        "Apply only the committed prefix in sequence.",
+        "Return a result consistent with that application."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A five-voter group splits into components of three and two. Both contain a previously elected leader at different observed times. Identify which component can make new decisions, what the other should do, and why a shared deterministic but incorrect transition remains unsafe for the business.",
+    "rubric": [
+      "Calculates majority three.",
+      "Separates leadership belief from quorum authority.",
+      "Distinguishes protocol safety from domain invariants."
+    ],
+    "solution": "Only the component able to obtain a valid three-voter quorum can commit new decisions, subject to election and log rules. The two-voter side must not acknowledge new authoritative writes merely because a node remembers being leader. It can reject or redirect, and only offer explicitly weaker reads if the contract allows. If every replica executes a transition that grants an already-owned item, they agree on a business error. Repair the state transition as well as the replication boundary."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Agreement alone proves business correctness:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Replicas can agree on an incorrect transition; invariants still belong to application logic."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "How many votes form a majority of seven voters?",
+      "answer": 4,
+      "unit": "votes",
+      "tolerance": 0,
+      "explanation": "floor(7/2)+1 = 4."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which input threatens deterministic replay if chosen independently at each replica?",
+      "options": [
+        "An identifier already present in the command",
+        "The replica’s local random draw"
+      ],
+      "answer": "The replica’s local random draw",
+      "explanation": "The replicas may generate different values from the same ordered command."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is refusing a minority write an intended behavior?",
+      "answer": "When acknowledging it would risk incompatible authoritative decisions during a partition; safety may require loss of local progress.",
+      "explanation": "When acknowledging it would risk incompatible authoritative decisions during a partition; safety may require loss of local progress."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Safety?",
+      "back": "Nothing forbidden occurs, such as conflicting applied commands at one committed index."
+    },
+    {
+      "front": "Liveness?",
+      "back": "Progress eventually occurs under stated operating assumptions."
+    },
+    {
+      "front": "Deterministic replay?",
+      "back": "Same starting state and ordered commands produce the same results."
+    },
+    {
+      "front": "Majority of five?",
+      "back": "Three voters."
+    },
+    {
+      "front": "Consensus and application invariants?",
+      "back": "Consensus orders decisions; the transition must still protect the domain rule."
+    }
+  ],
+  "mentalModel": "Agree on an order, execute that order deterministically, and state separately when progress is possible.",
+  "sources": [
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

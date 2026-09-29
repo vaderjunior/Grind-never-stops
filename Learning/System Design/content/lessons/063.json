@@ -1,0 +1,150 @@
+{
+  "id": "063",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Choose hash, range, or directory partitioning from concrete query and growth requirements.",
+    "Explain how shard keys affect locality, skew, and cross-partition work.",
+    "Separate a partition owner from its replicas and routing metadata."
+  ],
+  "retrieval": [
+    "L044: what bounds a device/time partition?",
+    "L061: why do replicas not divide the logical dataset?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Adding a replica does not shrink the full dataset",
+      "markdown": "One database holds every tenant's activity and is running out of safe storage and write capacity. Replicas can protect copies and serve some reads, but each full replica still owns the whole dataset and commonly follows the same ordered write stream. Partitioning assigns distinct logical subsets to different owners so capacity can be distributed.\n\nThe shard key decides which requests and invariants stay together. Splitting by tenant may keep a tenant's activity query local, while one large tenant can dominate an owner. Hashing every event ID can distribute writes but turn a tenant-history read into scatter-gather. The key is part of the application data model, not an invisible deployment setting."
+    },
+    {
+      "id": "mechanism",
+      "title": "Three routing functions, three different tradeoffs",
+      "markdown": "Hash partitioning maps a chosen key through a stable hash into ownership buckets. It tends to spread sufficiently varied keys and sacrifices natural range locality. A hash does not spread repeated accesses to one identical key, and language-process-randomized hash functions are unsuitable for a persistent shared routing contract.\n\nRange partitioning assigns intervals such as customer ID ranges or event-time windows. It preserves locality for bounded ranges and supports useful split boundaries. Monotonically increasing writes can concentrate on the newest range; skewed popular ranges remain hot even if their key span is narrow.\n\nDirectory partitioning stores an explicit mapping, such as tenant→shard. It can place large tenants deliberately and move one without changing a universal hash rule. The directory becomes state that must be available, versioned, cached safely, and updated during migration. Cached route metadata must not let obsolete owners accept writes after ownership changes. Each partition can independently have replicas: routing first determines the logical owner set, then the read/write policy chooses an eligible replica."
+    },
+    {
+      "id": "worked",
+      "title": "The smallest tenant is not the average tenant",
+      "markdown": "Suppose 100 tenants produce 10,000 writes/s. One tenant produces 7,000; the other99 share3,000. With four shards each sustaining4,000 writes/s, average arithmetic suggests2,500 per shard. Tenant-only hashing cannot split the7,000-RPS tenant, so its owner overloads regardless of the even average.\n\nPossible revisions include isolating that tenant on more capable hardware, subpartitioning its data by a bounded secondary key, or changing admission/batch policies. Subpartitioning may make tenant-wide queries touch multiple owners and move uniqueness or transaction boundaries. Do not present it as a free improvement. If an account-balance invariant spans the new boundaries, the correctness mechanism must be revisited before writes are distributed.\n\nA composite key (tenant_id, month, event_id) can support bounded tenant/time placement if the routing scheme uses the intended prefix. Hashing the entire composite versus hashing only tenant_id produces different locality. The field names alone do not determine routing; write down the exact function and query plan. For a three-month query, a tenant/month design touches at least three logical buckets before replicas."
+    },
+    {
+      "id": "failure",
+      "title": "The router is part of the correctness story",
+      "markdown": "A request should carry or derive a trusted tenant identity, locate its owner, and preserve authorization through routing. A missing tenant predicate can turn a local optimization into a cross-tenant data leak. Unique IDs can be globally generated, but arbitrary business uniqueness across shards is not automatically enforced by a per-shard UNIQUE constraint.\n\nAsk how to add capacity, split a hot range, move a large tenant, and recover routing metadata. A naive hash(key)%N formula can remap many keys when N changes; L064 explores a more stable placement approach. Routing changes must be coordinated with data migration; L067 addresses the handoff.\n\nCommon misconceptions: equal key counts mean equal load; hashing removes hot keys; every query can use a single shard; or a shard key can be changed later without data movement. A good initial key keeps the dominant query and correctness boundary local while acknowledging the growth case that may force a migration. Optional depth: sketch how a tenant-level directory can map small tenants to shared shards and large tenants to a dedicated group without changing public IDs."
+    },
+    {
+      "id": "time-budget",
+      "title": "Core and optional depth",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 mechanism and diagrams, 8 worked trace, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and deeper variations are optional. Examples are deterministic teaching models, not production replication or routing implementations."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "partition-replica",
+      "title": "Partition first, then apply each partition’s replica policy",
+      "source": "flowchart TD\nQ[Authorized tenant request] --> M[Versioned key-to-owner routing]\nM -->|Tenant bucket A| A[Shard A primary]\nM -->|Tenant bucket B| B[Shard B primary]\nA -.->|Copy same A data| AR[Shard A replica]\nB -.->|Copy same B data| BR[Shard B replica]\nX[Cross-bucket report] -->|Gather explicit results| A\nX -->|Gather explicit results| B",
+      "caption": "A and B hold different logical data. Each dotted edge copies one shard rather than dividing its data again.",
+      "steps": [
+        "Derive the key from the authorized request contract.",
+        "Resolve a logical partition under current routing metadata.",
+        "Choose an eligible replica according to the read/write requirement.",
+        "Treat cross-partition aggregation as explicit extra work."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Four shards each support4,000 writes/s. Total demand10,000 includes one tenant at7,000. Explain why tenant hashing can fail despite average2,500. Propose two alternatives and one new query/correctness cost each introduces.",
+    "rubric": [
+      "Identify indivisible hot tenant rather than average capacity.",
+      "Offer isolation/vertical scaling or justified subpartitioning.",
+      "Expose query fan-out and invariant implications."
+    ],
+    "solution": "Hashing one tenant ID keeps all7,000 writes on one owner, exceeding4,000 even if other shards are idle. A dedicated larger shard can preserve tenant locality but raises its failure/replacement cost and eventual ceiling. Subpartitioning by a bounded secondary dimension can divide writes, but tenant-wide queries gather results and invariants previously local may need coordination or redesign. Admission/batching may be a third option when the product permits delayed or rejected work. Validate peak key distribution and transaction boundaries; equal key counts and a low cluster average do not prove a safe key."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which workload naturally benefits from range locality?",
+      "options": [
+        "A bounded scan over adjacent ordered keys",
+        "Only a uniform random point lookup",
+        "Every possible query equally"
+      ],
+      "answer": "A bounded scan over adjacent ordered keys",
+      "explanation": "Range ownership can keep neighboring keys together, though hot ranges remain possible."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What additional state does directory partitioning require?",
+      "options": [
+        "An explicit key/tenant-to-owner mapping",
+        "No state at all",
+        "Only a longer random ID"
+      ],
+      "answer": "An explicit key/tenant-to-owner mapping",
+      "explanation": "The directory needs versioning, availability, update and migration rules."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A 7,000-RPS tenant on a 4,000-RPS shard exceeds capacity by how many RPS?",
+      "answer": 3000,
+      "unit": "requests/s",
+      "tolerance": 0,
+      "explanation": "7,000−4,000=3,000, despite adequate aggregate cluster capacity."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Can a per-shard unique constraint enforce arbitrary cross-shard business uniqueness?",
+      "answer": "Not by itself. The key placement or a separate global mechanism must ensure competing values meet at one authority.",
+      "explanation": "Distributing storage can distribute away the very conflict the invariant must arbitrate."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is hashing event IDs potentially bad for tenant history?",
+      "answer": "One tenant’s records may scatter across owners, adding fan-out and merge work.",
+      "explanation": "Balanced writes and local reads are competing goals under some access patterns."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Hash partitioning tradeoff?",
+      "back": "Often distributes varied keys but loses natural range locality."
+    },
+    {
+      "front": "Range partitioning tradeoff?",
+      "back": "Local ordered scans, with potential newest-range or popular-range hotspots."
+    },
+    {
+      "front": "Directory partitioning?",
+      "back": "Explicit placement mapping that itself needs durable versioned management."
+    },
+    {
+      "front": "Does hashing split one identical hot key?",
+      "back": "No. A deterministic key maps to the same owner."
+    },
+    {
+      "front": "Shard key selection criterion?",
+      "back": "Dominant access paths and invariant locality, with skew and growth plans."
+    }
+  ],
+  "mentalModel": "A shard key is a choice about which work and correctness stay together—and which must cross a boundary.",
+  "sources": [
+    {
+      "title": "MongoDB — Shard keys",
+      "url": "https://www.mongodb.com/docs/manual/core/sharding-shard-key/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon Dynamo — Original SOSP 2007 paper",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

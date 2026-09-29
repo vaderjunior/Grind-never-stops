@@ -1,0 +1,349 @@
+{
+  "id": "connection-and-protocol-basics",
+  "title": "Connections and protocols: TCP, TLS, HTTP, and beyond",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 2,
+  "level": "beginner",
+  "minutes": 60,
+  "summary": "Follow a real connection through TCP or QUIC, encryption, HTTP messages, and application contracts without treating every protocol as a competitor.",
+  "objectives": [
+    "Explain what TCP, UDP, TLS and HTTP each contribute.",
+    "Compare HTTP versions without confusing multiplexing with unlimited capacity.",
+    "Choose ordinary HTTP, gRPC, WebSocket or server-sent events for a concrete communication pattern."
+  ],
+  "terms": [
+    {
+      "term": "Protocol",
+      "definition": "Rules that communicating programs follow to exchange and interpret messages."
+    },
+    {
+      "term": "Connection",
+      "definition": "An established communication relationship with state at its endpoints; exact semantics depend on the protocol."
+    },
+    {
+      "term": "TCP",
+      "definition": "A transport providing a reliable ordered byte stream between endpoints."
+    },
+    {
+      "term": "UDP",
+      "definition": "A transport sending datagrams without TCP-style reliability or ordering guarantees."
+    },
+    {
+      "term": "TLS",
+      "definition": "A protocol providing protected communication with authentication and confidentiality under its security assumptions."
+    },
+    {
+      "term": "Multiplexing",
+      "definition": "Carrying multiple logical streams through one underlying connection."
+    },
+    {
+      "term": "gRPC",
+      "definition": "A framework for calling defined remote procedures, commonly using Protocol Buffers and HTTP/2."
+    },
+    {
+      "term": "SSE",
+      "definition": "Server-sent events: a server-to-client event stream carried over HTTP."
+    }
+  ],
+  "retrieval": [
+    "Why do the client and server need agreed request and response formats?",
+    "What does a timeout tell you about whether a remote write committed?"
+  ],
+  "sections": [
+    {
+      "id": "layers",
+      "title": "Begin with different jobs, not a list of acronyms",
+      "markdown": "When the browser asks for note 42, several sets of rules cooperate:\n\n| Job | Plain question | Example in one common stack |\n| --- | --- | --- |\n| Network address | Where should the data go? | An IP address |\n| Transport | How do bytes travel between endpoints? | TCP |\n| Connection security | How is this conversation protected? | TLS |\n| Application messages | How are requests and responses expressed? | HTTP |\n| Product rules | May this user read this note? | Pocket Notes permission check |\n\nAn **endpoint** is one end of the communication. A **protocol** is a set of rules the communicating programs follow. The stack means these cooperating layers, not a list of interchangeable products.\n\nThese are different responsibilities. Comparing TLS with HTTP as if you must choose one misses how they work together. Likewise, gRPC is not a replacement for every network layer; it uses underlying communication mechanisms.\n\nYou do not need to memorize the entire OSI model to follow this request. Ask four concrete questions: where do the bytes go, what delivery behavior is provided, who can read or impersonate the endpoint, and how does the application interpret the result? Each question has a different owner."
+    },
+    {
+      "id": "tcp",
+      "title": "TCP provides an ordered stream, not a business transaction",
+      "markdown": "TCP establishes a connection and delivers bytes in order, repairing loss through its transport mechanisms while managing flow and congestion. The receiving application reads a stream, so a single application message may arrive through several reads, and several messages may be available together. Applications need framing rules to determine where their messages begin and end. HTTP supplies its own message and stream structure above the transport.\n\nTCP reliability does not mean an application action occurs exactly once. The server can commit a save and lose the response before the client sees it. A new connection and retry can submit the operation again.\n\nThe application still needs a rule for recognizing repeated operations or checking what already happened. An **idempotency identity** is a stable label used to recognize attempts of the same logical operation; **reconciliation** means comparing records to resolve an uncertain outcome. We will develop those mechanisms later.\n\nNor does an established TCP connection prove that the server is healthy enough to answer promptly. It can remain connected while a dependency is blocked or the application has no capacity."
+    },
+    {
+      "id": "udp",
+      "title": "UDP leaves more work to the protocol above it",
+      "markdown": "UDP sends datagrams, preserving message boundaries, without promising reliable ordered delivery like TCP. Datagrams may be lost, duplicated or reordered. That does not mean every UDP-based application must accept arbitrary corruption or poor behavior. A higher-level protocol can add authentication, reliability, congestion control, or recovery suited to its needs.\n\nFor a live audio application, late data may be less useful than newer data, so its policy can differ from transferring a database backup.\n\nQUIC is another important example: it runs over UDP while implementing secure connections and reliable streams itself. Therefore “UDP means no reliability” is only accurate as a statement about the UDP layer’s guarantees, not every application built above it. Choose according to the complete stack and user requirement. A beginner should explain the distinction before making a blanket claim that UDP is always faster or TCP is always better."
+    },
+    {
+      "id": "tls",
+      "title": "HTTPS protects a hop; authorization protects an action",
+      "markdown": "In a typical HTTPS connection, TLS protects the communication and authenticates the server using a certificate validated for the intended name and trust chain. Do not disable certificate validation to make a connection work. TLS helps prevent a network observer from reading or modifying protected application content, but it does not make a malicious server honest or grant a user permission to read another user’s note.\n\nA **reverse proxy** is an entry service that receives client requests and forwards them to the application. It may terminate, or end, the browser’s TLS connection and create a separate connection to the application. Draw those as two hops and state whether the internal hop is also protected. Calling the whole path encrypted requires checking every relevant hop.\n\nSome metadata, such as network endpoints, can remain observable; encryption is not a claim that no information about communication exists. **Authentication** identifies a caller, such as a user account or service. **Authorization** checks which action that caller may perform. Those checks still belong in the service architecture."
+    },
+    {
+      "id": "http",
+      "title": "HTTP gives the interaction meaning",
+      "markdown": "An HTTP request includes a method, target, headers, and sometimes a body. A response carries a status, headers, and possibly content. GET /notes/42 asks for a representation; POST /notes may create one under the API contract. JSON is one possible body format, not the definition of HTTP. A successful transport exchange can still return a meaningful application error such as forbidden access or an invalid request.\n\nConnection reuse avoids rebuilding the transport and security setup for every small request when the client and server permit it. It does not mean one connection can run infinite work without limits. Clients, proxies, and servers impose stream, connection, timeout and buffer budgets. Distinguish keep-alive or pooled connections from keeping an application session in server memory. A user session can survive a new network connection when the authentication and application state design supports that behavior."
+    },
+    {
+      "id": "versions",
+      "title": "Understand what HTTP/2 and HTTP/3 change",
+      "markdown": "HTTP/1.1 commonly reuses TCP connections, with clients often using several connections for concurrent requests. HTTP/2 introduces multiple logical streams multiplexed over a connection and compressed headers while preserving familiar HTTP semantics. With HTTP/2 over TCP, loss of earlier TCP bytes can delay delivery needed by otherwise independent HTTP streams because TCP supplies one ordered byte stream.\n\nHTTP/3 maps HTTP onto QUIC, which uses UDP and integrates modern TLS security. QUIC provides independent reliable streams, avoiding TCP’s cross-stream loss-ordering blockage at that layer. This does not remove congestion, application serialization, shared resource limits, or every cause of waiting.\n\nA network or deployment may also require fallback to other supported versions. Choose and measure the actual browser, proxy and server path. “HTTP/3 is installed” alone does not demonstrate a latency improvement for your workload, and a new version does not change the correctness rules of saving a note."
+    },
+    {
+      "id": "rpc",
+      "title": "A remote procedure call needs a contract and a failure model",
+      "markdown": "Suppose an internal document service asks an embedding service to turn text into a list of numbers called a vector. The numbers represent features used for tasks such as similarity search; you do not need their mathematics here. A typed procedure such as EmbedDocument can make request fields, response fields and error handling explicit.\n\ngRPC commonly generates client and server code from a service definition, uses Protocol Buffers by default, and supports unary and streaming interactions. Its standard transport model commonly uses HTTP/2. Check the specific implementation and browser gateway rather than assuming every client can use the same native stack directly.\n\nA remote call still crosses a failure boundary. Set a **deadline**, the time after which the caller no longer wants to wait. Pass cancellation to downstream work where supported, limit message size, and decide which failed operations may be retried.\n\nGenerated code can make the call look like a local function, but the network can delay or lose a response after the remote work happened. Choosing gRPC may improve contract tooling and suit internal streaming, but does not universally make every operation faster than a well-designed HTTP/JSON interface."
+    },
+    {
+      "id": "streaming",
+      "title": "Choose a direction for ongoing updates",
+      "markdown": "Ordinary HTTP request/response is enough for saving and reading notes. For longer activity, ask who needs to speak:\n\n| Interaction | Communication shape | Example |\n| --- | --- | --- |\n| Status polling | Browser repeatedly asks | “Is job 81 ready?” |\n| Server-sent events (SSE) | Server sends updates on an open HTTP response | “Job 81 is processing” |\n| WebSocket | Both sides send messages over a persistent connection | Frequent collaborative editing events |\n\nA persistent connection stays open for more communication. It does not by itself save the messages. Server-sent events suit server-to-browser updates such as job status or generated text, while the browser can submit commands through separate HTTP requests. Reconnect support and event identifiers do not automatically supply durable replay; the application must retain and serve the relevant history.\n\nWebSocket provides two-way message communication over a persistent connection. A common setup starts with an HTTP/1.1 upgrade handshake; other supported stacks use their specified extended connection mechanisms. It is useful when both sides send frequent interactive events, such as chat or collaborative presence. It does not supply database persistence, room authorization, duplicate prevention or application replay. Choose it for communication behavior, then design those remaining responsibilities separately."
+    },
+    {
+      "id": "worked-flow",
+      "title": "Trace one AI job through the stack",
+      "markdown": "A learner submits a document to summarize. The browser uses HTTPS to call POST /jobs with a document reference whose size is limited and a stable operation key, the label for recognizing repeated attempts of this request. The **gateway**, an entry service applying shared request rules, validates the incoming connection and forwards an authenticated, authorized request to the API.\n\nThe API saves the job and returns its identity. The browser opens an SSE progress stream while workers process the job. This avoids requiring the original POST connection to remain alive for the entire computation.\n\nInternally, a worker may call a model service through gRPC or an HTTP API with a deadline. If the progress stream disconnects, the browser can read durable job state and reconnect under a documented event-cursor policy. A cursor identifies the last update seen so the service can decide whether it can replay later updates or must send a fresh state.\n\nIf the model response times out, the worker follows its retry and billing policy rather than assuming nothing happened. Draw each connection, protocol, identity boundary and durable record. That small trace connects every acronym to a job the system actually needs."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "protocol-stack",
+      "sectionId": "layers",
+      "title": "Responsibilities cooperate along one request",
+      "source": "flowchart TB\nA[Application: read note 42 with permission] --> H[HTTP: request and response semantics]\nH --> S[TLS: protected and authenticated connection]\nS --> T[TCP: ordered reliable byte stream]\nT --> N[Network delivery between endpoints]",
+      "steps": [
+        "The application decides meaning and permission.",
+        "HTTP describes request and response exchange.",
+        "TLS protects the connection.",
+        "TCP carries an ordered stream."
+      ],
+      "caption": "This drawing is the common HTTPS-over-TCP case. HTTP/3 instead uses QUIC, which includes security and streams over UDP."
+    },
+    {
+      "id": "job-protocols",
+      "sectionId": "worked-flow",
+      "title": "Different interactions can use different protocols",
+      "source": "flowchart LR\nB[Browser] -->|HTTPS POST job| G[Gateway]\nG -->|Protected internal HTTP| A[API]\nA --> D[(Durable job)]\nD --> W[Worker]\nW -->|gRPC or HTTP with deadline| M[Model service]\nA -->|SSE status events| B",
+      "steps": [
+        "Create a durable job through a normal request.",
+        "Use a bounded internal model call for work.",
+        "Stream progress separately from job persistence.",
+        "Reconnect by consulting durable state."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "two-tls-hops",
+      "sectionId": "tls",
+      "title": "Ending one protected connection starts a new responsibility",
+      "source": "flowchart LR\nB[Browser] -->|TLS connection A| P[Reverse proxy]\nP -->|Separately configured connection B| A[Application]\nA --> C[Check caller and note permission]",
+      "caption": "The proxy can read the request after ending connection A. Connection B needs its own protection policy; TLS on A alone does not protect B.",
+      "steps": [
+        "The browser establishes a protected connection to the proxy.",
+        "The proxy receives the request and forwards it on a separate connection.",
+        "The application enforces access regardless of how each hop is protected."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Choose communication for three operations: save a note, stream one-way AI-job progress, and exchange frequent two-way chat events. For each, name what the protocol supplies and two things the application must still handle. Explain an HTTPS connection that terminates at a gateway.",
+    "rubric": [
+      "Match communication direction and lifetime to the operation.",
+      "Separate transport from authorization and persistence.",
+      "Explain the gateway’s separate internal hop.",
+      "Avoid claiming HTTP versions guarantee application performance."
+    ],
+    "solution": "A normal HTTPS request/response fits save; SSE can fit one-way job updates; WebSocket can fit frequent two-way chat. Every choice still needs authorization, bounded messages, error handling and appropriate durable state. Save retries need stable identities; progress reconnect needs replay or state refresh; chat needs message persistence and room rules. TLS termination at the gateway ends the browser’s protected connection there; the gateway-to-application connection has its own protection and identity policy."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does TCP provide to the application?",
+      "options": [
+        "An ordered reliable byte stream",
+        "Exactly-once business transactions",
+        "Authorization for all users"
+      ],
+      "answer": "An ordered reliable byte stream",
+      "explanation": "Message meaning and operation correctness belong above TCP."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which protocol is a reasonable fit for one-way server progress updates over HTTP?",
+      "options": [
+        "Server-sent events",
+        "A process-local mutex",
+        "A database index"
+      ],
+      "answer": "Server-sent events",
+      "explanation": "SSE carries server-to-client events; persistence and replay still need application design."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "TLS terminates at a gateway and a new protected connection goes to the API. How many connection hops must be considered?",
+      "answer": 2,
+      "unit": "hops",
+      "tolerance": 0,
+      "explanation": "Browser→gateway and gateway→API are distinct connections and trust boundaries."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Explain why QUIC over UDP does not imply unreliable HTTP/3 streams.",
+      "answer": "UDP itself lacks TCP’s guarantees, but QUIC implements reliable streams, congestion control and integrated security above it. Describe the complete protocol stack.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why does a generated RPC client still need deadlines and retry rules?",
+      "answer": "The call crosses a network and process boundary. A response can be delayed or lost after remote work commits, so cancellation, bounded waiting and duplicate-safe retry policy remain necessary.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Protocol layers answer what?",
+      "back": "Location, delivery behavior, protection, and message meaning are separate responsibilities."
+    },
+    {
+      "front": "TLS versus authorization?",
+      "back": "TLS protects a connection and authenticates endpoints under its rules; authorization decides permitted actions."
+    },
+    {
+      "front": "HTTP/2 key change?",
+      "back": "Multiple logical streams can share a connection while HTTP semantics remain familiar."
+    },
+    {
+      "front": "HTTP/3 transport?",
+      "back": "QUIC supplies secure reliable streams over UDP."
+    },
+    {
+      "front": "WebSocket does not provide…",
+      "back": "Durable history, application replay, room permissions or exactly-once business effects."
+    }
+  ],
+  "mentalModel": "Name the responsibility at each layer, then trace what still needs to remain true when a connection disappears.",
+  "sources": [
+    {
+      "title": "MDN — Evolution of HTTP",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "IETF — HTTP/2 RFC 9113",
+      "url": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "IETF — HTTP/3 RFC 9114",
+      "url": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "IETF — TLS 1.3 RFC 8446",
+      "url": "https://www.rfc-editor.org/rfc/rfc8446.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "gRPC — Core concepts and lifecycle",
+      "url": "https://grpc.io/docs/what-is-grpc/core-concepts/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MDN — Server-sent events",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "IETF — WebSocket RFC 6455",
+      "url": "https://datatracker.ietf.org/doc/html/rfc6455",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "IETF — TCP RFC 9293",
+      "url": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "byte-stream-framing",
+      "sectionId": "tcp",
+      "title": "A stream does not remember your message boundaries",
+      "intro": "This invented teaching format sends a payload byte count, a colon, and a word using ASCII characters that each occupy one byte. It demonstrates framing, not actual HTTP syntax; arbitrary text can use several bytes per character.",
+      "steps": [
+        {
+          "title": "Encode two application messages",
+          "explanation": "The sender marks each word with its payload byte count so a receiver can find the boundary.",
+          "state": [
+            {
+              "label": "Message 1",
+              "value": "CAT"
+            },
+            {
+              "label": "Message 2",
+              "value": "DOG"
+            },
+            {
+              "label": "Encoded bytes",
+              "value": "3:CAT3:DOG"
+            }
+          ]
+        },
+        {
+          "title": "Receive a partial chunk",
+          "explanation": "One read returns only part of the first word. A read boundary is not a message boundary.",
+          "state": [
+            {
+              "label": "Read chunk",
+              "value": "3:CA"
+            },
+            {
+              "label": "Known length",
+              "value": "3 bytes"
+            },
+            {
+              "label": "Payload held",
+              "value": "CA — incomplete"
+            }
+          ]
+        },
+        {
+          "title": "Receive the remaining bytes",
+          "explanation": "The next read finishes the first message and includes the second. The parser uses lengths, not read sizes.",
+          "state": [
+            {
+              "label": "Read chunk",
+              "value": "T3:DOG"
+            },
+            {
+              "label": "Combined held bytes",
+              "value": "3:CAT3:DOG"
+            },
+            {
+              "label": "Complete messages",
+              "value": "CAT, DOG"
+            }
+          ]
+        },
+        {
+          "title": "Apply the messages",
+          "explanation": "Transport delivered a stream. Application code still validates and handles each complete message.",
+          "state": [
+            {
+              "label": "Framing result",
+              "value": "Two messages"
+            },
+            {
+              "label": "Transport promise",
+              "value": "Ordered bytes"
+            },
+            {
+              "label": "Business result",
+              "value": "Depends on application"
+            }
+          ]
+        }
+      ],
+      "takeaway": "TCP’s ordered stream needs application framing. It does not identify your business operations or prove they happened once."
+    }
+  ]
+}

@@ -1,0 +1,4006 @@
+{
+  "version": 3,
+  "title": "System design, from the ground up",
+  "subtitle": "Build a strong foundation. Understand real platforms. Practice interviews with confidence.",
+  "description": "Start with the building blocks, explained patiently with worked examples. The first eight weeks contain 36 foundation chapters before larger design problems. Then connect distributed systems, reliability, Kubernetes, MCP, and AI infrastructure with interview practice. Core teaching stays on your laptop; external resources are optional.",
+  "weeklyHours": "5–7",
+  "pace": "24 flexible weeks. Weeks contain five to nine study steps. Spread them across the week or combine them into longer sessions every two days. Some foundation weeks include an extra visual workshop. Repeat a week when the ideas are still unclear; the calendar is a guide, not a deadline.",
+  "readiness": "Use your recorded explanations and mock feedback to find remaining gaps. Reading a chapter is progress; readiness comes from applying it to unfamiliar problems and explaining your tradeoffs.",
+  "stages": [
+    {
+      "id": "foundations",
+      "title": "1. Understand the building blocks",
+      "description": "A broad foundation in computers, requests, APIs, protocols, memory, SQL, data models, and storage. New terms are explained from scratch.",
+      "weeks": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "scale",
+      "title": "2. Understand the working components",
+      "description": "Learn proxies, services, Redis, cache patterns, containers, and queues in depth before combining them.",
+      "weeks": [
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "id": "distributed",
+      "title": "3. Make several machines work together",
+      "description": "Reason about copies, partitions, retries, and permissions through concrete timelines.",
+      "weeks": [
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "id": "operate",
+      "title": "4. Operate and explain your designs",
+      "description": "Understand reliability and Kubernetes operations, then begin structured interview practice.",
+      "weeks": [
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "id": "design",
+      "title": "5. Design complete products",
+      "description": "Work through chat, feeds, file storage, video, and search with evolving requirements.",
+      "weeks": [
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "id": "advanced",
+      "title": "6. Handle difficult tradeoffs and mocks",
+      "description": "Study coordination, MCP platforms, GPU serving, and difficult tradeoffs before final mocks.",
+      "weeks": [
+        21,
+        22,
+        23,
+        24
+      ]
+    }
+  ],
+  "weeks": [
+    {
+      "number": 1,
+      "stageId": "foundations",
+      "title": "Start with one small application",
+      "why": "Understand the picture before learning the vocabulary.",
+      "outcomes": [
+        "Explain client, server, request, response, and database in your own words.",
+        "Trace a request without naming any cloud product."
+      ],
+      "guides": [
+        {
+          "id": "what-is-system-design",
+          "title": "What is system design?"
+        },
+        {
+          "id": "read-system-diagrams",
+          "title": "Read a system diagram, one arrow at a time"
+        },
+        {
+          "id": "computer-and-server-basics",
+          "title": "Computers, servers, and the resources an application uses"
+        },
+        {
+          "id": "request-journey",
+          "title": "What happens when you open a website?"
+        },
+        {
+          "id": "dns-and-addresses",
+          "title": "Domains, IP addresses, ports, and DNS"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "What is system design?",
+          "kind": "learn",
+          "guideId": "what-is-system-design",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Read a system diagram, one arrow at a time",
+          "kind": "learn",
+          "guideId": "read-system-diagrams",
+          "lessonIds": [],
+          "outcome": "Turn boxes and arrows into a story you can explain. Learn what a diagram shows, what it leaves out, and how to check whether its arrows make sense.",
+          "minutes": 40,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Trace the example, then try your own",
+          "kind": "practice",
+          "guideId": "read-system-diagrams",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Explain what changes at each step. Try the small exercise before comparing with its worked solution.",
+          "minutes": 15,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Computers, servers, and the resources an application uses",
+          "kind": "learn",
+          "guideId": "computer-and-server-basics",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "computer-and-server-basics",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "What happens when you open a website?",
+          "kind": "learn",
+          "guideId": "request-journey",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Domains, IP addresses, ports, and DNS",
+          "kind": "learn",
+          "guideId": "dns-and-addresses",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 8,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "dns-and-addresses",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        },
+        {
+          "day": 9,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "dns-and-addresses",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-what-happens-when-you-type-a-url-into-your-browser",
+            "bbg-how-does-the-domain-name-system-dns-lookup-work",
+            "awesome-01"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "001",
+          "011",
+          "014"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 2,
+      "stageId": "foundations",
+      "title": "How applications talk and remember",
+      "why": "Learn APIs and storage through the same notes app.",
+      "outcomes": [
+        "Describe an API request and its response.",
+        "Separate temporary memory from durable saved state."
+      ],
+      "guides": [
+        {
+          "id": "apis-without-jargon",
+          "title": "APIs: a menu for your application"
+        },
+        {
+          "id": "connection-and-protocol-basics",
+          "title": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+        },
+        {
+          "id": "http-requests-and-errors",
+          "title": "HTTP requests, responses, and errors you can read"
+        },
+        {
+          "id": "data-that-survives",
+          "title": "Memory, disks, and data that survives"
+        },
+        {
+          "id": "processes-threads-and-concurrency",
+          "title": "Processes, threads, and doing several things at once"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "APIs: a menu for your application",
+          "kind": "learn",
+          "guideId": "apis-without-jargon",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Connections and protocols: TCP, TLS, HTTP, and beyond",
+          "kind": "learn",
+          "guideId": "connection-and-protocol-basics",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "HTTP requests, responses, and errors you can read",
+          "kind": "learn",
+          "guideId": "http-requests-and-errors",
+          "lessonIds": [],
+          "outcome": "Inspect a real-looking conversation between an app and its server. Learn to read methods, paths, headers, bodies, status codes, and a lost reply.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Trace the example, then try your own",
+          "kind": "practice",
+          "guideId": "http-requests-and-errors",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Explain what changes at each step. Try the small exercise before comparing with its worked solution.",
+          "minutes": 15,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "connection-and-protocol-basics",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Memory, disks, and data that survives",
+          "kind": "learn",
+          "guideId": "data-that-survives",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Processes, threads, and doing several things at once",
+          "kind": "learn",
+          "guideId": "processes-threads-and-concurrency",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 8,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "processes-threads-and-concurrency",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        },
+        {
+          "day": 9,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "processes-threads-and-concurrency",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-how-does-rest-api-work",
+            "awesome-02",
+            "awesome-03"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "023",
+          "031"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 3,
+      "stageId": "foundations",
+      "title": "Store data and find it quickly",
+      "why": "Make database decisions from the questions your app must answer.",
+      "outcomes": [
+        "Choose a key and relationship for a simple schema.",
+        "Explain the benefit and cost of an index."
+      ],
+      "guides": [
+        {
+          "id": "databases-and-sql",
+          "title": "Tables, rows, and relationships"
+        },
+        {
+          "id": "sql-in-small-steps",
+          "title": "Read and change data with SQL, one step at a time"
+        },
+        {
+          "id": "find-data-with-indexes",
+          "title": "Indexes: finding a row without reading every row"
+        },
+        {
+          "id": "pagination-from-scratch",
+          "title": "Pagination: read a large list in small, reliable pieces"
+        },
+        {
+          "id": "database-families",
+          "title": "Relational, document, key-value, wide-column, and graph stores"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Tables, rows, and relationships",
+          "kind": "learn",
+          "guideId": "databases-and-sql",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Read and change data with SQL, one step at a time",
+          "kind": "learn",
+          "guideId": "sql-in-small-steps",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "sql-in-small-steps",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Indexes: finding a row without reading every row",
+          "kind": "learn",
+          "guideId": "find-data-with-indexes",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Pagination: read a large list in small, reliable pieces",
+          "kind": "learn",
+          "guideId": "pagination-from-scratch",
+          "lessonIds": [],
+          "outcome": "Use six rows to understand page size, offsets, cursors, ties, and changing data. A list API is a contract about order and continuation.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Trace the example, then try your own",
+          "kind": "practice",
+          "guideId": "pagination-from-scratch",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Explain what changes at each step. Try the small exercise before comparing with its worked solution.",
+          "minutes": 15,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Relational, document, key-value, wide-column, and graph stores",
+          "kind": "learn",
+          "guideId": "database-families",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 8,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "database-families",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        },
+        {
+          "day": 9,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "database-families",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "awesome-06"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "031",
+          "032",
+          "033"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 4,
+      "stageId": "foundations",
+      "title": "Keep data correct",
+      "why": "Learn transactions, data modeling, database choices, and storage types before any complete design.",
+      "outcomes": [
+        "Explain a transaction using a concrete failure.",
+        "Choose a starting database from access patterns, not popularity."
+      ],
+      "guides": [
+        {
+          "id": "transactions-and-correctness",
+          "title": "Transactions: keep related changes together"
+        },
+        {
+          "id": "data-modeling-basics",
+          "title": "Data modeling: keys, relationships, and duplication"
+        },
+        {
+          "id": "choose-a-database",
+          "title": "SQL, NoSQL, and choosing what you need"
+        },
+        {
+          "id": "blobs-files-and-objects",
+          "title": "Files, blocks, objects, and the metadata around them"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Transactions: keep related changes together",
+          "kind": "learn",
+          "guideId": "transactions-and-correctness",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-does-acid-mean",
+            "awesome-05",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Data modeling: keys, relationships, and duplication",
+          "kind": "learn",
+          "guideId": "data-modeling-basics",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-does-acid-mean",
+            "awesome-05",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "data-modeling-basics",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-what-does-acid-mean",
+            "awesome-05",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "SQL, NoSQL, and choosing what you need",
+          "kind": "learn",
+          "guideId": "choose-a-database",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-does-acid-mean",
+            "awesome-05",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Files, blocks, objects, and the metadata around them",
+          "kind": "learn",
+          "guideId": "blobs-files-and-objects",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-does-acid-mean",
+            "awesome-05",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "blobs-files-and-objects",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-what-does-acid-mean",
+            "awesome-05",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "blobs-files-and-objects",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-what-does-acid-mean",
+            "awesome-05",
+            "awesome-15"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "034",
+          "036",
+          "046"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 5,
+      "stageId": "scale",
+      "title": "Know when a system needs to grow",
+      "why": "Replace “it should scale” with small understandable measurements.",
+      "outcomes": [
+        "Keep units consistent in a simple estimate.",
+        "Explain vertical versus horizontal growth."
+      ],
+      "guides": [
+        {
+          "id": "numbers-bytes-and-units",
+          "title": "Bytes, bandwidth, and units without guessing"
+        },
+        {
+          "id": "measure-before-scaling",
+          "title": "Latency, throughput, and simple estimates"
+        },
+        {
+          "id": "grow-one-server",
+          "title": "Grow one server, then add more"
+        },
+        {
+          "id": "gateways-and-proxies",
+          "title": "Proxies, load balancers, API gateways, and ingress"
+        },
+        {
+          "id": "service-boundaries",
+          "title": "Monoliths, modules, and service boundaries"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Bytes, bandwidth, and units without guessing",
+          "kind": "learn",
+          "guideId": "numbers-bytes-and-units",
+          "lessonIds": [],
+          "outcome": "Build a small calculation ledger. Convert bits and bytes, distinguish rates from quantities, and use estimates to ask better design questions.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Trace the example, then try your own",
+          "kind": "practice",
+          "guideId": "numbers-bytes-and-units",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Explain what changes at each step. Try the small exercise before comparing with its worked solution.",
+          "minutes": 15,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Latency, throughput, and simple estimates",
+          "kind": "learn",
+          "guideId": "measure-before-scaling",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Grow one server, then add more",
+          "kind": "learn",
+          "guideId": "grow-one-server",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "grow-one-server",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Proxies, load balancers, API gateways, and ingress",
+          "kind": "learn",
+          "guideId": "gateways-and-proxies",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Monoliths, modules, and service boundaries",
+          "kind": "learn",
+          "guideId": "service-boundaries",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 8,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "service-boundaries",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        },
+        {
+          "day": 9,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "service-boundaries",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "awesome-07"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "004",
+          "006",
+          "051",
+          "052"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 6,
+      "stageId": "scale",
+      "title": "Share work and avoid repeated work",
+      "why": "Add a load balancer and cache only after understanding their jobs.",
+      "outcomes": [
+        "Explain the request path through a load balancer.",
+        "Explain cache hits, misses, and the source of truth."
+      ],
+      "guides": [
+        {
+          "id": "load-balancing",
+          "title": "Load balancing: sharing incoming requests"
+        },
+        {
+          "id": "remember-with-caches",
+          "title": "Caching: reuse an answer you already have"
+        },
+        {
+          "id": "redis-from-scratch",
+          "title": "Redis from scratch: keys, data types, expiry, and durability"
+        },
+        {
+          "id": "cache-patterns-and-invalidation",
+          "title": "Cache patterns, stale data, and cache stampedes"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Load balancing: sharing incoming requests",
+          "kind": "learn",
+          "guideId": "load-balancing",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-is-a-load-balancer",
+            "bbg-proxy-vs-reverse-proxy",
+            "bbg-top-5-caching-strategies"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Caching: reuse an answer you already have",
+          "kind": "learn",
+          "guideId": "remember-with-caches",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-is-a-load-balancer",
+            "bbg-proxy-vs-reverse-proxy",
+            "bbg-top-5-caching-strategies"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "remember-with-caches",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-what-is-a-load-balancer",
+            "bbg-proxy-vs-reverse-proxy",
+            "bbg-top-5-caching-strategies"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Redis from scratch: keys, data types, expiry, and durability",
+          "kind": "learn",
+          "guideId": "redis-from-scratch",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-is-a-load-balancer",
+            "bbg-proxy-vs-reverse-proxy",
+            "bbg-top-5-caching-strategies"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Cache patterns, stale data, and cache stampedes",
+          "kind": "learn",
+          "guideId": "cache-patterns-and-invalidation",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-what-is-a-load-balancer",
+            "bbg-proxy-vs-reverse-proxy",
+            "bbg-top-5-caching-strategies"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "cache-patterns-and-invalidation",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-what-is-a-load-balancer",
+            "bbg-proxy-vs-reverse-proxy",
+            "bbg-top-5-caching-strategies"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "cache-patterns-and-invalidation",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-what-is-a-load-balancer",
+            "bbg-proxy-vs-reverse-proxy",
+            "bbg-top-5-caching-strategies"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "017",
+          "053",
+          "056"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 7,
+      "stageId": "scale",
+      "title": "Deliver quickly and work in the background",
+      "why": "Separate serving a page from doing expensive work for it.",
+      "outcomes": [
+        "Explain why a CDN helps some content more than other content.",
+        "Separate an accepted job from a completed job."
+      ],
+      "guides": [
+        {
+          "id": "cache-freshness-and-cdns",
+          "title": "Fresh caches and nearby content"
+        },
+        {
+          "id": "serialization-and-data-formats",
+          "title": "JSON, bytes, serialization, and compression"
+        },
+        {
+          "id": "background-jobs",
+          "title": "Background work: do not make the user wait"
+        },
+        {
+          "id": "containers-and-deployment",
+          "title": "From a program to a container and a running service"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Fresh caches and nearby content",
+          "kind": "learn",
+          "guideId": "cache-freshness-and-cdns",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-top-5-caching-strategies",
+            "awesome-10",
+            "awesome-11"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "JSON, bytes, serialization, and compression",
+          "kind": "learn",
+          "guideId": "serialization-and-data-formats",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-top-5-caching-strategies",
+            "awesome-10",
+            "awesome-11"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "serialization-and-data-formats",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-top-5-caching-strategies",
+            "awesome-10",
+            "awesome-11"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Background work: do not make the user wait",
+          "kind": "learn",
+          "guideId": "background-jobs",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-top-5-caching-strategies",
+            "awesome-10",
+            "awesome-11"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "From a program to a container and a running service",
+          "kind": "learn",
+          "guideId": "containers-and-deployment",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-top-5-caching-strategies",
+            "awesome-10",
+            "awesome-11"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "containers-and-deployment",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-top-5-caching-strategies",
+            "awesome-10",
+            "awesome-11"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "containers-and-deployment",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-top-5-caching-strategies",
+            "awesome-10",
+            "awesome-11"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "057",
+          "058",
+          "091",
+          "092"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 8,
+      "stageId": "scale",
+      "title": "Understand background processing from end to end",
+      "why": "Learn the queue and job lifecycle thoroughly. Finish with an explained walkthrough; a full design interview is not expected yet.",
+      "outcomes": [
+        "Describe a safe retry in a concrete workflow.",
+        "Present requirements, API, data, and a simple architecture in order."
+      ],
+      "guides": [
+        {
+          "id": "queues-and-retries",
+          "title": "Queues, retries, and doing work twice"
+        },
+        {
+          "id": "queue-broker-fundamentals",
+          "title": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+        },
+        {
+          "id": "job-lifecycle-and-backpressure",
+          "title": "Job states, retries, and backpressure"
+        },
+        {
+          "id": "first-design-url-shortener",
+          "title": "A guided walkthrough: how familiar blocks fit together"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Queues, retries, and doing work twice",
+          "kind": "learn",
+          "guideId": "queues-and-retries",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-19",
+            "hello-introduction"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka",
+          "kind": "learn",
+          "guideId": "queue-broker-fundamentals",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-19",
+            "hello-introduction"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "queue-broker-fundamentals",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-19",
+            "hello-introduction"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Job states, retries, and backpressure",
+          "kind": "learn",
+          "guideId": "job-lifecycle-and-backpressure",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-19",
+            "hello-introduction"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "A guided walkthrough: how familiar blocks fit together",
+          "kind": "learn",
+          "guideId": "first-design-url-shortener",
+          "lessonIds": [],
+          "outcome": "Understand the component, follow a worked example, and explain why it is useful.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-19",
+            "hello-introduction"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Practice one building block at a time",
+          "kind": "practice",
+          "guideId": "first-design-url-shortener",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Try the chapter exercise. Trace the data or request before adding any new component. You do not need to invent a whole architecture.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-19",
+            "hello-introduction"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "first-design-url-shortener",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-19",
+            "hello-introduction"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "093",
+          "096",
+          "039",
+          "059"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Can you explain each component from this week, trace its example, and name one common mistake? Revisit the chapter before moving on if any answer is unclear.",
+        "successCriteria": [
+          "Define each new term without relying on another unexplained term.",
+          "Walk through the example with concrete requests or data.",
+          "Explain one limitation or failure without designing a whole system."
+        ]
+      },
+      "studyMode": "Build your foundation"
+    },
+    {
+      "number": 9,
+      "stageId": "distributed",
+      "title": "Copy data and divide data",
+      "why": "Understand two very different reasons for adding databases.",
+      "outcomes": [
+        "Distinguish replication from sharding.",
+        "Identify one benefit and one failure cost for each."
+      ],
+      "guides": [
+        {
+          "id": "copying-data",
+          "title": "Replication: keeping another copy"
+        },
+        {
+          "id": "split-data-into-shards",
+          "title": "Sharding: splitting a large dataset"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Replication: keeping another copy",
+          "kind": "learn",
+          "guideId": "copying-data",
+          "lessonIds": [],
+          "outcome": "Distinguish replication from sharding.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-a-crash-course-in-database-sharding",
+            "bbg-consistent-hashing",
+            "awesome-12"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "copying-data",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Draw a primary and a replica. Follow a write and a slightly stale read.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-a-crash-course-in-database-sharding",
+            "bbg-consistent-hashing",
+            "awesome-12"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Sharding: splitting a large dataset",
+          "kind": "learn",
+          "guideId": "split-data-into-shards",
+          "lessonIds": [],
+          "outcome": "Identify one benefit and one failure cost for each.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-a-crash-course-in-database-sharding",
+            "bbg-consistent-hashing",
+            "awesome-12"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "split-data-into-shards",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Split notes by owner across three databases. Explain a hot owner and a cross-owner search.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-a-crash-course-in-database-sharding",
+            "bbg-consistent-hashing",
+            "awesome-12"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "split-data-into-shards",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Split notes by owner across three databases. Explain a hot owner and a cross-owner search. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-a-crash-course-in-database-sharding",
+            "bbg-consistent-hashing",
+            "awesome-12"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "061",
+          "062",
+          "064",
+          "066"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Split notes by owner across three databases. Explain a hot owner and a cross-owner search.",
+        "successCriteria": [
+          "Distinguish replication from sharding.",
+          "Identify one benefit and one failure cost for each."
+        ]
+      }
+    },
+    {
+      "number": 10,
+      "stageId": "distributed",
+      "title": "Understand disagreement between machines",
+      "why": "Learn consistency using short stories and timelines before terminology.",
+      "outcomes": [
+        "Describe a required read guarantee with an example.",
+        "Explain the choice forced by a partition without “pick any two” slogans."
+      ],
+      "guides": [
+        {
+          "id": "consistency-in-plain-language",
+          "title": "Consistency: which value will I read?"
+        },
+        {
+          "id": "partitions-and-quorums",
+          "title": "Network splits, CAP, and quorums"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Consistency: which value will I read?",
+          "kind": "learn",
+          "guideId": "consistency-in-plain-language",
+          "lessonIds": [],
+          "outcome": "Describe a required read guarantee with an example.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+            "awesome-14",
+            "awesome-28"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "consistency-in-plain-language",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Draw a timeline where a user saves a profile and another device sees the old version.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+            "awesome-14",
+            "awesome-28"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Network splits, CAP, and quorums",
+          "kind": "learn",
+          "guideId": "partitions-and-quorums",
+          "lessonIds": [],
+          "outcome": "Explain the choice forced by a partition without “pick any two” slogans.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+            "awesome-14",
+            "awesome-28"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "partitions-and-quorums",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "A network split separates two groups of replicas. Defend what a seat-booking write should do.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+            "awesome-14",
+            "awesome-28"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "partitions-and-quorums",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. A network split separates two groups of replicas. Defend what a seat-booking write should do. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+            "awesome-14",
+            "awesome-28"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "071",
+          "072",
+          "074",
+          "077"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "A network split separates two groups of replicas. Defend what a seat-booking write should do.",
+        "successCriteria": [
+          "Describe a required read guarantee with an example.",
+          "Explain the choice forced by a partition without “pick any two” slogans."
+        ]
+      }
+    },
+    {
+      "number": 11,
+      "stageId": "distributed",
+      "title": "Move facts reliably between services",
+      "why": "Follow an event from an accepted change to a derived view.",
+      "outcomes": [
+        "Separate a durable fact, event delivery, and a downstream effect.",
+        "Explain a replay and why it must not resend old emails."
+      ],
+      "guides": [
+        {
+          "id": "reliable-events",
+          "title": "Events and the transactional outbox"
+        },
+        {
+          "id": "streaming-and-replay",
+          "title": "Logs, streams, and replay"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Events and the transactional outbox",
+          "kind": "learn",
+          "guideId": "reliable-events",
+          "lessonIds": [],
+          "outcome": "Separate a durable fact, event delivery, and a downstream effect.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-11",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "reliable-events",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Draw the crash between saving an order and notifying another service. Repair the missing handoff.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-11",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Logs, streams, and replay",
+          "kind": "learn",
+          "guideId": "streaming-and-replay",
+          "lessonIds": [],
+          "outcome": "Explain a replay and why it must not resend old emails.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-11",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "streaming-and-replay",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "A dashboard is wrong after a bug. Explain how a retained event history helps rebuild it safely.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-11",
+            "awesome-15"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "streaming-and-replay",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. A dashboard is wrong after a bug. Explain how a retained event history helps rebuild it safely. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-delivery-semantics",
+            "awesome-11",
+            "awesome-15"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "101",
+          "102",
+          "103",
+          "107",
+          "109"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "A dashboard is wrong after a bug. Explain how a retained event history helps rebuild it safely.",
+        "successCriteria": [
+          "Separate a durable fact, event delivery, and a downstream effect.",
+          "Explain a replay and why it must not resend old emails."
+        ]
+      }
+    },
+    {
+      "number": 12,
+      "stageId": "distributed",
+      "title": "Protect users and share capacity fairly",
+      "why": "Place permission and admission decisions in the request path.",
+      "outcomes": [
+        "Distinguish identity from permission.",
+        "Explain a token bucket and the choice made when its store fails."
+      ],
+      "guides": [
+        {
+          "id": "identity-and-permissions",
+          "title": "Authentication, authorization, and tenant boundaries"
+        },
+        {
+          "id": "rate-limits-and-abuse",
+          "title": "Rate limits: protecting a shared service"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Authentication, authorization, and tenant boundaries",
+          "kind": "learn",
+          "guideId": "identity-and-permissions",
+          "lessonIds": [],
+          "outcome": "Distinguish identity from permission.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "identity-and-permissions",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use two users and two private notes to test who may read or change each note.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Rate limits: protecting a shared service",
+          "kind": "learn",
+          "guideId": "rate-limits-and-abuse",
+          "lessonIds": [],
+          "outcome": "Explain a token bucket and the choice made when its store fails.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "rate-limits-and-abuse",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Checkpoint: design a private file-upload API with permissions, a queue, and per-user limits.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-16"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Practice checkpoint and reflection",
+          "kind": "interview",
+          "guideId": "rate-limits-and-abuse",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Checkpoint: design a private file-upload API with permissions, a queue, and per-user limits. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "026",
+          "131",
+          "134",
+          "137"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Checkpoint: design a private file-upload API with permissions, a queue, and per-user limits.",
+        "successCriteria": [
+          "Distinguish identity from permission.",
+          "Explain a token bucket and the choice made when its store fails."
+        ]
+      }
+    },
+    {
+      "number": 13,
+      "stageId": "operate",
+      "title": "Make reliability visible",
+      "why": "Connect failures to what users experience and what operators can observe.",
+      "outcomes": [
+        "Identify a shared point of failure.",
+        "Choose useful signals for one user journey."
+      ],
+      "guides": [
+        {
+          "id": "reliable-systems",
+          "title": "Availability, failure domains, and graceful degradation"
+        },
+        {
+          "id": "reliability-controls",
+          "title": "Timeouts, retry budgets, circuit breakers, and service objectives"
+        },
+        {
+          "id": "observe-and-debug",
+          "title": "Logs, metrics, traces, and debugging"
+        },
+        {
+          "id": "kubernetes-building-blocks",
+          "title": "Kubernetes: Pods, Deployments, Services, and the control loop"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Availability, failure domains, and graceful degradation",
+          "kind": "learn",
+          "guideId": "reliable-systems",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-30"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Timeouts, retry budgets, circuit breakers, and service objectives",
+          "kind": "learn",
+          "guideId": "reliability-controls",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-30"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "reliability-controls",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-30"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Logs, metrics, traces, and debugging",
+          "kind": "learn",
+          "guideId": "observe-and-debug",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-30"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Kubernetes: Pods, Deployments, Services, and the control loop",
+          "kind": "learn",
+          "guideId": "kubernetes-building-blocks",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-30"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Apply the idea to your platform",
+          "kind": "practice",
+          "guideId": "kubernetes-building-blocks",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Investigate a slow endpoint using three observations. Separate the symptom from a possible cause.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-30"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Recall, reflect, and connect",
+          "kind": "review",
+          "guideId": "kubernetes-building-blocks",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-30"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "121",
+          "122",
+          "123",
+          "126"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Investigate a slow endpoint using three observations. Separate the symptom from a possible cause.",
+        "successCriteria": [
+          "Identify a shared point of failure.",
+          "Choose useful signals for one user journey."
+        ]
+      },
+      "studyMode": "Connect the ideas"
+    },
+    {
+      "number": 14,
+      "stageId": "operate",
+      "title": "Change and recover safely",
+      "why": "A design must survive deployments, data loss, and a failed location.",
+      "outcomes": [
+        "Separate a backup existing from a restore being tested.",
+        "Define recovery time and acceptable data loss with units."
+      ],
+      "guides": [
+        {
+          "id": "ship-and-recover",
+          "title": "Deployments, backups, and restore drills"
+        },
+        {
+          "id": "kubernetes-networking",
+          "title": "Kubernetes networking, discovery, and incoming traffic"
+        },
+        {
+          "id": "regions-and-disaster-recovery",
+          "title": "Regions, recovery targets, and failover"
+        },
+        {
+          "id": "kubernetes-operations",
+          "title": "Kubernetes configuration, probes, resources, and autoscaling"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Deployments, backups, and restore drills",
+          "kind": "learn",
+          "guideId": "ship-and-recover",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-17",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Kubernetes networking, discovery, and incoming traffic",
+          "kind": "learn",
+          "guideId": "kubernetes-networking",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-17",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "kubernetes-networking",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "awesome-17",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Regions, recovery targets, and failover",
+          "kind": "learn",
+          "guideId": "regions-and-disaster-recovery",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-17",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Kubernetes configuration, probes, resources, and autoscaling",
+          "kind": "learn",
+          "guideId": "kubernetes-operations",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-17",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Apply the idea to your platform",
+          "kind": "practice",
+          "guideId": "kubernetes-operations",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Explain a database restore drill and what recovery time/data-loss measurements prove.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-17",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Recall, reflect, and connect",
+          "kind": "review",
+          "guideId": "kubernetes-operations",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "awesome-17",
+            "awesome-24"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "127",
+          "128",
+          "144",
+          "146"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Explain a database restore drill and what recovery time/data-loss measurements prove.",
+        "successCriteria": [
+          "Separate a backup existing from a restore being tested.",
+          "Define recovery time and acceptable data loss with units."
+        ]
+      },
+      "studyMode": "Connect the ideas"
+    },
+    {
+      "number": 15,
+      "stageId": "operate",
+      "title": "Turn understanding into interview communication",
+      "why": "Use a repeatable conversation structure, not a memorized diagram.",
+      "outcomes": [
+        "Clarify requirements before drawing components.",
+        "Spend time on the highest-risk decisions and explain alternatives."
+      ],
+      "guides": [
+        {
+          "id": "interview-game-plan",
+          "title": "A practical system design interview framework"
+        },
+        {
+          "id": "estimates-and-tradeoffs",
+          "title": "Make useful estimates and defend tradeoffs"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "A practical system design interview framework",
+          "kind": "learn",
+          "guideId": "interview-game-plan",
+          "lessonIds": [],
+          "outcome": "Clarify requirements before drawing components.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "awesome-18",
+            "awesome-29"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "interview-game-plan",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Give a five-minute explanation of one previous design while stating assumptions and a non-goal.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "awesome-18",
+            "awesome-29"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Make useful estimates and defend tradeoffs",
+          "kind": "learn",
+          "guideId": "estimates-and-tradeoffs",
+          "lessonIds": [],
+          "outcome": "Spend time on the highest-risk decisions and explain alternatives.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "awesome-18",
+            "awesome-29"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "estimates-and-tradeoffs",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Run a30minute mini mock: design a shared document-link service, then change its privacy requirement.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "awesome-18",
+            "awesome-29"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "estimates-and-tradeoffs",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Run a30minute mini mock: design a shared document-link service, then change its privacy requirement. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "awesome-18",
+            "awesome-29"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "002",
+          "004",
+          "009",
+          "010"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Run a30minute mini mock: design a shared document-link service, then change its privacy requirement.",
+        "successCriteria": [
+          "Clarify requirements before drawing components.",
+          "Spend time on the highest-risk decisions and explain alternatives."
+        ]
+      }
+    },
+    {
+      "number": 16,
+      "stageId": "operate",
+      "title": "Design reusable backend services",
+      "why": "Apply your toolbox to delivery and admission problems.",
+      "outcomes": [
+        "Separate delivery intent from successful external delivery.",
+        "Choose a quota coordination policy from the required guarantee."
+      ],
+      "guides": [
+        {
+          "id": "design-notifications",
+          "title": "Design a notification service"
+        },
+        {
+          "id": "design-rate-limiter",
+          "title": "Design a distributed rate limiter"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Design a notification service",
+          "kind": "learn",
+          "guideId": "design-notifications",
+          "lessonIds": [],
+          "outcome": "Separate delivery intent from successful external delivery.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16",
+            "awesome-20"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "design-notifications",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Trace one notification from preference check to provider result, including a duplicate event.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16",
+            "awesome-20"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Design a distributed rate limiter",
+          "kind": "learn",
+          "guideId": "design-rate-limiter",
+          "lessonIds": [],
+          "outcome": "Choose a quota coordination policy from the required guarantee.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16",
+            "awesome-20"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "design-rate-limiter",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Checkpoint: defend a regional rate limiter during a network outage and uneven demand.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-16",
+            "awesome-20"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Practice checkpoint and reflection",
+          "kind": "interview",
+          "guideId": "design-rate-limiter",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Checkpoint: defend a regional rate limiter during a network outage and uneven demand. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-16",
+            "awesome-20"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "130",
+          "138",
+          "139",
+          "158",
+          "159"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Checkpoint: defend a regional rate limiter during a network outage and uneven demand.",
+        "successCriteria": [
+          "Separate delivery intent from successful external delivery.",
+          "Choose a quota coordination policy from the required guarantee."
+        ]
+      }
+    },
+    {
+      "number": 17,
+      "stageId": "design",
+      "title": "Design real-time communication",
+      "why": "Move from one message to ordering, reconnects, and many connections.",
+      "outcomes": [
+        "Separate live connections from durable message history.",
+        "Explain an offline delivery and reconnection path."
+      ],
+      "guides": [
+        {
+          "id": "design-chat",
+          "title": "Design a chat service from first principles"
+        },
+        {
+          "id": "chat-reconnect-and-scale",
+          "title": "Chat: reconnects, ordering, and growth"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Design a chat service from first principles",
+          "kind": "learn",
+          "guideId": "design-chat",
+          "lessonIds": [],
+          "outcome": "Separate live connections from durable message history.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-21",
+            "awesome-22",
+            "awesome-23"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "design-chat",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Design send-message and fetch-history APIs and a room-scoped message order.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-21",
+            "awesome-22",
+            "awesome-23"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Chat: reconnects, ordering, and growth",
+          "kind": "learn",
+          "guideId": "chat-reconnect-and-scale",
+          "lessonIds": [],
+          "outcome": "Explain an offline delivery and reconnection path.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-21",
+            "awesome-22",
+            "awesome-23"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "chat-reconnect-and-scale",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Disconnect a client for a day. Explain authentication, replay, duplicate suppression, and bounded buffering.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-21",
+            "awesome-22",
+            "awesome-23"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "chat-reconnect-and-scale",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Disconnect a client for a day. Explain authentication, replay, duplicate suppression, and bounded buffering. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-21",
+            "awesome-22",
+            "awesome-23"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "019",
+          "171",
+          "172",
+          "173",
+          "174"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Disconnect a client for a day. Explain authentication, replay, duplicate suppression, and bounded buffering.",
+        "successCriteria": [
+          "Separate live connections from durable message history.",
+          "Explain an offline delivery and reconnection path."
+        ]
+      }
+    },
+    {
+      "number": 18,
+      "stageId": "design",
+      "title": "Build feeds under uneven demand",
+      "why": "Understand why one celebrity changes the cost of a social feed.",
+      "outcomes": [
+        "Explain fan-out on write versus read.",
+        "Defend a hybrid policy using workload and freshness."
+      ],
+      "guides": [
+        {
+          "id": "design-news-feed",
+          "title": "Design a news feed"
+        },
+        {
+          "id": "feed-fanout-and-ranking",
+          "title": "Feeds: fan-out, ranking, and celebrity traffic"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Design a news feed",
+          "kind": "learn",
+          "guideId": "design-news-feed",
+          "lessonIds": [],
+          "outcome": "Explain fan-out on write versus read.",
+          "minutes": 45,
+          "resourceIds": []
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "design-news-feed",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Estimate writes for one ordinary author and one celebrity. Compare push and pull feed generation.",
+          "minutes": 45,
+          "resourceIds": []
+        },
+        {
+          "day": 3,
+          "title": "Feeds: fan-out, ranking, and celebrity traffic",
+          "kind": "learn",
+          "guideId": "feed-fanout-and-ranking",
+          "lessonIds": [],
+          "outcome": "Defend a hybrid policy using workload and freshness.",
+          "minutes": 45,
+          "resourceIds": []
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "feed-fanout-and-ranking",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "A cached timeline disappears. Rebuild it while preserving a stable pagination contract.",
+          "minutes": 60,
+          "resourceIds": []
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "feed-fanout-and-ranking",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. A cached timeline disappears. Rebuild it while preserving a stable pagination contract. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": []
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "181",
+          "182",
+          "183",
+          "184"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "A cached timeline disappears. Rebuild it while preserving a stable pagination contract.",
+        "successCriteria": [
+          "Explain fan-out on write versus read.",
+          "Defend a hybrid policy using workload and freshness."
+        ]
+      }
+    },
+    {
+      "number": 19,
+      "stageId": "design",
+      "title": "Store and synchronize files",
+      "why": "Separate file bytes, metadata, versions, and permissions.",
+      "outcomes": [
+        "Separate object storage from metadata authority.",
+        "Design a recoverable upload and explicit conflict policy."
+      ],
+      "guides": [
+        {
+          "id": "design-file-storage",
+          "title": "Design a file storage service"
+        },
+        {
+          "id": "file-sync-and-conflicts",
+          "title": "File synchronization and conflicting edits"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Design a file storage service",
+          "kind": "learn",
+          "guideId": "design-file-storage",
+          "lessonIds": [],
+          "outcome": "Separate object storage from metadata authority.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-design-google-docs",
+            "awesome-23",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "design-file-storage",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Draw a resumable upload and identify when the file becomes visible.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-design-google-docs",
+            "awesome-23",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "File synchronization and conflicting edits",
+          "kind": "learn",
+          "guideId": "file-sync-and-conflicts",
+          "lessonIds": [],
+          "outcome": "Design a recoverable upload and explicit conflict policy.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-design-google-docs",
+            "awesome-23",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "file-sync-and-conflicts",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Two devices edit offline. Explain conflict detection without pretending timestamps prove intent.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-to-design-google-docs",
+            "awesome-23",
+            "awesome-24"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "file-sync-and-conflicts",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Two devices edit offline. Explain conflict detection without pretending timestamps prove intent. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-design-google-docs",
+            "awesome-23",
+            "awesome-24"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "191",
+          "192",
+          "193",
+          "194"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Two devices edit offline. Explain conflict detection without pretending timestamps prove intent.",
+        "successCriteria": [
+          "Separate object storage from metadata authority.",
+          "Design a recoverable upload and explicit conflict policy."
+        ]
+      }
+    },
+    {
+      "number": 20,
+      "stageId": "design",
+      "title": "Deliver media and find content",
+      "why": "Study two systems with different write and read pipelines.",
+      "outcomes": [
+        "Explain asynchronous media processing and CDN playback.",
+        "Separate the search index from the source of truth."
+      ],
+      "guides": [
+        {
+          "id": "design-video-platform",
+          "title": "Design video upload and playback"
+        },
+        {
+          "id": "design-search-and-autocomplete",
+          "title": "Design search and autocomplete"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Design video upload and playback",
+          "kind": "learn",
+          "guideId": "design-video-platform",
+          "lessonIds": [],
+          "outcome": "Explain asynchronous media processing and CDN playback.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "design-video-platform",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Trace upload, processing, publication, and playback as separate stages.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Design search and autocomplete",
+          "kind": "learn",
+          "guideId": "design-search-and-autocomplete",
+          "lessonIds": [],
+          "outcome": "Separate the search index from the source of truth.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "design-search-and-autocomplete",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Checkpoint: design autocomplete with popular prefixes, updates, privacy, and a freshness target.",
+          "minutes": 60,
+          "resourceIds": [
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Practice checkpoint and reflection",
+          "kind": "interview",
+          "guideId": "design-search-and-autocomplete",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Checkpoint: design autocomplete with popular prefixes, updates, privacy, and a freshness target. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "awesome-27"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "201",
+          "202",
+          "206",
+          "207"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Checkpoint: design autocomplete with popular prefixes, updates, privacy, and a freshness target.",
+        "successCriteria": [
+          "Explain asynchronous media processing and CDN playback.",
+          "Separate the search index from the source of truth."
+        ]
+      }
+    },
+    {
+      "number": 21,
+      "stageId": "advanced",
+      "title": "Protect important business outcomes",
+      "why": "Apply concurrency and retry reasoning where incorrect effects are costly.",
+      "outcomes": [
+        "Locate the atomic seat-claim boundary.",
+        "Treat a timed-out external effect as unknown until resolved."
+      ],
+      "guides": [
+        {
+          "id": "design-bookings",
+          "title": "Design a booking system without overselling"
+        },
+        {
+          "id": "design-payments",
+          "title": "Design payment workflows and reconciliation"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Design a booking system without overselling",
+          "kind": "learn",
+          "guideId": "design-bookings",
+          "lessonIds": [],
+          "outcome": "Locate the atomic seat-claim boundary.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-avoid-double-payment",
+            "awesome-25"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "design-bookings",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use a concrete interleaving to show how two customers could claim the same seat.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-avoid-double-payment",
+            "awesome-25"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Design payment workflows and reconciliation",
+          "kind": "learn",
+          "guideId": "design-payments",
+          "lessonIds": [],
+          "outcome": "Treat a timed-out external effect as unknown until resolved.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-avoid-double-payment",
+            "awesome-25"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "design-payments",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "A payment provider accepts a charge but the response is lost. Design the recovery and user-visible state.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-to-avoid-double-payment",
+            "awesome-25"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Explain it without looking",
+          "kind": "review",
+          "guideId": "design-payments",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. A payment provider accepts a charge but the response is lost. Design the recovery and user-visible state. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-avoid-double-payment",
+            "awesome-25"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "221",
+          "222",
+          "223",
+          "224"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "A payment provider accepts a charge but the response is lost. Design the recovery and user-visible state.",
+        "successCriteria": [
+          "Locate the atomic seat-claim boundary.",
+          "Treat a timed-out external effect as unknown until resolved."
+        ]
+      }
+    },
+    {
+      "number": 22,
+      "stageId": "advanced",
+      "title": "Coordinate and evolve complex systems",
+      "why": "Understand advanced mechanisms by the failures they prevent.",
+      "outcomes": [
+        "Explain fencing with a stale-worker timeline.",
+        "Separate commit, isolation, replay, and migration guarantees."
+      ],
+      "guides": [
+        {
+          "id": "coordination-and-leases",
+          "title": "Leaders, leases, fencing, and consensus"
+        },
+        {
+          "id": "change-data-safely",
+          "title": "Migrations, event sourcing, and safe replay"
+        },
+        {
+          "id": "mcp-platform-architecture",
+          "title": "Design an MCP platform across gateways and replicas"
+        },
+        {
+          "id": "platform-security-and-tenancy",
+          "title": "Platform identity, secrets, tenant isolation, and tool permissions"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Leaders, leases, fencing, and consensus",
+          "kind": "learn",
+          "guideId": "coordination-and-leases",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-26",
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Migrations, event sourcing, and safe replay",
+          "kind": "learn",
+          "guideId": "change-data-safely",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-26",
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "change-data-safely",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-26",
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Design an MCP platform across gateways and replicas",
+          "kind": "learn",
+          "guideId": "mcp-platform-architecture",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-26",
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Platform identity, secrets, tenant isolation, and tool permissions",
+          "kind": "learn",
+          "guideId": "platform-security-and-tenancy",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-26",
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 6,
+          "title": "Apply the idea to your platform",
+          "kind": "practice",
+          "guideId": "platform-security-and-tenancy",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Migrate a derived view while live writes continue. Define the validation and rollback gates.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-26",
+            "awesome-27"
+          ]
+        },
+        {
+          "day": 7,
+          "title": "Recall, reflect, and connect",
+          "kind": "review",
+          "guideId": "platform-security-and-tenancy",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": [
+            "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+            "awesome-26",
+            "awesome-27"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "081",
+          "082",
+          "086",
+          "087",
+          "112",
+          "113"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Migrate a derived view while live writes continue. Define the validation and rollback gates.",
+        "successCriteria": [
+          "Explain fencing with a stale-worker timeline.",
+          "Separate commit, isolation, replay, and migration guarantees."
+        ]
+      },
+      "studyMode": "Connect the ideas"
+    },
+    {
+      "number": 23,
+      "stageId": "advanced",
+      "title": "Add modern AI systems to your toolbox",
+      "why": "Reuse familiar system design ideas around model-specific costs and quality.",
+      "outcomes": [
+        "Distinguish model quality from service reliability.",
+        "Explain token/memory demand, retrieval freshness, and authorization."
+      ],
+      "guides": [
+        {
+          "id": "ai-system-design",
+          "title": "Design an AI application and inference gateway"
+        },
+        {
+          "id": "model-serving-and-gpus",
+          "title": "Model serving: GPUs, memory, batching, and scheduling"
+        },
+        {
+          "id": "rag-and-inference",
+          "title": "RAG, retrieval permissions, and serving tradeoffs"
+        },
+        {
+          "id": "ai-platform-operations",
+          "title": "Model registries, routing, rollout, and AI observability"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "Design an AI application and inference gateway",
+          "kind": "learn",
+          "guideId": "ai-system-design",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": []
+        },
+        {
+          "day": 2,
+          "title": "Model serving: GPUs, memory, batching, and scheduling",
+          "kind": "learn",
+          "guideId": "model-serving-and-gpus",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": []
+        },
+        {
+          "day": 3,
+          "title": "Pause and explain the first two ideas",
+          "kind": "practice",
+          "guideId": "model-serving-and-gpus",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Use the worked example, try its small exercise, and explain each step in your own words. Revisit any undefined term.",
+          "minutes": 30,
+          "resourceIds": []
+        },
+        {
+          "day": 4,
+          "title": "RAG, retrieval permissions, and serving tradeoffs",
+          "kind": "learn",
+          "guideId": "rag-and-inference",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": []
+        },
+        {
+          "day": 5,
+          "title": "Model registries, routing, rollout, and AI observability",
+          "kind": "learn",
+          "guideId": "ai-platform-operations",
+          "lessonIds": [],
+          "outcome": "Follow the normal path and a failure, then explain the tradeoff.",
+          "minutes": 60,
+          "resourceIds": []
+        },
+        {
+          "day": 6,
+          "title": "Apply the idea to your platform",
+          "kind": "practice",
+          "guideId": "ai-platform-operations",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "A private document is retrieved for the wrong user. Place the required controls and evaluation checks.",
+          "minutes": 45,
+          "resourceIds": []
+        },
+        {
+          "day": 7,
+          "title": "Recall, reflect, and connect",
+          "kind": "review",
+          "guideId": "ai-platform-operations",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Explain what each component does, why it exists, and one limitation. Use your saved notes to choose what needs another pass.",
+          "minutes": 30,
+          "resourceIds": []
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "261",
+          "269",
+          "271",
+          "281",
+          "286"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "A private document is retrieved for the wrong user. Place the required controls and evaluation checks.",
+        "successCriteria": [
+          "Distinguish model quality from service reliability.",
+          "Explain token/memory demand, retrieval freshness, and authorization."
+        ]
+      },
+      "studyMode": "Connect the ideas"
+    },
+    {
+      "number": 24,
+      "stageId": "advanced",
+      "title": "Practice unfamiliar problems and plan the next step",
+      "why": "Measure readiness through recorded reasoning and focused retries.",
+      "outcomes": [
+        "Explain an unfamiliar design from requirements rather than memory.",
+        "Use evidence to decide what to practice next."
+      ],
+      "guides": [
+        {
+          "id": "full-mock-interview",
+          "title": "A full mock interview with a changing requirement"
+        },
+        {
+          "id": "capstone-and-readiness-plan",
+          "title": "Your capstone, evidence, and readiness plan"
+        }
+      ],
+      "days": [
+        {
+          "day": 1,
+          "title": "A full mock interview with a changing requirement",
+          "kind": "learn",
+          "guideId": "full-mock-interview",
+          "lessonIds": [],
+          "outcome": "Explain an unfamiliar design from requirements rather than memory.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "hello-delivery"
+          ]
+        },
+        {
+          "day": 2,
+          "title": "Draw it and try it yourself",
+          "kind": "practice",
+          "guideId": "full-mock-interview",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Run one45minute unfamiliar mock with a peer or connected AI; record actual answers before debrief.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "hello-delivery"
+          ]
+        },
+        {
+          "day": 3,
+          "title": "Your capstone, evidence, and readiness plan",
+          "kind": "learn",
+          "guideId": "capstone-and-readiness-plan",
+          "lessonIds": [],
+          "outcome": "Use evidence to decide what to practice next.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "hello-delivery"
+          ]
+        },
+        {
+          "day": 4,
+          "title": "Apply the idea to a small design",
+          "kind": "practice",
+          "guideId": "capstone-and-readiness-plan",
+          "focus": "practice",
+          "lessonIds": [],
+          "outcome": "Review your evidence, choose three weak skills, and repeat a changed problem after targeted study.",
+          "minutes": 60,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "hello-delivery"
+          ]
+        },
+        {
+          "day": 5,
+          "title": "Practice checkpoint and reflection",
+          "kind": "interview",
+          "guideId": "capstone-and-readiness-plan",
+          "focus": "review",
+          "lessonIds": [],
+          "outcome": "Close the lesson and explain both ideas. Review your evidence, choose three weak skills, and repeat a changed problem after targeted study. Write one thing you can explain and one thing to revisit.",
+          "minutes": 45,
+          "resourceIds": [
+            "bbg-how-to-ace-system-design-interviews-like-a-boss",
+            "hello-delivery"
+          ]
+        }
+      ],
+      "optionalDepth": {
+        "title": "Explore further when you are ready",
+        "lessonIds": [
+          "190",
+          "291",
+          "293",
+          "299",
+          "300"
+        ],
+        "minutes": 60
+      },
+      "checkpoint": {
+        "prompt": "Review your evidence, choose three weak skills, and repeat a changed problem after targeted study.",
+        "successCriteria": [
+          "Explain an unfamiliar design from requirements rather than memory.",
+          "Use evidence to decide what to practice next."
+        ]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "id": "bbg-what-happens-when-you-type-a-url-into-your-browser",
+      "title": "What Happens When You Type a URL Into Your Browser?",
+      "url": "https://bytebytego.com/guides/what-happens-when-you-type-a-url-into-your-browser/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Visual reinforcement for the browser-to-server journey after the original first explanation. The example is HTTP/TCP; it is not every modern transport.",
+      "weeks": [
+        1
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-how-does-the-domain-name-system-dns-lookup-work",
+      "title": "How Does the Domain Name System (DNS) Lookup Work?",
+      "url": "https://bytebytego.com/guides/how-does-the-domain-name-system-dns-lookup-work/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Follow a named resolver through DNS lookup after domain and address are defined. Treat timings as context-specific.",
+      "weeks": [
+        1
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-how-does-rest-api-work",
+      "title": "How does REST API work?",
+      "url": "https://bytebytego.com/guides/how-does-rest-api-work/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "A visual checklist after the original request/response guide; its short text is not a standalone beginner lesson.",
+      "weeks": [
+        2
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-what-does-acid-mean",
+      "title": "What does ACID mean?",
+      "url": "https://bytebytego.com/guides/what-does-acid-mean/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "A vocabulary recap after a concrete transaction example. Read alongside the guide’s explicit failure and isolation scope.",
+      "weeks": [
+        4
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-what-is-a-load-balancer",
+      "title": "What is a Load Balancer?",
+      "url": "https://bytebytego.com/guides/what-is-a-load-balancer/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Locate the traffic distributor in a small multi-server app before exploring its many types.",
+      "weeks": [
+        6
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-proxy-vs-reverse-proxy",
+      "title": "Proxy vs Reverse Proxy",
+      "url": "https://bytebytego.com/guides/proxy-vs-reverse-proxy/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Compare which side of a conversation the intermediary serves, after the main load-balancing walkthrough.",
+      "weeks": [
+        6
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-top-5-caching-strategies",
+      "title": "Top 5 Caching Strategies",
+      "url": "https://bytebytego.com/guides/top-5-caching-strategies/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Optional visual vocabulary for read/write cache paths. Our original guide supplies freshness and failure reasoning.",
+      "weeks": [
+        6,
+        7
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-a-crash-course-in-database-sharding",
+      "title": "A Crash Course on Database Sharding",
+      "url": "https://bytebytego.com/guides/a-crash-course-in-database-sharding/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Introduces partition keys, placement approaches, and cross-shard costs after the learner understands one table.",
+      "weeks": [
+        9
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-consistent-hashing",
+      "title": "Consistent Hashing Explained",
+      "url": "https://bytebytego.com/guides/consistent-hashing/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Shows why changing a modulo divisor moves keys. Treat vendor examples as historical illustrations, not current architecture evidence.",
+      "weeks": [
+        9
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+      "title": "CAP Theorem: One of the Most Misunderstood Terms",
+      "url": "https://bytebytego.com/guides/cap-theorem-one-of-the-most-misunderstood-terms/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "A discussion prompt after precise partition histories. Keep formal availability distinct from merely returning an HTTP response.",
+      "weeks": [
+        10
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-delivery-semantics",
+      "title": "Delivery Semantics",
+      "url": "https://bytebytego.com/guides/delivery-semantics/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Compare delivery terms after tracing one thumbnail task. Our guide distinguishes message delivery from a once-only business effect.",
+      "weeks": [
+        8,
+        11
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+      "title": "How to Detect Node Failures in Distributed Systems",
+      "url": "https://bytebytego.com/guides/how-do-we-detect-node-failures-in-distributed-systems/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "A visual catalog of heartbeat approaches after learning that timeout means suspicion, not proof of death.",
+      "weeks": [
+        13,
+        22
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-how-to-ace-system-design-interviews-like-a-boss",
+      "title": "How to Ace System Design Interviews",
+      "url": "https://bytebytego.com/guides/how-to-ace-system-design-interviews-like-a-boss/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Optional interview structure once components have concrete meaning. Use a complete small design before deep dives.",
+      "weeks": [
+        15,
+        24
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-how-to-design-google-docs",
+      "title": "How to Design Google Docs",
+      "url": "https://bytebytego.com/guides/how-to-design-google-docs/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Later comparison exercise for collaboration paths; a teaching sketch, not verified current product internals.",
+      "weeks": [
+        19
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "bbg-how-to-avoid-double-payment",
+      "title": "How to Avoid Double Payment",
+      "url": "https://bytebytego.com/guides/how-to-avoid-double-payment/",
+      "provider": "ByteByteGo",
+      "kind": "visual-guide",
+      "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Motivates stable operation identity through a user-visible duplicate-charge problem. Our core material supplies the atomic effect/deduplication boundary and limits.",
+      "weeks": [
+        21
+      ],
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-01",
+      "title": "Client-Server Architecture",
+      "url": "https://algomaster.io/learn/system-design/client-server-architecture",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "First picture: client requests work from a service that owns shared state.",
+      "weeks": [
+        1
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-02",
+      "title": "APIs",
+      "url": "https://algomaster.io/learn/system-design/what-is-an-api",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Connect a user action to a request and response.",
+      "weeks": [
+        2
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-03",
+      "title": "HTTP/HTTPS",
+      "url": "https://algomaster.io/learn/system-design/http-https",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Give the request journey concrete protocol vocabulary.",
+      "weeks": [
+        2
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-04",
+      "title": "Domain Name System (DNS)",
+      "url": "https://blog.algomaster.io/p/how-dns-actually-works",
+      "provider": "blog.algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Follow name lookup before the HTTP request.",
+      "weeks": [
+        1,
+        2
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-05",
+      "title": "ACID Transactions",
+      "url": "https://algomaster.io/learn/system-design/acid-transactions",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Revisit all-or-nothing updates after learning tables.",
+      "weeks": [
+        4
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-06",
+      "title": "Database Indexes",
+      "url": "https://algomaster.io/learn/system-design/indexing",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Connect query shape to the cost of finding data.",
+      "weeks": [
+        3
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-07",
+      "title": "Latency vs Throughput",
+      "url": "https://aws.amazon.com/compare/the-difference-between-throughput-and-latency/",
+      "provider": "aws.amazon.com",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Use the AWS comparison to separate request delay from completed work per second.",
+      "weeks": [
+        5
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-08",
+      "title": "Load Balancing",
+      "url": "https://blog.algomaster.io/p/load-balancing-algorithms-explained-with-code",
+      "provider": "blog.algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "See selection algorithms after understanding replicated application servers.",
+      "weeks": [
+        6
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-09",
+      "title": "Caching 101",
+      "url": "https://algomaster.io/learn/system-design/what-is-caching",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Introduce repeated reads and freshness.",
+      "weeks": [
+        6
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-10",
+      "title": "Content Delivery Network (CDN)",
+      "url": "https://algomaster.io/learn/system-design/content-delivery-network-cdn",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Extend caching to geographically distributed readers.",
+      "weeks": [
+        7
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-11",
+      "title": "Message Queues",
+      "url": "https://algomaster.io/learn/system-design/message-queues",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Learn deferred work before designing notifications.",
+      "weeks": [
+        7,
+        11
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-12",
+      "title": "Data Replication",
+      "url": "https://redis.com/blog/what-is-data-replication/",
+      "provider": "redis.com",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Study copied data and lag after one-database correctness.",
+      "weeks": [
+        9
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-13",
+      "title": "Database Sharding",
+      "url": "https://algomaster.io/learn/system-design/sharding",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Divide data only after explaining the access pattern.",
+      "weeks": [
+        9
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-14",
+      "title": "CAP Theorem",
+      "url": "https://algomaster.io/learn/system-design/cap-theorem",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Read after concrete network-partition examples, not as a slogan.",
+      "weeks": [
+        10
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-15",
+      "title": "Idempotency",
+      "url": "https://algomaster.io/learn/system-design/idempotency",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Reason about retries using a stable operation identity.",
+      "weeks": [
+        4,
+        11
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-16",
+      "title": "Rate limiting",
+      "url": "https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code",
+      "provider": "blog.algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Compare algorithm behavior; linked repository sketches need the corrections in this review.",
+      "weeks": [
+        12,
+        16
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-17",
+      "title": "Disaster Recovery",
+      "url": "https://cloud.google.com/learn/what-is-disaster-recovery",
+      "provider": "cloud.google.com",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Tie recovery choices to acceptable downtime and data loss.",
+      "weeks": [
+        14
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-18",
+      "title": "How to Answer a System Design Interview Problem",
+      "url": "https://algomaster.io/learn/system-design-interviews/answering-framework",
+      "provider": "algomaster.io",
+      "kind": "article",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Use a discussion checklist after building foundational understanding.",
+      "weeks": [
+        15
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-19",
+      "title": "Design URL Shortener like TinyURL",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-url-shortener",
+      "provider": "algomaster.io",
+      "kind": "worked-design",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Compare a complete small design after making your own attempt.",
+      "weeks": [
+        8
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-20",
+      "title": "Design Notification Service",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-notification-service",
+      "provider": "algomaster.io",
+      "kind": "worked-design",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Compare asynchronous delivery and preferences after queues.",
+      "weeks": [
+        16
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-21",
+      "title": "Design WhatsApp",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-whatsapp",
+      "provider": "algomaster.io",
+      "kind": "worked-design",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Compare durable history with live delivery after WebSockets and retries.",
+      "weeks": [
+        17
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-22",
+      "title": "Real time messaging at Slack",
+      "url": "https://slack.engineering/real-time-messaging/",
+      "provider": "slack.engineering",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Primary engineering case study: separate persistent connections and routing.",
+      "weeks": [
+        17
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-23",
+      "title": "How Discord stores trillions of messages",
+      "url": "https://discord.com/blog/how-discord-stores-trillions-of-messages",
+      "provider": "discord.com",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Primary case study to revisit data layout and hot partitions.",
+      "weeks": [
+        17,
+        19
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-24",
+      "title": "How Canva scaled Media uploads from Zero to 50 Million per Day",
+      "url": "https://www.canva.dev/blog/engineering/from-zero-to-50-million-uploads-per-day-scaling-media-at-canva/",
+      "provider": "canva.dev",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Primary case study about workload-driven evolution and staged migration.",
+      "weeks": [
+        14,
+        19
+      ],
+      "verification": "HEAD returned 405; web GET content inspected successfully.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-25",
+      "title": "Stripe’s payments APIs - The first 10 years",
+      "url": "https://stripe.com/blog/payment-api-design",
+      "provider": "stripe.com",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Primary API-evolution case study; page metadata loads, article rendering may require a browser.",
+      "weeks": [
+        21
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-26",
+      "title": "Distributed Locking",
+      "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+      "provider": "martin.kleppmann.com",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Read the author’s failure argument only after leases, pauses, and fencing.",
+      "weeks": [
+        22
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-27",
+      "title": "MapReduce: Simplified Data Processing on Large Clusters",
+      "url": "https://research.google.com/archive/mapreduce-osdi04.pdf",
+      "provider": "research.google.com",
+      "kind": "paper",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Optional original paper after partitioned data and background work.",
+      "weeks": [
+        20,
+        22
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-28",
+      "title": "Dynamo: Amazon’s Highly Available Key-value Store",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "provider": "allthingsdistributed.com",
+      "kind": "paper",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Optional original paper after replication and consistency tradeoffs.",
+      "weeks": [
+        10,
+        22
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-29",
+      "title": "ByteByteGo",
+      "url": "https://www.youtube.com/@ByteByteGo",
+      "provider": "youtube.com",
+      "kind": "video-channel",
+      "access": "Public channel; individual video access and content unreviewed.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Optional visual channel. Endpoint reachable; individual videos were not watched or quality-rated.",
+      "weeks": [
+        1,
+        6,
+        15
+      ],
+      "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-30",
+      "title": "Distributed Tracing",
+      "url": "https://www.dynatrace.com/knowledge-base/distributed-tracing/",
+      "provider": "dynatrace.com",
+      "kind": "article",
+      "access": "Public destination; no login or paid material copied.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "verified",
+      "why": "Original README URL returned HEAD 404; browser lookup found a working replacement.",
+      "weeks": [
+        13
+      ],
+      "verification": "Web content inspected at replacement; original HEAD returned 404.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "awesome-31",
+      "title": "Design Autocomplete for Search Engines",
+      "url": "https://algomaster.io/learn/system-design-interviews/design-instagram",
+      "provider": "algomaster.io",
+      "kind": "worked-design",
+      "access": "Public page reachable; some course features/content may require an account or payment.",
+      "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+      "status": "broken",
+      "why": "Incorrect README topic mapping: the destination is Design Instagram. Do not assign this as autocomplete.",
+      "weeks": [
+        20
+      ],
+      "verification": "HTTP 200 but destination title is Design Instagram.",
+      "linkStatus": "Broken link — excluded"
+    },
+    {
+      "id": "hello-introduction",
+      "title": "System Design in a Hurry — Introduction",
+      "url": "https://www.hellointerview.com/learn/system-design/in-a-hurry/introduction",
+      "provider": "Hello Interview",
+      "kind": "article",
+      "access": "Public introductory article; premium destinations are separate and optional.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Read after building your first small systems to connect learning with interview expectations.",
+      "weeks": [
+        8,
+        15
+      ],
+      "verification": "Opened and inspected the public introduction and its access explanation.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "hello-delivery",
+      "title": "System Design Delivery Framework",
+      "url": "https://www.hellointerview.com/learn/system-design/in-a-hurry/delivery",
+      "provider": "Hello Interview",
+      "kind": "article",
+      "access": "Public framework article; linked premium features are optional.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "A second explanation of how to organize the interview conversation after trying the academy's own framework.",
+      "weeks": [
+        15,
+        24
+      ],
+      "verification": "Public page opened and its framework content retrieved.",
+      "linkStatus": "Link checked"
+    },
+    {
+      "id": "hello-bitly",
+      "title": "Design a URL Shortener Like Bitly",
+      "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/bitly",
+      "provider": "Hello Interview",
+      "kind": "worked-design",
+      "access": "Public design breakdown; separate site features may require an account.",
+      "checkedAt": "2026-09-29",
+      "status": "verified",
+      "why": "Compare another worked design only after attempting the guided shortener. Treat it as one defensible solution, not an answer to memorize.",
+      "weeks": [
+        8
+      ],
+      "verification": "Public problem breakdown opened with its expected title and content.",
+      "linkStatus": "Link checked"
+    }
+  ]
+}

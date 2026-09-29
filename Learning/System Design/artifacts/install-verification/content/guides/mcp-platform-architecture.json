@@ -1,0 +1,332 @@
+{
+  "id": "mcp-platform-architecture",
+  "title": "Design an MCP platform across gateways and replicas",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 22,
+  "level": "advanced",
+  "minutes": 60,
+  "summary": "Design a remote MCP service as a bounded, authenticated interface to real capabilities, with clear state ownership and deployment behavior.",
+  "objectives": [
+    "Separate the AI host, MCP client, MCP server and downstream systems.",
+    "Trace discovery and one authorized tool call through a replicated remote deployment.",
+    "Explain stateless handlers, application state, streaming and protocol-version compatibility."
+  ],
+  "terms": [
+    {
+      "term": "AI host",
+      "definition": "The application coordinating the user interaction, model and tool access."
+    },
+    {
+      "term": "MCP client",
+      "definition": "The host-side component that communicates with a particular MCP server."
+    },
+    {
+      "term": "MCP server",
+      "definition": "A component exposing defined tools, resources or prompts through the Model Context Protocol."
+    },
+    {
+      "term": "Tool discovery",
+      "definition": "Retrieving descriptions and schemas of available callable capabilities."
+    },
+    {
+      "term": "Stateless handler",
+      "definition": "A request handler that does not depend on a particular process retaining private state between requests."
+    },
+    {
+      "term": "Application state",
+      "definition": "Durable domain facts such as jobs, operation results, permissions or learner progress."
+    },
+    {
+      "term": "Streamable HTTP",
+      "definition": "An MCP transport binding using HTTP requests with JSON or request-scoped event-stream responses."
+    }
+  ],
+  "retrieval": [
+    "What does a Kubernetes Service provide that a process-local variable does not?",
+    "Why are authentication, authorization and TLS separate responsibilities?"
+  ],
+  "sections": [
+    {
+      "id": "actors",
+      "title": "Name the actors before drawing the cluster",
+      "markdown": "An engineer asks an assistant for a training deployment’s status. Name the participants before drawing Pods.\n\n| Participant | In this example | Responsibility |\n| --- | --- | --- |\n| Human | Engineer asking the question | Express the task and authorized scope |\n| AI host | The assistant application | Coordinate interaction, model output, and tool policy |\n| MCP client | Host-side protocol component | Communicate with this MCP server |\n| MCP server | Remote status service | Expose a bounded capability and enforce request rules |\n| Downstream system | Platform API | Supply actual deployment evidence |\n\nThe model is not a trusted network administrator. Tool descriptions and schemas help select and validate an operation; they do not grant unlimited authority.\n\nTools expose operations, resources expose retrievable context, and prompts expose reusable interaction templates where supported. Their protocol shapes do not choose your business permissions.\n\nStart with get_deployment_status, a bounded read. This conceptual design does not contact a real SAP or Kyma deployment.\n\n**Pause and predict:** which participant knows whether the current engineer may inspect the requested tenant? “The model chose the tool” is not an access-control rule."
+    },
+    {
+      "id": "remote",
+      "title": "Choose transport according to where the server runs",
+      "markdown": "A local MCP server can be a subprocess launched by its client, exchanging protocol messages through standard input and output. Operational logs must use the appropriate separate channel so they do not corrupt the protocol stream. A remote shared service instead needs a network endpoint, identity, routing and capacity management. Streamable HTTP is the standard HTTP binding for that role.\n\nAs of the checked 2026-07-28 specification, each request carries protocol metadata and travels as a POST to the MCP endpoint. Its response is a JSON object or an SSE stream scoped to that request. Protocol-level sessions and the earlier GET stream are absent; subscription notifications use the specified request-based mechanism.\n\nKeep client and server versions compatible instead of combining examples from different revisions. The precise wire rules belong to the matching official specification and SDK, while the architecture questions about state and trust remain familiar."
+    },
+    {
+      "id": "discovery",
+      "title": "Discover a capability without granting it unlimited trust",
+      "markdown": "The client obtains the server’s available tools, including names, descriptions and input schemas. A user request can then lead the host to propose a particular tool call. For get_deployment_status, accept bounded identifiers such as an allowed environment and deployment name. Do not turn discovery into an unrestricted “execute any shell command” capability just because that would be convenient for the implementation.\n\nThe host applies its interaction and approval policy, and the server validates the actual arguments and authorization for the current principal. Discovery must not reveal capabilities or metadata that the principal should not see. Tool results are data from another component and can contain misleading or malicious instructions, especially when they include logs or user-created content.\n\nTreat them as evidence for the task, not as new authority to bypass limits or invoke unrelated tools. The protocol format does not make the content trustworthy."
+    },
+    {
+      "id": "request",
+      "title": "Walk one status lookup through the trust boundaries",
+      "markdown": "The client sends an authenticated HTTPS tool request to a public gateway or allowed enterprise endpoint. The gateway handles the relevant edge policy and forwards the request to a healthy MCP replica. The replica validates protocol and tool inputs, establishes the authenticated identity, resolves the allowed tenant/environment mapping, and calls the downstream platform through a scoped identity appropriate to the operation.\n\nReturn only the bounded status fields needed by the user, with an explicit observation time and errors when status cannot be obtained. Do not present an old cached result as a fresh observation. Record a request identity, principal, target and outcome in an audit trail without storing tokens or unnecessary private payloads.\n\nEvery arrow needs a timeout budget. If the downstream platform is unavailable, report that the status is unknown or stale under the stated cache policy rather than inventing a healthy result."
+    },
+    {
+      "id": "replicas",
+      "title": "Stateless routing does not mean the application stores nothing",
+      "markdown": "Two replicas can serve independent requests if each validates identity and can reach the needed authoritative state. A stateless handler does not require the same process’s private memory on the next request.\n\n| Identity or state | Lifetime and purpose | Do not confuse it with… |\n| --- | --- | --- |\n| JSON-RPC request ID | Correlates one protocol exchange | A durable business duplicate guarantee |\n| Authenticated principal | The verified actor for authorization | A free-form tool argument |\n| Application operation key | One intended action across allowed retries | A new key for each attempt |\n| Job identity | Durable work and status | The lifetime of a response stream |\n| Conversation context | Information used by the host interaction | Permanent permission for all tools |\n\nFor a future write tool, store the operation key, compatible request fingerprint, and result at a shared concurrency boundary. Otherwise two replicas can both create work under the same logical intent.\n\n~~~text\nrequest to replica A ─┐\n                     ├→ shared protected operation record\nretry to replica B ───┘\n~~~\n\nThe exact operation contract still defines retention and conflict behavior. A protocol request ID does not supply those rules automatically.\n\nDurable jobs and preferences may live in a database while handlers remain stateless. Active streams still occupy a particular replica and need the separate cancellation/drain policy below."
+    },
+    {
+      "id": "stream",
+      "title": "Treat a response stream as active work with a budget",
+      "markdown": "A streamed response occupies resources in the serving replica and intermediaries. Configure the proxy so events are not accidentally buffered until the whole operation completes, and align idle timeouts with the supported interaction. Bound concurrent streams, message sizes and total work. A pod becoming unready should stop receiving new work while a defined drain policy handles existing responses; deleting it abruptly breaks those connections.\n\nFor the current HTTP binding, closing the response stream signals cancellation, while older revisions used different rules. Cancellation still cannot undo a downstream effect that already committed. If work must survive the request, expose an explicit durable job contract with status and cancellation semantics supported by the chosen protocol features.\n\nDo not assume an SSE reconnect resumes an operation or replays events unless the exact protocol and application contract support it. A load balancer distributes requests; it does not recreate lost computation."
+    },
+    {
+      "id": "versions",
+      "title": "Read older session examples with their version label attached",
+      "markdown": "A short compatibility note is necessary because deployed clients differ. The 2025-11-25 MCP model uses initialization and can assign an MCP-Session-Id for stateful Streamable HTTP interactions. A replica holding that session only in memory then needs routing affinity or an explicitly shared/recoverable state design. Losing the replica can still lose the session; affinity alone is not durability. The 2026-07-28 model moves protocol metadata to each request and removes those protocol-level HTTP sessions.\n\nThe academy’s local adapter uses the installed SDK v1 and its supported earlier protocol model. That working local integration is not evidence that it implements every newer protocol feature. Choose a supported client/server matrix and test it. Keep the chapter’s current conceptual design separate from a migration decision: upgrading wire behavior requires compatible dependencies and focused tests, not changing a version string in a diagram."
+    },
+    {
+      "id": "security",
+      "title": "Constrain discovery, destinations and credentials",
+      "markdown": "A remote MCP endpoint needs validated TLS, appropriate authentication and tool-specific authorization. Use the matching authorization specification and the enterprise identity architecture; do not forward an incoming token to arbitrary downstream services merely because it is available. Validate the token’s intended audience and obtain or use downstream credentials under the correct trust model. A gateway’s authentication does not eliminate the tool handler’s object- and tenant-level authorization checks.\n\nValidate origin behavior as required by the transport, and keep a local development server loopback-bound. Treat server URLs, metadata discovery destinations and outbound tool URLs as controlled inputs to reduce accidental internal-network access or credential leakage. An allowlisted logical deployment identifier is easier to constrain than a free-form URL.\n\nSecrets belong in managed secret mechanisms with rotation and scoped access, not prompt text, tool descriptions or logs. These controls enforce the platform’s authority independently of whatever the model suggests."
+    },
+    {
+      "id": "operate",
+      "title": "Test the complete path with a harmless capability first",
+      "markdown": "Begin deployment verification with a bounded read-only status fixture. Exercise discovery, a valid call, invalid arguments, wrong tenant, expired authorization, downstream timeout and replica restart. Test stream behavior through the actual gateway, including cancellation and drain. These are deterministic protocol and service tests; they do not require repeatedly calling a paid model provider. Separately test the chosen real host/client only within the user’s authorized scope.\n\nObserve per-tool latency, failures, authorization denials, in-flight work and downstream time. A fast protocol response that reports a tool failure is different from a successful business operation. For a Kyma-style deployment, explain the gateway, Kubernetes Service, replicas, secret access and downstream API without embedding platform credentials in the lesson. End with the durable boundaries: where operation results live, which replica may serve the next request, and what the user sees after a dependency fails."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "remote-mcp",
+      "sectionId": "request",
+      "title": "A tool request crosses explicit trust boundaries",
+      "source": "flowchart LR\nU[User] --> H[AI host and MCP client]\nH -->|Authenticated HTTPS request| G[Gateway]\nG --> R[MCP replica: validate and authorize]\nR -->|Scoped downstream identity| P[Platform API]\nP --> R\nR -->|Bounded observed result| H\nR --> A[(Audit and operation state)]",
+      "steps": [
+        "The host selects a bounded capability under user policy.",
+        "The server validates current identity and target permission.",
+        "A scoped downstream call obtains actual evidence.",
+        "The result carries an observation and a durable audit boundary."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "replica-state",
+      "sectionId": "replicas",
+      "title": "Replicas share domain state, not an assumption of shared memory",
+      "source": "flowchart TB\nC[MCP client] --> S[Gateway and Kubernetes Service]\nS --> A[Replica A]\nS --> B[Replica B]\nA --> D[(Shared operation and job records)]\nB --> D\nA --> P[Authorized downstream systems]\nB --> P",
+      "steps": [
+        "Independent requests may reach different replicas.",
+        "Each request authenticates and authorizes independently.",
+        "Durable domain records outlive a pod.",
+        "Active streams still have per-replica lifetime and drain behavior."
+      ],
+      "caption": "Current per-request protocol model. Older session-based deployments require an additional explicit session-routing/recovery design."
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Design get_deployment_status for two MCP replicas behind a gateway. Identify the host, client, server, downstream identity and durable audit fields. Then add a hypothetical restart_deployment operation and explain what extra authorization and retry semantics it needs. Finally describe a replica dying during a response.",
+    "rubric": [
+      "Do not confuse tool discovery with permission.",
+      "Validate tenant and deployment from trusted identity mappings.",
+      "Separate protocol ID from business idempotency.",
+      "State stream failure and durable-state recovery honestly.",
+      "Label the protocol version model."
+    ],
+    "solution": "The host’s MCP client discovers and calls the bounded tool over authenticated HTTPS. Any replica validates the target and principal, calls the platform using scoped downstream authority, and records request/actor/target/outcome/time without secrets. A restart tool needs explicit allowed-action policy, user-facing confirmation when required, target-level authorization and a stable application operation contract for uncertain retries. Shared operation state prevents duplicate logical actions across replicas where implemented. A replica crash breaks its active response; later requests can read durable state, but the gateway cannot invent a missing response or undo a completed downstream effect. Apply the selected protocol version’s cancellation and compatibility rules."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Does a discovered tool description grant permission to invoke it on any tenant?",
+      "options": [
+        "No; authorization is checked for the actual request",
+        "Yes; discovery proves universal permission",
+        "Only if the description is long"
+      ],
+      "answer": "No; authorization is checked for the actual request",
+      "explanation": "Metadata is not an access-control decision."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What does a stateless handler require?",
+      "options": [
+        "No database may exist",
+        "A later request need not reach the same process memory",
+        "Every operation must be read-only"
+      ],
+      "answer": "A later request need not reach the same process memory",
+      "explanation": "Durable domain state can live in shared authoritative storage."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Two replicas share one operation record for the same retry key. How many logical operations should a correct idempotent contract create?",
+      "answer": 1,
+      "unit": "operation",
+      "tolerance": 0,
+      "explanation": "A shared atomic identity/result boundary keeps identical retries tied to one logical operation."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why distinguish JSON-RPC request ID from business operation ID?",
+      "answer": "A request ID correlates a protocol exchange. Durable duplicate handling across retries, reconnects and replicas needs an explicitly defined application identity, payload matching and retention policy.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What is the relevant 2025 versus 2026 session distinction?",
+      "answer": "The 2025-11-25 model initializes and may use protocol session IDs; the 2026-07-28 model carries per-request metadata and removes those HTTP protocol sessions. Application state and stream lifetime remain separate concerns in both.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "MCP host versus server?",
+      "back": "The host coordinates user/model/tool use; the server exposes defined capabilities and enforces its rules."
+    },
+    {
+      "front": "Discovery does not establish…",
+      "back": "Trust in returned text or permission for arbitrary targets."
+    },
+    {
+      "front": "Stateless does not mean…",
+      "back": "No durable application state exists."
+    },
+    {
+      "front": "Replica crash during a stream?",
+      "back": "The active connection fails; durable state and a defined client protocol govern recovery."
+    },
+    {
+      "front": "Why name the protocol revision?",
+      "back": "Initialization, session and cancellation behavior differ across supported revisions."
+    }
+  ],
+  "mentalModel": "MCP standardizes the capability interface; your platform still owns identity, state, capacity and the truth of every reported effect.",
+  "sources": [
+    {
+      "title": "MCP 2026-07-28 — Transport overview",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MCP 2026-07-28 — Streamable HTTP",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MCP 2026-07-28 — Versioning and compatibility",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MCP 2026-07-28 — Authorization",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MCP 2025-11-25 — Earlier transport and session model",
+      "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MCP — Security best practices for earlier deployed model",
+      "url": "https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "bounded-status-request",
+      "title": "Carry identity and evidence through one tool call",
+      "sectionId": "request",
+      "intro": "A read-only example asks about deployment train_24 in an allowed staging environment. The trace does not perform a real platform call.",
+      "steps": [
+        {
+          "title": "Select a bounded capability",
+          "explanation": "The host proposes the status tool with structured identifiers under its interaction policy.",
+          "state": [
+            {
+              "label": "Tool",
+              "value": "get_deployment_status"
+            },
+            {
+              "label": "Environment",
+              "value": "staging"
+            },
+            {
+              "label": "Deployment",
+              "value": "train_24"
+            },
+            {
+              "label": "Mode",
+              "value": "illustrative read-only"
+            }
+          ]
+        },
+        {
+          "title": "Establish the permitted target",
+          "explanation": "The server validates the authenticated engineer and resolves the tenant/environment mapping. It does not accept an arbitrary caller-supplied URL as authority.",
+          "state": [
+            {
+              "label": "Principal",
+              "value": "verified engineer"
+            },
+            {
+              "label": "Tenant mapping",
+              "value": "allowed team_8 staging"
+            },
+            {
+              "label": "Target",
+              "value": "train_24"
+            },
+            {
+              "label": "Authorization",
+              "value": "passed for this lookup"
+            }
+          ]
+        },
+        {
+          "title": "Obtain downstream evidence",
+          "explanation": "A scoped platform API call returns its actual observation. A timeout would instead produce an unknown or explicitly stale outcome.",
+          "state": [
+            {
+              "label": "Downstream identity",
+              "value": "scoped read capability"
+            },
+            {
+              "label": "Observed state",
+              "value": "ready"
+            },
+            {
+              "label": "Observation time",
+              "value": "recorded with result"
+            }
+          ]
+        },
+        {
+          "title": "Return the bounded result",
+          "explanation": "The response reports the observation and the audit records actor, target, time, and outcome without credentials.",
+          "state": [
+            {
+              "label": "Result",
+              "value": "ready at observation time"
+            },
+            {
+              "label": "Audit target",
+              "value": "team_8 / staging / train_24"
+            },
+            {
+              "label": "Secrets in result/log",
+              "value": "none"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Discovery names a capability. Each real request still crosses identity, target authorization, and evidence boundaries."
+    }
+  ]
+}

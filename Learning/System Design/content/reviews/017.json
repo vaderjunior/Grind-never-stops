@@ -1,0 +1,12 @@
+{
+  "lessonId": "017",
+  "sha256": "d244217e3f9ce564b1994ec26f7ec3444c2c631a6c7930266e8a8bc216013f7d",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: connection assignment differs from request load, sticky state is not durability, and health checks are scoped observations.",
+    "Reported new-client routing-arrow correction was incorporated by root; 20 × 50 = 1000 configured connections."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "checks": [
+    "The reported diagram uses native SVG labels and exposes the complete original wording in its text alternative.",
+    "Zoom, expansion, Escape, and keyboard focus return work in the production page.",
+    "Narrow-screen diagrams can be panned by keyboard without overflowing the page.",
+    "The tallest diagram fits inside print height limits; all original labels also print as readable text."
+  ],
+  "errors": [],
+  "externalRequests": []
+}

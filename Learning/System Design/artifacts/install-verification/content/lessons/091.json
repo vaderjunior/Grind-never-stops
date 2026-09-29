@@ -1,0 +1,136 @@
+{
+  "id": "091",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Choose between work distribution, fanout and replayable history.",
+    "Identify who owns processing progress and message retention.",
+    "Explain why adding a queue changes timing rather than business correctness."
+  ],
+  "retrieval": [
+    "L007: what happens when arrival exceeds completion capacity?",
+    "L027: why is an asynchronous response not the final business outcome?"
+  ],
+  "sections": [
+    {
+      "id": "needs",
+      "title": "Three different reasons to send a message",
+      "markdown": "Core55 minutes: retrieval5, mechanism18, worked flow8, exercise10, questions10, review4. A campus media service has three needs: one worker should resize each uploaded image; search and analytics should independently learn of new uploads; and a new recommendation experiment should replay last month’s events. All involve messages, but they ask for different ownership and retention semantics.\n\nA work queue distributes units among competing consumers so one worker normally handles a delivery. A pub/sub arrangement fans information to multiple interested subscribers, whose independent progress may require separate durable subscriptions. An append-only log retains an ordered history for a chosen period, while each consumer group tracks a position. A technology can support more than one pattern; start with the needed behavior instead of assuming a product name determines it.\n\nThe image-resize job might be deleted or archived after successful completion. A retained event log can preserve upload facts even after one consumer finishes. A search consumer catching up must not imply that analytics has caught up. Ask who can replay, how long data is retained, and whether one slow consumer affects another."
+    },
+    {
+      "id": "ownership",
+      "title": "Define the handoff rather than drawing an arrow",
+      "markdown": "The producer owns validating and durably recording the fact or requested work before it can responsibly report acceptance. The messaging system owns a documented delivery/retention contract. The consumer owns applying a business effect and recording its processing position according to that contract. These boundaries do not form one automatic transaction merely because the architecture diagram connects them.\n\nQueue decoupling can let an API return accepted quickly while work finishes later. The product now needs a job/status identity and a way to distinguish accepted, running, succeeded and failed. If the user needs the resized image immediately, moving resize to a queue does not remove that requirement; it changes the interaction to polling, notification or a later fetch.\n\nOrdering is scoped. One ordered partition or queue does not guarantee that multiple consumers finish in the same order, especially with retries. Independent partitions improve parallelism while weakening global order. Choose the key whose operations must be serialized, such as one account or conversation, and explain how hot keys limit that parallelism."
+    },
+    {
+      "id": "flow",
+      "title": "Trace one upload through independent consumers",
+      "markdown": "An upload API validates ownership and stores a durable object reference. It records an upload event with event_id, object_id, actor_id and schema_version. A resize consumer creates a derived thumbnail; an indexing consumer updates search; an audit consumer retains a trace. Each should be able to retry without confusing the same logical event with a new one.\n\nFor a retained log, imagine partition0 has events at offsets101–110. The indexing group has processed through108 and analytics through104. Their lag is2 and6 events respectively if110 is the latest available offset and offsets are contiguous in this teaching example. Advancing indexing to109 must not advance analytics. Keeping a single shared cursor would couple the groups and lose one group’s work.\n\nThese are illustrative records, not executable broker configuration:\n\n~~~python\nevent = {'event_id': 'up-17', 'object_id': 'obj-9', 'schema_version': 1}\npositions = {'search': {0: 108}, 'analytics': {0: 104}}\n~~~\n\nThe event identifies a fact; the group/partition cursor identifies processing progress. Replaying the fact can be useful, but the derived effect must tolerate replay if it should not duplicate."
+    },
+    {
+      "id": "limits",
+      "title": "A buffer buys time, not capacity",
+      "markdown": "If arrivals sustain120 jobs/s while workers finish100 jobs/s, backlog grows by20/s. A queue of10,000 absorbs about500 seconds from empty under that constant-rate model. It does not make the workload stable. The system needs greater service capacity, lower admitted demand, a changed service target or explicit rejection/degradation.\n\nMeasure arrival/completion rates, oldest-message age, per-group lag, failure rate and retry volume. Queue depth alone can look modest while a few old messages violate the user’s deadline. Retention can expire work before a slow consumer catches up; that is a product failure mode to define, not a detail to discover after loss.\n\nCommon misconceptions include treating pub/sub as guaranteed durable replay, equating dequeue order with completion order, and assuming asynchronous delivery makes a write atomic with its downstream effects. L092 and L093 examine those boundaries directly."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Independent consumers own independent progress",
+      "source": "flowchart LR\nP[Upload fact] --> L[Retained partitioned log]\nL -->|search group cursor| S[Search projection]\nL -->|analytics group cursor| A[Analytics projection]\nL -->|audit group cursor| U[Audit sink]",
+      "caption": "Each group advances its own position. The log’s retention policy controls how far a disconnected group can replay.",
+      "steps": [
+        "Persist an identifiable fact.",
+        "Deliver independently to interested groups.",
+        "Record each group’s progress separately.",
+        "Rebuild derived state within retention constraints."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Choose a pattern for email-send jobs, independent billing/audit reactions, and rebuilding a search projection from historical events. State one ordering key and one retention/retry question for each.",
+    "rubric": [
+      "Matches processing ownership to pattern.",
+      "Separates fanout groups.",
+      "Names retention and duplicate-effect limits."
+    ],
+    "solution": "Email work can use competing consumers with explicit acknowledgement and retry/dead-letter policy; an account or campaign key may matter if send order is required. Billing and audit need separate durable consumers/subscriptions so one’s completion does not discard the other’s work. Search rebuild benefits from retained replayable events with a documented retention horizon and per-group offsets, often partitioned by entity key. None of these choices alone makes external email or billing effects exactly once; the receiver needs a matching idempotency/effect protocol."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Two independent subscribers should normally share one processing cursor:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Each owns its own progress; one subscriber finishing must not discard another’s work."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "At120 arrivals/s and100 completions/s, backlog growth?",
+      "answer": 20,
+      "unit": "jobs/s",
+      "tolerance": 0,
+      "explanation": "120−100=20 jobs/s."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A retained log primarily separates:",
+      "options": [
+        "History retention from individual consumer progress",
+        "All failure handling from application code"
+      ],
+      "answer": "History retention from individual consumer progress",
+      "explanation": "Consumers track positions independently of the retained history."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does moving work to a queue change the API contract?",
+      "answer": "Acceptance can precede business completion, so the client needs an explicit status/result interaction and failure policy.",
+      "explanation": "Acceptance can precede business completion, so the client needs an explicit status/result interaction and failure policy."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Work queue?",
+      "back": "Competing consumers process units with a delivery/acknowledgement contract."
+    },
+    {
+      "front": "Pub/sub?",
+      "back": "Independent subscribers receive related information."
+    },
+    {
+      "front": "Retained log?",
+      "back": "History persists for a policy while groups track positions."
+    },
+    {
+      "front": "Ordered delivery implies ordered completion?",
+      "back": "No; concurrency and retries can reorder completion."
+    },
+    {
+      "front": "Queue capacity creates throughput?",
+      "back": "No; buffering absorbs temporary mismatch but does not remove sustained overload."
+    }
+  ],
+  "mentalModel": "Choose who owns each unit of progress and how long the underlying fact remains replayable.",
+  "sources": [
+    {
+      "title": "RabbitMQ documentation: queue ordering and consumer behavior",
+      "url": "https://www.rabbitmq.com/docs/queues",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RabbitMQ documentation: consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms",
+      "checked": "2026-09-29"
+    }
+  ]
+}

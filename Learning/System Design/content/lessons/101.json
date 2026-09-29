@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "101",
+  "objectives": [
+    "Distinguish a topic, partition, replica, offset, and consumer group.",
+    "Trace append, consumption, and checkpoint boundaries.",
+    "Estimate storage and partition-limited parallelism."
+  ],
+  "retrieval": [
+    "L064: what determines the placement of one key?",
+    "L094: why can acknowledging delivery differ from completing an effect?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A durable history for several independent readers",
+      "markdown": "A commerce service needs a fraud view, an operations dashboard, and an archive to read the same accepted events. A destructive work queue with one shared acknowledgment cursor would make these readers compete. A retained log instead stores an ordered history and lets each reader maintain its own position. Retention is a separate policy: reading an event does not ordinarily delete it.\n\nA topic groups related records. A partition is an ordered append history within that topic. An offset identifies a position within one partition, not a universal timestamp across the topic. Replicas copy a partition for resilience; partitions divide a topic's workload. Adding replicas does not multiply the independent histories available to consumers."
+    },
+    {
+      "id": "mechanism",
+      "title": "Follow a record through its two ownership decisions",
+      "markdown": "A producer selects a partition, commonly from a stable entity key. The partition leader coordinates appends and replication under the configured durability policy. An acknowledgment is evidence only for that policy and failure model. Ask whether the record was durably replicated to enough eligible replicas; do not assume every acknowledged write survives every later administrative choice.\n\nA consumer group assigns each partition to at most one active consumer within that group's normal assignment model. Consumers in separate groups can independently read the same partition. An idle group member can be entirely expected: six members cannot all receive independent partition work from a three-partition topic. A member can process several partitions.\n\nThe consumer's fetch position and its committed checkpoint are different facts. Fetching offset42 does not prove its business effect happened. Committing the next position43 means the group intends to resume after42. If the consumer performs an effect and crashes before committing,42 may be delivered again. If it commits first and crashes before the effect, processing may be skipped. The boundary from L094 still matters."
+    },
+    {
+      "id": "worked",
+      "title": "Size the history before adding a cluster",
+      "markdown": "Illustrative workload:8,000 events/s,500 payload bytes/event, seven days retention. Raw payload is 8,000 ×500 ×604,800 =2,419,200,000,000 bytes, about2.42TB decimal. Three replicas make about7.26TB of replicated payload before compression, indexes, headers, segment overhead, free-space headroom, and rebuild traffic. This is a budget estimate, not a benchmark or a disk purchase recommendation.\n\nSuppose four partitions contain accounts chosen by a deterministic hash. Group A has two consumers, each assigned two partitions. Group B has four consumers. Both groups can consume every event. For account17 at partition2, offsets80 then81 preserve that partition append order. A record at partition1 offset100 cannot be compared numerically with partition2 offset80 to infer which business action happened first.\n\nIf account17 generates half the traffic, its partition can dominate lag even when total cluster CPU looks low. Extra consumers in the same group do not split that partition's ordered work automatically. Revisit the ordering requirement before splitting the hot account across keys."
+    },
+    {
+      "id": "failures",
+      "title": "Lag is a location, not a complete freshness measure",
+      "markdown": "Track lag by partition, oldest unprocessed event age, processing failures, retries, and end-to-end projection freshness. Offset lag of1,000 could mean milliseconds on one workload and hours on another. A consumer that advances checkpoints without applying correct effects can have zero lag and wrong output.\n\nRetention sets a recovery deadline. If a consumer is offline past the retained history, its requested position may no longer exist. Define whether it rebuilds from a snapshot, restores an archive, or declares a gap. Authentication and authorization also apply to producers, groups, and topics; shared infrastructure does not imply every tenant can read every record.\n\nCommon misconceptions are “offsets are global sequence numbers,” “replicas increase consumer parallelism,” and “commit means the side effect is complete.” Name the partition, group, and transaction boundary whenever discussing order or delivery. Optional depth: inspect an actual broker's acknowledgment and minimum-in-sync-replica settings; do not change a live cluster during this lesson."
+    },
+    {
+      "id": "schedule",
+      "title": "Core practice and optional depth",
+      "markdown": "Core 55 minutes: retrieval5, mechanism18, worked trace8, bounded exercise10, scheduled Q1–Q3 ten minutes, comparison/cards4. Q4–Q5 are optional extra practice. Product commands below are documented patterns unless explicitly labeled as executed local code. The academy itself needs no broker cluster."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "groups",
+      "title": "Independent progress over the same retained history",
+      "source": "flowchart LR\nP[Producer keyed by account] -->|Append| A[(Partition 0)]\nP -->|Append| B[(Partition 1)]\nA -.->|Group fraud reads| F[Fraud consumer]\nB -.->|Group fraud reads| F\nA -.->|Group archive reads| X[Archive consumer 1]\nB -.->|Group archive reads| Y[Archive consumer 2]",
+      "caption": "Solid arrows append records. Dashed arrows are independent reads. Replica copies are omitted to keep ownership clear.",
+      "steps": [
+        "Select a partition from the entity key.",
+        "Append within that partition history.",
+        "Assign partitions independently for each consumer group.",
+        "Persist group checkpoints according to actual completed work."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A topic has6 partitions,3 replicas each, and two groups with8 and2 consumers. State maximum active partition owners per group, whether both groups see all records, and a recovery plan for a consumer offline longer than retention. Calculate raw daily payload at2,000 events/s and800bytes/event.",
+    "rubric": [
+      "Separate partition count from replica count.",
+      "Keep group progress independent.",
+      "Compute units and explain the retention gap."
+    ],
+    "solution": "The8-member group can have at most6 members owning partitions; the2-member group can assign3 partitions each under a balanced assignment. Both groups can read all6 histories. Replicas do not raise the6 independent partition assignments. Daily payload is2,000×800×86,400=138.24GB decimal before replication/overhead. If the saved offset was deleted, rebuild from a compatible snapshot plus retained tail or restore an archive; silently skipping the missing range changes the data contract."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "An offset is unique within what scope?",
+      "options": [
+        "All topics",
+        "One partition",
+        "One cluster forever"
+      ],
+      "answer": "One partition",
+      "explanation": "It is a position in a particular partition history; include topic/partition when identifying it."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Four partitions and10 consumers in one group allow how many normal active partition owners at once?",
+      "options": [
+        "4",
+        "10",
+        "40"
+      ],
+      "answer": "4",
+      "explanation": "Extra group members do not divide a partition into additional assignment units."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "1,000 events/s ×1,000 bytes ×86,400 seconds equals how many decimal GB?",
+      "answer": 86.4,
+      "unit": "GB",
+      "explanation": "86,400,000,000 bytes /1,000,000,000=86.4GB, before replication.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When might a retained log be unnecessary?",
+      "answer": "When one bounded work queue and one consumer purpose satisfy the contract and replay/fan-out history is not needed. Evaluate operational cost against actual requirements.",
+      "explanation": "When one bounded work queue and one consumer purpose satisfy the contract and replay/fan-out history is not needed. Evaluate operational cost against actual requirements."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can zero offset lag coexist with wrong data?",
+      "answer": "A consumer may skip unsupported records, advance before effects, apply buggy transformations, or write the wrong sink. Reconciliation and output correctness are separate signals.",
+      "explanation": "A consumer may skip unsupported records, advance before effects, apply buggy transformations, or write the wrong sink. Reconciliation and output correctness are separate signals."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Partition versus replica?",
+      "back": "Partitions divide ordered histories; replicas copy a history."
+    },
+    {
+      "front": "Consumer group purpose?",
+      "back": "Independent logical subscription with partition assignments and checkpoints."
+    },
+    {
+      "front": "Offset ordering boundary?",
+      "back": "One partition, not the whole topic."
+    },
+    {
+      "front": "Checkpoint is proof of effect?",
+      "back": "Only if the processing protocol couples them correctly."
+    },
+    {
+      "front": "Retention risk?",
+      "back": "A slow reader can lose access to the history required for recovery."
+    }
+  ],
+  "mentalModel": "A log is retained ordered history; each group owns its own progress through it.",
+  "sources": [
+    {
+      "title": "Apache Kafka 4.1 — Design, partitions and delivery semantics",
+      "url": "https://kafka.apache.org/41/design/design/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Kafka 4.1 — Introduction",
+      "url": "https://kafka.apache.org/41/getting-started/introduction/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

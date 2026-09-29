@@ -1,0 +1,14 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+let p='scripts/validate-guides.mjs',s=readFileSync(p,'utf8');
+s=s.replace("assert.equal(path.weeks.flatMap(w=>w.days).length,120)","assert.equal(path.weeks.flatMap(w=>w.days).length,144)");
+s=s.replace('assert.equal(week.guides.length,2);assert.equal(week.days.length,5);','assert([2,4].includes(week.guides.length));assert.equal(week.days.length,week.guides.length===4?7:5);assert.equal(new Set(week.days.map(d=>d.day)).size,week.days.length);');
+s=s.replaceAll('ids.size,48','ids.size,72').replaceAll('planned:48','planned:72').replaceAll('authored:48-','authored:72-');
+s=s.replace("console.log(JSON.stringify({planned:72", "writeFileSync('content/guide-status.json',JSON.stringify(result,null,2)+'\\n');console.log(JSON.stringify({planned:72");
+writeFileSync(p,s);
+p='scripts/qa-learning.ts';s=readFileSync(p,'utf8');s=s.replace("'#guide/request-journey'","'#guide/computer-and-server-basics'").replace('1 of 48','1 of 72').replace('Build your first complete design','Understand background processing from end to end');
+s=s.replace("await page.goto(`${origin}/#learn`);await shot('learn-mobile')","await page.goto(`${origin}/#learn`);await expect(page.locator('.learn-stage')).toHaveCount(6);await shot('learn-mobile')");
+s=s.replace("await page.goto(`${origin}/#guide/what-is-system-design`);await shot('guide-mobile')","await page.goto(`${origin}/#guide/what-is-system-design`);await expect(page.getByRole('heading',{name:'What is system design?',exact:true})).toBeVisible();await expect(page.locator('.diagram-svg svg')).toHaveCount(1);await shot('guide-mobile')");
+writeFileSync(p,s);
+p='scripts/qa-browser.ts';s=readFileSync(p,'utf8').replace('await page.goto(origin);','await page.goto(`${origin}/#dashboard`);');writeFileSync(p,s);
+const pkg=JSON.parse(readFileSync('package.json','utf8'));Object.assign(pkg.scripts,{'validate:guides':'node scripts/validate-guides.mjs --complete','check':'npm run typecheck && npm run validate:content && npm run validate:guides && npm test','test:browser:learn':'tsx scripts/qa-learning.ts','test:browser':'tsx scripts/qa-browser.ts','diagrams':'node scripts/render-diagrams.mjs'});writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');
+console.log('Updated checks for expanded learning path.');

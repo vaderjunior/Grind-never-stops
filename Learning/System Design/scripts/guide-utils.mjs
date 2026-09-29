@@ -1,0 +1,4 @@
+import {writeFileSync,mkdirSync,readFileSync} from 'node:fs';
+export {section as S,choice as C,open as O,numeric as N,card as F,diagram as D,source as R} from './authoring-utils.mjs';
+const path=JSON.parse(readFileSync('content/learning-path.json','utf8'));
+export function guide(x){mkdirSync('content/guides',{recursive:true});const week=path.weeks.find(w=>w.guides.some(g=>g.id===x.id));const title=week?.guides.find(g=>g.id===x.id)?.title||x.title;const placement={'what-is-system-design':'save','request-journey':'trace','apis-without-jargon':'example','data-that-survives':'save-order'};for(const d of x.diagrams||[])if(!d.sectionId&&placement[x.id])d.sectionId=placement[x.id];writeFileSync(`content/guides/${x.id}.json`,JSON.stringify({version:1,status:'drafted',authoredBy:'original',week:week?.number,title,level:(week?.number||0)<=8?'beginner':(week?.number||0)<=16?'intermediate':'advanced',minutes:45,...x},null,2)+'\n');}

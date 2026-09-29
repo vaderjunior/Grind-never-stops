@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "017",
+  "objectives": [
+    "Distinguish forward/reverse proxy ownership.",
+    "Choose L4 or L7 balancing from required routing information.",
+    "Explain health, connection skew, draining, and trusted proxy headers."
+  ],
+  "retrieval": [
+    "L013: where is plaintext available after TLS termination?",
+    "L016: can one connection carry many unequal requests?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "One address, several backends",
+      "markdown": "Three API instances should serve a shared hostname. Some requests are expensive, some are tiny, and browser connections live for minutes. Sending one connection to each server may appear fair while CPU utilization is very uneven. Before choosing round robin, identify the unit being assigned and the layer at which the decision is made.\n\nA forward proxy acts on behalf of clients, such as an organization's outbound gateway. A reverse proxy acts in front of servers, giving clients a service endpoint while selecting an upstream. The distinction describes role and trust relationships, not whether packets travel forward or backward."
+    },
+    {
+      "id": "mechanism",
+      "title": "Route at the layer that knows the required fact",
+      "markdown": "A layer-4 load balancer generally uses transport/network information, such as addresses, ports, and connection state. It can pass encrypted traffic through without decrypting the HTTP request. It cannot ordinarily select a backend based on /images versus /orders without access to application data. Products can have hybrid features; classify the behavior rather than relying on the label.\n\nA layer-7 reverse proxy understands the application protocol. When terminating HTTPS it can route by hostname/path, enforce request limits, attach trace context, or normalize headers. That adds an endpoint that can read plaintext and whose parser/configuration becomes part of the trust boundary. It often uses separate upstream connections, so client-side and backend-side protocol behavior may differ.\n\nHealth checks provide sampled evidence. A process can answer /health while all real requests fail because its database credentials are invalid. Conversely, removing every instance because a shared dependency is temporarily unhealthy can eliminate useful degraded behavior. Define readiness from what an instance can actually serve, with hysteresis and a deliberate response to partial dependency failure."
+    },
+    {
+      "id": "trace",
+      "title": "A deployment with an existing long-lived connection",
+      "markdown": "Suppose clients C1 and C2 each hold a connection. C1 sends 100 requests/s and C2 sends 1 request/s. L4 distribution puts C1 on instance A and C2 on B. Connection counts are balanced; request load is not. Adding instance C may receive only new connections, leaving the heavy connection on A. This explains why scaling can appear ineffective without any bug in the round-robin algorithm.\n\nFor L7 per-request assignment, the proxy may spread suitable requests across ready instances. It must preserve whatever application state contract exists. A session stored only in A's memory breaks when a later request reaches B; sticky routing hides the dependency but creates failover and skew costs. Prefer explicit session/state placement appropriate to the application.\n\nDuring deployment, mark A as draining so new work goes elsewhere, allow in-flight requests to finish within a bounded deadline, and close remaining connections deliberately. Long-lived WebSockets need a reconnect/resume strategy. A drain timer is not proof that every business effect completed; clients still need operation identities and durable outcomes."
+    },
+    {
+      "id": "failure",
+      "title": "The proxy can become a bottleneck or an identity vulnerability",
+      "markdown": "Measure proxy connection count, active requests, upstream queue time, error rates, bytes, and resource limits. If each API replica has a connection pool of 50 and you scale from four to twenty replicas, the database can suddenly face 1,000 potential connections. The balancer distributing work successfully can reveal another bottleneck.\n\nNever trust X-Forwarded-For or a tenant identity header merely because it exists. A caller may supply it. Accept forwarded metadata only through an explicitly trusted proxy chain, strip/replace untrusted fields, and avoid using client IP as the sole user identity. Proxy retries can duplicate effects unless governed by the API contract.\n\nAn L7 proxy costs CPU and operational complexity, but it may be justified by host/path routing and centralized policy. TLS passthrough can simplify confidentiality boundaries at the proxy while moving certificate and policy responsibilities to backends. State why you need the information available at the chosen layer."
+    },
+    {
+      "id": "budget",
+      "title": "Practice boundary",
+      "markdown": "Core 55 minutes: retrieval 5, explanation and diagrams 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Stop after the stated artifact rather than expanding the task into a full implementation."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "routing",
+      "title": "The assignment unit changes the result",
+      "source": "flowchart LR\nC1[Client: 100 requests per second] -->|One persistent connection| L4[L4 connection assignment]\nC2[Client: 1 request per second] -->|One persistent connection| L4\nL4 -->|C1 connection| A[Instance A: heavy]\nL4 -->|C2 connection| B[Instance B: light]\nN[New client connection] -.-> L4\nL4 -.->|New assignment after scale out| C[Instance C]",
+      "caption": "Illustrative connection-level skew. Equal connection counts do not imply equal request rates or service demand.",
+      "steps": [
+        "Assign each connection once.",
+        "Observe request rates inside those connections.",
+        "Add a replica and ask which existing connections can move.",
+        "Choose explicit connection draining or application routing when requirements justify it."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A chat service doubles its replicas but old replicas remain busy while new ones are idle. The load balancer is L4 and sockets live for hours. Explain the observation and design a non-destructive rebalancing plan. Include the state needed for clients to reconnect.",
+    "rubric": [
+      "Recognize persistent connection ownership.",
+      "Drain gradually with jitter to avoid a reconnect storm.",
+      "Resume from durable message position rather than relying on RAM."
+    ],
+    "solution": "Existing connections remain pinned to their original destinations. New instances receive only new connections. Gradually drain selected old connections, instruct clients to reconnect with jitter, and use authenticated reconnect cursors against durable message history. Bound the drain and protect admission so reconnection does not overwhelm storage. Moving sockets transparently is generally not achieved by simply adding replicas."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which routing requirement normally calls for HTTP-aware L7 processing?",
+      "options": [
+        "Choose by destination port",
+        "Choose /images versus /orders",
+        "Hash an IP tuple"
+      ],
+      "answer": "Choose /images versus /orders",
+      "explanation": "Paths are application data; transport metadata alone does not expose them."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Equal TCP connections on two backends implies equal load?",
+      "options": [
+        "Always",
+        "Only with TLS",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Connections can carry different request rates, durations, and costs."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Twenty replicas each permit 50 database connections. What is the configured aggregate?",
+      "answer": 1000,
+      "unit": "connections",
+      "tolerance": 0.01,
+      "explanation": "20 × 50 = 1,000; this is a configuration ceiling, not evidence the database can sustain it."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What tradeoff does sticky routing introduce?",
+      "answer": "It can preserve node-local session access but increases coupling, skew, and failure disruption. It is not durable state replication.",
+      "explanation": "It can preserve node-local session access but increases coupling, skew, and failure disruption. It is not durable state replication."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why must forwarded client headers be normalized?",
+      "answer": "Caller-controlled values can impersonate identity/address context. Trust only an authenticated permitted proxy path and define replacement/chain handling.",
+      "explanation": "Caller-controlled values can impersonate identity/address context. Trust only an authenticated permitted proxy path and define replacement/chain handling."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Forward proxy role?",
+      "back": "Represents clients toward external services."
+    },
+    {
+      "front": "Reverse proxy role?",
+      "back": "Represents servers behind a service endpoint."
+    },
+    {
+      "front": "L4 assignment unit?",
+      "back": "Commonly a transport connection/flow rather than each HTTP request."
+    },
+    {
+      "front": "Draining?",
+      "back": "Stop new work, finish bounded in-flight work, then close/reconnect safely."
+    },
+    {
+      "front": "Health check proves?",
+      "back": "Only the sampled condition it actually tests."
+    }
+  ],
+  "mentalModel": "Ask what the balancer can see, what it assigns, and where the assigned work keeps state.",
+  "sources": [
+    {
+      "title": "RFC 9110 — intermediaries and forwarding",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 9113 — streams and connections",
+      "url": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

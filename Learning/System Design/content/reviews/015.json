@@ -1,0 +1,14 @@
+{
+  "lessonId": "015",
+  "sha256": "702dd35c7c9ebbfd60c579291c675a021388530cb67610c14bdb3c1840955ba3",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent assessment review: clarifications localize certificate-name failure before HTTP, and the solution preserves verified identity during DNS migration.",
+    "The candidate brief does not disclose the fault; remediation is within taught lessons."
+  ],
+  "assessmentId": "interview_003",
+  "assessmentSha256": "05681152bfb5e544dd9ba750c70e464ab6fee130c79183786efb6a1fd6d1dabf"
+}

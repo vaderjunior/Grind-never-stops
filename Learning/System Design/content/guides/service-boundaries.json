@@ -1,0 +1,319 @@
+{
+  "id": "service-boundaries",
+  "title": "Monoliths, modules, and service boundaries",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 5,
+  "level": "beginner",
+  "minutes": 60,
+  "summary": "Learn when a module should stay a local call and when a separate service earns the extra network and operational complexity.",
+  "objectives": [
+    "Distinguish a modular codebase from independently deployed services.",
+    "Explain what changes when a local call becomes remote.",
+    "Choose a service boundary using ownership, workload, failure behavior and team needs."
+  ],
+  "terms": [
+    {
+      "term": "Monolith",
+      "definition": "An application deployed as one main unit; its internal code can still be well organized."
+    },
+    {
+      "term": "Module",
+      "definition": "A code boundary that groups a coherent responsibility behind an interface."
+    },
+    {
+      "term": "Service",
+      "definition": "An independently running component reached through a defined communication contract."
+    },
+    {
+      "term": "Coupling",
+      "definition": "How strongly a change or failure in one component forces a change or failure elsewhere."
+    },
+    {
+      "term": "Data ownership",
+      "definition": "Responsibility for a fact’s meaning, allowed updates and authoritative representation."
+    },
+    {
+      "term": "Partial failure",
+      "definition": "Some participating components work while another component or network path fails."
+    },
+    {
+      "term": "Deployment boundary",
+      "definition": "A unit that can be released, scaled or restarted as part of an operational action."
+    }
+  ],
+  "retrieval": [
+    "Why do separate processes not automatically share their in-memory dictionaries?",
+    "What remains uncertain when a remote write times out?"
+  ],
+  "sections": [
+    {
+      "id": "one-app",
+      "title": "A useful application can start as one deployable program",
+      "markdown": "Imagine a small learning portal with accounts, notes, document uploads, and document summaries. One application handles its API and uses one relational database. A team can run it locally, deploy a new version, inspect one set of application logs, and follow a request without crossing several internal networks. This is a reasonable beginning if it meets the workload and organizational needs.\n\nCalling it a monolith says something about deployment, not necessarily code quality. It may be carefully organized or tangled. It may run as one instance or as multiple instances behind a load balancer. Horizontal replication of a monolithic API can work well when requests do not depend on unsafely isolated process-local state. Conversely, dividing a tangled design into ten network services does not automatically remove the tangled dependencies; it can make them harder to observe and change."
+    },
+    {
+      "id": "modules",
+      "title": "Create clear responsibilities before creating network hops",
+      "markdown": "Inside the portal, define modules for note storage, document metadata, summary requests, and user preferences. Each module exposes a small interface and keeps its implementation details private. The note module might offer createNote and findAuthorizedNote rather than inviting every other module to modify its tables directly. A module can call another module in the same process through an ordinary function interface.\n\nThis organization is often called a modular monolith when the modules share one deployment. It gives a learner a practical way to practice boundaries without immediately adding distributed-system failure modes. State which module owns each rule: document visibility belongs with document access, while summary-job status belongs with summary processing. Separate names help only if callers respect the interface. If every module edits every table, the ownership remains unclear even when the folders have attractive names."
+    },
+    {
+      "id": "remote",
+      "title": "A remote call changes the failure model",
+      "markdown": "A local function and a remote request can look similar in code while requiring different handling:\n\n| Concern | In-process call | Remote call adds… |\n| --- | --- | --- |\n| Moving inputs | Pass local values | Encode values for transfer, called serialization |\n| Finding the callee | Call a known function | Address and connection handling |\n| Waiting | Local execution and its own dependencies | Network and remote-process delay |\n| Missing result | Follow the function/runtime behavior | The remote action may have succeeded before its response was lost |\n\nA client library can hide syntax, but it cannot remove the communication boundary.\n\nSet a deadline and distinguish retry-safe reads from writes that need stable operation identities. Cancellation can stop local waiting without proving remote work stopped. Every extra synchronous dependency is another place the current operation may wait. This does not make remote services bad; it makes their cost concrete.\n\nIf three sequential remote calls each add 50 ms of observed round-trip overhead under an example workload, they add roughly 150 ms before their other processing costs. Independent work may overlap, but dependent work cannot simply be declared parallel."
+    },
+    {
+      "id": "ownership",
+      "title": "Keep one authoritative owner for each fact",
+      "markdown": "In the original portal, creating a document record and a summary request can use one local database transaction when the application owns both updates. If summary processing becomes a separate service with a separate database, one ordinary transaction no longer automatically covers both stores. The first update can commit while the second fails. A design must expose or repair that intermediate state.\n\n**Authoritative owner** means the component responsible for accepting a fact’s official changes. Owning data means owning those permitted changes, not necessarily buying a separate database server for every table on day one. Within a modular application, table access rules can establish logical ownership.\n\nAcross services, prefer a defined API or event contract to unrestricted writes into another service’s private tables. Shared direct writes bind deployments to the same schema and make independent evolution difficult. Some reporting copies are useful, but label them as derived and specify their freshness rather than treating two stores as equal authorities."
+    },
+    {
+      "id": "failure",
+      "title": "Isolation requires behavior, not only separate processes",
+      "markdown": "Suppose the portal calls a remote recommendation service before returning every note. Moving recommendations into a separate process may isolate a crash, but if the note API waits indefinitely for it, users still experience a notes outage. Fault isolation requires bounded waiting and an acceptable fallback, such as returning the note without optional suggestions. Process separation is one tool; dependency policy determines the user outcome.\n\nResource isolation also needs explicit budgets. A summary service can fill a shared database connection pool or saturate a network link even when it has its own container. Limit concurrent work, message sizes and queue growth. Monitor the dependency from the caller’s perspective. A service reporting healthy does not establish that its caller can reach it with the required identity and deadline. Start from the user journey and identify which dependencies are essential and which may degrade.\n\n> **Pause and predict:** Recommendations run in their own process, but the notes API waits forever for them. Are note reads protected from a recommendation outage? No. The caller needs bounded waiting and a permitted fallback as well as process separation."
+    },
+    {
+      "id": "split",
+      "title": "Give the split a reason that can be evaluated",
+      "markdown": "A separate summary worker may be justified because document parsing and model execution have a different resource profile from reading small notes. It may need different deployment timing, a specialized runtime, or stricter limits around untrusted files. An independently owned business capability with a stable interface can also justify a service boundary when separate teams need to release changes without coordinating every deployment.\n\nCosts remain:\n\n| New responsibility | Concrete question |\n| --- | --- |\n| Releases and compatibility | Can old API and new worker versions communicate? |\n| Credentials and permissions | Which service may access this private document? |\n| Observation, also called telemetry | Can we connect caller timing to worker failures? |\n| Failure handling and tests | What state remains after one side succeeds and the other fails? |\n\nA separate process must earn these responsibilities through a useful benefit. A three-person team supporting a modest portal may benefit from keeping most modules together and extracting only expensive work. A larger organization may make different choices. “We expect growth” alone is too vague. State the growth or operational pain, the proposed boundary, the benefit it enables, and evidence that its extra responsibilities are manageable."
+    },
+    {
+      "id": "worked",
+      "title": "Extract document summaries without breaking note reads",
+      "markdown": "Before extraction, a POST /summaries handler parses the document and waits for a model response inside the main API. During a burst, expensive work delays ordinary note reads. After extraction, the API authenticates the user, validates document access and size, records a durable job with an operation identity, and returns a job ID. A bounded worker retrieves eligible work, processes it, and saves a result and status.\n\nThe client reads job status or receives progress events. Note reads no longer wait for model completion. The worker still checks the relevant document authorization or an explicitly scoped internal grant; a job ID is not automatic permission to read private input.\n\nDefine what happens after a worker crashes, how repeated execution recognizes an existing result, and how expired documents affect queued work. A durable queue or later outbox pattern can support the handoff, but merely drawing a queue does not prove the source update and publication are atomic."
+    },
+    {
+      "id": "contracts",
+      "title": "Independent releases need compatible interfaces and trust boundaries",
+      "markdown": "The summary worker version may change while the API stays unchanged. Version the job payload or maintain a compatible schema, validate fields, and define behavior for unsupported versions. Adding an optional field is often easier to roll out than changing the meaning of an existing required one. Test the combinations expected during a rolling deployment. Independence is reduced if every release requires all services to switch simultaneously.\n\nAuthenticate service-to-service callers and carry the minimum user or tenant context needed for authorization. Do not trust a tenant ID simply because it arrived from another internal IP address. Limit credentials to the responsibility of the service. In Kubernetes, a Service is also the name of a networking resource that provides a stable way to reach selected workloads. That capitalized platform object is not the same concept as a business service boundary; one does not automatically define the other."
+    },
+    {
+      "id": "decision",
+      "title": "Explain the choice without turning an architecture style into a goal",
+      "markdown": "For the learning portal, keep note and account modules in a coherent application initially, and move heavy summary execution behind a bounded job interface if measurements justify it. Keep durable job ownership and result semantics explicit. This is a specific design choice for a specific workload, not a rule that every application needs microservices or that no application should use them.\n\nReview a proposed split with four questions. Which behavior and data does the component own? What can now be deployed or scaled independently? What happens when its call fails halfway through? What new operational work does the team accept?\n\nDraw the before and after request paths and test one failure. Write the expected user-visible state beside every failed arrow so hidden assumptions become reviewable.\n\nA good boundary makes a responsibility easier to understand and change. If the split creates many tiny synchronous calls with no independent benefit, reconsider the boundary before adding more infrastructure."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "modular-app",
+      "sectionId": "modules",
+      "title": "Logical boundaries can exist inside one deployment",
+      "source": "flowchart TB\nU[Portal client] --> A[One application deployment]\nA --> N[Notes module]\nA --> D[Documents module]\nA --> S[Summary module]\nN --> DB[(Owned tables in shared database)]\nD --> DB\nS --> DB",
+      "steps": [
+        "Modules group coherent rules and interfaces.",
+        "Calls can remain in the same process.",
+        "Table ownership is explicit even when infrastructure is shared."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "extract-summary",
+      "sectionId": "worked",
+      "title": "Extract the expensive responsibility with a durable interface",
+      "source": "flowchart LR\nU[Client] --> A[Portal API]\nA --> N[Fast note operations]\nA --> J[(Durable summary job)]\nJ --> W[Bounded summary worker]\nW --> M[Model service]\nW --> R[(Result and status)]\nA --> R",
+      "steps": [
+        "The API validates and records intent.",
+        "Workers use their own capacity budget.",
+        "Results become durable state that clients can read.",
+        "The ordinary note path avoids waiting for model execution."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "optional-dependency",
+      "sectionId": "failure",
+      "title": "An optional dependency needs an explicit fallback",
+      "source": "flowchart LR\nN[Read permitted note] --> R[Ask for optional recommendations]\nR --> T{Useful result within budget?}\nT -->|Yes| F[Return note with suggestions]\nT -->|No| B[Return note without suggestions]",
+      "caption": "This fallback is valid only because recommendations are optional in this example. Never replace required authorization or saved-note correctness with a permissive fallback.",
+      "steps": [
+        "Classify the dependency as optional for this product action.",
+        "Give its wait a defined time and resource budget.",
+        "Return a useful permitted note even when the optional result is unavailable."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "A modular portal serves notes quickly until large document summaries arrive. Propose one justified extraction. Name the new API/job contract, data owner, retry boundary, and fallback when the worker is down. Then give one reason to keep the remaining modules in one deployment.",
+    "rubric": [
+      "Tie extraction to measured resource or release needs.",
+      "Persist work and status with explicit ownership.",
+      "Handle partial failure and duplicate execution.",
+      "Explain operational costs and what stays simpler."
+    ],
+    "solution": "Extract summary execution behind a durable job interface with bounded input, operation ID, status and result. The portal owns document access; the job subsystem owns processing state under a defined schema. A down worker leaves accepted jobs pending within a documented age bound, while note reads remain available. Repeated attempts must not create duplicate logical results or repeated uncontrolled paid calls. Keep coherent low-cost modules together to preserve simple local transactions, testing and deployment until independent scaling or ownership requires more boundaries."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does “modular monolith” describe?",
+      "options": [
+        "Clear internal modules in one main deployment",
+        "A system with no interfaces",
+        "A rule forbidding multiple application instances"
+      ],
+      "answer": "Clear internal modules in one main deployment",
+      "explanation": "Code boundaries and deployment boundaries are different choices."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Three sequential remote calls each add 50 ms of observed round-trip overhead. Approximate added overhead?",
+      "answer": 150,
+      "unit": "ms",
+      "tolerance": 0,
+      "explanation": "3 × 50 = 150 ms before other processing costs."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which is a concrete reason to extract summary execution?",
+      "options": [
+        "Its workload needs a separately bounded specialized compute pool",
+        "Microservices are always better",
+        "A diagram looks empty"
+      ],
+      "answer": "Its workload needs a separately bounded specialized compute pool",
+      "explanation": "The separation supports an explicit workload and operational requirement."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does a separate recommendation process not automatically protect note availability?",
+      "answer": "If note reads synchronously wait for it without deadlines or fallback, its failure still blocks the user journey. Isolation requires dependency and resource policies.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What changes when one transaction’s updates move into two separately owned databases?",
+      "answer": "There is no automatic shared local transaction; either update may commit while the other fails. Model intermediate state, durable intent, idempotent retries, reconciliation or a suitable coordination protocol.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Module boundary?",
+      "back": "A code responsibility and interface; it need not be a network service."
+    },
+    {
+      "front": "Deployment boundary?",
+      "back": "A unit that is released, scaled or restarted operationally."
+    },
+    {
+      "front": "Remote-call cost?",
+      "back": "Latency, serialization, versioning, identity and partial failure."
+    },
+    {
+      "front": "Data owner?",
+      "back": "The component responsible for a fact’s meaning and permitted authoritative updates."
+    },
+    {
+      "front": "Good reason to split?",
+      "back": "A specific independent workload, ownership, release or isolation need whose benefit outweighs operational cost."
+    }
+  ],
+  "mentalModel": "Draw a boundary around a responsibility first; add a network boundary only when its benefit pays for the new failure modes.",
+  "sources": [
+    {
+      "title": "Microsoft Architecture Center — Microservices benefits and challenges",
+      "url": "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/microservices",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "AWS — Transactional outbox and the dual-write problem",
+      "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "optional-suggestions-deadline",
+      "sectionId": "failure",
+      "title": "Keep a note read useful when suggestions are slow",
+      "intro": "The example permits a note without suggestions. Times are illustrative and describe the caller’s policy, not measured service performance.",
+      "steps": [
+        {
+          "title": "Obtain the permitted note",
+          "explanation": "The required access check and note read finish. The response can still be useful without extra suggestions.",
+          "state": [
+            {
+              "label": "Elapsed",
+              "value": "20 ms"
+            },
+            {
+              "label": "Note data",
+              "value": "Ready and permitted"
+            },
+            {
+              "label": "Suggestions",
+              "value": "Optional"
+            }
+          ]
+        },
+        {
+          "title": "Start bounded optional work",
+          "explanation": "The caller allows the recommendation call until elapsed time 100 ms, an 80 ms waiting budget here.",
+          "state": [
+            {
+              "label": "Recommendation start",
+              "value": "20 ms"
+            },
+            {
+              "label": "Deadline",
+              "value": "100 ms elapsed"
+            },
+            {
+              "label": "Wait budget",
+              "value": "80 ms"
+            }
+          ]
+        },
+        {
+          "title": "Reach the deadline",
+          "explanation": "No useful suggestion arrived in time. Stop waiting and request cancellation where supported; remote work may still be running.",
+          "state": [
+            {
+              "label": "Elapsed",
+              "value": "100 ms"
+            },
+            {
+              "label": "Suggestion result",
+              "value": "Unavailable within budget"
+            },
+            {
+              "label": "Caller action",
+              "value": "Take documented fallback"
+            }
+          ]
+        },
+        {
+          "title": "Return the useful result",
+          "explanation": "Return the note without suggestions and record the dependency outcome for diagnosis.",
+          "state": [
+            {
+              "label": "Note response",
+              "value": "Returned"
+            },
+            {
+              "label": "Suggestions",
+              "value": "Omitted under product rule"
+            },
+            {
+              "label": "Observation",
+              "value": "Recommendation deadline exceeded"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Separate deployment alone does not isolate a user journey. The caller’s wait and fallback rules decide what the user experiences."
+    }
+  ]
+}

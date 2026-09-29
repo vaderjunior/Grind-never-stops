@@ -1,0 +1,281 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 2,
+  "title": "Memory, disks, and data that survives",
+  "level": "beginner",
+  "minutes": 45,
+  "id": "data-that-survives",
+  "summary": "Understand where data lives: temporary memory, durable storage, databases, and backups. See what different failures can erase.",
+  "objectives": [
+    "Distinguish memory from durable storage.",
+    "Explain why a database is more than a place to put bytes.",
+    "Separate saving, copying, and backing up."
+  ],
+  "terms": [
+    {
+      "term": "Memory / RAM",
+      "definition": "Fast working space used by running programs; ordinary process state there is temporary."
+    },
+    {
+      "term": "Disk / persistent storage",
+      "definition": "Storage intended to retain data beyond a program restart, subject to its hardware and software guarantees."
+    },
+    {
+      "term": "Durability",
+      "definition": "The promise that an acknowledged saved change survives the failures covered by the storage contract."
+    },
+    {
+      "term": "Backup",
+      "definition": "A recoverable copy kept for restoration after loss, corruption, or another supported recovery scenario."
+    },
+    {
+      "term": "State",
+      "definition": "Information the application needs to remember, such as notes, users, or completed operations."
+    }
+  ],
+  "retrieval": [
+    "Why did Pocket Notes need a database?",
+    "What does the browser know after the server confirms a save?"
+  ],
+  "sections": [
+    {
+      "id": "desk",
+      "title": "A desk and a filing cabinet",
+      "markdown": "Imagine solving a problem on a desk. The papers currently spread out are easy to reach, but the desk is working space. A filing cabinet is where you deliberately keep records for later. Memory and persistent storage play roughly these different roles in a program.\n\nThe analogy is limited: both computer memory and disks have detailed behavior, and a filing cabinet does not have operating-system buffers. Still, it helps ask the right first question: is this value only part of the running program, or has it been saved through a mechanism intended to survive a restart?\n\nIn Pocket Notes, text typed into an editor may initially be temporary page state. The browser may optionally keep a local draft for recovery. That draft is useful, but it is different from the shared saved note your phone can retrieve from the server."
+    },
+    {
+      "id": "memory",
+      "title": "Temporary state is useful, but name its limits",
+      "markdown": "A server could keep notes in a dictionary in memory: a collection that maps keys, such as note identities, to values. This is simple and fast for a demonstration. If the process stops and starts again, the new process does not automatically inherit the old dictionary. If two independent server processes each have their own dictionary, they can also disagree about which notes exist.\n\nMemory is still valuable for work in progress, reusable copies, and calculations. The mistake is using temporary state while promising durable shared data. Ask which information is allowed to disappear and which must be saved before reporting success.\n\nCompare two values stored in exactly the same RAM:\n\n| Value in memory | Another saved copy exists? | Losing this memory means… |\n| --- | --- | --- |\n| Cached note 42 | Yes, in the database | The next read may need to reload it |\n| Only copy of note 43 | No | The note can be lost |\n\nThe consequence comes from the value’s role, not just the hardware name."
+    },
+    {
+      "id": "database",
+      "title": "Why not just write a text file?",
+      "markdown": "A small program can save a file, and that can be enough for a small requirement. A database adds organized ways to find, change, and protect data. It can assign identities, enforce rules, coordinate simultaneous operations, and provide a supported recovery mechanism. Next week we will learn tables, keys, and indexes one at a time.\n\nA database is not magic protection against every disaster. Its durability depends on its configuration, storage, and the failures you ask it to survive. A process restart, a machine losing power, a disk being destroyed, and an administrator deleting a table are different events. State the failure instead of saying only “the system crashed.”\n\nOur beginner assumption is that Pocket Notes uses a properly configured local database on persistent storage. After a confirmed save, restarting the application process should not erase the note. We have not yet promised survival of a destroyed disk or an entire lost location."
+    },
+    {
+      "id": "save-order",
+      "title": "Trace a confirmed save and a restart",
+      "markdown": "You submit note 42. The server asks the database to save it. The database performs the work needed by its configured durability rules and reports success. The server sends a successful response. You stop the application program, start it again, and ask for note 42. It opens the same database and finds the saved record.\n\nContrast an unsafe demonstration: update an in-memory dictionary, reply “Saved,” and plan to write the dictionary to disk later. A process failure between the reply and that later write can lose a note the user believed was saved. The problem is the promised meaning of success, not merely whether a disk exists somewhere.\n\nReal databases use mechanisms such as journals or logs to recover interrupted changes. You do not need to implement them here. The important system-design habit is using the storage’s documented commit operation and knowing what it promises before acknowledging the user."
+    },
+    {
+      "id": "backup",
+      "title": "A second copy and a backup solve related but different problems",
+      "markdown": "Suppose a disk fails. A separate recoverable backup may let you restore the saved notes. It can be older than the latest changes, so you must know how much recent work could be lost and how long restoration takes. A backup that has never been restored is an untested recovery plan.\n\nLater we will study replication: keeping another working copy to help serve traffic or survive some failures. If an accidental deletion quickly reaches every replica, those copies may all faithfully contain the deletion. An older retained backup can address a different recovery need. Neither “two copies” nor “a backup exists” tells the whole story without locations, retention, and restore tests.\n\nFor this course, do not start administering complex backup infrastructure. Draw the separation: working data used by the app, and a recovery copy with a date and a tested restoration process. Keep course learner records separate from temporary lab databases.\n\n> **Pause and predict:** Your 09:00 backup contains notes 41 and 42; at 09:05 you accidentally delete one. Which copy could recover it? The retained 09:00 state may help. A current copy that already received the deletion may not. Recovery must also preserve any later legitimate changes you need."
+    },
+    {
+      "id": "try",
+      "title": "A small failure table makes the design clear",
+      "markdown": "Name the failure before claiming it is covered:\n\n| Failure after a confirmed save | Our current design expects | Remaining dependency |\n| --- | --- | --- |\n| Original browser closes | Shared saved note remains | Server and saved storage must be available |\n| Application process restarts | Temporary memory is lost; saved note can be read again | Reopen the same correctly committed database |\n| Only storage device is destroyed | The one-device design can lose data | Independent recoverable copy and tested restoration |\n\nThese are different promises. Restarting an application cannot repair a destroyed only copy.\n\nThis table is more informative than saying “the app is reliable.” It tells us which failure we handled and which one remains. In interviews, that precision helps you defend a simple architecture without pretending it already solves every future problem.\n\nFinish by explaining why adding a database, a cache, and a backup are three different decisions. The database owns saved notes; a cache can avoid repeated reads; a backup supports recovery. We will introduce each extra component only when its purpose is clear."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "storage",
+      "title": "Temporary working data and saved data have different jobs",
+      "source": "flowchart LR\nB[Browser draft] -->|Save request| P[Server working memory]\nP -->|Database commit| D[(Saved notes on persistent storage)]\nD -.->|Controlled recoverable copy| K[(Separate backup)]\nD -->|Read after process restart| P",
+      "caption": "The dashed backup arrow is a separate recovery process, not an acknowledgment on every request. Disk/location failure is not solved by restarting the program.",
+      "steps": [
+        "Keep unsaved text in the editor.",
+        "Commit the note through the database.",
+        "Confirm the successful save to the client.",
+        "Reopen the database after a process restart; use a tested backup for a covered storage-loss scenario."
+      ],
+      "sectionId": "save-order"
+    },
+    {
+      "id": "backup-time",
+      "sectionId": "backup",
+      "title": "A recovery copy preserves a point in time",
+      "source": "flowchart LR\nA[09:00 working notes 41 and 42] --> B[09:00 retained backup]\nA --> C[09:05 working note 42 deleted]\nC --> D[Current working copy lacks 42]\nB -.->|Read an earlier state during controlled recovery| R[Recover note 42 if backup is usable]",
+      "caption": "This is a recovery timeline, not automatic repair. Backup contents, retention, independence, and restoration procedure determine what can actually be recovered.",
+      "steps": [
+        "Capture a recoverable state before the mistake.",
+        "Recognize that current working copies can contain the same deletion.",
+        "Use a tested recovery procedure to inspect and restore the required earlier data."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Make a table for three storage choices: only a server dictionary, one database on disk, and that database plus an independent backup. For each, predict what happens after a process restart and after the only working disk is destroyed. State one uncertainty rather than guessing.",
+    "rubric": [
+      "Temporary memory can disappear on restart.",
+      "Persistent storage and backup cover different failures.",
+      "Recovery claims name assumptions and limits."
+    ],
+    "solution": "A server-only dictionary normally loses its state when the process restarts and has no disk recovery copy. A correctly committed database can survive the application restart, but destroying its only storage device can lose the data. An independent usable backup can restore data up to its captured point; later changes may be missing and restoration takes time. Details such as backup age, physical independence, and an actual restore test determine the guarantee. This does not promise survival of every hardware or operator failure."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Where is an ordinary Python dictionary inside a running server primarily kept?",
+      "options": [
+        "Temporary process memory",
+        "A guaranteed independent backup",
+        "Every user’s phone"
+      ],
+      "answer": "Temporary process memory",
+      "explanation": "It does not automatically become durable shared storage merely because the program is a server."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What should happen after an application restart if a note was correctly committed to its persistent database?",
+      "options": [
+        "The note is necessarily erased",
+        "The restarted app can reopen the saved note",
+        "The database becomes an API gateway"
+      ],
+      "answer": "The restarted app can reopen the saved note",
+      "explanation": "That is the stated process-restart durability assumption; different failures need separate analysis."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "What best establishes that a backup can support recovery?",
+      "options": [
+        "Its filename contains backup",
+        "A successful relevant restore test",
+        "There are two copies of the app code"
+      ],
+      "answer": "A successful relevant restore test",
+      "explanation": "Restore evidence checks whether the saved copy is usable, not only whether a file exists."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might losing a cache be less serious than losing the only database?",
+      "answer": "A cache can be rebuilt from the saved data that defines the accepted note state. If the only saved copy is lost, there may be nothing from which to rebuild.",
+      "explanation": "A cache can be rebuilt from the saved data that defines the accepted note state. If the only saved copy is lost, there may be nothing from which to rebuild."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is “survives a crash” too vague?",
+      "answer": "A process restart, power loss, disk destruction, and mistaken deletion have different effects. State the failure and the storage/recovery assumptions.",
+      "explanation": "A process restart, power loss, disk destruction, and mistaken deletion have different effects. State the failure and the storage/recovery assumptions."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Memory role?",
+      "back": "Fast temporary working state."
+    },
+    {
+      "front": "Persistent storage role?",
+      "back": "Retain saved data beyond a process restart under defined guarantees."
+    },
+    {
+      "front": "Durability question?",
+      "back": "Which acknowledged changes survive which failures?"
+    },
+    {
+      "front": "Backup evidence?",
+      "back": "A usable copy plus a relevant successful restore test."
+    },
+    {
+      "front": "Replication equals backup?",
+      "back": "No. A live copy can repeat deletions; retained recovery copies address other scenarios."
+    }
+  ],
+  "mentalModel": "Name what must be remembered, where it is saved, and which failure the recovery plan actually covers.",
+  "sources": [
+    {
+      "title": "SQLite — Atomic commit and recovery assumptions",
+      "url": "https://www.sqlite.org/atomiccommit.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18 — Backup and restore",
+      "url": "https://www.postgresql.org/docs/18/backup.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "cache-reload-after-restart",
+      "sectionId": "memory",
+      "title": "Lose a disposable copy without losing the note",
+      "intro": "Here the database already has a confirmed saved note. A cache means a reusable copy, not the only record.",
+      "steps": [
+        {
+          "title": "Read a saved note",
+          "explanation": "The application obtains the note from its database and may keep a reusable copy.",
+          "state": [
+            {
+              "label": "Database",
+              "value": "42 → Buy coffee"
+            },
+            {
+              "label": "Memory cache",
+              "value": "42 → Buy coffee"
+            },
+            {
+              "label": "Saved record",
+              "value": "Database copy"
+            }
+          ]
+        },
+        {
+          "title": "Stop the application",
+          "explanation": "The ordinary process memory disappears. This event has not destroyed the storage device.",
+          "state": [
+            {
+              "label": "Application",
+              "value": "Stopped"
+            },
+            {
+              "label": "Memory cache",
+              "value": "Gone"
+            },
+            {
+              "label": "Database",
+              "value": "42 → Buy coffee"
+            }
+          ]
+        },
+        {
+          "title": "Start with empty memory",
+          "explanation": "The new process begins without the old cache and reopens the same database.",
+          "state": [
+            {
+              "label": "Application",
+              "value": "Running again"
+            },
+            {
+              "label": "Memory cache",
+              "value": "Empty"
+            },
+            {
+              "label": "Database",
+              "value": "42 → Buy coffee"
+            }
+          ]
+        },
+        {
+          "title": "Load the needed copy",
+          "explanation": "A read fetches the saved note and can rebuild the disposable cache.",
+          "state": [
+            {
+              "label": "Read result",
+              "value": "Buy coffee"
+            },
+            {
+              "label": "Memory cache",
+              "value": "42 → Buy coffee"
+            },
+            {
+              "label": "Data loss",
+              "value": "None in this stated scenario"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A lost cache and a lost only copy have different consequences. State exactly which copy owns the saved data."
+    }
+  ]
+}

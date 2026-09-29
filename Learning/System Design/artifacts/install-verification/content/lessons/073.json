@@ -1,0 +1,153 @@
+{
+  "id": "073",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Translate stale and reordered observations into user-visible consistency requirements.",
+    "Distinguish eventual convergence from a bounded freshness promise.",
+    "Trace a causal dependency across different objects.",
+    "Select and implement session guarantees with explicit failover behavior."
+  ],
+  "retrieval": [
+    "L072: why can a cross-client stale read be sequentially consistent but not linearizable?",
+    "L066: what does replica lag mean for an acknowledged write?",
+    "L026: what must a cursor or session token never replace?"
+  ],
+  "sections": [
+    {
+      "id": "experience",
+      "title": "Name the surprising user behavior",
+      "markdown": "In a field-repair application, a technician changes a job’s status to ready, returns to the list, and sees waiting. On refresh, ready reappears. A colleague sees a note saying “inspection passed; dispatch now,” but the inspection result it refers to is missing. These are distinct problems. One concerns the writer’s own update, another concerns going backward after observing progress, and another concerns an effect appearing before its cause.\n\nUse 5 minutes retrieval, 20 worked observations, 10 diagram walkthrough, 10 exercise, and 10 questions/cards. The design goal is to select the necessary behavior for each path. A status dashboard and an exclusive allocation may need different contracts even within the same application."
+    },
+    {
+      "id": "eventual",
+      "title": "Eventual consistency is a convergence condition, not a stopwatch",
+      "markdown": "Under an eventual-consistency contract, replicas should converge when updates stop and the required communication and repair eventually occur. This alone gives no maximum delay before a read reflects an update, no monotonic browsing experience, and no guarantee that concurrent edits preserve every user intention. State the convergence assumptions and conflict policy. A permanently disconnected replica cannot receive an update by wishing it “eventual.”\n\nSuppose the service promises “fresh within two seconds” but replicas only exchange work opportunistically. There is no enforceable two-second guarantee from eventual consistency alone. A bounded-staleness contract needs evidence or metadata sufficient to enforce the bound and a documented action when a replica cannot meet it: route elsewhere, wait within a budget, or report unavailable for that operation. Percentile freshness measurements are useful SLO evidence but differ from a hard bound.\n\nConvergence can also choose a result the product dislikes. If two disconnected users replace the same address, a deterministic winner may erase one edit. The replicas can agree perfectly on that loss. Convergence, conflict preservation, authorization, and the business invariant should be reviewed separately."
+    },
+    {
+      "id": "session",
+      "title": "Four session properties answer four different complaints",
+      "markdown": "Read-your-writes requires later reads in the same session to include that session’s earlier writes. Another legitimate later overwrite may change the visible value; this is not a promise to freeze your exact value forever. Monotonic reads prevent a session from going back to a state that omits writes whose effects it already observed. Monotonic writes retain the session’s write ordering. Writes-follow-reads carries observed dependencies into subsequent writes.\n\nFor the technician, read-your-writes prevents the ready→waiting jump immediately after her acknowledged update, absent a real later overwrite. For a colleague who did not perform that update, seeing ready and then an older waiting snapshot calls for monotonic reads. The relevant “monotonic” thing is the observed history, not the numerical value: a legitimate cancellation may change a quantity from 8 to 3 without violating monotonic reads.\n\nIf the technician writes draft A and then correction B, replicas should not treat A as the later session write. If she reads inspection I and then posts dispatch note N based on I, the system should retain I as a dependency of N. Each property has a scope: a browser session, device, account session, or another explicit context. Logging into a new device does not magically transfer history if the implementation never transfers its context."
+    },
+    {
+      "id": "causal",
+      "title": "An effect should not be visible without its known cause",
+      "markdown": "Causal reasoning follows program order, observations that influence later operations, and their transitive closure. Let inspector publish result I. Dispatcher reads I, then writes note N. A recipient who sees N should see the prerequisite I under the selected causal contract. If N reaches a replica first, that replica can retain it internally but must not expose it as causally ready until I is available.\n\nTwo unrelated technicians can concurrently edit different jobs without either depending on the other. Causality does not impose a single real-time order on all such updates. Concurrent edits to one field still need a conflict policy. Application dependencies outside the instrumented system also need explicit context transfer; a human telephone call does not automatically become a database dependency.\n\nThe diagram intentionally separates arrival from visibility. An event being stored locally does not mean it is eligible for the promised read view. Conversely, waiting for a missing dependency can reduce availability or increase latency. “Causal” is a contract with costs, not a way to remove every coordination tradeoff."
+    },
+    {
+      "id": "mechanism",
+      "title": "Carry enough context and decide what happens when it cannot be met",
+      "markdown": "One implementation sketch returns a version context with reads and writes. A later request carries the session’s required context. The chosen replica serves only if it has incorporated that context; otherwise the router tries a suitable replica, waits within the deadline, or returns a clear inability to meet the contract. A scalar high-water mark can suffice for a single ordered log, while multiple independent writers need richer dependency information. L077 develops vector comparisons.\n\nSticky routing can improve the experience while one replica remains healthy and current, but failover to an arbitrary lagging replica can break it. A five-second “always read leader” cookie is also not a proof if lag can exceed five seconds or the new leader is missing the acknowledged update. State the protocol’s evidence, not merely a chosen delay.\n\nSession context is untrusted input. Validate its shape and size; a malformed or impossible future requirement must not make the service retain unlimited work. Do not use a version token to grant permission to another user’s job. Preserve tenant and object authorization before evaluating freshness.\n\nTest with a deliberately lagging replica: write through A, carry context to B, and observe wait/reroute/unavailable rather than an illegal stale success. Then lose the context and record that the guarantee’s scope has ended. This directly tests the user-visible contract."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "dependency",
+      "title": "Arrival does not imply causal visibility",
+      "source": "sequenceDiagram\nparticipant I as Inspector\nparticipant D as Dispatcher\nparticipant R as Remote replica\nparticipant U as Reader\nI->>D: Inspection I is observed\nD->>R: Note N depends on I\nNote over R: N arrives first<br/>keep N hidden pending I\nU->>R: Read dispatch status\nR-->>U: Prior valid view or explicit wait\nI->>R: Inspection I arrives\nNote over R: Dependency met<br/>I and N may be exposed\nU->>R: Read again\nR-->>U: I plus dependent note N",
+      "caption": "This is an application dependency sketch, not a complete replication protocol. The remote view must not expose N without I under the chosen causal contract.",
+      "steps": [
+        "Create the dependency by an actual observation.",
+        "Attach the dependency to the later write.",
+        "Separate stored arrival from eligible visibility.",
+        "Release the effect only when its prerequisite is available."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A mobile repair app must show a user’s just-saved update, never move a browsing session backward to an older observed history, and never show a dispatch note before the inspection it depends on. Specify each required guarantee and a version-context routing policy. Explain what happens if the only reachable replica is behind.",
+    "minutes": 10,
+    "rubric": [
+      "Maps own writes to read-your-writes.",
+      "Maps observed-history regression to monotonic reads.",
+      "Preserves the inspection dependency for the note.",
+      "Chooses explicit wait/reroute/unavailable behavior instead of silently weakening the contract."
+    ],
+    "solution": "Carry session write/read context for read-your-writes and monotonic reads. Carry inspection I as a dependency of note N and delay N’s visibility until I is present for a causal view. A replica must establish that it includes the required context before a successful constrained read. Try a suitable replica or bounded wait; if none can satisfy the context, return the documented unavailable/pending response. Arbitrarily serving stale success contradicts the selected guarantees. Concurrent overwrites and cross-device context transfer need their own explicit policies."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Does eventual consistency alone guarantee that every read is less than two seconds stale?",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Eventual convergence supplies no fixed time bound by itself."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A stock value legitimately changes from8 to3. Does that violate monotonic reads?",
+      "options": [
+        "Always",
+        "Not necessarily"
+      ],
+      "answer": "Not necessarily",
+      "explanation": "The guarantee concerns retained observed write history, not monotonically increasing field values."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why may a note be stored but hidden at a causal replica?",
+      "answer": "Its prerequisite inspection has not arrived, so making it visible would expose the effect without its dependency.",
+      "explanation": "Arrival and contract-compliant visibility are separate states."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is sticky routing alone insufficient under failover?",
+      "answer": "The replacement replica may lack the session’s acknowledged or observed history unless the context is checked and enforced.",
+      "explanation": "Routing affinity is an optimization, not complete session recovery semantics."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does read-your-writes prevent someone else from overwriting your value?",
+      "answer": "No. It requires inclusion of your write in the session’s view; a later legitimate overwrite may be visible.",
+      "explanation": "The guarantee is not a lock on the field."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Eventual versus bounded staleness?",
+      "back": "Convergence under assumptions versus an enforced freshness limit."
+    },
+    {
+      "front": "Read-your-writes?",
+      "back": "Later session reads include earlier session writes, allowing later legitimate overwrites."
+    },
+    {
+      "front": "Monotonic reads?",
+      "back": "A session does not regress to a view missing previously observed history."
+    },
+    {
+      "front": "Writes-follow-reads?",
+      "back": "Subsequent writes retain dependencies on the reads they follow."
+    },
+    {
+      "front": "Causal visibility?",
+      "back": "An effect is not exposed without its known prerequisites."
+    },
+    {
+      "front": "Replica cannot meet session context?",
+      "back": "Route, wait within budget, or explicitly fail the constrained operation."
+    }
+  ],
+  "mentalModel": "Consistency should prevent a named user surprise; carry the history needed to enforce that promise across routing and failure.",
+  "sources": [
+    {
+      "title": "Terry et al. — Session Guarantees for Weakly Consistent Replicated Data (1994)",
+      "url": "https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Lamport — Time, Clocks, and the Ordering of Events in a Distributed System (1978)",
+      "url": "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

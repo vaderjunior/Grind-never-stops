@@ -1,0 +1,286 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 23,
+  "title": "RAG, retrieval permissions, and serving tradeoffs",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "rag-and-inference",
+  "summary": "Give an assistant relevant documents before it answers. Trace which documents enter the prompt, keep permissions attached, and understand what retrieval and caching cannot guarantee.",
+  "objectives": [
+    "Separate document ingestion from online retrieval and generation.",
+    "Place authorization before private text reaches the model.",
+    "Explain stale documents, grounded-answer evaluation, and safe cache boundaries."
+  ],
+  "terms": [
+    {
+      "term": "RAG",
+      "definition": "Retrieval-augmented generation: retrieve relevant material and provide it to a model as context for an answer."
+    },
+    {
+      "term": "Chunk",
+      "definition": "A selected portion of a document stored and retrieved as a unit."
+    },
+    {
+      "term": "Embedding",
+      "definition": "A numeric representation used to compare similarity; it does not encode permission or truth."
+    },
+    {
+      "term": "Grounding",
+      "definition": "Connecting an answer to supporting source material."
+    },
+    {
+      "term": "Reranking",
+      "definition": "Reordering an initial candidate set with a more focused relevance method."
+    },
+    {
+      "term": "Prefix cache",
+      "definition": "Reusing previously computed serving state for a matching input prefix; this is different from caching a final answer."
+    }
+  ],
+  "retrieval": [
+    "Where did the search system enforce access before exposing snippets?",
+    "Why can a fluent model output still be wrong?"
+  ],
+  "sections": [
+    {
+      "id": "librarian",
+      "title": "Give the assistant a relevant reading packet",
+      "markdown": "A company assistant answers questions about internal procedures. The model's training is not a live database of the company's current documents. Instead, retrieve a small relevant reading packet and include it with the question. The model can then produce an answer using that packet and point to its sources.\n\nThink of asking a researcher to answer with selected pages from a library. Better pages make the task easier, but the researcher can still misunderstand them. Choosing pages also does not decide who may read them. Relevance, permission, and correctness are separate questions.\n\nOur first product answers questions; it does not execute instructions from the documents. A document may contain quoted commands, outdated guidance, or malicious instructions. Treat retrieved text as evidence to examine, not as a higher-priority instruction that can change the application's rules."
+    },
+    {
+      "id": "ingest",
+      "title": "Prepare documents with their identities intact",
+      "markdown": "Ingestion prepares searchable pieces without losing what they mean or who may read them.\n\n| Chunk field | Example | Why keep it? |\n| --- | --- | --- |\n| Source identity | room-policy | Find the authoritative document |\n| Document version | 6 | Distinguish current evidence from old text |\n| Location | “Opening hours,” paragraph 2 | Show supporting context and citation |\n| Access reference | staff-policy scope | Apply the required audience check |\n| Text | Rule plus its relevant exception | Avoid a misleading fragment |\n\nChoose meaningful boundaries. Separating “open until 18:00” from “except Friday, until 16:00” can retrieve the rule while losing the condition needed by the question.\n\nEmbeddings help locate semantically related text; keyword search helps exact names, numbers, and unusual identifiers. A hybrid design can use both. Similarity does not prove truth or permission.\n\nUpdates and deletions must reach the derived index. Store versions and indexing progress, define a freshness target, and prevent old chunks from indefinitely claiming to be current. Rebuilds need the same supported snapshot/catch-up reasoning as other derived views."
+    },
+    {
+      "id": "answer",
+      "title": "Follow one private question through the system",
+      "markdown": "A logged-in employee asks, “What is the travel limit for my team?” First, identify the tenant and user's current access scope. Second, retrieve candidates using appropriate scope filtering. Third, validate the access policy for any private text that will be exposed or sent to the model.\n\nFourth, select or rerank useful passages, bound their total size, and construct the prompt. Fifth, generate an answer with source references and a way to say that evidence is missing.\n\nAuthorization must happen before restricted text reaches the model, not merely before the browser displays the final answer. Asking the model to ignore a forbidden passage after including it is not a privacy control. Logging and traces also need the same care: a debug record containing the hidden passage is still a disclosure path.\n\nPermission revocation is a difficult freshness case. A stale copied access list may keep allowing a removed user. Revalidate against current authority or implement a propagation design whose revocation guarantee the product explicitly accepts. Cached retrieval results and generated answers must not bypass that check."
+    },
+    {
+      "id": "evaluate",
+      "title": "Find which stage lost the answer",
+      "markdown": "Suppose the correct policy document exists but the assistant gives the wrong travel limit. Inspect the stages separately. Did ingestion capture the latest version? Did retrieval include the relevant paragraph and exception? Did authorization correctly allow the employee? Did the model use the supplied evidence rather than invent a number?\n\nKeep a judged question set with expected evidence and access scope. Test retrieval coverage, answer support, citation correctness, and appropriate abstention when documents disagree or lack the answer. A citation is a navigational aid, not automatic proof that the cited passage supports the sentence.\n\nFor a concrete failure test, give tenant A a document titled “Travel policy” with limit 500 and tenant B a different document of the same title with limit 900. Ask the same question in both scopes, then revoke one user's access. A global cache keyed only by question text can fail both tenant isolation and revocation even if retrieval itself was correct."
+    },
+    {
+      "id": "serving",
+      "title": "Cache the right thing under the right assumptions",
+      "markdown": "Two caches reuse different things.\n\n| Cache | Reuses | Must still be decided |\n| --- | --- | --- |\n| Final-answer cache | Previously generated text | Audience, document versions, model/template versions, freshness and revocation |\n| Serving prefix cache | Matching-prefix computation state | Serving compatibility, isolation, memory policy, and new output work |\n\nQuestion text alone is not a safe key for a private answer. The same sentence can have different permitted evidence for different people.\n\nA prefix cache does not establish correctness or make generation free. It may reduce repeated input processing while later decoding still occurs. Sharing state also needs appropriate isolation and side-channel consideration under the actual implementation.\n\n**Interview phrase:** “I will state what is being reused and under which audience and version conditions.” Then trace a document update, a permission revocation, and a question with no supporting evidence.\n\nVector-index internals and fine-grained GPU scheduling are optional depth after the derived-data and trust story is sound."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "rag-ingest",
+      "title": "Preserve source version and permissions through ingestion",
+      "source": "flowchart LR\nD[Source documents and access policy] --> P[Parse and choose meaningful chunks]\nP --> E[Build keyword and embedding representations]\nE --> I[(Derived retrieval index)]\nD --> U[Updates and deletions]\nU --> I",
+      "caption": "Chunk identity, source version, and permission references travel with the derived text.",
+      "steps": [
+        "Read a known source version.",
+        "Choose chunks that preserve important context.",
+        "Build retrieval representations with source and access metadata.",
+        "Propagate later updates and deletions."
+      ],
+      "sectionId": "ingest"
+    },
+    {
+      "id": "rag-query",
+      "title": "Private text must be allowed before it enters the prompt",
+      "source": "flowchart LR\nQ[Question plus user identity] --> S[Retrieve scoped candidates]\nS --> A[Enforce access policy]\nA --> R[Select relevant allowed passages]\nR --> M[Model with bounded context]\nM --> O[Answer with checked source references]\nA --> N[No allowed evidence: explain limitation]",
+      "caption": "Relevance does not grant access. The model never receives text that this application has rejected as unauthorized.",
+      "steps": [
+        "Identify the user and scope.",
+        "Retrieve likely relevant candidates.",
+        "Enforce permission before exposing private text to serving.",
+        "Generate from allowed evidence or explain that evidence is missing."
+      ],
+      "sectionId": "answer"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Two companies ask the identical question but have different private policies. Draw where the tenant and user permissions apply. A user then loses access while an answer remains cached. Explain the safe cache behavior and one quality test.",
+    "rubric": [
+      "Enforce permission before model input and before returning cached private content.",
+      "Bind cache validity to relevant scope/versions and revocation policy.",
+      "Test whether cited evidence actually supports the answer for the correct tenant."
+    ],
+    "solution": "Carry tenant and user identity through retrieval and enforce current policy before private chunks enter the prompt. A cached answer must remain valid for this audience and document/permission state; invalidate or reauthorize it when access changes. Never use question text alone as a private-answer cache key. Test two same-title policy documents with different values, check the correct tenant’s evidence, and verify that the revoked user receives no private answer. Separately check that each citation supports its associated claim."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "An embedding similarity score tells us…",
+      "options": [
+        "That the passage is semantically similar under a model",
+        "That the user is authorized",
+        "That the passage is certainly true"
+      ],
+      "answer": "That the passage is semantically similar under a model",
+      "explanation": "Similarity is neither a permission check nor a truth guarantee."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "When should private-document access be enforced?",
+      "options": [
+        "Only after generating the answer",
+        "Before restricted text reaches the model or user",
+        "Only during the original upload"
+      ],
+      "answer": "Before restricted text reaches the model or user",
+      "explanation": "The prompt, logs, caches, and response are all possible disclosure paths."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A prefix cache is the same as a final-answer cache.",
+      "options": [
+        "True",
+        "False",
+        "Only for short questions"
+      ],
+      "answer": "False",
+      "explanation": "It reuses serving computation for an input prefix rather than necessarily reusing the generated answer."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why test retrieval and generation separately?",
+      "answer": "Missing or stale evidence is a different failure from a model ignoring correct evidence. Stage-specific tests reveal which mechanism needs improvement.",
+      "explanation": "Missing or stale evidence is a different failure from a model ignoring correct evidence. Stage-specific tests reveal which mechanism needs improvement."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can citations be misleading?",
+      "answer": "A cited document may be irrelevant, stale, unauthorized, or fail to support the stated claim. Validate evidence support rather than treating a link as proof.",
+      "explanation": "A cited document may be irrelevant, stale, unauthorized, or fail to support the stated claim. Validate evidence support rather than treating a link as proof."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "RAG basic flow?",
+      "back": "Retrieve relevant allowed evidence, then provide it as context for generation."
+    },
+    {
+      "front": "Chunk metadata to preserve?",
+      "back": "Source identity, version, location, and permission information or reference."
+    },
+    {
+      "front": "Similarity implies permission?",
+      "back": "No. Authorization is an independent application responsibility."
+    },
+    {
+      "front": "Revocation affects caches?",
+      "back": "Yes. Previously allowed private content may no longer be valid for the user."
+    },
+    {
+      "front": "Prefix cache saves what?",
+      "back": "Some repeated input processing under matching serving conditions; not all generation work."
+    }
+  ],
+  "mentalModel": "Retrieve for relevance, authorize for access, and evaluate whether the generated answer is actually supported.",
+  "sources": [
+    {
+      "title": "Lewis and colleagues — Retrieval-Augmented Generation",
+      "url": "https://arxiv.org/abs/2005.11401",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Microsoft — Query-time permission enforcement",
+      "url": "https://learn.microsoft.com/en-us/azure/search/search-query-access-control-rbac-enforcement",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "vLLM — Automatic prefix caching",
+      "url": "https://docs.vllm.ai/en/latest/features/automatic_prefix_caching/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "retrieve-the-exception",
+      "title": "Follow evidence that changes the answer",
+      "sectionId": "answer",
+      "intro": "An authorized staff member asks when a study room closes on Friday. The permitted policy has a general rule and a nearby exception.",
+      "steps": [
+        {
+          "title": "Establish the question and audience",
+          "explanation": "The service resolves the current access scope before deciding which private passages may enter a prompt.",
+          "state": [
+            {
+              "label": "Question",
+              "value": "Friday closing time?"
+            },
+            {
+              "label": "Scope",
+              "value": "authorized staff"
+            },
+            {
+              "label": "Source sought",
+              "value": "room-policy"
+            }
+          ]
+        },
+        {
+          "title": "Retrieve complete supporting context",
+          "explanation": "The selected permitted evidence from version 6 includes both the ordinary hours and Friday exception.",
+          "state": [
+            {
+              "label": "General rule",
+              "value": "closes at 18:00"
+            },
+            {
+              "label": "Friday exception",
+              "value": "closes at 16:00"
+            },
+            {
+              "label": "Source/version",
+              "value": "room-policy / 6"
+            }
+          ]
+        },
+        {
+          "title": "Construct bounded model context",
+          "explanation": "The model receives the allowed passage with its source location. Retrieved text remains evidence, not authority to perform actions.",
+          "state": [
+            {
+              "label": "Prompt evidence",
+              "value": "rule plus exception"
+            },
+            {
+              "label": "Source location",
+              "value": "Opening hours, paragraph 2"
+            },
+            {
+              "label": "Tool authority",
+              "value": "none added by document"
+            }
+          ]
+        },
+        {
+          "title": "Check the supported answer",
+          "explanation": "The response should use the Friday condition and point to the supporting passage. A citation is inspected for support rather than accepted as proof by itself.",
+          "state": [
+            {
+              "label": "Expected supported answer",
+              "value": "16:00 on Friday"
+            },
+            {
+              "label": "Evidence check",
+              "value": "exception supports the statement"
+            },
+            {
+              "label": "Action performed",
+              "value": "answer only"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Retrieval quality includes preserving the condition that changes the answer. Permission and source support remain separate checks."
+    }
+  ]
+}

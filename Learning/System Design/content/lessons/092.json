@@ -1,0 +1,131 @@
+{
+  "id": "092",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Separate publisher confirms from consumer acknowledgements.",
+    "Place acknowledgement relative to an effect and predict loss or duplicates.",
+    "Interpret delivery guarantees at an explicit boundary."
+  ],
+  "retrieval": [
+    "L091: which actor owns a message after each handoff?",
+    "L083: why is a response lost after commit an uncertain outcome?"
+  ],
+  "sections": [
+    {
+      "id": "acks",
+      "title": "Every acknowledgement answers a specific question",
+      "markdown": "Core55 minutes: retrieval5, mechanism18, worked flow8, exercise10, questions10, review4. A producer publishes a job to a broker; the broker delivers it to a worker; the worker changes a database; the worker acknowledges completion. There are at least two different acknowledgement paths. A publisher confirm tells the producer something about the broker’s acceptance under the configured queue/durability semantics. A consumer acknowledgement tells the broker that a delivery can be considered handled. Neither automatically proves an external business effect happened correctly.\n\nIn RabbitMQ these are explicitly separate mechanisms. A confirm is not the consumer’s success result; a consumer acknowledgement is not a distributed transaction with the consumer’s database. Document the configured durability and replication behavior before translating a broker response into a business promise. A message accepted into a transient queue and one persisted under a replicated durable contract are not interchangeable evidence.\n\nDelivery identifiers may be scoped to a connection or channel, while a business event ID persists across redelivery. Use the former correctly for the broker API and the latter for application identity; they solve different problems."
+    },
+    {
+      "id": "window",
+      "title": "The order exposes the failure window",
+      "markdown": "If the worker acknowledges before applying its effect, a crash between ack and effect can lose the work: the broker believes delivery is complete and may not resend. This is compatible with an at-most-once style tradeoff but fails a requirement that every accepted job eventually has an effect.\n\nIf the worker applies the effect before acknowledging, a crash after effect but before ack can cause redelivery. The broker cannot know whether the effect committed. Reprocessing may execute it again unless the receiver deduplicates the logical operation. This is the common at-least-once tradeoff: duplicates are possible even when the broker and worker are behaving according to their contracts.\n\nNeither ordering magically removes both windows across independent systems. The solution often combines at-least-once delivery with a persistent idempotent effect boundary, or uses a transactional protocol when all involved systems support the required participation. State the scope rather than saying “exactly once” without an object: exactly once delivery, handler invocation, stored row, or payment are different claims."
+    },
+    {
+      "id": "trace",
+      "title": "A duplicate can be the safe recovery action",
+      "markdown": "Job J asks a worker to add ten loyalty points. The worker commits points+10 at time1 and crashes at time2 before acknowledging. The broker later redelivers J. If a new worker repeats points+10, the account gains twenty. A persistent inbox row keyed by J, committed in the same database transaction as the points update, can cause the retry to return the existing outcome without applying a second increment.\n\nIf the effect is an external email API, an inbox in the worker’s own database is not enough by itself. Marking the inbox before the email risks omission; marking it after risks duplicate email. The receiver’s idempotency feature, an explicitly tolerated duplicate, or another justified effect protocol is needed. L093 develops this boundary.\n\nFor broker handling, acknowledge only after the durable application boundary chosen for the contract. An example pseudocode trace is:\n\n~~~python\ndelivery = receive()\nresult = apply_once_in_database(delivery.event_id, delivery.payload)\nacknowledge(delivery.delivery_tag)\n~~~\n\nThis is pseudocode: apply_once_in_database must actually include the marker and effect atomically; a function name is not evidence that it does."
+    },
+    {
+      "id": "retries",
+      "title": "Redelivery must remain bounded and observable",
+      "markdown": "A poison payload or unavailable dependency can cause a tight reject/requeue loop. Immediate redelivery may consume CPU/network while completing no useful work. Use a retry classification, bounded attempts, backoff/delay and a dead-letter path with an operator workflow. Do not discard a valuable event silently after retries; record its identity and reason.\n\nPrefetch or in-flight limits also matter. A worker allowed to hold thousands of unacknowledged deliveries may hoard work and increase recovery delay after a crash. A bounded number keeps resource consumption and redistribution more predictable. It does not guarantee fairness by itself.\n\nTrack confirmed publishes, unacknowledged deliveries, redeliveries, business effects and dead letters separately. A high acknowledgement rate can coexist with lost effects in an ack-before-commit bug. The useful question is always: what fact did this acknowledgement establish, at which authority?"
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "A crash after effect but before acknowledgement permits redelivery",
+      "source": "sequenceDiagram\nparticipant B as Broker\nparticipant W as Worker\nparticipant D as Effect database\nB->>W: Delivery J\nW->>D: Commit effect for J\nD-->>W: Committed\nNote over W: Crash before acknowledgement\nB->>W: Redeliver J to replacement\nW->>D: Deduplicate J atomically\nW-->>B: Acknowledge delivery",
+      "caption": "The database must recognize J at the same atomic boundary as the effect. Broker redelivery is compatible with successful earlier processing.",
+      "steps": [
+        "Deliver a stable business identity.",
+        "Commit the protected effect and identity together.",
+        "Treat lost ack as possible redelivery.",
+        "Return the stored outcome on retry."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw the two crash windows for ack-before-effect and effect-before-ack. Use an account-credit effect to propose a safe local database design, then identify why an external email receiver changes the argument.",
+    "rubric": [
+      "Identifies omission and duplication windows.",
+      "Uses one local transaction for marker/effect.",
+      "Does not extend local atomicity to external I/O."
+    ],
+    "solution": "Ack-before-effect can omit the credit after a crash; effect-before-ack can repeat it after redelivery. Within one database, insert a unique inbox/event identity and apply the credit in the same transaction, rolling both back together on failure. A duplicate event returns the previously established result before the worker acknowledges its new delivery. Email is outside that transaction: a local marker cannot atomically establish whether an external send occurred. Require receiver idempotency, an explicit duplicate-tolerant contract or another supported protocol instead of claiming the same local pattern guarantees exactly one email."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A publisher confirm proves a consumer completed its business effect:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Producer-to-broker confirmation and consumer-to-broker acknowledgement are separate boundaries."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Effect commit followed by a crash before ack can lead to:",
+      "options": [
+        "Redelivery",
+        "Proof that the effect failed"
+      ],
+      "answer": "Redelivery",
+      "explanation": "The broker lacks completion evidence and may resend an already-effected event."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A non-idempotent +10 operation runs twice after redelivery. Total increment?",
+      "answer": 20,
+      "unit": "points",
+      "tolerance": 0,
+      "explanation": "Two independent increments add20, demonstrating the duplicate-effect hazard."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can a local inbox fail to protect an external email send?",
+      "answer": "Its transaction cannot atomically include the independent receiver’s effect, leaving either a loss or duplicate window.",
+      "explanation": "Its transaction cannot atomically include the independent receiver’s effect, leaving either a loss or duplicate window."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Publisher confirm?",
+      "back": "Evidence about broker acceptance under its configured contract."
+    },
+    {
+      "front": "Consumer acknowledgement?",
+      "back": "Tells broker that this delivery may be treated as handled."
+    },
+    {
+      "front": "Ack before effect risk?",
+      "back": "Crash can lose work."
+    },
+    {
+      "front": "Effect before ack risk?",
+      "back": "Crash can cause duplicate processing."
+    },
+    {
+      "front": "At-least-once plus idempotency?",
+      "back": "Repeated deliveries can produce one protected logical effect at a defined boundary."
+    }
+  ],
+  "mentalModel": "Acknowledge a fact you have actually made durable, and design for the uncertainty that remains between authorities.",
+  "sources": [
+    {
+      "title": "RabbitMQ documentation: consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms",
+      "checked": "2026-09-29"
+    }
+  ]
+}

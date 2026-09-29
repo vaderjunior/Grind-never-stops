@@ -1,0 +1,120 @@
+{
+  "id": "interview_018",
+  "lessonId": "090",
+  "title": "Design a configuration service with safe updates and watches",
+  "aliases": [
+    "L090",
+    "lesson_090"
+  ],
+  "version": 1,
+  "status": "drafted",
+  "modeType": "C",
+  "minutes": 60,
+  "brief": "Design a small configuration service for 2,000 application instances. Authorized operators update bounded routing-policy documents. Instances need a consistent configuration version and notification of changes, must recover after disconnecting, and should continue serving with a last known safe version when the configuration service is briefly unavailable. Concurrent operator edits must not silently overwrite one another. Develop the write/read/watch contracts, storage and authority model, client recovery flow, and operational visibility. Clarify which configuration may tolerate staleness before choosing a failure policy.",
+  "clarifications": [
+    {
+      "question": "What are the baseline rates and object sizes?",
+      "answer": "Assume 200 named documents, at most64 KiB each, ten document updates per minute on average, and 2,000 long-lived watching instances. Burst rollout may touch100 documents in one minute."
+    },
+    {
+      "question": "How long can clients be disconnected?",
+      "answer": "Ordinary restarts take minutes; an offline instance can return a day later. Retained watch history is limited and may be compacted."
+    },
+    {
+      "question": "What atomicity does the first release need?",
+      "answer": "Each document update is atomic. Related fields within a document must become visible together. Cross-document transactions are optional if you can justify the need."
+    },
+    {
+      "question": "Can every policy use stale values indefinitely?",
+      "answer": "No. Routing preferences can use a bounded last-known-good policy. Credential revocation and emergency disable require a separately justified stricter policy or expiry."
+    },
+    {
+      "question": "What failure model and deployment scope apply?",
+      "answer": "One regional cluster with three crash-fault voters is acceptable. No multi-region strong-write requirement. Explain behavior after one voter failure and during minority isolation."
+    },
+    {
+      "question": "What does success of an operator update mean?",
+      "answer": "The new desired revision is durably accepted by the configuration authority. It does not mean every application instance has installed it."
+    }
+  ],
+  "hints": [
+    "Separate publication of desired state from application of that state by each client. What two version fields would you expose?",
+    "Define the initial snapshot and watch cursor together. What happens if the requested revision is no longer retained?",
+    "Use an expected revision on updates, then defend a separate failure policy for safety-critical configuration."
+  ],
+  "changes": [
+    "A client last applied revision120, but history through150 has been compacted while it was offline. Show its recovery without missing a deletion.",
+    "A newly published artifact fails local verification on10% of instances. Show rollout visibility and a safe rollback procedure."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "Begin with the contract: small, low-write metadata needs durable ordered updates, while ordinary data-plane requests should use validated local state. A three-voter consensus-backed authority is defensible for regional metadata availability. One failed voter leaves a majority of two, but clients connected only to an isolated minority cannot receive authoritative new writes. Avoid claiming that watch sockets themselves provide fresh reads or that consensus requires every ordinary request to contact the control plane.\n\nExpose GET /configs/{name} returning value, schema version and revision. PUT /configs/{name} carries expected_revision, validated new value and a stable request identity; success returns the new desired revision. The authority atomically compares the expected revision so a stale editor receives a conflict instead of overwriting a colleague’s change. Authorize writes by document scope, bound payload size, validate semantics before publication, and store an audit trail with actor and reason. Never put globally readable secrets into routing documents.\n\nFor watches, return a complete initial snapshot and revisionR, then request events afterR under an API that closes the read/subscription race. Apply complete revisions and persist the last applied position. On reconnect, request from that position only if retained history can satisfy it. If the history was compacted, fetch a fresh full snapshot and replace the local derived configuration atomically; do not jump to an arbitrary newest event because missed deletions or related fields matter.\n\nClient application has its own state machine: downloaded → verified → prepared → atomically installed, with the previous valid version retained for fallback. A large artifact is referenced by immutable version/digest rather than embedded in every small metadata update. An instance reports desired_revision, applied_revision, last_successful_refresh and application_error. Publication can succeed while a client is stuck, so fleet rollout success is a separate condition.\n\nWorkload estimate: ten updates/minute is about0.167 updates/s on average. If every update reaches2,000 interested clients, that is about333 event deliveries/s before framing/reconnect overhead. A worst-case64KiB document broadcast at that average rate is roughly20.8MiB/s of payload across all deliveries; subscriptions scoped to needed documents and deltas can reduce this, but first state the fanout assumption. The100-updates/minute burst is ten times the average. Long-lived connections add memory and reconnect-storm concerns even when metadata writes are low.\n\nUse a bounded watch buffer per subscriber. A slow client that exceeds the buffer can be disconnected with a clear resume/snapshot requirement instead of consuming unbounded memory. Add jittered reconnects and backoff. These do not replace retained-history semantics; they keep recovery load bounded. Monitor active watches, delivery backlog, compaction-related refreshes, desired/applied divergence and authentication failures.\n\nFor the verification-failure change, failed clients retain their prior approved policy or follow the explicitly selected fail-safe behavior. The controller halts further rollout and publishes a new revision containing prior valid content after review. Do not decrement revision numbers; revision ordering must remain monotonic even when content is rolled back. Investigate digest/schema mismatch before forcing installation.\n\nFinally separate policy classes. A cached routing preference may remain usable for a bounded period, while revocation can require expiry, direct authorization checks or failing closed after a freshness deadline. State the operational cost of that stricter rule. Tests should cover competing updates, one-voter failure, minority write rejection, interrupted watch replay, compacted cursor refresh, slow watchers, invalid artifacts and restored client state. The smallest architecture is a metadata authority plus client libraries and observability; an unrelated cache or queue product is unnecessary unless a measured constraint justifies it.",
+  "debrief": "Look for one connected story from operator intent to durable desired revision to client-applied revision. The central failure modes are stale-editor overwrite, snapshot/watch gaps, compacted history, and silent fleet divergence. A diagram of three database boxes is incomplete without client recovery behavior.\n\nReview your estimate units and fanout assumptions. Did you multiply updates by interested clients rather than users? Did you distinguish low mutation rate from connection count and event-delivery volume? Compare your safety-critical staleness policy with the product meaning rather than using a universal fail-open slogan.\n\nFocused retry: halve the history window, make half the fleet reconnect at once, and require a credential revocation to take effect within30 seconds. Revise the recovery limits and policy contracts in ten minutes, and identify which original guarantee becomes unavailable during a prolonged partition.",
+  "remediation": [
+    "082",
+    "083",
+    "087",
+    "088",
+    "089"
+  ]
+}

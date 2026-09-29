@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "012",
+  "objectives": [
+    "Separate transport delivery from application processing.",
+    "Explain loss recovery, receiver flow control, and congestion control.",
+    "Choose a transport from freshness and correctness needs."
+  ],
+  "retrieval": [
+    "L011: which identities are needed to establish a transport connection?",
+    "L007: what happens when arrival rate exceeds service rate?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A late answer can be worse than a missing update",
+      "markdown": "An inventory command must not disappear silently. A voice packet representing speech from two seconds ago may be useless even if it eventually arrives. Both cross a lossy network, but their value decays differently. Transport selection starts with what the application needs to preserve: a byte stream, message boundaries, ordering, bounded age, or reliable completion of an effect. Do not choose UDP just because someone called it fast.\n\nTCP exposes a reliable ordered byte stream while a connection is working. UDP exposes datagrams without built-in end-to-end retransmission or ordering. Neither protocol proves that a remote business transaction committed. That last distinction will become central to retry-safe APIs in L027 and L093."
+    },
+    {
+      "id": "mechanism",
+      "title": "What TCP actually keeps track of",
+      "markdown": "A TCP sender numbers bytes. The receiver acknowledges received sequence space; retransmission recovers data believed lost. The receiver can buffer later bytes but presents the application an ordered stream, so a missing earlier portion can delay delivery of later bytes. TCP preserves byte ordering, not the boundaries of your send calls. A protocol carrying two JSON messages must define framing, such as a length prefix or delimiter, because one receive call may contain half a message or multiple messages.\n\nFlow control protects a receiver with limited buffer space. Congestion control limits pressure on the network path. These are different feedback loops: a receiver may have plenty of memory while a bottleneck link is congested. Packet loss, delay, and acknowledgment behavior influence sender behavior according to the implementation's congestion algorithm. More parallel connections can move the fairness boundary rather than create more link capacity.\n\nUDP gives the application each delivered datagram with its boundary. Datagrams can be lost, duplicated, or reordered. Applications needing reliability over UDP must supply it or use a protocol that does, such as QUIC. Large datagrams risk fragmentation and loss amplification. A media application can number small packets, buffer only a bounded reordering window, and discard packets that miss playback deadlines. That is an explicit freshness policy, not a claim that loss is harmless."
+    },
+    {
+      "id": "trace",
+      "title": "The lost segment and the uncertain command",
+      "markdown": "Suppose a TCP sender emits byte ranges 0–999, 1000–1999, and 2000–2999. The middle range is lost. The receiver may hold the last range, but the application cannot consume the contiguous stream beyond byte 999 until the gap is repaired. This is transport head-of-line blocking.\n\nNow suppose the stream carries a purchase command. The server receives the full command, commits the purchase, and loses the connection before the response reaches the client. TCP did deliver the bytes; the client still does not know whether the purchase committed. A reconnect and blind retry can duplicate an effect. Transport acknowledgment and application acknowledgment are different events. An explicit request identifier and authoritative result lookup are needed at the application layer.\n\nFor an illustrative bandwidth-delay product, a 100 Mbit/s path with a 40 ms RTT has 4 Mbit, or 500,000 bytes, in flight at that rate. Tiny effective windows cannot fill that path even if CPU is idle. This arithmetic assumes steady flow and ignores headers, competing traffic, and congestion startup. It estimates an in-flight data scale, not guaranteed throughput."
+    },
+    {
+      "id": "failure",
+      "title": "Backpressure must reach the sender",
+      "markdown": "A server that reads TCP as fast as possible into an unbounded application queue can defeat useful receiver pressure: the socket stays drainable while application memory grows. Bound application work, read deliberately, and reject or shed load when the service cannot meet its objectives. TCP is not a substitute for admission control.\n\nA timeout means an observation deadline expired. It cannot distinguish a failed peer from a slow peer, a delayed packet, or a congested path. Choose idle timeouts and application deadlines independently, close unused resources, and make retries depend on operation semantics. The same user-visible symptom can come from a stalled reader, a lost route, or application overload.\n\nMisconceptions to challenge: TCP means exactly once; UDP means no congestion control is necessary; one write equals one read; and a connected socket means the remote dependency is healthy. Each confuses a specific transport property with an application guarantee."
+    },
+    {
+      "id": "budget",
+      "title": "Practice boundary",
+      "markdown": "Use 5 minutes retrieval, 18 mechanism/diagram, 8 worked arithmetic, 10 exercise, 10 Q1–Q3, and 4 comparison. Q4–Q5 are optional. This session does not ask you to implement TCP. Draw sequence numbers and application acknowledgments separately."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "gap",
+      "title": "Why later bytes can wait for an earlier loss",
+      "source": "sequenceDiagram\nparticipant S as Sender\nparticipant R as TCP receiver\nparticipant A as Application\nS->>R: Bytes 0 to 999\nR->>A: Deliver contiguous bytes\nS--xR: Bytes 1000 to 1999 lost\nS->>R: Bytes 2000 to 2999\nNote over R,A: Buffer later bytes behind missing range\nR-->>S: Acknowledgment reports gap\nS->>R: Retransmit missing bytes\nR->>A: Deliver contiguous bytes through 2999",
+      "caption": "Simplified byte-stream trace; not a complete TCP state machine. An application commit acknowledgment would be a separate message.",
+      "steps": [
+        "Deliver the first contiguous range.",
+        "Lose an earlier segment while a later segment arrives.",
+        "Hold later bytes until the missing range is recovered.",
+        "Deliver ordered bytes; application processing is still a separate step."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "For a live position feed and a money-transfer command, state delivery/order/freshness needs. For each, explain what the application must do when the connection disappears after sending. Do not design the payment system; identify the uncertain-outcome boundary.",
+    "rubric": [
+      "Separate freshness from reliable byte delivery.",
+      "Give position updates sequence numbers or timestamps with a stale-update policy.",
+      "Do not equate transport ACK with money-transfer commitment."
+    ],
+    "solution": "For positions, recent valid state can supersede older updates; include a per-source sequence and discard stale arrivals, with a bounded reconnect snapshot. UDP may fit some real-time paths but reliable streams are also viable when latency and backlog are bounded. For a transfer, use an application operation ID, a durable result, and a retry/status contract. A lost response leaves outcome uncertain even over TCP. Retransmission does not by itself duplicate bytes within one stream, but resubmitting a business command after reconnect can duplicate the effect."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does TCP expose?",
+      "options": [
+        "Ordered message objects",
+        "A reliable ordered byte stream during the connection",
+        "Exactly-once business effects"
+      ],
+      "answer": "A reliable ordered byte stream during the connection",
+      "explanation": "Applications still define message framing and effect acknowledgment."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "100 Mbit/s × 40 ms corresponds to how many bytes in flight, ignoring overhead?",
+      "answer": 500000,
+      "unit": "bytes",
+      "tolerance": 1,
+      "explanation": "100,000,000 bits/s × 0.04 s ÷ 8 = 500,000 bytes."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which control protects receiver buffer capacity?",
+      "options": [
+        "Flow control",
+        "Business idempotency",
+        "DNS TTL"
+      ],
+      "answer": "Flow control",
+      "explanation": "Congestion control concerns the network path; business idempotency concerns repeated effects."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is accepting loss reasonable?",
+      "answer": "When newer information supersedes lost information and the application explicitly tolerates gaps, such as bounded-age media samples. Financial mutations and file integrity require different guarantees.",
+      "explanation": "When newer information supersedes lost information and the application explicitly tolerates gaps, such as bounded-age media samples. Financial mutations and file integrity require different guarantees."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "How can an unbounded application queue hide overload from TCP?",
+      "answer": "Aggressive socket reads free transport buffers while pending application work grows. Bound work and propagate pressure or reject requests.",
+      "explanation": "Aggressive socket reads free transport buffers while pending application work grows. Bound work and propagate pressure or reject requests."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "TCP framing?",
+      "back": "Byte stream; the application must frame messages."
+    },
+    {
+      "front": "Flow versus congestion control?",
+      "back": "Receiver buffer capacity versus pressure on the network path."
+    },
+    {
+      "front": "Transport ACK means business commit?",
+      "back": "No. Receipt of bytes and application state transition are distinct."
+    },
+    {
+      "front": "Bandwidth-delay product?",
+      "back": "Rate × RTT estimates bytes needed in flight to fill a path at that rate."
+    },
+    {
+      "front": "UDP responsibilities?",
+      "back": "The application must choose loss, duplication, ordering, congestion, and freshness behavior."
+    }
+  ],
+  "mentalModel": "Transport moves bytes or datagrams. The application owns meaning, deadlines, and durable effects.",
+  "sources": [
+    {
+      "title": "RFC 9293 — TCP functional specification",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9293",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 9000 — reliable streams over UDP",
+      "url": "https://www.rfc-editor.org/rfc/rfc9000.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

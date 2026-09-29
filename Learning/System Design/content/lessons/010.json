@@ -1,0 +1,38 @@
+{
+  "id": "010",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Produce a coherent simple architecture from requirements.",
+    "Connect demand, retained bytes, and concurrency with capacity evidence.",
+    "Adapt the design to failure and changed workload."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "assessment",
+      "title": "Assessment session",
+      "markdown": "This catalog slot uses interview_002, a partial-design assessment. Start it in the Interview Center. The scheduled session is 60 minutes: 45 minutes of answering followed by 15 minutes of evidence-based feedback. The candidate brief is revealed when the attempt begins. Coaching mode permits requested hints; exam mode records hints and keeps the reference solution for the debrief. Do not use a normal lesson quiz as a substitute for this session."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "prompt": "Start the mapped interview, save your actual reasoning, then compare it with the rubric after submission.",
+    "minutes": 45,
+    "rubric": [
+      "Use the supplied interview rubric with evidence from the actual attempt."
+    ],
+    "solution": "Reference reasoning belongs to the interview debrief and is withheld during the answering phase."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "Demonstration requires an attempted explanation and recorded evidence; opening this page awards no proficiency.",
+  "sources": [
+    {
+      "title": "Amazon Jobs: SDE II Interview Prep",
+      "url": "https://www.amazon.jobs/content/en/how-we-hire/sde-ii-interview-prep",
+      "checked": "2026-09-29"
+    }
+  ]
+}

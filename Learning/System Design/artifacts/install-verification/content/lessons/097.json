@@ -1,0 +1,141 @@
+{
+  "id": "097",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Trace closed, open and half-open breaker states.",
+    "Use bulkheads to contain resource exhaustion.",
+    "Defend safe fallback behavior and recovery probes."
+  ],
+  "retrieval": [
+    "L094: why do aggressive retries worsen a dependency outage?",
+    "L096: which resources can saturate before CPU does?"
+  ],
+  "sections": [
+    {
+      "id": "contain",
+      "title": "Do not let an optional dependency consume the whole request path",
+      "markdown": "Core55 minutes: retrieval5, mechanism18, worked flow8, exercise10, questions10, review4. An online shop’s recommendation service slows from20 ms to5 seconds. Checkout does not logically require recommendations, yet both calls share one connection/thread pool. Recommendation calls occupy the pool, and checkout begins timing out before it can reach its own healthy payment dependency. The outage spreads through shared resources rather than through a direct data dependency.\n\nA bulkhead partitions resource budgets: separate bounded pools or concurrency quotas for dependency classes, tenants or criticality levels. The goal is to limit how much one failing area can consume. Isolation costs some utilization because idle capacity in one partition may not automatically serve another, so choose boundaries from failure impact rather than drawing a separate process for every function.\n\nA circuit breaker changes whether a caller attempts work against a dependency that appears unhealthy. It is not the same as a timeout, queue limit or rate limiter. Those mechanisms can cooperate: timeouts bound individual waits, bulkheads bound concurrent resource use, and a breaker reduces futile calls during a failure interval."
+    },
+    {
+      "id": "states",
+      "title": "Define the state machine and its evidence",
+      "markdown": "In closed state, calls are permitted and outcomes update a rolling error/latency sample. When the configured failure condition is met, the breaker opens and promptly rejects or routes calls to a justified fallback. After a cooldown it enters half-open state, admitting a small controlled number of probes. Sufficient healthy probes close it; a failed probe reopens it.\n\nUse a minimum sample size and an explicit error classification. One malformed user request should not necessarily trip a service-health breaker, while repeated connection timeouts may. A failure ratio without a denominator or observation window is incomplete. Distinguish backend overload signals, application validation errors and transport errors according to the dependency contract.\n\nHalf-open must remain bounded. If every caller interprets the cooldown as permission to send a full backlog, recovery recreates the outage. In a distributed client fleet, independent breakers can still synchronize; jitter, probe budgets and server admission limits can help. There is no universal threshold that fits every workload without measurement."
+    },
+    {
+      "id": "fallback",
+      "title": "Degradation must preserve the important contract",
+      "markdown": "For optional recommendations, a fallback can omit the panel or return a stale validated cache. The checkout path can then remain available if its own dependencies are healthy. For authorization, a fallback that simply accepts every request changes the security contract and is usually unacceptable. For a balance mutation, returning cached success would fabricate a committed effect. Treat fallback as a product decision, not a catch-all exception handler.\n\nWorked resource budget: a service allows100 concurrent outbound operations. Allocate at most20 to recommendations and reserve a separate40 for checkout-critical calls, leaving other budgets explicitly accounted for. If recommendations hang, their twenty occupied slots cannot consume checkout’s reserved pool. That does not guarantee checkout success: shared CPU, database connections or a common network bottleneck may still couple the paths.\n\nBreaker events should be visible in metrics and user behavior. A fast fallback response may count as a degraded outcome even when HTTP returns200. Otherwise the service-level dashboard can appear healthy while the feature is absent for hours. Track open duration, probe outcomes, fallbacks and dependency successes separately."
+    },
+    {
+      "id": "test",
+      "title": "Exercise the recovery transition, not only the outage",
+      "markdown": "A deterministic state-machine test uses an injected clock: permit calls until the chosen failure threshold, verify immediate rejection while open, advance to cooldown, admit only the allowed probes, and reopen or close according to outcomes. An integration test adds a deliberately slow dependency and checks that the protected pool remains bounded.\n\nAlso test a flapping dependency. Rapid open/close transitions can create unstable load and user experience; tune observation windows and recovery criteria from evidence. A permanently open breaker without alerting can hide a resolved backend and become its own outage. Provide diagnostics and an operational way to inspect policy without bypassing safety blindly.\n\nCommon misconceptions are that a breaker increases backend capacity, that bulkheads isolate every shared resource automatically, or that a fallback is correct because it is fast. The desired outcome is limited damage and a controlled return to normal behavior."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Controlled probes decide when calls resume",
+      "source": "stateDiagram-v2\n[*] --> closed\nclosed --> open: failure condition met\nopen --> half_open: cooldown elapsed\nhalf_open --> closed: bounded probes succeed\nhalf_open --> open: probe fails\nopen --> open: fail fast or valid fallback",
+      "caption": "A half-open state admits a limited test of recovery; it does not release an unbounded backlog.",
+      "steps": [
+        "Measure classified outcomes while closed.",
+        "Open after the defined evidence threshold.",
+        "Wait without spending full dependency resources.",
+        "Use bounded probes to decide recovery."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Design a breaker and bulkhead policy for optional recommendations sharing a service with authorization. State which fallback is acceptable for each, what trips the breaker, and one recovery test.",
+    "rubric": [
+      "Separates resource pools or quotas.",
+      "Avoids fail-open authorization.",
+      "Defines bounded probes and measurable criteria."
+    ],
+    "solution": "Give recommendations a bounded independent concurrency pool and a timeout; allow omission or a validated stale recommendation result when its breaker opens. Authorization needs a policy consistent with security, such as rejecting when fresh authorization is required and unavailable, not accepting everyone. Define a rolling minimum sample size and relevant transport/timeout failures for each breaker. Test with a fake clock that open calls do not occupy dependency slots, half-open admits only the configured probes, and failure returns to open while sustained healthy probes restore normal calls. Measure degraded responses separately from full-feature success."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A circuit breaker is primarily:",
+      "options": [
+        "A policy for avoiding repeated calls to a failing dependency",
+        "A guarantee of more backend capacity"
+      ],
+      "answer": "A policy for avoiding repeated calls to a failing dependency",
+      "explanation": "It changes admission based on observed health; it does not add service capacity."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "With a separate20-slot recommendation pool, how many recommendation calls may occupy that pool?",
+      "answer": 20,
+      "unit": "calls",
+      "tolerance": 0,
+      "explanation": "The configured bulkhead caps concurrent resource use at20."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Half-open recovery should admit:",
+      "options": [
+        "A controlled number of probes",
+        "Every waiting request at once"
+      ],
+      "answer": "A controlled number of probes",
+      "explanation": "Unbounded recovery traffic can recreate overload."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can HTTP200 fallback still be a degraded outcome?",
+      "answer": "The response may omit a required feature or serve older data; measure the product outcome rather than status code alone.",
+      "explanation": "The response may omit a required feature or serve older data; measure the product outcome rather than status code alone."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Closed breaker?",
+      "back": "Calls permitted; health evidence collected."
+    },
+    {
+      "front": "Open breaker?",
+      "back": "Calls fail fast or use an explicitly valid fallback."
+    },
+    {
+      "front": "Half-open?",
+      "back": "A bounded probe phase tests recovery."
+    },
+    {
+      "front": "Bulkhead?",
+      "back": "A resource partition that limits one failure’s consumption."
+    },
+    {
+      "front": "Fallback correctness?",
+      "back": "Must preserve the relevant product/security contract, not merely return quickly."
+    }
+  ],
+  "mentalModel": "Contain resource damage, stop futile work, and restore traffic through measured probes.",
+  "sources": [
+    {
+      "title": "Microsoft Azure Architecture Center: Circuit Breaker pattern",
+      "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Microsoft Azure Architecture Center: Bulkhead pattern",
+      "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhead",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE book: handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

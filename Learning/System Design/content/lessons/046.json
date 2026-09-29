@@ -1,0 +1,150 @@
+{
+  "id": "046",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Identify aggregate boundaries from joint reads, writes, and invariants.",
+    "Distinguish key lookup, indexed queries, and scans.",
+    "Choose embedding or references using size, lifecycle, and update constraints."
+  ],
+  "retrieval": [
+    "L032: which object owns the business invariant?",
+    "L037: how can a version check prevent a stale update?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A convenient JSON shape can become a correctness trap",
+      "markdown": "A shopping service keeps a cart as one object keyed by cart ID. Most operations retrieve its line items together, and each edit changes a bounded set of lines. This is a plausible aggregate: data with a shared access and update boundary. The same team proposes embedding every order ever placed by a customer into that customer's profile. The second array grows without bound, changes independently, and must be queried by time and status. Similar JSON syntax hides very different workloads.\n\nA key-value interface makes retrieval by a known key straightforward. A document model exposes named fields and may support secondary indexes and richer queries. Neither label implies that arbitrary fields are automatically indexed, that every update across records is atomic, or that schema design can wait indefinitely. Your model must state its actual operations and their costs."
+    },
+    {
+      "id": "mechanism",
+      "title": "Draw the aggregate around a bounded responsibility",
+      "markdown": "Embedding is useful when related fields are read together, updated together, bounded in size, and share lifecycle. References are useful when related records have independent lifecycles, many-to-many relationships, high cardinality, or a growth pattern that would make one record enormous. The choice is not normalization versus ignorance: an embedded historical shipping address can intentionally differ from a customer's current address because the historical snapshot means something else.\n\nMongoDB documents describe single-document writes as atomic; multi-document transactions are available, but that does not remove the modeling cost of cross-record invariants. A cart total and cart items can fit one protected aggregate. Global available stock belongs to a different shared invariant: atomically editing a cart document does not reserve stock across all customers.\n\nAn index offers a specific access path at a maintenance and storage cost. In DynamoDB's Query API, the key condition fixes one partition-key value and can constrain the sort key; an arbitrary non-key predicate is not magically the same access path. A broad scan plus a filter can inspect far more data than the result count suggests. Name the examined candidate population, not only the ten records eventually returned."
+    },
+    {
+      "id": "trace",
+      "title": "Two users edit one cart version",
+      "markdown": "The cart contains version 12 and three lines. Client A reads it and adds a book; client B reads the same version and changes a quantity. If both replace the whole document unconditionally, the last writer can erase the other's change. Use a conditional update on version 12, or an appropriate atomic operation whose invariant is clear. The first accepted replacement advances to version 13; the second detects a conflict and reloads/reconciles. This applies L037 at an aggregate boundary rather than assuming a document format removes races.\n\nAssume carts are bounded to 50 lines, each encoded as 200 bytes plus a 2-KB header. The rough maximum payload is 12 KB before indexes and encoding details. Reading one cart is plausibly a bounded operation. An unbounded order-history array with 20,000 orders at 1 KB each is about 20 MB before overhead and grows forever. Even without quoting a vendor size limit, the bandwidth, contention, pagination, and independent-retention concerns already justify rethinking the boundary.\n\nAn order can embed the price and delivery address agreed at purchase time, while referencing mutable product and customer identities. Do not overwrite historical price snapshots because a product changes price today. Distinguish duplicated meaning from accidentally duplicated current truth."
+    },
+    {
+      "id": "model",
+      "title": "Executable conditional-replacement model",
+      "markdown": "This single-threaded model illustrates conflict detection. A real engine must perform comparison and update atomically; copying this dictionary code into a concurrent server does not provide that property.\n\n```python\ncart = {\"version\": 12, \"items\": {\"book\": 1}}\n\ndef replace(expected: int, items: dict[str, int]) -> bool:\n    if cart[\"version\"] != expected:\n        return False\n    cart[\"items\"] = dict(items)\n    cart[\"version\"] += 1\n    return True\n\nassert replace(12, {\"book\": 2}) is True\nassert replace(12, {\"book\": 1, \"pen\": 1}) is False\nassert cart == {\"version\": 13, \"items\": {\"book\": 2}}\nprint(\"stale aggregate replacement rejected\")\n```\n\nExpected output is the printed sentence. Failure scenarios include partial updates of duplicated views, missed tenant predicates on secondary access paths, and hot aggregates serializing too many unrelated edits. Validation remains necessary even with flexible storage: distinguish absent, null, empty, and zero; version the meaning of fields used by multiple app releases.\n\nCommon misconceptions: a document is schemaless, a key-value store cannot have transactions, or choosing a document database means every business object should be one document. These are category labels; the actual boundary and configured operations determine the behavior. Optional practice: introduce cart sharing and a stock reservation, then state exactly which invariant crosses the cart boundary."
+    },
+    {
+      "id": "session-budget",
+      "title": "Core time and optional practice",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation/diagrams, 8 worked example, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and extension questions are optional. The examples use explicitly bounded data and do not establish vendor throughput, durability, or scaling claims."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "aggregate",
+      "title": "One atomic aggregate does not cover every business rule",
+      "source": "flowchart LR\nA[Client A expects v12] --> C[Conditional cart write]\nB[Client B expects v12] --> C\nC -->|First accepted: v13| D[(Bounded cart aggregate)]\nC -->|Stale expected version| E[Conflict and reconcile]\nD -.->|Separate invariant| S[(Shared stock authority)]",
+      "caption": "Cart replacement and global inventory protection are separate mechanisms. The dotted arrow identifies a relationship, not an atomic cross-store commit.",
+      "steps": [
+        "Both clients read the same cart version.",
+        "One conditional replacement advances the version.",
+        "The stale replacement is rejected rather than erasing the accepted change.",
+        "Stock reservation still needs its own shared correctness boundary."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Model a customer profile, active cart, and immutable purchase history. Explain one embedding decision and one reference decision. A cart has a 2-KB header and at most 50 lines of 200 bytes: estimate its payload. Show the outcome of two whole-cart writes using the same expected version.",
+    "rubric": [
+      "Embed bounded jointly accessed cart lines; separate unbounded order history.",
+      "Keep historical prices/addresses meaningful snapshots.",
+      "Calculate 12 KB using decimal units and reject one stale replacement."
+    ],
+    "solution": "Use a bounded cart aggregate with line items, a version, and clear ownership. Keep purchase history in separate order records indexed by customer and time, because it grows and has its own lifecycle. Embed immutable purchase-time price/address snapshots in each order while referencing current customer/product identities. Payload estimate is 2,000+50×200=12,000 bytes. With both clients expecting version 12, one atomic conditional replacement succeeds and increments to 13; the second fails its condition and must reconcile. This does not establish a global stock reservation guarantee."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which is a strong reason to reference records instead of embedding all of them?",
+      "options": [
+        "Unbounded child growth and independent lifecycle",
+        "The data has a string field",
+        "References always eliminate network calls"
+      ],
+      "answer": "Unbounded child growth and independent lifecycle",
+      "explanation": "A giant shared aggregate can create size, contention, access, and retention problems."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "A 2,000-byte header plus 50 lines of 200 bytes totals how many bytes?",
+      "answer": 12000,
+      "unit": "bytes",
+      "tolerance": 0,
+      "explanation": "2,000 + 50×200 = 12,000 bytes before encoding/index overhead."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Does an atomic cart-document update alone reserve global product stock?",
+      "options": [
+        "Yes",
+        "No; global stock is a separate shared invariant",
+        "Only if JSON is used"
+      ],
+      "answer": "No; global stock is a separate shared invariant",
+      "explanation": "Atomicity covers a stated operation boundary, not every related entity."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can copying a historical address be correct rather than inconsistent duplication?",
+      "answer": "It records the address agreed for that order, a different fact from the customer’s current address.",
+      "explanation": "First identify meaning and lifecycle; equal-looking values need not represent the same mutable truth."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can a filter returning ten records still be expensive?",
+      "answer": "It may inspect a much larger candidate set if the predicate lacks a suitable access path.",
+      "explanation": "Result count does not equal work examined. Use keys/indexes and inspect execution behavior."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Aggregate boundary?",
+      "back": "A bounded unit of related reads, writes, and invariant ownership."
+    },
+    {
+      "front": "Embed when?",
+      "back": "Joint access/update and bounded shared lifecycle justify it."
+    },
+    {
+      "front": "Reference when?",
+      "back": "Independent lifecycle, large cardinality, or flexible cross-record access outweighs embedding."
+    },
+    {
+      "front": "Conditional document replacement?",
+      "back": "Accept only the expected version, then advance it atomically."
+    },
+    {
+      "front": "Historical price copy?",
+      "back": "Often a deliberate purchase-time fact, not a stale copy of today’s price."
+    }
+  ],
+  "mentalModel": "Choose the atomic and access boundary first; a convenient document shape is only its representation.",
+  "sources": [
+    {
+      "title": "MongoDB 8.3 — Data-modeling best practices",
+      "url": "https://www.mongodb.com/docs/manual/data-modeling/best-practices/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon DynamoDB — Query key conditions",
+      "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

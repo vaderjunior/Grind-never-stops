@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "node": "v24.13.0",
+  "installedFromLockfile": true,
+  "builtFromSource": true,
+  "checks": [
+    "Production HTML and local assets served",
+    "Fresh schema 3 starts successfully",
+    "All 76 authored guides available",
+    "Walkthroughs served with exercise solutions withheld",
+    "No seeded learner completion"
+  ],
+  "personalDataUsed": false
+}

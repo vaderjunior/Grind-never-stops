@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "113",
+  "objectives": [
+    "Plan expand/backfill/switch/contract without incompatible mixed versions.",
+    "Make backfills bounded and safe against concurrent writes.",
+    "Use reconciliation and rollback evidence before destructive cleanup."
+  ],
+  "retrieval": [
+    "L036: what lock/resource costs can a schema operation create?",
+    "L102: why can shape compatibility still change business meaning?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Old and new code coexist during a deployment",
+      "markdown": "An order table stores address_text. A new feature needs structured address fields. Replacing the column and deploying all code “at once” assumes there is no old process, delayed job, mobile client, rollback, or replay using the old contract. Real deployments commonly overlap versions, so design a compatibility interval.\n\nExpand/contract adds a compatible representation first, migrates use, and removes the old representation only after evidence says it is no longer needed. The sequence is a safety strategy, not a promise that every database DDL operation is nonblocking. Measure the selected engine/version's lock and rewrite behavior in a realistic staging environment."
+    },
+    {
+      "id": "mechanism",
+      "title": "A backfill is a concurrent writer",
+      "markdown": "Expand by adding new nullable fields or a new versioned table/API while old readers continue to work. Deploy code that can read both forms and writes the intended compatibility representation within a supported atomic boundary. If separate stores require dual writes, use the durable handoff lessons rather than assuming two calls are atomic.\n\nBackfill existing records in bounded batches with a stable cursor and progress checkpoint. Store a migration version or source version so retries are repeat-safe. A worker reading address_text at version 7 must not later overwrite a user's version 8 update with its parsed old value. Use a conditional update tied to the source version, re-read conflicts, or another protocol that respects concurrent changes.\n\nSwitch reads only after validating coverage and semantics. Keep rollback possible while old readers/writers remain supported. Contract removes old fields or code after observing that no supported process, queued job, export, or rollback path still depends on them. A deployment percentage is not proof that all dormant consumers are gone."
+    },
+    {
+      "id": "worked",
+      "title": "The stale backfill overwrote the customer’s correction",
+      "markdown": "At 10:00, backfill reads order o4 with version 7 and address “12 Oak Rd.” At 10:01, the user corrects the house number to 21 and the application writes version 8. At 10:02, backfill writes parsed fields from version 7 without a condition. The new query path now returns the stale address even though the live update succeeded.\n\nRepair the update as “write parsed result only if source_version is still 7 and target migration version is older.” If no row is updated, re-read the current record and parse version 8. Record failures needing manual interpretation rather than inventing a structured address from ambiguous text. Some transformations cannot be losslessly inferred; expose that fact in the migration plan.\n\nIllustrative pace: 12 million rows at 2,000 rows/s takes 6,000 seconds, about 100 minutes, before retries and throttling. A 500rows/s limit to protect foreground latency takes about 6.7 hours. Choose a budget from measured database load and user objectives, not merely the desired finish time."
+    },
+    {
+      "id": "operations",
+      "title": "Compare meaning before cutting over",
+      "markdown": "Reconciliation should compare the source and target at a defined version/snapshot boundary. Total row counts catch omissions but not swapped tenant IDs or unit mistakes. Sample high-risk cases and compare domain totals, null/error rates, version coverage, and representative queries. Record the exact transformation version and input range.\n\nThrottle or pause backfills when lock wait, replication lag, foreground error rate, or latency exceeds a defined budget. Restart from a durable cursor rather than beginning blindly at row zero. Use bounded transaction sizes to avoid a huge rollback or long lock retention.\n\nCommon mistakes: performing an unbounded UPDATE in the busiest hour, marking rows migrated before writing the target, dropping the old column immediately after deploying new code, and treating a completed batch counter as data correctness. Optional depth: design a reverse migration for a representation that loses information; if reversal is impossible, explain why rollback needs preserved source data rather than a code revert."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and optional practice",
+      "markdown": "Core 55 minutes: retrieval 5, explanation 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Numerical workloads and architectural examples are original teaching assumptions, not production measurements."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "migration",
+      "title": "Compatibility is maintained through the whole change",
+      "source": "flowchart LR\nE[Expand compatible schema] --> W[Deploy compatible writers]\nW --> B[Bounded version-aware backfill]\nB --> R[Reconcile meaning and coverage]\nR --> S[Switch readers]\nS --> O[Observe and preserve rollback]\nO --> C[Contract old representation]",
+      "caption": "Each arrow is gated by evidence, not only elapsed time. A concurrent update can race with any backfill batch.",
+      "steps": [
+        "Add a representation without breaking old readers.",
+        "Populate it while respecting live source versions.",
+        "Compare meaningful results at a defined boundary.",
+        "Remove old support only after the compatibility window ends."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Plan migration from price_units to price_minor_units for 4million records while old and new servers overlap. Include exact conversion assumptions, live-write race protection, batch rate, verification, and the condition for dropping the old field.",
+    "rubric": [
+      "Explicit units/rounding and compatibility.",
+      "Version-aware bounded backfill.",
+      "Reconciliation and rollback gate."
+    ],
+    "solution": "Define currency and decimal rounding before conversion; do not multiply binary floats blindly if exact money semantics are required. Add the new field, deploy compatible reads/writes in one transaction where possible, and backfill in bounded version-conditional batches. At1,000rows/s the nominal4million rows take4,000seconds before contention/retries. Compare expected integer totals, per-currency values, unsupported/null cases, and version coverage. Switch reads with monitoring and retained source; drop the old field only after old processes/jobs/clients and the rollback window are retired with evidence."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A backfill is safe because it only touches old rows?",
+      "options": [
+        "Always",
+        "No, live updates can race",
+        "Only at night"
+      ],
+      "answer": "No, live updates can race",
+      "explanation": "A row read earlier may have changed before the migration writes its derived representation."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What protects a stale backfill from overwriting a newer update?",
+      "options": [
+        "A long sleep",
+        "A source-version condition with conflict handling",
+        "A larger batch"
+      ],
+      "answer": "A source-version condition with conflict handling",
+      "explanation": "The write is accepted only if it still corresponds to the state that was transformed."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "3million rows at1,500rows/s takes how many seconds, ignoring overhead?",
+      "answer": 2000,
+      "unit": "seconds",
+      "explanation": "3,000,000/1,500=2,000seconds; real duration includes contention and retries.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why are equal row counts insufficient reconciliation?",
+      "answer": "Rows may contain wrong values, units, ownership, duplicates replacing omissions, or stale versions despite equal counts.",
+      "explanation": "Rows may contain wrong values, units, ownership, duplicates replacing omissions, or stale versions despite equal counts."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When can contract safely remove the old field?",
+      "answer": "After supported old readers/writers, delayed jobs, replay consumers, and rollback dependencies are retired and semantic validation supports the cutover.",
+      "explanation": "After supported old readers/writers, delayed jobs, replay consumers, and rollback dependencies are retired and semantic validation supports the cutover."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Expand/contract goal?",
+      "back": "Maintain compatibility while versions overlap."
+    },
+    {
+      "front": "Backfill concurrency hazard?",
+      "back": "Writing a transformation of stale source over a newer live change."
+    },
+    {
+      "front": "Safe backfill progress?",
+      "back": "Bounded repeat-safe batches with durable checkpoints."
+    },
+    {
+      "front": "Reconciliation compares?",
+      "back": "Meaning and versions, not just row counts."
+    },
+    {
+      "front": "Code rollback after destructive schema drop?",
+      "back": "May be impossible without preserved compatible data."
+    }
+  ],
+  "mentalModel": "A migration is a protocol between old code, new code, and changing data.",
+  "sources": [
+    {
+      "title": "Martin Fowler — Parallel Change",
+      "url": "https://martinfowler.com/bliki/ParallelChange.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

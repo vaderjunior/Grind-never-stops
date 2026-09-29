@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "057",
+  "objectives": [
+    "Construct a stale-fill race under cache-aside.",
+    "Compare invalidation, write-through, and write-behind boundaries.",
+    "Choose a freshness guarantee that can actually be enforced."
+  ],
+  "retrieval": [
+    "L056: when is a miss value inserted into the cache?",
+    "L037: why does separating a check from its write allow a race?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Delete-after-write is helpful, but not magic",
+      "markdown": "A profile update commits version8 and deletes the cached version7. A moment later another reader still sees version7. No cache node ignored the deletion: an earlier miss request read version7 before the update and filled it after the deletion. Reason about interleavings, not slogans.\n\nDefine the required guarantee first. Is a few seconds of stale display acceptable? Must a user read their own update immediately? Must a revoked permission stop granting access at once? These are different contracts. A public display name and a tenant permission should not inherit the same freshness policy merely because both fit in a key-value cache."
+    },
+    {
+      "id": "mechanism",
+      "title": "Find the authority and the acknowledgment boundary",
+      "markdown": "Cache-aside with database update followed by invalidation removes many stale copies but leaves race and delivery windows. A write-through design updates a cache/fronting layer as part of the write path under its defined contract; the details determine which store is authoritative and what success means. A write-behind design may acknowledge before the backing store is updated, so it requires explicit durability/recovery guarantees in the write buffer. Do not assume a volatile cache can safely acknowledge the only copy of important data.\n\nA transactional database write and a separate cache operation are not automatically atomic. If the process dies between them, the database may be current and the cache stale. Retrying invalidation can help delivery, but delayed stale fills can still occur. Versioned entries, per-key serialization, or authoritative read validation can address particular races with different latency and coordination costs.\n\nVersioning works only when compared against an appropriate fence. Rejecting a cache fill older than an already-present version does not help if invalidation deleted the only version record. Retain a monotonic version marker/tombstone or otherwise know the minimum acceptable version. Expiry/restart of that marker reopens a window unless the design accounts for it."
+    },
+    {
+      "id": "worked",
+      "title": "Read the stale-fill history in order",
+      "markdown": "At t1 reader R misses cache and starts reading database version7. At t2 writer W commits version8. At t3 W invalidates the cache. At t4 R, holding version7, inserts it with a60-second TTL. At t5 a different reader hits version7. The invalidate operation succeeded, but it happened before the stale fill.\n\nA bounded TTL makes that cache copy reusable for at most its remaining cache lifetime under the stated expiry policy. It does not necessarily bound age from the original source write if refreshes can repeatedly repopulate stale data from lagging replicas. Read-your-writes can route the updating session to the authority or require a minimum version. This adds a session/version contract and may sacrifice latency or availability when the required version is not reachable.\n\nFor a small system requiring immediate correctness, bypassing the cache for sensitive reads or keeping the relevant state in one authoritative transaction path may be simpler than coordinating multiple copies. For display data with a30-second staleness tolerance, a TTL plus reliable invalidation and clear UI behavior may be enough. The requirement decides."
+    },
+    {
+      "id": "failure",
+      "title": "Recovery and invalidation are data flows",
+      "markdown": "Bulk updates can create an invalidation storm. Cache outage followed by a restart can create a miss storm. A subscriber that loses invalidation events needs a recovery strategy; “pub/sub will send the delete” is incomplete when messages are not retained. Treat the cache as rebuildable, measure stale-read incidents, and preserve a way to compare authoritative and derived versions.\n\nDeletion and access revocation deserve particular attention. A cached private response can remain accessible after the database policy changes unless serving checks account for the new policy. Evicting one known key is insufficient if the representation has multiple cache variants or edge copies. Track cache key dimensions and ownership.\n\nMisconceptions: TTL means strong consistency; write-through always provides atomic durable storage; and a successful delete prevents every later stale read. Use an explicit timeline to test each statement. Optional depth: design a version fence that survives cache restart, then compare its complexity with avoiding caching for that state."
+    },
+    {
+      "id": "schedule",
+      "title": "Core versus optional practice",
+      "markdown": "Core55 minutes: retrieval5, explanation/diagram18, worked trace8, exercise10, scheduled questionsQ1–Q3 for10, comparison/cards4. QuestionsQ4–Q5 are extra practice. Use the mechanism lab to explore illustrative models; its output is not a production measurement."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "stale-fill",
+      "title": "The invalidation succeeds and the value is still stale",
+      "source": "sequenceDiagram\nparticipant R as Reader\nparticipant D as Database authority\nparticipant W as Writer\nparticipant K as Cache\nR->>K: GET key\nK-->>R: Miss\nR->>D: Read version7\nD-->>R: Version7\nW->>D: Commit version8\nD-->>W: Committed\nW->>K: DELETE key\nR->>K: Delayed SET version7\nNote over R,K: Next reader can hit stale version7",
+      "caption": "Ordering is the mechanism: a delete does not reject an older value written afterward.",
+      "steps": [
+        "Reader obtains an old authoritative snapshot.",
+        "Writer commits the new version.",
+        "Invalidation removes the current cached value.",
+        "The old reader fills after invalidation, recreating staleness."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw the stale-fill race for product price revision12 changing to13. Offer two policies: one for a browse page that permits30 seconds of staleness, and one for a checkout that must charge the authoritative accepted price. Explain why a bare version field is insufficient without a comparison rule.",
+    "rubric": [
+      "Correct timeline with old fill after invalidation.",
+      "Separate browse freshness from checkout invariant.",
+      "Identify an authoritative version fence or final transactional check."
+    ],
+    "solution": "R reads12; W commits13 and invalidates; R fills12 afterward. Browsing can tolerate a bounded cache lifetime with invalidation as an optimization, provided source freshness and refresh behavior are stated. Checkout must validate the accepted price/version in the authoritative transaction or require the client to reconfirm a changed price. Merely storing version12 does not make the cache know that13 exists. A retained minimum-version fence or authoritative comparison is required to reject the stale fill."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Does successful delete-after-write prevent every stale fill?",
+      "options": [
+        "Yes",
+        "No, an older in-flight read can populate later",
+        "Only for JSON values"
+      ],
+      "answer": "No, an older in-flight read can populate later",
+      "explanation": "The relative ordering of read, commit, delete, and fill matters."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What is missing from a cached version number alone?",
+      "options": [
+        "A comparison against a known minimum/current version",
+        "A longer string key",
+        "A second UI"
+      ],
+      "answer": "A comparison against a known minimum/current version",
+      "explanation": "A version label cannot prove freshness without an authority or fence."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which read most clearly needs authoritative correctness?",
+      "options": [
+        "A stale-tolerant display label",
+        "The price accepted in a checkout transaction",
+        "A decorative public thumbnail"
+      ],
+      "answer": "The price accepted in a checkout transaction",
+      "explanation": "Charging follows the business contract and must not blindly trust stale browse state."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When can avoiding a cache be the better design?",
+      "answer": "When correctness requirements are strict and demand fits the authoritative path, avoiding coordination complexity can be simpler and more reliable.",
+      "explanation": "When correctness requirements are strict and demand fits the authoritative path, avoiding coordination complexity can be simpler and more reliable."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why might TTL fail to bound age since a source update?",
+      "answer": "Repeated refreshes from a stale replica can restart cache lifetimes with old data; cache age and source version age differ.",
+      "explanation": "Repeated refreshes from a stale replica can restart cache lifetimes with old data; cache age and source version age differ."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Stale-fill race?",
+      "back": "An old read populates after a newer write’s invalidation."
+    },
+    {
+      "front": "Version fence?",
+      "back": "A known minimum acceptable version used to reject older writes/fills."
+    },
+    {
+      "front": "TTL guarantees strong consistency?",
+      "back": "No; it limits reuse under a particular expiry policy."
+    },
+    {
+      "front": "Write-behind concern?",
+      "back": "Acknowledged data may live only in the buffer until backing persistence; durability must be explicit."
+    },
+    {
+      "front": "Read-your-writes strategy?",
+      "back": "Require a minimum version or route to an authority that has the committed write."
+    }
+  ],
+  "mentalModel": "Cache correctness is an ordering problem between multiple copies; draw the race before naming the policy.",
+  "sources": [
+    {
+      "title": "RFC9111 — HTTP Caching",
+      "url": "https://www.rfc-editor.org/rfc/rfc9111.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

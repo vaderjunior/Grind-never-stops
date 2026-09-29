@@ -1,0 +1,271 @@
+{
+  "id": "cache-freshness-and-cdns",
+  "title": "Fresh caches and nearby content",
+  "version": 2,
+  "week": 7,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Follow an edited caption through an old cache, then use versioned image names and nearby copies to deliver public photos.",
+  "objectives": [
+    "Explain expiry and invalidation using a timeline.",
+    "Distinguish a changed object from a new versioned address.",
+    "Describe a CDN hit and miss without assuming it holds every file.",
+    "Keep private content and access changes out of an unsafe public-cache policy."
+  ],
+  "terms": [
+    {
+      "term": "TTL",
+      "definition": "Time to live: the duration an entry may be treated as fresh under a chosen policy."
+    },
+    {
+      "term": "Invalidation",
+      "definition": "Making a cached entry unusable so it will be refreshed or replaced."
+    },
+    {
+      "term": "CDN",
+      "definition": "Content delivery network: servers in multiple locations that can deliver cached content near users."
+    },
+    {
+      "term": "Origin",
+      "definition": "The source server or storage from which a CDN obtains content."
+    },
+    {
+      "term": "Versioned URL",
+      "definition": "An address that changes when the content version changes."
+    }
+  ],
+  "retrieval": [
+    "What happens on a cache-aside miss?",
+    "Why does finding a cached private note not establish permission to read it?"
+  ],
+  "sections": [
+    {
+      "id": "old",
+      "title": "An accurate copy can become an old copy",
+      "markdown": "At noon, our notes app caches the public caption **Garden** for photo 41. Ten seconds later Maya saves **Spring garden**. At twenty seconds, a visitor still receives **Garden**. The copy may be intact and still be too old for the reader's needs.\n\nThink of a printed timetable: the printing can be perfect while the times are outdated. A cache needs a freshness policy as well as correct bytes.\n\n| Time | Saved caption | Cached caption | What this simple policy allows |\n| --- | --- | --- | --- |\n| 0 seconds | Garden | Garden, TTL 60 seconds | Serve the copy |\n| 10 seconds | Spring garden | Garden, 50 seconds remain | The database edit did not refresh the copy |\n| 20 seconds | Spring garden | Garden, 40 seconds remain | An old caption can still be returned |\n| 60 seconds | Spring garden | Expired | Refresh before calling this entry fresh |\n\n**TTL means time to live for this cache entry.** It starts from the relevant cache policy boundary, not from every edit elsewhere. A newly filled entry might itself contain an old database value. TTL alone therefore does not prove that data is no more than 60 seconds behind the latest edit.\n\nBefore choosing a number, finish this sentence: “This reader may see an older ___ for up to ___, and when that cannot be established we ___.” Public captions and permission revocations should rarely inherit the same answer."
+    },
+    {
+      "id": "refresh",
+      "title": "Choose what happens when Maya edits",
+      "markdown": "One approach saves the new caption in the database and invalidates the old cache entry. A later read misses, retrieves the new caption, and fills the cache again. Another approach deliberately allows a short TTL-based delay. Choose from the user’s requirements rather than treating either technique as always correct.\n\nEven invalidation deserves a timeline. Reader A fetches the old caption from the database, then pauses. Writer B saves the new caption and removes the cache entry. A resumes and fills the cache with its older result. The final entry is stale despite a successful removal. More precise designs can use version checks, ordered changes, or stronger read paths when required. The beginner lesson is that “delete the cache” is a step, not a proof over every overlapping operation.\n\nOur simple public-caption feature can explicitly accept a limited delay, with an expiry and refresh policy that is tested. A permission revocation has different consequences: an old permission decision could expose a private photo. Do not reuse the public-caption policy for access control just because both values fit in the same cache technology.\n\nDraw the update and fill events in order before claiming a freshness bound. A TTL on a newly inserted entry is not by itself a guarantee that the inserted data was recent. This distinction will become easier when later weeks explore delayed database copies."
+    },
+    {
+      "id": "nearby",
+      "title": "A CDN places reusable content closer to readers",
+      "markdown": "A content delivery network, or CDN, runs content-serving locations in multiple places. A reader can obtain a public photo from a nearby location when that location has an eligible cached copy. The source server or storage is called the origin. On a CDN miss, the content must be fetched from an allowed source before the cache can serve and retain it according to policy.\n\nSuppose the classroom’s public cover image is 200 kB. Under a simplified model, 1,000 views each fetching it from the origin transfer 200 MB from that origin. If one CDN location fetches it once and serves the remaining 999 from its copy, that origin transfer is about 200 kB for this object. The users still receive about 200 MB in total. The bytes did not vanish; they travel from a different place. Multiple locations, evictions, and revalidation create additional origin work.\n\nNearby service can reduce long-distance transfer time and origin load. It does not automatically accelerate a unique private database decision such as confirming a booking. The content’s reuse, size, permission rules, and freshness needs determine how much a CDN helps. A CDN is a specialized delivery cache, not a replacement for all application logic."
+    },
+    {
+      "id": "version",
+      "title": "Use a new address for a new public image version",
+      "markdown": "For a public image, give changed bytes a new address: /photos/41/v1.jpg becomes /photos/41/v2.jpg. Store the new object first, then update the note's reference to v2. A cache lookup for v2 cannot accidentally match the separate v1 cache key.\n\n~~~text\nImage bytes:    v1.jpg stays v1        v2.jpg is a new object\nNote metadata: imageUrl = v1.jpg  →   imageUrl = v2.jpg\nOld page:      may still point to v1 until the page refreshes\n~~~\n\nThere are **two freshness questions**: which image version the page names, and whether the CDN has that exact image. Refreshing the image does not refresh every page that contains its address.\n\nVersioned public URLs also do not revoke access. If an old URL remains publicly reachable, it remains usable. Keep private images behind a permission-aware delivery path with an explicit expiry/revocation contract. An unpredictable filename is not authorization.\n\n**Pause and predict:** the CDN has v2, but the browser's cached note response still names v1. Which URL will it request? Follow the reference before blaming the CDN. In an interview, explain the caption update and image delivery as separate paths, each with its own cache key and limits."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "cdn",
+      "title": "A nearby copy serves a public versioned image",
+      "source": "flowchart LR\nU[Reader requests public v2 image] --> C{Nearby CDN copy of v2?}\nC -->|Hit| H[Serve v2 to reader]\nC -->|Miss| O[Fetch v2 from origin]\nO --> S[Store eligible copy]\nS --> H\nN[Note record names v2] -.-> U",
+      "caption": "The note record must point to the intended version. A cached record can still name v1, and public versioned addresses do not implement private access revocation.",
+      "steps": [
+        "Read which image version the note references.",
+        "Ask the nearby location for that exact address.",
+        "On a miss, fetch the same version from the origin.",
+        "Reuse the copy only under its content and access policy."
+      ],
+      "sectionId": "nearby"
+    },
+    {
+      "id": "stale-fill",
+      "title": "A successful deletion can be followed by a stale fill",
+      "sectionId": "refresh",
+      "source": "sequenceDiagram\nparticipant R as Reader A\nparticipant D as Database\nparticipant W as Writer B\nparticipant C as Cache\nR->>D: Read caption version 1\nD-->>R: Version 1\nNote over R: Pauses before filling cache\nW->>D: Save version 2\nW->>C: Delete cached version 1\nR->>C: Fill with delayed version 1",
+      "caption": "This race explains why deletion alone is not a freshness proof. A version-aware or stronger read protocol is needed if the product cannot tolerate this outcome.",
+      "steps": [
+        "A reader obtains the older version.",
+        "A writer saves the new version and invalidates the cache.",
+        "The paused reader later fills the cache with its old result.",
+        "Check the product freshness contract and protect the fill accordingly."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A public caption is cached at time 0 with TTL 60 seconds. Maya edits it at time 10. A visitor reads at time 20. What might they see? Separately, the photo changes from v1.jpg to v2.jpg. Explain why the new address helps and why a cached old note page might still show v1.",
+    "minutes": 8,
+    "rubric": [
+      "Allows the old caption before expiry under the stated policy.",
+      "Explains different cache identities for v1/v2.",
+      "Recognizes that the containing note record has its own freshness behavior."
+    ],
+    "solution": "At time 20 the old caption may still be treated as fresh until time 60 under the simplified fill/TTL policy. A v2 URL identifies different content, so a v1 image entry is not a match for it. However, an old cached note page may still reference v1. Refreshing or invalidating the image alone does not update every cached record that names it."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A TTL proves a newly filled entry’s underlying data was recent:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The fill may use an older read; entry age and data-version freshness differ."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A CDN miss normally requires:",
+      "options": [
+        "Obtaining the requested content from an allowed source",
+        "Inventing a random image",
+        "Deleting the origin"
+      ],
+      "answer": "Obtaining the requested content from an allowed source",
+      "explanation": "The origin path supplies content not currently reusable at that location."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Versioned public URLs automatically revoke access to old private files:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Changing a name for new content is separate from enforcing access to old content."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why do total user-delivered bytes remain large even when CDN origin traffic falls?",
+      "answer": "The same readers still receive the image bytes, but many transfers originate from nearby cached copies instead of the main origin.",
+      "explanation": "Specify which network path the estimate counts."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why should permission data have a different cache policy from a public caption?",
+      "answer": "Serving an older caption may be an accepted display delay, while an older permission decision can disclose private content after access changed.",
+      "explanation": "Policies follow consequences, not just storage format."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "TTL?",
+      "back": "How long an entry may be treated as fresh under its policy."
+    },
+    {
+      "front": "Invalidation?",
+      "back": "Make an old copy unusable so it is refreshed or replaced."
+    },
+    {
+      "front": "Origin?",
+      "back": "The source from which delivery caches obtain content."
+    },
+    {
+      "front": "CDN?",
+      "back": "Distributed content-serving locations that reuse eligible nearby copies."
+    },
+    {
+      "front": "Versioned URL benefit?",
+      "back": "New content has a new cache identity; containing references still need freshness."
+    }
+  ],
+  "mentalModel": "Freshness follows versions and update paths; proximity changes where bytes travel.",
+  "sources": [
+    {
+      "title": "MDN: HTTP caching",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon S3: object storage concepts",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "caption-clock",
+      "title": "Follow the age of one public caption",
+      "sectionId": "old",
+      "intro": "Use a different caption and a 30-second TTL. This is a teaching model with no invalidation and a read from the current authority on refill.",
+      "steps": [
+        {
+          "title": "Fill the copy",
+          "explanation": "A visitor reads a public caption, and the cache stores that accepted value with its fill time.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 s"
+            },
+            {
+              "label": "Database",
+              "value": "Evening walk, v3"
+            },
+            {
+              "label": "Cache",
+              "value": "Evening walk, v3; expires at 30 s"
+            }
+          ]
+        },
+        {
+          "title": "Edit only the authority",
+          "explanation": "The author saves a change. The existing cache entry and its timer do not change in this policy.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "8 s"
+            },
+            {
+              "label": "Database",
+              "value": "Morning walk, v4"
+            },
+            {
+              "label": "Cache",
+              "value": "Evening walk, v3; 22 s remain"
+            }
+          ]
+        },
+        {
+          "title": "Observe a permitted old read",
+          "explanation": "At this moment the old entry is within its TTL. Returning it is permitted only because this public-caption feature accepts that policy.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "18 s"
+            },
+            {
+              "label": "Returned",
+              "value": "Evening walk, v3"
+            },
+            {
+              "label": "Cache",
+              "value": "12 s remain"
+            }
+          ]
+        },
+        {
+          "title": "Refill after expiry",
+          "explanation": "The next read at expiry goes to the current authority and fills a new entry. A lagging refill source would require more reasoning.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "30 s"
+            },
+            {
+              "label": "Returned",
+              "value": "Morning walk, v4"
+            },
+            {
+              "label": "Cache",
+              "value": "Morning walk, v4; new expiry 60 s"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A TTL is a rule about reuse of one entry. Trace edits, fills, and the source of each fill before making a claim about freshness."
+    }
+  ]
+}

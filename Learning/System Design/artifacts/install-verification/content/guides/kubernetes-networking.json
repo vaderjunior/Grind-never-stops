@@ -1,0 +1,315 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 14,
+  "title": "Kubernetes networking, discovery, and incoming traffic",
+  "level": "intermediate",
+  "minutes": 55,
+  "id": "kubernetes-networking",
+  "summary": "Trace a request from a public hostname to a ready application Pod. Learn what Services and routing controllers describe, and which components actually carry the traffic.",
+  "objectives": [
+    "Use Services and DNS without depending on a permanent Pod address.",
+    "Distinguish routing configuration, controllers, and the actual traffic implementation.",
+    "Diagnose a failed request one boundary at a time."
+  ],
+  "terms": [
+    {
+      "term": "Pod IP",
+      "definition": "The network address assigned to a Pod; replacements can have different addresses."
+    },
+    {
+      "term": "Service",
+      "definition": "A Kubernetes abstraction for reaching a logical set of backends through stable discovery and configured ports."
+    },
+    {
+      "term": "Selector",
+      "definition": "A label-matching rule that identifies objects, such as the Pods backing a Service."
+    },
+    {
+      "term": "EndpointSlice",
+      "definition": "A Kubernetes object representing network endpoints and related conditions for a Service."
+    },
+    {
+      "term": "Ingress controller",
+      "definition": "A controller and associated implementation that make supported Ingress routing rules operational."
+    },
+    {
+      "term": "NetworkPolicy",
+      "definition": "Rules for permitted Pod network traffic, enforced only with a supporting networking implementation."
+    }
+  ],
+  "retrieval": [
+    "What is a Pod, and why can its replacement have fresh process state?",
+    "How does a reverse proxy differ from a Deployment controller?"
+  ],
+  "sections": [
+    {
+      "id": "addresses",
+      "title": "Start with replaceable application addresses",
+      "markdown": "The notes application now runs in three Pods. Each Pod has a network address, but Pods are replaceable. A rollout can remove Pod A and create Pod D with another address. Hard-coding Pod A's address into every client would force those clients to track deployment events themselves.\n\nWe want a stable logical destination for “the notes API,” even while the current instances change. Think of a department telephone number that stays stable while the available staff change. The number identifies the service responsibility; a routing mechanism connects the call to an appropriate current participant.\n\nKubernetes supplies discovery and service abstractions around this need, but the application still must listen on the correct interface and port. A Pod with an IP does not prove its program is listening or ready. Containers in one Pod share its network namespace, so their localhost relationship differs from two Pods communicating across the cluster."
+    },
+    {
+      "id": "service",
+      "title": "A Service names a responsibility and selects backends",
+      "markdown": "A Service gives clients a logical destination while Pods change. For a normal ClusterIP Service, the virtual address and Service port are the client-facing entry; targetPort identifies the selected backend port.\n\n| Configuration or state | Example | Question it answers |\n| --- | --- | --- |\n| Service name | notes-api | Which logical application? |\n| Selector | app=notes | Which Pods match? |\n| Service port | 80 | Which port does the client contact? |\n| targetPort | 8080 | Where does the backend listen? |\n| EndpointSlice conditions | Selected addresses and readiness | Which endpoints are currently represented and eligible? |\n\nThe **data plane** is the running machinery carrying application traffic. The **control plane** manages configuration and desired state. The data plane implements forwarding using endpoint information; a Service object is not normally a separate HTTP application process.\n\n~~~text\nclient → Service address:80 → eligible Pod address:8080 → notes process\n          logical stable entry       changing backend\n~~~\n\nLabels are literal configuration. app=notes does not match app=note. A correct label with a wrong target port also fails. Inspect matches, endpoint state, and the actual listener before adding more replicas."
+    },
+    {
+      "id": "dns",
+      "title": "Use a stable name inside the cluster",
+      "markdown": "Cluster DNS gives a Service a discoverable name. In a common configuration, notes-api in a namespace named learning (an organizing scope for Kubernetes objects) can be addressed as notes-api.learning.svc.cluster.local. The cluster domain is configurable, so do not assume that exact suffix in every environment. Short names can be resolved using the Pod's namespace and search configuration.\n\nFor a normal ClusterIP Service, lookup returns its virtual address rather than asking every caller to choose among changing Pod addresses. A headless Service deliberately works differently and can expose endpoint addresses for clients that need that discovery pattern. Start with the ordinary Service case until you have a requirement for the alternative.\n\nDNS success proves that name resolution returned information. It does not prove that the selector is correct, any backend is ready, or a network policy allows the connection. The same diagnostic distinction from week 1 still applies inside the cluster. Kubernetes has more moving addresses, but it has not changed what a DNS answer means."
+    },
+    {
+      "id": "inside",
+      "title": "Follow an internal request without inventing a proxy machine",
+      "markdown": "A report-worker Pod asks the notes API for permitted records. It resolves the Service name, connects to the Service address and port, and the networking implementation forwards the connection toward an eligible endpoint at its target port. The notes process checks the request and accesses the database. A response returns through the applicable connection path.\n\nThe exact packet operations depend on the cluster's networking implementation. Some use kube-proxy-managed rules; others use mechanisms such as eBPF, which supports networking programs running inside the operating-system kernel. You do not need to pretend there is one universal chain of user-space HTTP proxies. Explain the logical selection boundary and then name the actual implementation when troubleshooting a real cluster.\n\nThe Deployment controller is absent from this request path. It helps maintain desired Pods; it does not receive each user's note request. Likewise, the Kubernetes API server handles management operations, not every application HTTP call. A diagram that mixes those management and traffic arrows makes later failures harder to reason about."
+    },
+    {
+      "id": "outside",
+      "title": "Bring a public request into the cluster",
+      "markdown": "For a public notes website, DNS points to an external entry address. Depending on the platform, a LoadBalancer Service can request integration with external load-balancing infrastructure. A controller or provider implementation must actually provision and connect that infrastructure; the API object alone is a declaration.\n\nAt the HTTP layer, an Ingress or Gateway API configuration can describe host/path routing and related entry settings. A compatible controller programs an implementation such as a proxy data plane. That running implementation handles requests. It selects backends associated with the configured Service; some implementations connect directly to Pod endpoints, while others use the Service virtual address.\n\nOur diagram shows the logical relationship and one direct-endpoint proxy route. It does not claim every cluster sends a packet through a separate Service box. Public HTTPS, certificate management, internal transport security, and backend authorization remain explicit responsibilities. Exposing a route is not the same as giving every internet user permission to read private notes."
+    },
+    {
+      "id": "changing",
+      "title": "Readiness changes the eligible set over time",
+      "markdown": "A new Pod may start its process before it has loaded configuration or become ready to serve. Readiness conditions help determine whether it should be included as an ordinary ready endpoint. During termination, the system also needs to stop assigning new work and handle existing connections safely under the configured lifecycle.\n\nThese changes propagate through controllers and data planes over time. A request already in flight may still reach a draining instance. Your application needs deadlines, graceful shutdown, and repeatable handling where retries could duplicate effects. Readiness filtering is useful, but not a guarantee that every selected Pod will remain healthy until the response completes.\n\nLong-lived connections create another practical limit: a load-balancing decision may apply per connection, and later requests on that connection can continue to use one backend. Adding Pods does not necessarily redistribute every existing connection immediately. Measure the actual traffic pattern before assuming three Pods means exactly one third of the work each."
+    },
+    {
+      "id": "policy",
+      "title": "Reachability and permission are different controls",
+      "markdown": "A namespace organizes objects; it is not automatically a complete network or tenant boundary. NetworkPolicy needs a networking implementation that enforces the standard's supported traffic rules.\n\n| Policy question | Standard model to remember |\n| --- | --- |\n| No policy selects a Pod for a direction | That direction starts unrestricted by NetworkPolicy |\n| Applicable policies select that direction | Their allowed traffic sets combine additively |\n| Two policies appear to disagree | There is no last-rule-wins deny override in this model |\n| One Pod calls another | Source egress and destination ingress must both permit the connection when isolated |\n\nEgress means outgoing traffic; ingress means incoming. Other cluster controls can impose additional restrictions. A policy declaration in an unsupported network implementation is not evidence that traffic is blocked.\n\nFor a notes backend, permit the intended entry or internal callers and remember required outbound dependencies such as DNS and the database. Test both an allowed and disallowed source. Current connections and particular networking paths have implementation details, so validate the actual environment.\n\nReachability is still not user permission. A permitted proxy carries many users. The application must verify trustworthy identity and authorize the particular note. Keep encryption, Pod network rules, cluster API permissions, and per-user access as distinct controls."
+    },
+    {
+      "id": "debug",
+      "title": "Diagnose by following the exact path",
+      "markdown": "Suppose the public URL returns an upstream error. First confirm the request reaches the intended external entry and matches its hostname/path route. Next inspect which Service and port the route references. Then inspect selector matches, endpoint addresses, readiness conditions, and the application's actual listening port. Finally check allowed network paths and the backend's own response.\n\nFor an internal failure, separate DNS lookup from connection and application response. A name that resolves to a Service address with no ready endpoints is a different problem from a misspelled DNS name. A ready endpoint listening on 9090 while targetPort says 8080 is another concrete mismatch. Change the smallest incorrect boundary and verify it, instead of restarting the whole cluster as a first diagnosis.\n\nIn an interview, use two arrow styles: solid for request traffic, dotted for management/configuration. Trace one successful request and one Pod replacement. This is enough to connect system-design roles to Kubernetes without memorizing every networking plugin. Provider-specific platforms can automate parts of the setup, but the same underlying questions remain."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "kubernetes-internal",
+      "title": "Compare the Service port with the actual backend listener",
+      "sectionId": "service",
+      "source": "flowchart LR\nC[Client resolves notes-api] --> V[Service virtual address port 80]\nV --> A[Ready Pod A target port 8080]\nV --> B[Ready Pod B target port 8080]\nS[Selector app equals notes] -.-> E[EndpointSlice addresses and conditions]\nE -.->|Configure forwarding| V\nA --> P[Application listens on 8080]\nB --> P",
+      "caption": "This is the logical ClusterIP case. Forwarding implementations differ, and endpoint information propagates over time; a Service is not necessarily a user-space HTTP proxy.",
+      "steps": [
+        "Resolve the stable Service destination.",
+        "Use the Service port from the client.",
+        "Select an eligible endpoint using the configured data plane.",
+        "Reach the port where that Pod’s application actually listens."
+      ]
+    },
+    {
+      "id": "kubernetes-external",
+      "title": "Routing configuration and request traffic are different paths",
+      "source": "flowchart TB\nU[Browser] --> L[External entry address]\nL --> P[Running HTTP proxy data plane]\nP --> A[Ready application Pod]\nI[Ingress or Gateway route configuration] -.-> C[Compatible controller]\nC -.->|Programs routing| P\nS[Service and endpoint information] -.-> P\nD[Deployment controller] -.->|Maintains replicas| A",
+      "caption": "This example proxy chooses Service-associated Pod endpoints directly. Other implementations may use the Service virtual address. User traffic does not pass through the Deployment controller.",
+      "steps": [
+        "The public entry reaches an actual serving implementation.",
+        "The proxy applies configured host/path rules.",
+        "It selects an eligible Service-associated backend.",
+        "Controllers separately maintain routing configuration and workload replicas."
+      ],
+      "sectionId": "outside"
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "A Service exposes port 80 with targetPort 8080 and selector app=notes. Your Pods are labelled app=note and listen on 9090. Identify both mismatches. Then sketch browser→entry proxy→application Pod with dotted arrows showing what the route controller and Deployment controller manage.",
+    "rubric": [
+      "Selector mismatch prevents selecting the intended Pods.",
+      "Target port does not match the application listener.",
+      "Management components are not ordinary HTTP forwarding hops."
+    ],
+    "solution": "Correct the intended selector/labels and align targetPort with the real listener, or change the application listener deliberately. Verify ready EndpointSlices afterward. Solid arrows carry the browser request to an actual entry data plane and the chosen backend. Dotted arrows show routing configuration being programmed and the Deployment controller maintaining replicas. DNS success alone would not detect or solve either mismatch."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A normal ClusterIP Service primarily offers…",
+      "options": [
+        "Stable discovery and configured access to a set of backends",
+        "A permanent copy of every Pod’s memory",
+        "A mandatory HTTP application proxy process"
+      ],
+      "answer": "Stable discovery and configured access to a set of backends",
+      "explanation": "The virtual service abstraction is implemented by cluster networking, not necessarily a separate user-space proxy."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "The Deployment controller normally forwards each user request.",
+      "options": [
+        "True",
+        "False",
+        "Only for private notes"
+      ],
+      "answer": "False",
+      "explanation": "It manages desired workloads; the network data plane carries application traffic."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Creating a NetworkPolicy always blocks traffic regardless of implementation.",
+      "options": [
+        "True",
+        "False",
+        "Only if the YAML is long"
+      ],
+      "answer": "False",
+      "explanation": "An appropriate networking implementation must enforce the policy."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might a working Service DNS lookup coexist with failed connections?",
+      "answer": "The Service can have no ready endpoints, a wrong target port, an unreachable backend, blocked network policy, or a non-listening application. DNS answers only one part of the path.",
+      "explanation": "The Service can have no ready endpoints, a wrong target port, an unreachable backend, blocked network policy, or a non-listening application. DNS answers only one part of the path."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why does adding Pods not guarantee perfect redistribution of existing traffic?",
+      "answer": "Endpoint information propagates over time and connection-level selection can keep existing long-lived connections on prior backends; actual load depends on request and connection patterns.",
+      "explanation": "Endpoint information propagates over time and connection-level selection can keep existing long-lived connections on prior backends; actual load depends on request and connection patterns."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Pod IP stability?",
+      "back": "Pods are replaceable, so their addresses are not a durable service identity."
+    },
+    {
+      "front": "Service selector?",
+      "back": "A label rule identifying the intended backends."
+    },
+    {
+      "front": "Service port versus targetPort?",
+      "back": "The client-facing Service port versus the backend application port."
+    },
+    {
+      "front": "Ingress object versus serving data plane?",
+      "back": "The object declares rules; a controller and implementation arrange and carry traffic."
+    },
+    {
+      "front": "Namespace equals full isolation?",
+      "back": "No. Network enforcement, workload identity, API permissions, and application authorization need explicit design."
+    }
+  ],
+  "mentalModel": "Use stable service discovery for replaceable Pods, and keep configuration arrows separate from the packets carrying the request.",
+  "sources": [
+    {
+      "title": "Kubernetes — Services",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — DNS for Services and Pods",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Ingress",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/ingress/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Gateway API",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/gateway/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Network policies",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "service-listener-mismatch",
+      "title": "A successful DNS lookup can still lead to the wrong port",
+      "sectionId": "debug",
+      "intro": "A reports Service uses port 8080, selector app=reports, and targetPort 7000. Ready Pods match the selector but actually listen on 7001. This is a separate teaching example.",
+      "steps": [
+        {
+          "title": "Resolve the name",
+          "explanation": "Cluster DNS returns the Service address. Only the name-lookup stage has succeeded.",
+          "state": [
+            {
+              "label": "Name",
+              "value": "reports Service"
+            },
+            {
+              "label": "ServicePort",
+              "value": "8080"
+            },
+            {
+              "label": "DNS",
+              "value": "Resolved"
+            },
+            {
+              "label": "Conclusion",
+              "value": "No proof of a working backend yet"
+            }
+          ]
+        },
+        {
+          "title": "Inspect selected endpoints",
+          "explanation": "The selector matches ready report Pods. The target configuration still sends traffic to 7000.",
+          "state": [
+            {
+              "label": "Selector",
+              "value": "app=reports matches"
+            },
+            {
+              "label": "ReadyPods",
+              "value": "A and B"
+            },
+            {
+              "label": "TargetPort",
+              "value": "7000"
+            }
+          ]
+        },
+        {
+          "title": "Compare with the process listener",
+          "explanation": "The program is listening on 7001. Adding replicas with the same mismatch would not repair the path.",
+          "state": [
+            {
+              "label": "ApplicationListener",
+              "value": "7001"
+            },
+            {
+              "label": "ConfiguredTarget",
+              "value": "7000"
+            },
+            {
+              "label": "Mismatch",
+              "value": "Forwarding reaches the wrong port"
+            }
+          ]
+        },
+        {
+          "title": "Correct and verify the smallest boundary",
+          "explanation": "Align targetPort with the intended listener, wait for configuration propagation, and test a permitted request through the Service.",
+          "state": [
+            {
+              "label": "TargetPort",
+              "value": "7001"
+            },
+            {
+              "label": "ReadyEndpoints",
+              "value": "Verified after update"
+            },
+            {
+              "label": "Result",
+              "value": "Application request succeeds in this example"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Check name, Service reference, selector, readiness, target port, network policy, and application response separately. More replicas do not fix the wrong destination."
+    }
+  ]
+}

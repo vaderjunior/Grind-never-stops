@@ -1,0 +1,136 @@
+{
+  "id": "086",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain prepare/promise and accept/accepted in single-decree Paxos.",
+    "Show how a later ballot preserves an already chosen value.",
+    "State the asynchronous impossibility boundary without concluding practical consensus is useless."
+  ],
+  "retrieval": [
+    "L081: distinguish agreement from eventual progress.",
+    "L082: how does a durable promise contribute to quorum reasoning?"
+  ],
+  "sections": [
+    {
+      "id": "question",
+      "title": "One value must survive changes of proposer",
+      "markdown": "Advanced extension, 55 minutes: retrieval 5, two-phase intuition 20, worked ballots 10, exercise 10, questions/review 10. Suppose several controllers propose a new owner for one partition. The goal is to choose one value so that future valid decisions for this same consensus instance cannot replace it with a conflicting value. Single-decree Paxos exposes this one-decision problem; building a replicated log needs many instances and additional practical machinery.\n\nDistinguish proposers, acceptors and learners as roles, even when one process implements several. A proposer coordinates a ballot identified by a globally unique ordered number. Acceptors persist protocol state. Learners discover the chosen value. A value is chosen when a suitable majority of acceptors has accepted it, not when one learner has heard the news. Losing a reply therefore does not imply that nothing was chosen.\n\nThe two phases are easier to understand as preserving the obligations created by previous work. A new proposer first discovers and constrains what acceptors may do. It then proposes a value compatible with the information obtained. A higher ballot number is permission to coordinate a later attempt, not permission to discard an already chosen value."
+    },
+    {
+      "id": "mechanism",
+      "title": "A promise constrains future accepts",
+      "markdown": "In phase one, the proposer sends prepare(n). An acceptor can promise not to accept proposals with lower ballot numbers and reports its highest-numbered accepted proposal, if any. Once the proposer has a majority of suitable promises, it must choose the value from the highest accepted ballot reported by that quorum. Only if none reports an accepted value may it choose a new value of its own.\n\nIn phase two, the proposer sends accept(n,value). An acceptor may accept unless it has already promised to a higher ballot. A majority of accepts chooses the value. Promises and accepted records must survive restart. If an acceptor forgets these obligations, later quorum intersections do not carry the information on which safety depends.\n\nThe familiar slogan “majorities intersect” is incomplete. The intersection must reveal and preserve prior choices according to these rules. If the new proposer simply prefers its own value regardless of accepted history, overlapping majorities do not save the algorithm. Ballot comparison and value-selection rules do the work that transforms overlap into safe agreement."
+    },
+    {
+      "id": "ballots",
+      "title": "A concrete delayed-message history",
+      "markdown": "Acceptors A,B,C begin empty. Proposer P obtains promises for ballot 10 from A and B, then both accept value blue. Blue is chosen even if P crashes before any client sees a result. Proposer Q starts ballot 11 and obtains promises from B and C. B reports accepted=(10,blue); C reports none. Q must propose blue in ballot 11. Its preference for red is irrelevant for this instance.\n\nNow imagine ballot 10 had reached only A. Q's quorum B,C sees no accepted value and may choose red. A's isolated acceptance was not a chosen value. This is not data loss of an acknowledged consensus result; it is a proposal that never crossed the required decision boundary. A client API should not promise chosen success after one acceptor.\n\nFor a five-acceptor group, any two majorities of three share at least one acceptor. The lower bound follows from 3+3−5=1. But the shared machine must obey durable promises and report its accepted history. This arithmetic is a tool for understanding the proof, not a replacement for the protocol."
+    },
+    {
+      "id": "boundary",
+      "title": "No universal termination guarantee in a fully asynchronous model",
+      "markdown": "The classic asynchronous consensus impossibility result concerns deterministic protocols with even one possible crash failure in a model where message delays are unbounded. A slow participant cannot always be distinguished from a failed one, and some admissible executions prevent a decision. It does not say that systems can never agree, nor that safety must be abandoned whenever a packet is late.\n\nPractical protocols obtain progress under additional assumptions, such as a sufficiently long period of stable timing and leadership, or use randomization in appropriate models. Two proposers can repeatedly preempt one another with increasing ballots while safety remains intact. A stable leader is an important engineering mechanism for reducing that contention. Tail latency, durable storage latency and failure detection remain operational concerns.\n\nKeep this extension at the level of obligations and one explicit history. Implementing a production Multi-Paxos system requires log positions, reconfiguration, recovery, compaction and client semantics beyond this bounded lesson. Do not claim the two-phase sketch is a deployable service."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Later ballots inherit prior accepted obligations",
+      "source": "sequenceDiagram\nparticipant P as Proposer Q\nparticipant B as Acceptor B\nparticipant C as Acceptor C\nP->>B: Prepare ballot 11\nB-->>P: Promise, accepted 10 blue\nP->>C: Prepare ballot 11\nC-->>P: Promise, none accepted\nP->>B: Accept 11 blue\nP->>C: Accept 11 blue\nNote over P,C: Prior accepted value constrains new proposal",
+      "caption": "The proposer must use the highest accepted value from its phase-one quorum. A higher ballot alone does not authorize a conflicting value.",
+      "steps": [
+        "Gather a majority of promises.",
+        "Inspect reported accepted proposals.",
+        "Select the required prior value when present.",
+        "Obtain a majority of accepts."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "In A,B,C, ballot 20 chooses value east on A and B. A later proposer gathers promises from B and C at ballot 21. B reports east at20, C reports nothing. May it propose west? Explain the result if it had gathered only C’s promise.",
+    "rubric": [
+      "Preserves highest accepted value from quorum.",
+      "Requires majority promises.",
+      "Distinguishes one response from a quorum."
+    ],
+    "solution": "With promises from B and C, the proposer must carry east forward because it is the value of the highest accepted ballot in that quorum. Choosing west would violate the phase-one selection rule and could conflict with a chosen value. C alone is not a majority of three, so its empty report does not authorize moving to phase two as if history were empty. Wait for a quorum or report lack of progress."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A higher ballot permits replacing an already chosen value:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Higher ballots must preserve accepted obligations discovered through the quorum."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Minimum overlap of two size-three sets within five acceptors?",
+      "answer": 1,
+      "unit": "acceptors",
+      "tolerance": 0,
+      "explanation": "3+3−5 = 1."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which state must survive acceptor restart?",
+      "options": [
+        "Promises and accepted proposals",
+        "Only a display of the current leader"
+      ],
+      "answer": "Promises and accepted proposals",
+      "explanation": "Forgetting durable protocol obligations can break safety."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What does asynchronous consensus impossibility say about practical operation?",
+      "answer": "Some fully asynchronous executions prevent deterministic termination with a possible crash; practical progress relies on additional operating assumptions, while safety can still hold.",
+      "explanation": "Some fully asynchronous executions prevent deterministic termination with a possible crash; practical progress relies on additional operating assumptions, while safety can still hold."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Chosen value?",
+      "back": "A value accepted by the required majority for an instance."
+    },
+    {
+      "front": "Prepare promise?",
+      "back": "Do not accept lower ballots; report highest accepted proposal."
+    },
+    {
+      "front": "New proposer’s value?",
+      "back": "Use the highest accepted value reported by its prepare quorum, if any."
+    },
+    {
+      "front": "Stable leader benefit?",
+      "back": "Reduces competing ballot preemption and aids progress."
+    },
+    {
+      "front": "FLP boundary?",
+      "back": "No unconditional deterministic termination guarantee in the fully asynchronous crash model."
+    }
+  ],
+  "mentalModel": "A new proposer inherits old obligations; a newer ballot cannot erase an earlier choice.",
+  "sources": [
+    {
+      "title": "Leslie Lamport, Paxos Made Simple (2001)",
+      "url": "https://lamport.azurewebsites.net/pubs/paxos-simple.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

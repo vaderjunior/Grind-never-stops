@@ -1,0 +1,150 @@
+{
+  "id": "033",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain a B-tree lookup as ordered navigation.",
+    "Choose composite-key order from equality, range, and sort needs.",
+    "Account for index maintenance and storage costs.",
+    "Distinguish covering data from guaranteed index-only execution."
+  ],
+  "retrieval": [
+    "From L024: why does pagination require a unique tie-breaker?",
+    "From L031: name the scope, filter, order, and projection of an access pattern."
+  ],
+  "sections": [
+    {
+      "id": "intuition",
+      "title": "An index is another representation you must maintain",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, worked query 8, exercise 10, questions 10, review 4. A table containing ten million activity rows can answer “the newest 20 for tenant 7” by inspecting the entire collection, but that does not exploit what the query knows. An ordered index keeps selected keys arranged so the database can navigate to a relevant region and continue from there.\n\nA B-tree family index uses a hierarchy of pages with separator keys. A lookup narrows the key interval at each level until it reaches leaf entries. Large page fan-out keeps the height relatively small; the useful mental model is a few navigation steps followed by scanning the relevant ordered range, not binary search through every individual row. Actual implementation details and I/O depend on the engine, cache, and key sizes.\n\nIndex entries point to or otherwise identify the row representation. Reading the full row can require additional storage access unless the index contains everything needed and the engine can establish visibility from it. Indexes consume disk and memory, and inserts/updates/deletes must maintain them. Ten speculative indexes can make writes slower and reduce useful cache space without helping the real query mix."
+    },
+    {
+      "id": "order",
+      "title": "Composite keys are ordered tuples",
+      "markdown": "For tenant-scoped activity ordered by time and ID, consider (tenant_id, created_at DESC, id DESC). The first equality selects one tenant's contiguous region; the following fields provide the desired order and cursor boundary. This aligns the physical navigation with the API's access pattern from L024.\n\nAn index ordered (created_at, tenant_id) has a different arrangement: rows from many tenants interleave within time order. It can support time-wide queries well, but tenant-only lookup may need more work. “The same columns appear” does not mean the same traversal. Equality on leading fields and a range on the next field is a useful initial design rule for B-trees, not an absolute statement that later columns can never help. PostgreSQL 18 can use skip-scan strategies in some cases; inspect the actual plan instead of repeating a blanket leftmost-prefix slogan.\n\nPlace low-cardinality flags with care. status='active' may select nearly every row or only a tiny minority. A selective partial index for active rows can help a specific query, but only when the planner can establish that the query satisfies its predicate. Data distribution, update frequency, and query form matter more than the word status."
+    },
+    {
+      "id": "worked",
+      "title": "Derive the index from a bounded page",
+      "markdown": "The workload requests tenant 7's latest entries, continuing below a saved timestamp/ID pair:\n\n~~~sql\nCREATE INDEX entries_by_tenant_time\nON entries(tenant_id, created_at DESC, id DESC);\n\nSELECT id, created_at, title\nFROM entries\nWHERE tenant_id = :tenant\n  AND (created_at < :last_time\n       OR (created_at = :last_time AND id < :last_id))\nORDER BY created_at DESC, id DESC\nLIMIT 20;\n~~~\n\nThis is a PostgreSQL-oriented pattern sketch, not an executed plan claim. The query begins in tenant 7's ordered region and seeks the continuation boundary rather than counting an ever-growing offset. A row-value comparison can express the same lexicographic condition where supported, with matching null and sort semantics.\n\nIf title is frequently returned and small, an INCLUDE(title) index may store it as payload without making it an ordering key. In PostgreSQL, that can enable index-only scans when visibility information permits; merely including the columns does not guarantee that heap fetches disappear. Large included values enlarge the index and increase maintenance cost. Measure the tradeoff with representative reads and writes.\n\nSuppose a title averages 300 bytes and there are ten million rows. Adding that payload introduces roughly 3 GB of raw title bytes before entry and page overhead. This rough lower-bound estimate is enough to reject “cover everything for free.” Compression and layout depend on implementation; measure actual index size if the decision matters."
+    },
+    {
+      "id": "failure",
+      "title": "Do not optimize yesterday’s query by accident",
+      "markdown": "A query that wraps an indexed field in a function may need a matching expression index or a rewritten predicate. An implicit type conversion can also change index usability. These are reasons to inspect a plan, not to assume that a named index must be used. A sequential scan can be appropriate for a large fraction of a table, especially when random row fetches would cost more.\n\nUpdates to indexed values create maintenance work; a timestamp rewritten on every heartbeat can make an index expensive even when read traffic is low. Highly skewed tenants can make a plan that suits a small tenant poor for a large one. Record which parameter values and distribution your benchmark covers.\n\nCommon misconceptions: every index lookup is O(1); an index sorts the table itself; a covering index always avoids row access; column order is cosmetic; forcing index use proves optimization. The goal is less useful work and acceptable write cost under the real access pattern. Optional practice: compare index sizes and plans on the supplied local relational fixture, noting that SQLite behavior is not proof of PostgreSQL visibility behavior."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "btree",
+      "title": "Navigate by scope, then scan the ordered range",
+      "source": "flowchart TD\nQ[Tenant 7 and cursor time plus ID] --> R[Index root separator keys]\nR -->|Choose tenant 7 interval| P[Internal page]\nP -->|Locate cursor boundary| L[Leaf entries ordered by time and ID]\nL -->|Next 20 matching entries| X[Fetch projected row fields]\nL -.->|More leaf entries if needed| N[Adjacent leaf page]",
+      "caption": "A conceptual ordered-page view, not a byte-level diagram of PostgreSQL. It shows why key order and a bounded range matter.",
+      "steps": [
+        "Use the leading equality to select a region.",
+        "Navigate to the range or cursor boundary.",
+        "Read only the relevant ordered entries where possible.",
+        "Account for row visibility and projection fetches."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Compare indexes (tenant_id, status, created_at DESC, id DESC) and (created_at DESC, tenant_id, status) for “latest 20 open tickets for one tenant.” Explain which better matches the initial access pattern, one write cost, and one different query that may favor the other order.",
+    "minutes": 10,
+    "rubric": [
+      "Uses equality scope and status before ordered range.",
+      "Retains an ID tie-breaker.",
+      "Acknowledges maintenance/storage cost.",
+      "Avoids absolute planner claims without a plan."
+    ],
+    "solution": "The first aligns equality on tenant and status with a descending time/ID range, making a good initial candidate. Maintaining changed status/time values costs index writes and space. A cross-tenant time-window scan may favor a time-leading index. Actual plans and distribution can change the result; PostgreSQL may use other strategies, so validate with representative parameter values and projected columns."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why does composite column order matter?",
+      "options": [
+        "It changes the lexicographic regions the index can navigate",
+        "It only changes display labels",
+        "All permutations are equivalent"
+      ],
+      "answer": "It changes the lexicographic regions the index can navigate",
+      "explanation": "Equality/range/order requirements align differently with each tuple order."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Including every projected column guarantees a PostgreSQL index-only scan:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Visibility and planner choices still matter; included payload can only enable the possibility."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Ten million rows each add 300 payload bytes. Raw payload size in decimal GB?",
+      "answer": 3,
+      "unit": "GB",
+      "tolerance": 0.01,
+      "explanation": "10,000,000 × 300 / 1,000,000,000 = 3 before index overhead."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might a sequential scan be sensible?",
+      "answer": "When a large fraction of rows is needed or ordered/random index fetches cost more than scanning the table, depending on layout and cache.",
+      "explanation": "Index usage is not itself the optimization goal."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What evidence should accompany a new index?",
+      "answer": "The targeted query and distribution, plan, measured read effect, write/maintenance cost, and actual size under a representative workload.",
+      "explanation": "A single fast read without write cost does not establish the full tradeoff."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "B-tree mental model?",
+      "back": "Navigate ordered separator pages, then scan a relevant leaf range."
+    },
+    {
+      "front": "Composite index order?",
+      "back": "Lexicographic tuple order, not a set of interchangeable columns."
+    },
+    {
+      "front": "Useful starting pattern?",
+      "back": "Equality scope followed by range/order fields, verified against the engine’s plan."
+    },
+    {
+      "front": "Covering payload costs?",
+      "back": "Space, cache pressure, and write maintenance."
+    },
+    {
+      "front": "Index-only guarantee?",
+      "back": "Requires engine-specific visibility and a chosen suitable plan, not only included columns."
+    },
+    {
+      "front": "Optimization target?",
+      "back": "Useful workload performance and cost, not forcing an index name into a plan."
+    }
+  ],
+  "mentalModel": "An index prearranges one access path; choose its order from the query and pay its write and space bill explicitly.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Multicolumn indexes",
+      "url": "https://www.postgresql.org/docs/18/indexes-multicolumn.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL 18: Index-only scans and covering indexes",
+      "url": "https://www.postgresql.org/docs/18/indexes-index-only-scans.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

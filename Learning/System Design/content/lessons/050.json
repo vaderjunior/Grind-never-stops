@@ -1,0 +1,169 @@
+{
+  "id": "050",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Choose storage properties across six distinct concrete access patterns.",
+    "Preserve source-of-truth and derived-data boundaries.",
+    "Adapt the selection when correctness, freshness, or operational constraints change."
+  ],
+  "retrieval": [
+    "L046: which fields must change together and remain bounded?",
+    "L047: can stale indexed permissions disclose protected content?",
+    "L049: what happens between uploading content and publishing ready metadata?"
+  ],
+  "sections": [
+    {
+      "id": "candidate-brief",
+      "title": "Six workloads, one coherent explanation",
+      "markdown": "Run a six-workload storage-selection clinic for a small engineering organization. The workloads are: seat reservations; expiring API response acceleration; device time-window history; ranked support-document search; dependency impact exploration; and uploaded media with a monthly analytical report. For each, identify the authoritative fact, query shape, consistency/freshness requirement, and a defensible starting storage model. Deepen one risky boundary after the interviewer changes a requirement."
+    },
+    {
+      "id": "format",
+      "title": "Use the whole hour deliberately",
+      "markdown": "This is a partial-design clinic with a 45-minute interview and 15-minute debrief. Allow about five minutes for each workload, five minutes for shared clarifications, and ten minutes to deepen one changed requirement. This is not enough time to implement six systems; the output is a defensible decision table and a detailed failure trace for the riskiest boundary.\n\nStart interview_010 in the interview center. Keep its unique session ID for resuming through MCP or the browser. Coaching may expose requested hints; exam mode expects you to ask for clarifying information and defend choices without unsolicited guidance.\n\nFor each workload, fill in: invariant or accepted outcome; main reads and writes; candidate access path; authoritative versus derived data; allowed staleness; failure behavior; rejected alternative; and evidence needed to confirm the choice. If one existing database can serve several workloads adequately, say so. Every extra stateful service must justify its maintenance and recovery burden."
+    },
+    {
+      "id": "submission",
+      "title": "Make the final recommendation reviewable",
+      "markdown": "Record your actual table or diagram as a candidate artifact. Include one request flow that crosses a boundary, such as a source update reaching a derived query view. Label synchronization and visibility assumptions explicitly. If you use a product name, identify the property being selected and what must be checked in its chosen version and configuration.\n\nWhen the interviewer changes a requirement, revisit the affected invariant or access path before redrawing the whole architecture. A new component may be warranted, but a different index, smaller aggregate, simpler representation, or stricter visibility gate may solve the real constraint. Explain which previous assumption no longer holds.\n\nAfter finishing, compare with the protected reference and save explicitly labeled self or AI feedback. Cite actual candidate turns for positive rubric scores; do not fabricate evidence for an unmentioned dimension. The retry should change the workload or correctness condition rather than ask you to memorize the reference's suggested products."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "clinic-grid",
+      "title": "Reuse a consistent decision frame across different workloads",
+      "source": "flowchart TD\nW[Concrete workload] --> I[Invariant and accepted outcome]\nI --> A[Read and write access paths]\nA --> T[Authority and derived copies]\nT --> F[Freshness and failure behavior]\nF --> O[Operational cost and simpler alternatives]\nO --> D[Decision with a validation plan]",
+      "caption": "This decision frame is public candidate scaffolding. Individual recommendations and reference reasoning remain in the debrief.",
+      "steps": [
+        "State the user-visible guarantee.",
+        "Find the access path that can answer the actual query.",
+        "Name data ownership and allowed visibility delay.",
+        "Choose properties with a failure and validation plan."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 45,
+    "prompt": "Run a six-workload storage-selection clinic for a small engineering organization. The workloads are: seat reservations; expiring API response acceleration; device time-window history; ranked support-document search; dependency impact exploration; and uploaded media with a monthly analytical report. For each, identify the authoritative fact, query shape, consistency/freshness requirement, and a defensible starting storage model. Deepen one risky boundary after the interviewer changes a requirement.",
+    "rubric": [
+      "Requirements and scope: 10% of the source rubric; score only actual submitted evidence.",
+      "Workload and estimates: 8% of the source rubric; score only actual submitted evidence.",
+      "API contracts: 6% of the source rubric; score only actual submitted evidence.",
+      "Data modeling and ownership: 10% of the source rubric; score only actual submitted evidence.",
+      "Coherent architecture: 12% of the source rubric; score only actual submitted evidence.",
+      "Scalability and bottlenecks: 10% of the source rubric; score only actual submitted evidence.",
+      "Reliability and recovery: 10% of the source rubric; score only actual submitted evidence.",
+      "Consistency and invariant protection: 10% of the source rubric; score only actual submitted evidence.",
+      "Security and isolation: 6% of the source rubric; score only actual submitted evidence.",
+      "Observability and operability: 6% of the source rubric; score only actual submitted evidence.",
+      "Alternatives and tradeoff reasoning: 6% of the source rubric; score only actual submitted evidence.",
+      "Communication, prioritization, and adaptation: 6% of the source rubric; score only actual submitted evidence."
+    ],
+    "solution": "1. Seat reservations: protect “at most one accepted reservation for a seat” with an authoritative transactional record and a uniqueness/conditional-write mechanism, not a cache read followed by an unguarded insert. PostgreSQL or MySQL/InnoDB are concrete candidates, subject to their configured isolation/durability and failure tests. A document store can be defensible when the aggregate and operation truly protect the invariant; the name alone is not sufficient.\n\n2. Response acceleration: a bounded derived cache can tolerate loss if the authoritative source and fallback capacity can handle it. Redis is a candidate, but choose TTL, eviction, key scoping, and failure behavior from requirements. Persistence policies alter restart loss windows; a no-persistence cache is different from an authoritative store of accepted reservations. At 5 million entries averaging 800 bytes, raw payload is 4 GB decimal before key/object/index/allocator overhead. A memory budget must account for those extras and working-set locality.\n\n3. Device history: a query by device and bounded time window suggests an indexed relational baseline or a query-driven device/day partition with time and stable event ID ordering. DynamoDB and Cassandra are candidates for explicitly keyed access patterns; verify their transaction, query, and consistency contracts. A time-series system may add useful retention/aggregation behavior. The clinic's fixed query shape matters more than the category. If fleet-wide scans grow, a columnar analytical projection such as ClickHouse can be evaluated separately, with freshness and reconciliation obligations.\n\n4. Support search: analyzed terms, relevance, phrases, and facets may justify Elasticsearch/OpenSearch or a sufficiently capable existing database full-text index. The source document/version remains explicitly owned. Search freshness and authorization are distinct: a revoked document must not leak through an old snippet. A rebuildable index must actually have a source and a reconciliation path.\n\n5. Dependencies: select nodes by identity, traverse the correct edge direction/type, bound depth, and handle cycles/high-degree hubs. Neo4j is a candidate when traversal requirements warrant it; a relational adjacency table may be simpler for a small bounded graph. A graph model gives structural reachability, not a complete runtime outage verdict. For geographic-nearby queries, use a spatial predicate with correct coordinates and units instead of pretending relationship hops express distance.\n\n6. Media and analytics: large immutable bytes can live in object storage, while a transactional catalog owns permission, readiness, content identity/version, and metadata. Publish ready only after verified stable content exists; reconcile orphans and define deletion. Monthly narrow-column analytics can initially use a measured relational query or later a columnar projection. Files and block volumes remain valid alternatives for workloads requiring their semantics. Object-like APIs do not promise a shared atomic transaction with metadata.\n\nThe best global simplification may be one relational authority plus local/object content storage, adding other derived services only after measurements demand them. The organization must budget backups, migrations, monitoring, incident recovery, and every additional consistency boundary. This is a set of defensible candidates, not a one-brand-per-workload answer key."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What is missing from “use six databases because there are six workloads”?",
+      "options": [
+        "A requirement-driven justification and operational tradeoff",
+        "A seventh database",
+        "A prettier icon for each database"
+      ],
+      "answer": "A requirement-driven justification and operational tradeoff",
+      "explanation": "Multiple workloads may share an adequate authority; each additional service creates cost and boundaries."
+    },
+    {
+      "id": "q2",
+      "type": "open",
+      "prompt": "What question should precede proposing a derived search or analytics copy?",
+      "answer": "Which store owns the source fact, and how are freshness, authorization, rebuild, and repair defined?",
+      "explanation": "A derived copy is useful only with an explicit lifecycle and correctness contract."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "How should a changed requirement affect the selection?",
+      "answer": "Revisit the particular invariant, access path, or failure assumption it invalidates, then make the smallest justified change.",
+      "explanation": "Blindly adding infrastructure can preserve the original mistake while increasing complexity."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Storage clinic output?",
+      "back": "A decision table with invariants, access paths, authority, failures, and validation evidence."
+    },
+    {
+      "front": "Brand as argument?",
+      "back": "A candidate implementation, not a substitute for a mechanism or guarantee."
+    },
+    {
+      "front": "Why fewer stores can be better?",
+      "back": "They may satisfy the workload while reducing maintenance and consistency boundaries."
+    },
+    {
+      "front": "Derived-copy obligation?",
+      "back": "Freshness, authorization, reconstruction, and repair must be specified."
+    },
+    {
+      "front": "Good changed-requirement response?",
+      "back": "Find the invalidated assumption and justify the smallest sufficient adaptation."
+    }
+  ],
+  "mentalModel": "A storage choice is a claim about access and correctness that you can defend, test, and revise.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18 — WAL",
+      "url": "https://www.postgresql.org/docs/18/wal-intro.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RocksDB — Overview",
+      "url": "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "ClickHouse — Columnar databases",
+      "url": "https://clickhouse.com/resources/engineering/what-is-columnar-database",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MySQL 8.4 — InnoDB and ACID",
+      "url": "https://dev.mysql.com/doc/refman/8.4/en/mysql-acid.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "DynamoDB — Query key conditions",
+      "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis — Persistence",
+      "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MongoDB — Modeling",
+      "url": "https://www.mongodb.com/docs/manual/data-modeling/best-practices/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Elastic — Full-text search",
+      "url": "https://www.elastic.co/docs/solutions/search/full-text",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Neo4j — Graph concepts",
+      "url": "https://neo4j.com/docs/getting-started/appendix/graphdb-concepts/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon S3 — Overview",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

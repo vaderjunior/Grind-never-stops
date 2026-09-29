@@ -1,0 +1,141 @@
+{
+  "id": "093",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Scope an idempotency key to a logical request and actor.",
+    "Validate duplicate payload fingerprints and retain outcomes.",
+    "Place marker and effect inside one atomic boundary."
+  ],
+  "retrieval": [
+    "L014: why is transport method idempotence different from a business-operation key?",
+    "L092: what happens if the effect commits before acknowledgement?"
+  ],
+  "sections": [
+    {
+      "id": "identity",
+      "title": "Identify the logical operation, not the network attempt",
+      "markdown": "Core55 minutes: retrieval5, mechanism18, worked flow8, exercise10, questions10, review4. A user clicks “reserve equipment,” the request times out, and the client retries. These are two network attempts for one intended reservation. A stable idempotency key lets the receiver recognize that identity. Generating a new key for every retry defeats the purpose; using one permanent key for every reservation prevents legitimate future requests.\n\nScope the key to the authenticated caller/tenant and operation family. A client-controlled key must not let one tenant retrieve another tenant’s saved result. Store a canonical fingerprint of the relevant request parameters. If a key already exists with a different fingerprint, return a conflict rather than reusing an unrelated response or applying a second mutation.\n\nFingerprinting is a contract decision: include fields that affect semantics, normalize only equivalences the API actually promises, and version the normalization if needed. A different JSON property order alone usually should not imply a different business request, but omitting a changed amount would be unsafe. Do not use a hash as authorization; it only summarizes the compared payload."
+    },
+    {
+      "id": "atomic",
+      "title": "The unique key is necessary but not sufficient",
+      "markdown": "Within one SQL database, begin a transaction, establish a unique idempotency row scoped by tenant and key, perform the business mutation, and store the resulting response before commit. If the transaction fails, neither marker nor effect should remain partially applied. A duplicate sees the committed existing outcome; a competing insertion must follow the database’s conflict/wait semantics rather than racing through an application-only “if absent” check.\n\nThis SQL is a conceptual transaction pattern, not a complete portable handler:\n\n~~~sql\nBEGIN;\nINSERT INTO request_results(tenant_id, request_key, fingerprint, status)\nVALUES (:tenant, :key, :fingerprint, 'processing');\n-- Apply the reservation using constraints/transaction checks.\nUPDATE request_results SET status='done', response_json=:result\nWHERE tenant_id=:tenant AND request_key=:key;\nCOMMIT;\n~~~\n\nA handler must distinguish first execution, an existing matching completed request, and a conflicting fingerprint. Long-running external work should not hold a database transaction open indefinitely; it needs a durable operation state with a recovery protocol. A permanent processing marker without takeover/timeout rules can strand work after a crash."
+    },
+    {
+      "id": "boundary",
+      "title": "An inbox and an outbox answer different questions",
+      "markdown": "A consumer inbox records which incoming event identities have been applied. An outbox records outgoing work in the same transaction as the local business change so a separate publisher can retry delivery. An outbox publisher may publish more than once if it crashes after sending but before marking publication; downstream consumers still need duplicate tolerance. The outbox closes the local business-state versus publication-intent gap, not every downstream effect gap.\n\nWorked flow: a reservation transaction stores reservation R and outbox event E together. A relay sends E, loses the response, then sends E again. A search consumer uses E as its inbox identity and updates its projection only once inside its own database transaction. Each authority owns a local atomic boundary, and the transport can remain at-least-once between them.\n\nIf E asks a payment provider to charge, the provider must accept the same logical idempotency key or offer another appropriate transaction/reconciliation mechanism. A local inbox marked before a provider call can suppress an effect that never occurred; marked afterward it can allow duplication. Name the effect receiver, not merely the local table."
+    },
+    {
+      "id": "retention",
+      "title": "Identity retention is part of the guarantee",
+      "markdown": "Suppose the server discards request identities after24 hours, but a mobile client retries a queued operation three days later. The same key may look new and the business effect may repeat. Choose a supported retry horizon, retain keys/results long enough for it, and define behavior beyond the horizon. Some business identities are durable forever even if cached HTTP responses expire; distinguish those layers.\n\nBound stored payload/response sizes and avoid retaining unnecessary secrets. Track duplicate hits, fingerprint conflicts, stuck processing states and retries beyond policy. During recovery, reconcile uncertain external effects instead of choosing whichever state makes the queue empty fastest.\n\nThe central misconception is that a unique table row automatically establishes exactly-once end-to-end behavior. Its power comes from the transaction containing the protected effect. Its limits begin wherever that transaction stops."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Local transactions surround effects; delivery crosses boundaries",
+      "source": "flowchart LR\nC[Stable client key] --> T[Transaction: business state plus outbox]\nT -.->|at-least-once publish E| R[Relay]\nR -.->|possible duplicate E| I[Consumer transaction: inbox plus projection]\nI --> P[Derived state]",
+      "caption": "The repeated event can be safe because each consumer establishes its own atomic identity/effect boundary. External effects require receiver cooperation.",
+      "steps": [
+        "Reuse one logical request identity.",
+        "Commit local change and outgoing intent together.",
+        "Allow retried publication with the same event identity.",
+        "Atomically deduplicate at the receiving effect boundary."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A tenant-scoped payment endpoint stores request keys but omits the amount from its fingerprint and deletes keys after one hour. A client retries with a changed amount after a timeout, then an old request retries the next day. Identify both contract defects and the external-provider boundary.",
+    "rubric": [
+      "Fingerprints all semantic fields.",
+      "Scopes identity and retry horizon.",
+      "Requires provider-side retry/reconciliation semantics."
+    ],
+    "solution": "The changed amount must not be accepted as the same logical operation: include amount, currency, destination and other effect-defining fields in a versioned canonical fingerprint and return conflict on mismatch. One-hour retention cannot promise safe next-day retry unless a durable business operation identity still prevents a second effect; define and enforce the horizon. Local records also cannot atomically determine a provider charge after a lost response. Reuse the provider’s supported idempotency identity and reconcile uncertain outcomes rather than charging again under a new key."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A new idempotency key for every retry protects one logical operation:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The receiver sees distinct operations when identities change."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Same scoped key with a changed amount should:",
+      "options": [
+        "Replay unrelated success silently",
+        "Conflict"
+      ],
+      "answer": "Conflict",
+      "explanation": "The key identifies one specific operation; semantic payload reuse must be detected."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "An operation is retried4 times under the same key after its protected effect committed. Desired additional effects?",
+      "answer": 0,
+      "unit": "effects",
+      "tolerance": 0,
+      "explanation": "All retries return the prior outcome without a second protected mutation."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can an outbox publisher still duplicate delivery?",
+      "answer": "It can send successfully and crash before recording publication, so retry sends the same event again; receiving effects must tolerate that identity.",
+      "explanation": "It can send successfully and crash before recording publication, so retry sends the same event again; receiving effects must tolerate that identity."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Idempotency key scope?",
+      "back": "Tenant/caller plus operation family and logical request identity."
+    },
+    {
+      "front": "Fingerprint purpose?",
+      "back": "Detect semantic payload changes under a reused identity."
+    },
+    {
+      "front": "Inbox?",
+      "back": "Records applied incoming identities with the local effect."
+    },
+    {
+      "front": "Outbox?",
+      "back": "Stores outgoing intent with the local business transaction."
+    },
+    {
+      "front": "Retention horizon?",
+      "back": "How long a retry identity remains recognized; part of the API contract."
+    }
+  ],
+  "mentalModel": "Repeated attempts are safe only when one durable identity and the protected effect share a reliable decision boundary.",
+  "sources": [
+    {
+      "title": "Amazon Builders’ Library: making retries safe with idempotent APIs",
+      "url": "https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python sqlite3 documentation: transaction control",
+      "url": "https://docs.python.org/3/library/sqlite3.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RabbitMQ documentation: consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms",
+      "checked": "2026-09-29"
+    }
+  ]
+}

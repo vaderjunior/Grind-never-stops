@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "checks": [
+    "read-system-diagrams: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed.",
+    "http-requests-and-errors: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed.",
+    "pagination-from-scratch: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed.",
+    "numbers-bytes-and-units: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed.",
+    "choose-a-database: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed.",
+    "redis-from-scratch: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed.",
+    "partitions-and-quorums: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed.",
+    "model-serving-and-gpus: all diagrams, table, exact authored step states, restart, keyboard selection, hidden solutions, and mobile width passed."
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "scope": "8 representative chapters; all remaining diagram sources and walkthrough schemas have separate content validation."
+}

@@ -1,0 +1,2670 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>System Design Course Blueprint</title><style>body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.62;color:#182432;background:#f2f5f7;margin:0}main{max-width:1160px;margin:32px auto;padding:40px 52px;background:#fff;border:1px solid #d9e1e7;border-radius:12px}h1{line-height:1.12;font-size:2.6rem;color:#15394b}h2{margin-top:2.3em;border-top:2px solid #cbdbe3;padding-top:.8em;color:#15394b}h3{margin-top:2em;color:#1d5166}p{max-width:100ch}table{border-collapse:collapse;width:100%;font-size:.92rem;margin:20px 0}th{background:#e7f0f4;text-align:left}td,th{padding:9px 12px;border:1px solid #d6e0e6;vertical-align:top}tr:nth-child(even){background:#f7f9fa}pre{white-space:pre-wrap;background:#edf2f5;padding:20px;border-radius:8px;overflow:auto}a{color:#155f84}code{font-size:.91em}.toolbar{position:sticky;top:0;padding:10px 20px;background:#15394b;color:white;font-size:.9rem}.toolbar a{color:white;margin-right:24px}@media(max-width:750px){main{padding:20px;margin:0;border-radius:0}table{font-size:.8rem}td,th{padding:6px}h1{font-size:1.9rem}}@media print{body{background:white}main{max-width:none;margin:0;padding:0;border:0}.toolbar{display:none}h2,h3{break-after:avoid}tr{break-inside:avoid}a{color:inherit}pre{font-size:9pt}}</style></head><body><div class="toolbar">300 sessions · 30 modules · 63 assessments · 6 projects</div><main><nav aria-label="Contents"><strong>Contents</strong><br><a href="#section-1">Complete course blueprint · 29 September 2026</a> · <a href="#section-2">How to read the roadmap</a> · <a href="#section-3">Phase map and cumulative time</a> · <a href="#section-4">Dependency map</a> · <a href="#section-5">Why this sequence</a> · <a href="#section-6">Complete lesson catalog</a> · <a href="#section-37">The lesson package</a> · <a href="#section-38">How complete case studies work</a> · <a href="#section-39">Visual and executable standards</a> · <a href="#section-40">Six progressive projects</a> · <a href="#section-41">Interview framework and timing</a> · <a href="#section-42">Assessment rubric</a> · <a href="#section-43">Checkpoints and skill matrix</a> · <a href="#section-44">Database decision-making clinics</a> · <a href="#section-45">Pacing alongside the existing infrastructure roadmap</a> · <a href="#section-46">Curriculum additions and limits</a> · <a href="#section-47">Sources informing the architecture and optional module reading</a></nav><h1>System Design: From First Principles to Interview Readiness</h1>
+<h2 id="section-1">Complete course blueprint · 29 September 2026</h2>
+<p>This is the curriculum architecture, not a completed 300-lesson textbook. It follows the uploaded brief’s instruction to design the course before beginning individual lessons. The planned lesson packages, project scaffolds, solutions, and tests are specified here; they are not represented as already implemented or executed.</p>
+<p><strong>300 sessions · 30 modules · 63 assessments · six projects in 24 milestones · 43 two-part case studies.</strong> All scheduled sessions are 45–60 minutes. Their planned total is <strong>282 hours 35 minutes</strong>, including embedded exercises, project milestones, and assessments. The first general-interview readiness checkpoint is <strong>L190</strong>, at <strong>178 hours 50 minutes</strong>. Readiness is assessed, not awarded for finishing pages.</p>
+<p>The primary audience is a CS master’s student with Python/SQL and backend experience who is newer to systematic system design. Your existing Docker → Kubernetes → Helm/Kyma and TypeScript/MCP work remains in place: this course supplies architecture reasoning, rather than restarting those courses. Python is the default executable language; SQL and small TypeScript examples are used where they improve understanding.</p>
+<h2 id="section-2">How to read the roadmap</h2>
+<p>Priority and difficulty are separate. <strong>🟢 Essential</strong> is general-backend interview priority; <strong>🟡 Important</strong> includes breadth and role-specific material; <strong>🔴 Advanced extension</strong> is optional for the general route. <strong>B</strong> means beginner, <strong>I</strong> intermediate, and <strong>A</strong> advanced difficulty. An essential lesson can still be difficult. For AI/platform roles, the yellow AI modules become role priorities. These labels are curriculum judgments, not measured interview-frequency statistics.</p>
+<p><strong>[A]</strong> = concept-check interview; <strong>[B]</strong> = debug-the-architecture interview; <strong>[C]</strong> = partial design; <strong>[D]</strong> = full mock interview. <strong>[P2.3]</strong> means Project 2, milestone 3. Untagged rows are teaching, worked-design, lab, or review sessions as stated in their titles.</p>
+<p><strong>Prerequisites:</strong> each module lists its entry dependencies. Within a module, follow the listed order; each lesson assumes the earlier non-red lessons in that module. Red extensions do not silently become prerequisites for general-track lessons or mocks. L227 and L247 additionally require the CRDT extension L079. L297–298 additionally require the chosen advanced or AI branch. The downloadable JSON records this prerequisite rule for each lesson.</p>
+<p>A module begins only after the required prior skills are demonstrated. Prior knowledge may be validated with its checkpoint and exercise; it is not assumed from having used a technology at work. Full numerical order is valid. Your recommended personalized order is <strong>M01–M19 → M26–M29 → M20–M25 → M30</strong>. M30 can also be used for general-route assessment before completing the specialist branches.</p>
+<h2 id="section-3">Phase map and cumulative time</h2>
+<p>Times are planning estimates for focused work with prepared examples, not measured completion times. Independent implementation from a blank repository, environment repair, external reading, and repeat attempts add time. A practical full-route planning envelope is roughly <strong>325–370 hours</strong> after allowing a 15–30% reserve; this is not a promise about individual learning speed.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Modules</th>
+<th>Lessons</th>
+<th style="text-align:right">Planned hours</th>
+<th style="text-align:right">Cumulative hours</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A — Design thinking, networking, and backend foundations</td>
+<td>01–03</td>
+<td>001–030</td>
+<td style="text-align:right">27.9</td>
+<td style="text-align:right">27.9</td>
+</tr>
+<tr>
+<td>B — Data, storage, and measured scaling</td>
+<td>04–06</td>
+<td>031–060</td>
+<td style="text-align:right">28.2</td>
+<td style="text-align:right">56.1</td>
+</tr>
+<tr>
+<td>C — Distributed-system foundations</td>
+<td>07–09</td>
+<td>061–090</td>
+<td style="text-align:right">28.2</td>
+<td style="text-align:right">84.2</td>
+</tr>
+<tr>
+<td>D — Asynchronous systems and data lifecycle</td>
+<td>10–12</td>
+<td>091–120</td>
+<td style="text-align:right">28.2</td>
+<td style="text-align:right">112.5</td>
+</tr>
+<tr>
+<td>E — Reliable, secure, cloud-native operation</td>
+<td>13–15</td>
+<td>121–150</td>
+<td style="text-align:right">28.4</td>
+<td style="text-align:right">140.9</td>
+</tr>
+<tr>
+<td>F — Complete designs and general interview readiness</td>
+<td>16–19</td>
+<td>151–190</td>
+<td style="text-align:right">37.9</td>
+<td style="text-align:right">178.8</td>
+</tr>
+<tr>
+<td>G — Broad and advanced system-design case library</td>
+<td>20–25</td>
+<td>191–250</td>
+<td style="text-align:right">56.2</td>
+<td style="text-align:right">235.0</td>
+</tr>
+<tr>
+<td>H — AI/ML infrastructure specialization</td>
+<td>26–29</td>
+<td>251–290</td>
+<td style="text-align:right">37.7</td>
+<td style="text-align:right">272.7</td>
+</tr>
+<tr>
+<td>I — Unseen capstones and evidence-based readiness</td>
+<td>30–30</td>
+<td>291–300</td>
+<td style="text-align:right">9.9</td>
+<td style="text-align:right">282.6</td>
+</tr>
+</tbody>
+</table>
+<h2 id="section-4">Dependency map</h2>
+<p>The diagram is an editable Mermaid source. Solid arrows show the main learning route; dotted arrows make key dependencies of the AI branch explicit. Module-level prerequisites below are the more detailed source of truth.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A["A · L001–030&lt;br/&gt;Requirements · estimation · networking · APIs"]
+    B["B · L031–060&lt;br/&gt;Data models · storage · measured scaling"]
+    C["C · L061–090&lt;br/&gt;Replication · consistency · consensus"]
+    D["D · L091–120&lt;br/&gt;Queues · reliable effects · streams · lifecycle"]
+    E["E · L121–150&lt;br/&gt;Reliability · security · cloud operation"]
+    F["F · L151–190&lt;br/&gt;Complete designs · projects · first readiness gate"]
+    G["G · L191–250&lt;br/&gt;Storage · media · geo · payments · platform internals"]
+    H["H · L251–290&lt;br/&gt;ML systems · LLM serving · RAG · AI gateway"]
+    I["I · L291–300&lt;br/&gt;Unseen interviews · remediation · final evidence"]
+    A --&gt; B --&gt; C --&gt; D --&gt; E --&gt; F
+    F --&gt; G
+    F --&gt; H
+    B -.-&gt;|Data and index foundations| H
+    D -.-&gt;|Queues and processing guarantees| H
+    E -.-&gt;|Isolation and operability| H
+    F --&gt;|General interview route| I
+    G --&gt;|Broader systems evidence| I
+    H --&gt;|AI specialization evidence| I
+</code></pre>
+<h2 id="section-5">Why this sequence</h2>
+<p>The course starts with requirements, invariants, workload estimates, and simple architectures, then adds mechanisms only when a demonstrated constraint needs them. Interview preparation is built into the learning route rather than postponed to its end. Amazon’s official SDE II preparation material emphasizes practicality, accuracy, efficiency, reliability, optimization, scalability, and a two-way design discussion [R1].</p>
+<p>Single-database correctness precedes distributed consistency; consistency precedes coordination; durable side effects precede advanced streaming guarantees. PostgreSQL’s documentation distinguishes isolation phenomena and implementation behavior [R3]. MIT’s distributed-systems curriculum gives substantial separate attention to replication, Raft, consistency, and distributed transactions [R2]. These sources inform coverage; this syllabus and its pacing are original.</p>
+<p>Security and observability appear early in small examples and receive dedicated production modules before the case library. OAuth teaching is anchored in current security guidance [R7]; the MCP bridge uses the authorization specification rather than assuming that attaching any JWT is sufficient [R8].</p>
+<p>Database and broker guarantees are tested at the boundary where an application depends on them. In particular, Kafka’s documentation distinguishes transactions within Kafka from exactly-once outcomes in external systems, which require cooperation from those systems [R4].</p>
+<p>AI is taught as workload and infrastructure design, not merely as a vector database attached to an API. Serving metrics distinguish queuing, prefill, decode, first-token latency, and output-token timing [R11]. Parallelism and prefix caching receive their own lessons [R9, R10].</p>
+<h2 id="section-6">Complete lesson catalog</h2>
+<h3 id="section-7">M01 — Reasoning, requirements, and estimation</h3>
+<p><strong>Phase A · prerequisites:</strong> Normal CS/programming fundamentals; no system-design prerequisite. <strong>Exit skill:</strong> Turn an ambiguous request into scoped requirements, invariants, a workload model, and a timed design plan.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>001</td>
+<td>What system design is; diagnostic and your design notebook</td>
+<td>🟢 B</td>
+<td style="text-align:right">45</td>
+</tr>
+<tr>
+<td>002</td>
+<td>Requirements, non-goals, invariants, and acceptable compromises</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>003</td>
+<td>Latency, throughput, availability, durability, and service objectives</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>004</td>
+<td>Estimation I: users, actions, average traffic, and peak traffic</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>005</td>
+<td>[A] Clarify a vague product request and defend its estimates</td>
+<td>🟢 B</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>006</td>
+<td>Estimation II: bytes, retention, storage, and bandwidth</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>007</td>
+<td>Estimation III: concurrency, Little’s law, and queueing intuition</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>008</td>
+<td>Estimation IV: headroom, bottlenecks, sensitivity, and cost</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>009</td>
+<td>The 45/60-minute interview framework; diagrams and decision records</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>010</td>
+<td>[C] Design a small single-server service without overengineering</td>
+<td>🟢 B</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-8">M02 — The internet and communication protocols</h3>
+<p><strong>Phase A · prerequisites:</strong> M01. <strong>Exit skill:</strong> Trace a request, identify transport costs and trust boundaries, and select a communication protocol.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>011</td>
+<td>Request journey: DNS, IP addresses, routing, and ports</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>012</td>
+<td>TCP versus UDP: loss, congestion, connections, and retransmission</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>013</td>
+<td>TLS, certificates, termination, and trust boundaries</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>014</td>
+<td>HTTP semantics: methods, status codes, safety, and idempotence</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>015</td>
+<td>[A] Trace and troubleshoot a request from browser to backend</td>
+<td>🟢 B</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>016</td>
+<td>HTTP/1.1, HTTP/2, HTTP/3, multiplexing, and head-of-line blocking</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>017</td>
+<td>Forward proxies, reverse proxies, and L4/L7 load balancers</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>018</td>
+<td>REST versus RPC/gRPC: contracts, serialization, and coupling</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>019</td>
+<td>Polling, long polling, SSE, and WebSockets</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>020</td>
+<td>[C] Select transports for a live dashboard and chat product</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-9">M03 — Runtime behavior and API boundaries</h3>
+<p><strong>Phase A · prerequisites:</strong> M01, M02. <strong>Exit skill:</strong> Design usable APIs and explain concurrency, overload, request cancellation, and service boundaries.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>021</td>
+<td>Processes, threads, event loops, and Python I/O workloads</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>022</td>
+<td>Races, bounded concurrency, cancellation, and shared state</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>023</td>
+<td>Resource-oriented APIs, schemas, validation, and error contracts</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>024</td>
+<td>Offset/cursor pagination, stable ordering, and API evolution</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>025</td>
+<td>[B] Repair an API with blocking calls and unstable pagination</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>026</td>
+<td>Authentication versus authorization; sessions and API-key basics</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>027</td>
+<td>Deadlines, uncertain outcomes, and safe retry boundaries</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>028</td>
+<td>Modular monoliths, ownership boundaries, and justified service extraction</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>029</td>
+<td>Lab: run the supplied service/test harness and trace concurrent requests</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>030</td>
+<td>[C] Design an inventory API and expose its race conditions</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-10">M04 — Relational modeling and transactional correctness</h3>
+<p><strong>Phase B · prerequisites:</strong> M03. <strong>Exit skill:</strong> Derive schemas and indexes from access patterns and protect business invariants under concurrent writes.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>031</td>
+<td>Access patterns, entities, keys, and relational schemas</td>
+<td>🟢 B</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>032</td>
+<td>Constraints, normalization, denormalization, and invariant ownership</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>033</td>
+<td>B-tree indexes, composite-key order, and covering access paths</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>034</td>
+<td>Query plans, selectivity, joins, and N+1 performance failures</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>035</td>
+<td>[A] Defend a schema and index plan for competing workloads</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>036</td>
+<td>Transactions and ACID: atomicity is not isolation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>037</td>
+<td>Optimistic concurrency, row locks, deadlocks, and transaction retries</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>038</td>
+<td>MVCC and isolation histories: read committed through serializable</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>039</td>
+<td>[P1.1] URL shortener: persistent create/redirect path and correctness tests</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>040</td>
+<td>[B] Diagnose overselling and lost updates using transaction histories</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-11">M05 — Storage engines and database selection</h3>
+<p><strong>Phase B · prerequisites:</strong> M04. <strong>Exit skill:</strong> Choose storage properties before products, including transactional, analytical, search, graph, and blob workloads.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>041</td>
+<td>Write-ahead logs, acknowledgments, crashes, and recovery</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>042</td>
+<td>LSM trees, SSTables, compaction, and read/write amplification</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>043</td>
+<td>Bloom filters, page caches, compression, and storage budgets</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>044</td>
+<td>Row stores, columnar analytics, and wide-column data models</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>045</td>
+<td>[A] Choose an engine from measured read/write requirements</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>046</td>
+<td>Key-value and document stores: aggregate boundaries and query limitations</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>047</td>
+<td>Search engines: inverted indexes, ranking, and index freshness</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>048</td>
+<td>Graph and geospatial access patterns and indexes</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>049</td>
+<td>Object, file, and block storage; blobs versus metadata</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>050</td>
+<td>[C] Database-selection clinic across six concrete workloads</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-12">M06 — Measurement, scaling, and caching</h3>
+<p><strong>Phase B · prerequisites:</strong> M03, M04, M05. <strong>Exit skill:</strong> Scale a measured bottleneck and reason about cache correctness instead of adding infrastructure reflexively.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>051</td>
+<td>Benchmarking, workload models, latency percentiles, and test validity</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>052</td>
+<td>Vertical/horizontal scaling, statelessness, and session placement</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>053</td>
+<td>Load-balancing algorithms, connection skew, and sticky sessions</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>054</td>
+<td>Connection pools, concurrency limits, and database saturation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>055</td>
+<td>[B] Explain why adding API servers made the system slower</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>056</td>
+<td>Cache-aside, TTL, eviction, hit ratios, and working-set size</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>057</td>
+<td>Cache invalidation, write policies, and stale-read race timelines</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>058</td>
+<td>CDNs, HTTP caching, cache keys, and origin protection</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>059</td>
+<td>[P1.2] URL shortener: add a cache and compare measured performance</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>060</td>
+<td>[C] Scale a read-heavy service and defend every added component</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-13">M07 — Replication, partitioning, and identifiers</h3>
+<p><strong>Phase C · prerequisites:</strong> M05, M06. <strong>Exit skill:</strong> Separate replication from sharding and handle skew, data movement, and identifier requirements.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>061</td>
+<td>Synchronous/asynchronous replication, failover, and durability boundaries</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>062</td>
+<td>Replica lag, read-your-writes, and routing reads safely</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>063</td>
+<td>Hash, range, and directory partitioning; choosing a shard key</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>064</td>
+<td>Consistent hashing: rings, virtual nodes, movement, and alternatives</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>065</td>
+<td>[A] Replication versus partitioning; simulate membership changes</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>066</td>
+<td>Hot keys/shards, request coalescing, stampedes, and skew mitigation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>067</td>
+<td>Online resharding, rebalancing, routing versions, and migration safety</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>068</td>
+<td>Distributed identifiers: sequences, UUIDs, time-based IDs, and collisions</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>069</td>
+<td>[P1.3] URL shortener: simulate partition movement and hotspot failures</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>070</td>
+<td>[D] URL shortener under growth and a replica failure</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-14">M08 — Consistency, partitions, and time</h3>
+<p><strong>Phase C · prerequisites:</strong> M04, M07. <strong>Exit skill:</strong> Read distributed histories, choose precise guarantees, and explain what partitions and clocks make difficult.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>071</td>
+<td>Partial failure, slow versus dead nodes, and failure detection</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>072</td>
+<td>Linearizability and sequential consistency through operation histories</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>073</td>
+<td>Eventual, causal, and session consistency through user-visible behavior</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>074</td>
+<td>CAP and PACELC: precise guarantees, partition behavior, and latency</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>075</td>
+<td>[A] Classify histories and correct misleading CAP explanations</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>076</td>
+<td>Physical clocks, monotonic time, clock skew, and Lamport clocks</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>077</td>
+<td>Vector clocks, causal histories, and detecting concurrent updates</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>078</td>
+<td>Leaderless replication, quorums, repair, and overlap limitations</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>079</td>
+<td>Conflict resolution and CRDTs: convergence does not preserve every invariant</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>080</td>
+<td>[B] Diagnose split brain and contradictory consistency promises</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-15">M09 — Consensus, coordination, and verification</h3>
+<p><strong>Phase C · prerequisites:</strong> M08. <strong>Exit skill:</strong> Explain replicated state machines, Raft fundamentals, and why leases need more than a timeout.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>081</td>
+<td>Replicated state machines; safety, liveness, and agreement</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>082</td>
+<td>Raft I: terms, elections, voting, and leader failure</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>083</td>
+<td>Raft II: log replication, commitment, and recovery</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>084</td>
+<td>Raft III: snapshots, membership changes, and subtle failure histories</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>085</td>
+<td>[B] Debug a replicated log with an unsafe acknowledgment rule</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>086</td>
+<td>Paxos intuition and impossibility boundaries: what consensus assumes</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>087</td>
+<td>Distributed locks, leases, fencing tokens, and stale owners</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>088</td>
+<td>Configuration/discovery services, watches, and control/data planes</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>089</td>
+<td>Lab: deterministic failure injection and state-machine history tests</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>090</td>
+<td>[C] Design a configuration service with safe updates and watches</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-16">M10 — Queues and reliable execution</h3>
+<p><strong>Phase D · prerequisites:</strong> M03, M04, M08, M09. <strong>Exit skill:</strong> Build bounded, retry-safe asynchronous work with explicit acknowledgment and side-effect guarantees.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>091</td>
+<td>Queues, pub/sub, and logs: delivery, decoupling, and ownership</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>092</td>
+<td>Acknowledgments, redelivery, and at-most/at-least-once delivery</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>093</td>
+<td>Persistent idempotency: keys, fingerprints, inboxes, and atomic effects</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>094</td>
+<td>Timeout budgets, exponential backoff, jitter, and retry amplification</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>095</td>
+<td>[B] Repair a duplicate-side-effect incident and retry storm</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>096</td>
+<td>Backpressure, bounded buffers, admission control, and fairness</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>097</td>
+<td>Circuit breakers, bulkheads, and graceful degradation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>098</td>
+<td>Durable job states, leases, heartbeats, dead letters, and recovery</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>099</td>
+<td>[P3.1] Job system: implement claiming, execution, and recovery tests</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>100</td>
+<td>[C] Design a task queue with worker crashes and duplicate deliveries</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-17">M11 — Streams and cross-service transactions</h3>
+<p><strong>Phase D · prerequisites:</strong> M09, M10. <strong>Exit skill:</strong> Locate transactional boundaries and reason about ordering, replay, and external effects in event pipelines.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>101</td>
+<td>Partitioned logs: Kafka partitions, replicas, offsets, and consumer groups</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>102</td>
+<td>Ordering, rebalances, retention, replay, and event schema compatibility</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>103</td>
+<td>Dual-write failures, transactional outbox, and change data capture</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>104</td>
+<td>Distributed transactions and two-phase commit: atomicity versus availability</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>105</td>
+<td>[A] Locate the failure window in database-plus-broker workflows</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>106</td>
+<td>Sagas, compensations, durable workflows, and irreversible effects</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>107</td>
+<td>Exactly-once boundaries: broker transactions versus end-to-end effects</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>108</td>
+<td>Stream processing: event time, windows, watermarks, and late data</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>109</td>
+<td>[P5.1] Event pipeline: partitioned ingestion and replayable consumers</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>110</td>
+<td>[C] Design an order workflow that survives partial completion</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-18">M12 — Data architecture and lifecycle</h3>
+<p><strong>Phase D · prerequisites:</strong> M05, M11. <strong>Exit skill:</strong> Design derived views and data lifecycles without losing correctness during replay, change, or deletion.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>111</td>
+<td>CQRS: separate read/write models and projection consistency</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>112</td>
+<td>Event sourcing: events, snapshots, replay, and correction semantics</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>113</td>
+<td>Schema migration, backfills, reconciliation, and expand/contract changes</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>114</td>
+<td>Batch pipelines, MapReduce intuition, orchestration, and data quality</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>115</td>
+<td>[B] Repair a projection after a schema change and failed backfill</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>116</td>
+<td>Time-series and columnar analytics: cardinality, retention, and aggregation</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>117</td>
+<td>Distributed search indexing: ingestion, refresh, deletion, and reindexing</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>118</td>
+<td>Data retention, deletion, lineage, archival, and backup interactions</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>119</td>
+<td>[P5.2] Event pipeline: projections, duplicate handling, and late-event tests</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>120</td>
+<td>[D] Design an analytics pipeline with replay and freshness objectives</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-19">M13 — Reliability, observability, and disaster recovery</h3>
+<p><strong>Phase E · prerequisites:</strong> M06, M10, M11, M12. <strong>Exit skill:</strong> Define user-facing reliability targets, investigate failures, and defend a recovery plan with measurable outcomes.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>121</td>
+<td>SLIs, SLOs, SLAs, error budgets, and user-visible success</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>122</td>
+<td>Logs, metrics, traces, correlation, OpenTelemetry, and cardinality</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>123</td>
+<td>Alerting, burn rates, symptom versus cause, and actionable runbooks</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>124</td>
+<td>Tail latency, fan-out amplification, overload, and capacity headroom</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>125</td>
+<td>[B] Investigate an incident using incomplete telemetry</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>126</td>
+<td>Failure domains, redundancy, zonal isolation, and degraded operation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>127</td>
+<td>Backups, restore tests, RTO/RPO, and disaster-recovery evidence</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>128</td>
+<td>Multi-region routing, active-active/passive operation, and failback</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>129</td>
+<td>[P3.2] Job system: retries, dead letters, metrics, and failure injection</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>130</td>
+<td>[D] Design a reliable notification pipeline under provider outages</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-20">M14 — Security, isolation, and admission control</h3>
+<p><strong>Phase E · prerequisites:</strong> M02, M03, M04, M10, M13. <strong>Exit skill:</strong> Place identity and authorization checks correctly and enforce tenant boundaries, quotas, and safe failure policies.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>131</td>
+<td>Threat modeling: trust boundaries, sessions, request forgery, and SSRF</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>132</td>
+<td>OAuth 2.0/OIDC: user flows, PKCE, and machine-to-machine access</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>133</td>
+<td>JWT verification, issuer/audience checks, JWKS, expiry, and key rotation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>134</td>
+<td>RBAC/ABAC/ReBAC, object permissions, and tenant isolation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>135</td>
+<td>[A] Find cross-tenant access and token-validation failures</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>136</td>
+<td>Secrets, encryption at rest/in transit, workload identity, and rotation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>137</td>
+<td>Abuse prevention and fixed/sliding-window versus token-bucket limits</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>138</td>
+<td>[P2.1] Rate limiter: deterministic-clock implementation and boundary tests</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>139</td>
+<td>[P2.2] Rate limiter: atomic shared state and failure policy</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>140</td>
+<td>[C] Design tenant-aware gateway authorization and quotas</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-21">M15 — Cloud infrastructure and safe evolution</h3>
+<p><strong>Phase E · prerequisites:</strong> M09, M10, M13, M14. <strong>Exit skill:</strong> Map a design onto a deployment, explain control loops, and change software without violating data or availability contracts.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>141</td>
+<td>VMs and containers: isolation, resource limits, and shared failure domains</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>142</td>
+<td>Orchestration, desired state, reconciliation, and service discovery</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>143</td>
+<td>Kubernetes request path: workloads, Services, ingress, and Gateway concepts</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>144</td>
+<td>Startup/readiness/liveness, graceful draining, resources, and autoscaling</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>145</td>
+<td>[B] Debug healthy Pods serving failed requests and cascading restarts</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>146</td>
+<td>Rolling, blue/green, and canary releases; rollback with schema changes</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>147</td>
+<td>Managed services, serverless, networking/storage cost, and buy-versus-build</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>148</td>
+<td>[P3.3] Job system: deployment, graceful shutdown, and bounded scaling</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>149</td>
+<td>[P3.4] Job system: chaos checks, restore drill, and operational handover</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>150</td>
+<td>[D] Design deployment and operation of an enterprise HTTP/MCP service</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-22">M16 — Foundational complete designs</h3>
+<p><strong>Phase F · prerequisites:</strong> M07, M10, M13, M14, M15. <strong>Exit skill:</strong> Conduct full interviews for compact systems and defend caches, identifiers, limits, and failure behavior.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>151</td>
+<td>Design URL shortener I: requirements, estimates, APIs, and data model</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>152</td>
+<td>Design URL shortener II / [P1.4]: evolution, abuse, failures, and evidence</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>153</td>
+<td>Design Pastebin I: text/blob ownership, access, and retention</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>154</td>
+<td>Design Pastebin II: expiration, cleanup, caching, and misuse prevention</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>155</td>
+<td>[D] Unfamiliar short-link/paste workload with changing constraints</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>156</td>
+<td>Design distributed cache I: API, placement, eviction, and membership</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>157</td>
+<td>Design distributed cache II: consistency, hotspots, and node failure</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>158</td>
+<td>Design rate limiter I / [P2.3]: regional quotas and coordination budgets</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>159</td>
+<td>Design rate limiter II / [P2.4]: load/failure tests and policy defense</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>160</td>
+<td>[D] Design a quota service under asymmetric regional demand</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-23">M17 — Reusable backend and platform services</h3>
+<p><strong>Phase F · prerequisites:</strong> M09, M10, M11, M13, M14, M16. <strong>Exit skill:</strong> Compose reliable backend primitives and distinguish scheduling, delivery, counting, and request routing.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>161</td>
+<td>Design notification service I: preferences, templates, channels, and fan-out</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>162</td>
+<td>Design notification service II: retries, deduplication, and provider outages</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>163</td>
+<td>Design distributed scheduler I: triggers, priorities, queues, and ownership</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>164</td>
+<td>Design distributed scheduler II: leases, fencing, retries, and clock errors</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>165</td>
+<td>[D] Design a deadline-sensitive background-work platform</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>166</td>
+<td>Design leaderboard I: rankings, sorted sets, and counter updates</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>167</td>
+<td>Design leaderboard II: hot counters, aggregation, and abuse resistance</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>168</td>
+<td>Design API gateway I: routing, identity, admission, and request budgets</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>169</td>
+<td>Design API gateway II: discovery, configuration rollout, and isolation</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>170</td>
+<td>[D] Integrate gateway, quotas, and background work without overengineering</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-24">M18 — Chat, communities, and mail</h3>
+<p><strong>Phase F · prerequisites:</strong> M02, M11, M12, M13, M14, M16. <strong>Exit skill:</strong> Design durable real-time communication and distinguish personal-chat, channel, and mailbox workloads.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>171</td>
+<td>Design WhatsApp-like chat I: connections, message storage, and delivery</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>172</td>
+<td>Design WhatsApp-like chat II: order, receipts, presence, and encryption boundaries</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>173</td>
+<td>[P4.1] Chat backend: persistent messaging over the supplied WebSocket scaffold</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>174</td>
+<td>[P4.2] Chat backend: reconnect cursors, offline delivery, and tests</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>175</td>
+<td>[D] Redesign chat when ordering and offline requirements change</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>176</td>
+<td>Design Slack/Discord I: channel workloads, tenant permissions, and history</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>177</td>
+<td>Design Slack/Discord II: large-channel fan-out, search, mentions, and threads</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>178</td>
+<td>Design Gmail-like mail I: submission, delivery queues, mailboxes, and search</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>179</td>
+<td>Design Gmail-like mail II: retries, attachments, threading, and abuse</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>180</td>
+<td>[D] Transfer communication principles to an unfamiliar collaboration product</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-25">M19 — Social feeds and the first readiness gate</h3>
+<p><strong>Phase F · prerequisites:</strong> M12, M13, M14, M18. <strong>Exit skill:</strong> Reason about fan-out and pagination, complete the chat project, and attempt mixed general-backend interviews.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>181</td>
+<td>Design Instagram I: social graph, media references, feed APIs, and models</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>182</td>
+<td>Design Instagram II: feed fan-out, caching, freshness, and ranking boundaries</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>183</td>
+<td>Design Twitter/X I: celebrity skew and timeline generation</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>184</td>
+<td>Design Twitter/X II: hybrid fan-out, cursor stability, and repair</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>185</td>
+<td>[D] Design a feed during cache failure and sudden traffic growth</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>186</td>
+<td>Design Reddit I: communities, comments, votes, and ranking</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>187</td>
+<td>Design Reddit II: hot threads, tree pagination, and moderation workflows</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>188</td>
+<td>[P4.3] Chat backend: multiple workers, pub/sub, and presence expiry</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>189</td>
+<td>[P4.4] Chat backend: load, disconnect, authorization, and recovery tests</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>190</td>
+<td>[D] First readiness gate: unseen general-backend design and feedback</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-26">M20 — File synchronization and storage services</h3>
+<p><strong>Phase G · prerequisites:</strong> M07, M09, M11, M12, M13, M14. <strong>Exit skill:</strong> Separate metadata from content and reason about synchronization, repair, durability, and cloud-storage control planes.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>191</td>
+<td>Design Dropbox I: file chunks, manifests, and upload/download contracts</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>192</td>
+<td>Design Dropbox II: synchronization, conflicts, sharing, and recovery</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>193</td>
+<td>Design Google Drive I: permissions, versions, metadata, and change feeds</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>194</td>
+<td>Design Google Drive II: resumability, search, deduplication, and revocation</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>195</td>
+<td>[D] Design offline-capable file synchronization with constrained bandwidth</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>196</td>
+<td>Design distributed object store I: metadata, placement, and durability</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>197</td>
+<td>Design distributed object store II: erasure coding, repair, and failures</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>198</td>
+<td>Design cloud storage service I: buckets, signed access, and tenant APIs</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>199</td>
+<td>Design cloud storage service II: metering, lifecycle, residency, and audit</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>200</td>
+<td>[D] Defend a global storage design through a regional outage</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-27">M21 — Media delivery and content discovery</h3>
+<p><strong>Phase G · prerequisites:</strong> M06, M10, M12, M13, M14, M20. <strong>Exit skill:</strong> Design separate upload/playback flows and support high-fan-out media, autocomplete, and crawling workloads.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>201</td>
+<td>Design YouTube I: uploads, object storage, and transcoding workflows</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>202</td>
+<td>Design YouTube II: retries, renditions, publication, and CDN playback</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>203</td>
+<td>Design Netflix-like streaming I: catalog, playback, and entitlement boundaries</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>204</td>
+<td>Design Netflix-like streaming II: adaptive delivery, edge capacity, and outages</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>205</td>
+<td>[D] Design video delivery after a tenfold traffic increase</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>206</td>
+<td>Design autocomplete I: prefix indexes, suggestions, and query contracts</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>207</td>
+<td>Design autocomplete II: ranking, hot prefixes, freshness, and privacy</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>208</td>
+<td>Design web crawler I: frontier, politeness, deduplication, and scheduling</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>209</td>
+<td>Design web crawler II: traps, retries, domain fairness, and recovery</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>210</td>
+<td>[D] Design a content-discovery pipeline from ingestion to serving</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-28">M22 — Location, marketplaces, and web search</h3>
+<p><strong>Phase G · prerequisites:</strong> M05, M07, M11, M12, M13, M14, M21. <strong>Exit skill:</strong> Design stateful marketplaces and spatial/search services under freshness, concurrency, and latency constraints.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>211</td>
+<td>Design Uber-like service I: location updates, candidate search, and matching</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>212</td>
+<td>Design Uber-like service II: dispatch races, trip state, and stale locations</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>213</td>
+<td>Design food delivery I: order, merchant, courier, and fulfillment models</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>214</td>
+<td>Design food delivery II: coordination, compensation, and live status</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>215</td>
+<td>[D] Adapt a marketplace when reservations and freshness become critical</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>216</td>
+<td>Design Google Maps-like service I: tiles, spatial data, and routing graphs</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>217</td>
+<td>Design Google Maps-like service II: traffic updates, routing caches, and scale</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>218</td>
+<td>Design web search I: crawl, index, query, and ranking boundaries</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>219</td>
+<td>Design web search II: query fan-out, index freshness, and recovery</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>220</td>
+<td>[D] Design an unfamiliar search/location service from its access patterns</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-29">M23 — Correctness-critical and collaborative systems</h3>
+<p><strong>Phase G · prerequisites:</strong> M08, M09, M11, M13, M14. <strong>Exit skill:</strong> Defend business invariants and identity state despite retries, concurrent updates, and external dependencies.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>221</td>
+<td>Design payment platform I: ledger invariants, APIs, and idempotency</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>222</td>
+<td>Design payment platform II: reconciliation, refunds, and webhook ordering</td>
+<td>🟢 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>223</td>
+<td>Design ad serving I: candidates, targeting, and request deadlines</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>224</td>
+<td>Design ad serving II: budgets, pacing, counters, and delayed events</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>225</td>
+<td>[D] Design flash-sale reservations without overselling or double charging</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>226</td>
+<td>Design collaborative editor I: operations, revisions, and ordering</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>227</td>
+<td>Design collaborative editor II: OT/CRDT tradeoffs and offline convergence</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>228</td>
+<td>Design global authentication I: sessions, tokens, key distribution, and revocation</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>229</td>
+<td>Design global authentication II: tenant policy, regional outages, and rotation</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>230</td>
+<td>[D] Preserve authorization correctness during partial identity outages</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-30">M24 — Logs, telemetry, and data-platform internals</h3>
+<p><strong>Phase G · prerequisites:</strong> M09, M11, M12, M13, M15. <strong>Exit skill:</strong> Design high-ingestion infrastructure and complete an event pipeline with demonstrable replay and migration behavior.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>231</td>
+<td>Design Kafka-like log I: partitions, replicas, append/read APIs, and metadata</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>232</td>
+<td>Design Kafka-like log II: controllers, failover, recovery, and durability</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>233</td>
+<td>Design metrics platform I: agents, ingestion, labels, and time-series models</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>234</td>
+<td>Design metrics platform II: cardinality, downsampling, querying, and alerting</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>235</td>
+<td>[D] Redesign telemetry when cardinality and cost exceed the budget</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>236</td>
+<td>Design logging platform I: collection, buffering, indexing, and storage</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>237</td>
+<td>Design logging platform II: redaction, audit access, backpressure, and loss budgets</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>238</td>
+<td>[P5.3] Event pipeline: checkpoint recovery, batch replay, and reconciliation</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>239</td>
+<td>[P5.4] Event pipeline: schema/backfill failure tests and evidence report</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>240</td>
+<td>[D] Design an observable enterprise data platform with bounded cost</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-31">M25 — Cloud control planes and advanced architecture</h3>
+<p><strong>Phase G · prerequisites:</strong> M09, M13, M14, M15, M20, M23. <strong>Exit skill:</strong> Reason about fleet control, tenant placement, distributed counters, and safe long-lived architectural change.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>241</td>
+<td>Design multi-region SaaS I: tenant directory, placement, and isolation</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>242</td>
+<td>Design multi-region SaaS II: tenant migration, residency, and disaster recovery</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>243</td>
+<td>Design Kubernetes-like orchestrator I: desired state, scheduling, and admission</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>244</td>
+<td>Design Kubernetes-like orchestrator II: reconciliation, leases, and node failure</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>245</td>
+<td>[D] Design a cloud control plane that remains safe under partial failure</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>246</td>
+<td>Design distributed counter I: exact versus approximate aggregation and hot keys</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>247</td>
+<td>Design distributed counter II: CRDTs, bounded counters, and business invariants</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>248</td>
+<td>Model checking a tiny distributed state machine: invariants and counterexamples</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>249</td>
+<td>Architecture evolution: migrations, ownership, build/buy decisions, and exit strategies</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>250</td>
+<td>[D] Architecture review with changing budget, staffing, and recovery requirements</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-32">M26 — ML systems, feature stores, and recommendations</h3>
+<p><strong>Phase H · prerequisites:</strong> M05, M11, M12, M13, M14, M15. <strong>Exit skill:</strong> Connect ML quality requirements to feature freshness, serving contracts, rollout safety, and measurable system behavior.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>251</td>
+<td>ML system boundaries: data, labels, features, models, serving, and quality</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>252</td>
+<td>Batch/stream features, point-in-time correctness, leakage, and training-serving skew</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>253</td>
+<td>Design feature store I: offline/online data paths and feature contracts</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>254</td>
+<td>Design feature store II: freshness, replay, point-in-time joins, and recovery</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>255</td>
+<td>[C] Diagnose a feature platform with correct uptime but incorrect predictions</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>256</td>
+<td>Design inference platform I: online/offline APIs, registries, and model artifacts</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>257</td>
+<td>Design inference platform II: CPU/GPU batching, model caching, and rollout</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>258</td>
+<td>Design recommendation engine I: candidate retrieval, ranking, and feature access</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>259</td>
+<td>Design recommendation engine II: feedback, evaluation, latency, and fallbacks</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>260</td>
+<td>[D] Design a recommendation service with changing freshness requirements</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-33">M27 — LLM serving mechanics and capacity</h3>
+<p><strong>Phase H · prerequisites:</strong> M06, M10, M13, M15, M26. <strong>Exit skill:</strong> Estimate serving demand in tokens and memory, separate latency metrics, and reason about batching and GPU capacity.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>261</td>
+<td>LLM workload estimation: tokens, request rates, TTFT, and inter-token latency</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>262</td>
+<td>Model-memory budgeting: weights, precision, activations, and serving overhead</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>263</td>
+<td>Prefill, decode, attention, and KV-cache lifetime</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>264</td>
+<td>Static, dynamic, and continuous batching: latency/throughput experiments</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>265</td>
+<td>[A] Estimate capacity from supplied token workloads and benchmark evidence</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>266</td>
+<td>Prefix caching, routing locality, KV reuse, and tenant isolation</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>267</td>
+<td>GPU placement, fragmentation, cold starts, queues, and autoscaling</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>268</td>
+<td>Tensor/pipeline/data parallel serving and disaggregated prefill/decode</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>269</td>
+<td>[P6.1] Inference gateway: contracts, mock backend, and cancellable token streaming</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>270</td>
+<td>[B] Diagnose queued requests, disconnected clients, and wasted generation</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-34">M28 — RAG and LLM application architecture</h3>
+<p><strong>Phase H · prerequisites:</strong> M12, M14, M26, M27. <strong>Exit skill:</strong> Design retrieval and conversational applications with explicit quality, authorization, latency, and safety boundaries.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>271</td>
+<td>Embeddings and approximate nearest-neighbor indexes: recall, filtering, and cost</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>272</td>
+<td>RAG ingestion: chunks, hybrid retrieval, reranking, ACLs, and deletion</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>273</td>
+<td>Design enterprise RAG I: requirements, data flows, APIs, and quality targets</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>274</td>
+<td>Design enterprise RAG II: freshness, access changes, evaluation, and versioning</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>275</td>
+<td>[D] Redesign retrieval after document permissions change</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>276</td>
+<td>Design LLM inference service I: gateways, admission, queues, and streaming</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>277</td>
+<td>Design LLM inference service II: multi-model routing, GPUs, caching, and failure</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>278</td>
+<td>Design ChatGPT-like service I: conversations, model calls, tools, and safety boundaries</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>279</td>
+<td>Design ChatGPT-like service II: cancellation, resumability, quotas, and audit</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>280</td>
+<td>[D] Derive an unfamiliar AI-product architecture from workload and risk</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-35">M29 — ML operations, tool execution, and AI project</h3>
+<p><strong>Phase H · prerequisites:</strong> M14, M15, M26, M27, M28. <strong>Exit skill:</strong> Operate an AI gateway with versioned evaluation, controlled tool execution, and tested cost/failure behavior.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>281</td>
+<td>Design experimentation platform I: datasets, models, prompts, lineage, and evaluation</td>
+<td>🟡 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>282</td>
+<td>Design experimentation platform II: online experiments, drift, rollout, and rollback</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>283</td>
+<td>Distributed training concepts: parallelism, synchronization, and checkpoints</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>284</td>
+<td>MCP/tool execution: authorization, approvals, durable state, and bounded execution</td>
+<td>🟡 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>285</td>
+<td>[D] Investigate a model regression and design a safe rollback</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>286</td>
+<td>[P6.2] Inference gateway: tenant admission, token limits, and budgets</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>287</td>
+<td>[P6.3] Inference gateway: provider failures, cancellation, and telemetry</td>
+<td>🟡 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>288</td>
+<td>[P6.4] Inference gateway: load/fault tests and latency/cost evidence</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>289</td>
+<td>Advanced inference tradeoffs: quantization, speculation, caching, and evaluation</td>
+<td>🔴 A</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>290</td>
+<td>[D] Enterprise AI gateway: architecture defense and MCP deployment bridge</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-36">M30 — Unseen interviews and final assessment</h3>
+<p><strong>Phase I · prerequisites:</strong> M15, M16, M18, M19. <strong>Exit skill:</strong> Derive and defend unfamiliar architectures, respond to changed requirements, and document remaining skill gaps.</p>
+<table>
+<thead>
+<tr>
+<th>Lesson</th>
+<th>Title and activity</th>
+<th>Priority / depth</th>
+<th style="text-align:right">Minutes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>291</td>
+<td>[D] Sealed interview A: prompt revealed only when the session begins</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>292</td>
+<td>Review A: scored evidence, alternative design, and targeted retry</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>293</td>
+<td>[D] Sealed interview B: new workload and changed requirements</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>294</td>
+<td>Review B: failure analysis, counterproposal, and targeted retry</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>295</td>
+<td>[D] Sealed interview C: correctness and external-dependency challenge</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>296</td>
+<td>Review C: invariant defense, alternative architecture, and targeted retry</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>297</td>
+<td>[D] Sealed interview D: advanced or AI specialization selected by completed track</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>298</td>
+<td>Review D: detailed rubric, valid alternatives, and remediation</td>
+<td>🟡 A</td>
+<td style="text-align:right">60</td>
+</tr>
+<tr>
+<td>299</td>
+<td>Portfolio defense, delayed retrieval, and evidence-based skill matrix</td>
+<td>🟢 I</td>
+<td style="text-align:right">55</td>
+</tr>
+<tr>
+<td>300</td>
+<td>[D] Final unseen interview, readiness decision, and maintenance plan</td>
+<td>🟢 I</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<h2 id="section-37">The lesson package</h2>
+<p>A normal 55-minute session budgets 5 minutes for retrieval, 18 for intuition and technical explanation with diagrams, 8 for a worked request/code/numerical example, 10 for an exercise, 10 for interview questions and attempted answers, and 4 for solution comparison and flashcards. This is a budget, not a requirement to force code or arithmetic into every topic.</p>
+<p>Each normal lesson contains 3–6 learning objectives, the problem it solves, intuition, mechanism, meaningful diagrams, a concrete request trace, relevant code or pseudocode, capacity reasoning where useful, alternatives, failure scenarios, beginner misconceptions, 3–5 conceptual and 1–2 tradeoff questions, a mini exercise, a compact mental model, and 5–10 flashcards. Questions come before a clearly separated solutions section. Optional deeper reading is labeled outside the scheduled core.</p>
+<p>If the material or exercise consistently exceeds an hour, it needs an additional session; “read faster” is not the fix. A lab has one bounded milestone, an existing scaffold, acceptance tests, and a stop condition. Setup time is not disguised as learning time.</p>
+<h2 id="section-38">How complete case studies work</h2>
+<p>Every paired design uses two focused sessions rather than claiming an entire large system can be deeply taught in one hour. <strong>Part I</strong> covers the prompt, clarifying questions, scope, functional/non-functional requirements, estimates, APIs, data model, and the initial simple architecture. <strong>Part II</strong> covers measured/derived bottlenecks, evolution, one or two justified deep dives, failures, consistency, security, observability, alternatives, the final architecture, follow-ups, and strong/weak candidate reasoning. The whole pair contains the full requested design structure.</p>
+<p>The names “WhatsApp-like,” “Netflix-like,” “Google Maps-like,” and similar labels describe product requirements for original exercises. They are not claims to reproduce those companies’ current internal architectures. The Slack/Discord pair explicitly compares their workload variants instead of treating the products as identical.</p>
+<h2 id="section-39">Visual and executable standards</h2>
+<p>Every diagram has a specific teaching question. Diagrams distinguish synchronous requests, asynchronous events, control-plane traffic, source-of-truth storage, and derived/cached state. Trust and failure boundaries are visible. Complex designs use a small set of coordinated diagrams: context, primary request sequence, data/write flow, failure timeline, and scaled deployment. Nodes and arrows use consistent names and labeled protocols or payloads; sequencing and acknowledgment points agree with the explanation and code.</p>
+<p>Mermaid is the editable source wherever practical. Large architecture posters do not replace clear request-specific views. Failure and bottleneck diagrams sit beside the happy path, and learners predict the next event before opening the solution.</p>
+<p>Python examples use type hints, explicit assumptions, deterministic tests where possible, and clearly labeled simplifications. Local simulations distinguish the property being demonstrated from untested production behavior. A lock simulation is not presented as a production coordination service; a local benchmark is not evidence of internet-scale capacity. Each runnable lesson records dependencies, tested versions, commands, expected output, and what was actually executed.</p>
+<h2 id="section-40">Six progressive projects</h2>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Scheduled milestone lessons</th>
+<th>Required baseline artifact</th>
+<th>Critical acceptance evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1 — URL shortener</td>
+<td>039, 059, 069, 152</td>
+<td>Persistent service, cache, partition simulation, architecture evolution</td>
+<td>Collision handling; correct redirects; cache outage behavior; measured load and skew</td>
+</tr>
+<tr>
+<td>P2 — Rate limiter</td>
+<td>138, 139, 158, 159</td>
+<td>Local limiter, shared-state limiter, regional quota design</td>
+<td>Deterministic boundary tests; concurrent admission; documented fail-open/fail-closed policy</td>
+</tr>
+<tr>
+<td>P3 — Job processing</td>
+<td>099, 129, 148, 149</td>
+<td>Durable job states, worker recovery, deployment, runbook</td>
+<td>Worker crash; duplicate delivery; retry limits; bounded queues; recovery drill</td>
+</tr>
+<tr>
+<td>P4 — Chat backend</td>
+<td>173, 174, 188, 189</td>
+<td>Persistent messages, reconnect cursors, multiple workers</td>
+<td>Offline/reconnect behavior; ordering contract; disconnects; unauthorized access tests</td>
+</tr>
+<tr>
+<td>P5 — Event pipeline</td>
+<td>109, 119, 238, 239</td>
+<td>Partitioned ingest, projections, replay, migration tests</td>
+<td>Duplicates; late events; restarts; backfills; reconciliation against source data</td>
+</tr>
+<tr>
+<td>P6 — AI inference gateway</td>
+<td>269, 286, 287, 288</td>
+<td>Streaming gateway, tenant budgets, failure controls, observability</td>
+<td>Canceled requests; provider timeout; quota fairness; latency and cost accounting</td>
+</tr>
+</tbody>
+</table>
+<p>Each project has four scheduled one-hour milestones using a supplied skeleton, not a promise of production-grade completion from an empty repository in four hours. Independent builds and extensions are optional additional work, split into one-hour practice blocks. Each project specification includes requirements, milestone architecture, skeleton, suggested stack, unit/integration/fault/load tests, failure scenarios, extension challenges, and an evidence report.</p>
+<p>Use one local workspace and reuse the API harness, configuration, database fixtures, authentication test identities, metrics, and load generator. Early projects need no Kubernetes deployment. Later deployment practice reuses the existing Docker/Kubernetes/Helm learning. The AI gateway baseline uses a mock or CPU-compatible backend; paid GPU capacity and public-cloud deployment are not mandatory.</p>
+<h2 id="section-41">Interview framework and timing</h2>
+<table>
+<thead>
+<tr>
+<th>Activity</th>
+<th style="text-align:right">45-minute interview</th>
+<th style="text-align:right">60-minute interview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Clarify scope, users, invariants, and service objectives</td>
+<td style="text-align:right">5</td>
+<td style="text-align:right">7</td>
+</tr>
+<tr>
+<td>Estimate decision-relevant workload and capacity</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">5</td>
+</tr>
+<tr>
+<td>Specify core APIs and data ownership/model</td>
+<td style="text-align:right">6</td>
+<td style="text-align:right">8</td>
+</tr>
+<tr>
+<td>Draw the simplest complete architecture and trace a request</td>
+<td style="text-align:right">7</td>
+<td style="text-align:right">10</td>
+</tr>
+<tr>
+<td>Prioritize and deepen the most consequential design decisions</td>
+<td style="text-align:right">12</td>
+<td style="text-align:right">16</td>
+</tr>
+<tr>
+<td>Stress-test failures, consistency, security, and observability</td>
+<td style="text-align:right">7</td>
+<td style="text-align:right">9</td>
+</tr>
+<tr>
+<td>Summarize tradeoffs, remaining risks, and responses to changes</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">5</td>
+</tr>
+<tr>
+<td>Total</td>
+<td style="text-align:right">45</td>
+<td style="text-align:right">60</td>
+</tr>
+</tbody>
+</table>
+<p>These are training allocations, not a universal employer format or a rigid waterfall. Correctness, security, and observability should influence earlier choices, not appear only in the final stress test. Arithmetic is useful when it changes an architectural decision; lengthy calculation is not a substitute for a design.</p>
+<p>M01–M29 each follow four learning sessions → assessment → four learning sessions → assessment. M30 switches to interview/debrief pairs. A normal full mock uses 45 minutes of interview plus 15 minutes of feedback. L297 uses a full 60-minute interview with its debrief in L298. Static workbook solutions are separate; interactive mocks show only the initial prompt and reveal constraints in response to the learner’s questions.</p>
+<p>Questions in a mock use only already taught material unless explicitly marked as a stretch. For mixed review, use approximately 60% recent topics, 30% older foundations, and 10% a changed requirement that can be derived from those foundations. This ratio is a curriculum design choice, not an empirical optimum.</p>
+<h2 id="section-42">Assessment rubric</h2>
+<p>Score each dimension 0–4 and multiply by its weight divided by four. Record evidence from what the learner actually said, drew, estimated, or tested. This is a teaching rubric, not an official company scorecard.</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th style="text-align:right">Weight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Requirements and scope</td>
+<td style="text-align:right">10</td>
+</tr>
+<tr>
+<td>Workload and estimates</td>
+<td style="text-align:right">8</td>
+</tr>
+<tr>
+<td>API contracts</td>
+<td style="text-align:right">6</td>
+</tr>
+<tr>
+<td>Data modeling and ownership</td>
+<td style="text-align:right">10</td>
+</tr>
+<tr>
+<td>Coherent architecture</td>
+<td style="text-align:right">12</td>
+</tr>
+<tr>
+<td>Scalability and bottlenecks</td>
+<td style="text-align:right">10</td>
+</tr>
+<tr>
+<td>Reliability and recovery</td>
+<td style="text-align:right">10</td>
+</tr>
+<tr>
+<td>Consistency and invariant protection</td>
+<td style="text-align:right">10</td>
+</tr>
+<tr>
+<td>Security and isolation</td>
+<td style="text-align:right">6</td>
+</tr>
+<tr>
+<td>Observability and operability</td>
+<td style="text-align:right">6</td>
+</tr>
+<tr>
+<td>Alternatives and tradeoff reasoning</td>
+<td style="text-align:right">6</td>
+</tr>
+<tr>
+<td>Communication, prioritization, and adaptation</td>
+<td style="text-align:right">6</td>
+</tr>
+<tr>
+<td>Total</td>
+<td style="text-align:right">100</td>
+</tr>
+</tbody>
+</table>
+<p><strong>0:</strong> missing or fundamentally unsafe. <strong>1:</strong> terminology without a workable mechanism. <strong>2:</strong> viable happy path but substantial prompting needed. <strong>3:</strong> coherent, justified design with relevant failure reasoning. <strong>4:</strong> precise prioritization, valid alternatives, explicit guarantees, and effective adaptation.</p>
+<p>A proposed readiness rule is three unseen mocks across different problem families scoring at least 75/100, no zero-scored dimension, and at least 3/4 in consistency and security whenever the problem depends materially on those guarantees. Readiness also requires completing a meaningful project failure test and explaining the results without notes. These gates provide evidence; they do not guarantee a hiring outcome.</p>
+<p>Each assessment records the score, strongest decision and why it worked, most consequential missing assumption, an example of an improved answer, and a targeted retry. After a critical correctness error, repeat an equivalent scenario with changed numbers or constraints rather than re-reading the same solution.</p>
+<h2 id="section-43">Checkpoints and skill matrix</h2>
+<table>
+<thead>
+<tr>
+<th>Checkpoint</th>
+<th>Demonstrated capability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L060 — foundation</td>
+<td>Trace requests, estimate load, model data, identify a bottleneck, and justify caching</td>
+</tr>
+<tr>
+<td>L120 — intermediate</td>
+<td>Explain consistency boundaries, protect retryable effects, and design asynchronous data flows</td>
+</tr>
+<tr>
+<td>L150 — production foundation</td>
+<td>Add credible security, telemetry, deployment, and recovery plans</td>
+</tr>
+<tr>
+<td>L190 — first general interview gate</td>
+<td>Defend an unfamiliar backend architecture and adapt it under questioning</td>
+</tr>
+<tr>
+<td>L250 — advanced breadth</td>
+<td>Handle storage, payment, geo/search, control-plane, and multi-region tradeoffs</td>
+</tr>
+<tr>
+<td>L290 — AI/platform gate</td>
+<td>Defend ML/LLM serving, retrieval, isolation, token/GPU capacity, and rollout decisions</td>
+</tr>
+<tr>
+<td>L300 — final gate</td>
+<td>Produce repeatable evidence across unseen designs and know which gaps remain</td>
+</tr>
+</tbody>
+</table>
+<p>No baseline score is assigned without an attempt. Use this editable matrix; add an evidence link or lesson ID for every score.</p>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>Baseline 0–4</th>
+<th>Latest score 0–4</th>
+<th>Evidence / lesson</th>
+<th>Next review</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Requirements and invariants</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Capacity and cost reasoning</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>API and data modeling</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Storage choice and indexing</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Consistency and distributed coordination</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Queues, retries, and side effects</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Reliability and observability</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Security and tenant isolation</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Architecture tradeoffs and adaptation</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>AI/ML serving architecture</td>
+<td>Not assessed</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Start each lesson with retrieval from earlier work. Revisit new concepts after approximately 1, 3, and 6 weeks; adjust intervals to actual errors. Keep an error log recording the mistaken assumption, its counterexample, and the corrected mental model. Review schedules are study suggestions, not automations created by this blueprint.</p>
+<h2 id="section-44">Database decision-making clinics</h2>
+<p>The sequence is <strong>workload → invariant/consistency requirements → access paths/indexes → scale and failure behavior → operational burden → implementation choice</strong>. Comparative exercises explicitly include PostgreSQL and MySQL; DynamoDB, Cassandra, and MongoDB; Redis; Elasticsearch/OpenSearch; ClickHouse; Neo4j; object storage; and time-series systems. These are implementation candidates to investigate against requirements, not a one-database-per-problem answer key. Brand-specific claims require versioned official documentation in the relevant lesson.</p>
+<h2 id="section-45">Pacing alongside the existing infrastructure roadmap</h2>
+<p>Keep the existing 1–2 hours/day overall learning budget and the approximately 70/30 infrastructure versus TypeScript/MCP split as the starting constraint. Integrate related design/project work into those blocks rather than assigning a second full curriculum on top. Continue the Docker course; do not restart it for M15.</p>
+<p>Four course sessions per week reach L190 in about 48 weeks, before repeat attempts or breaks. Three per week require about 64 weeks; six require about 32 weeks. Finishing all 300 sessions at four per week requires 75 weeks before reserves. These are transparent pacing calculations, not expected personal completion times. The specialist library is not a prerequisite for applying to general-backend jobs.</p>
+<p>Where prior Python/SQL knowledge is strong, demonstrate a module’s exit skill and checkpoint before deciding to shorten it. Do not assume that familiarity with an API implies understanding its distributed failure modes. Use the first readiness gate to choose whether time is better spent on applications, targeted remediation, or the AI specialization.</p>
+<h2 id="section-46">Curriculum additions and limits</h2>
+<p>Beyond the original topic list, emphasis is placed on explicit business invariants; transactional outbox/inbox and CDC; schema and data migrations; testing the proposed guarantee; admission control and fairness; cancellation and resource cleanup; control/data-plane distinctions; model-quality versus service-availability failures; operational cost and staffing; and evidence-based readiness.</p>
+<p>Security, observability, and cost are recurring constraints. No component is included merely because it is fashionable. Every design must answer: what requirement justifies it, who owns its state, what happens when it fails, and what simpler alternative was rejected?</p>
+<p>The full catalog is intentionally broader than the general interview route. It covers original designs for all requested problem families but does not claim to document private company internals, certify production competence from reading, or guarantee most interviews will be passed. Employer-specific domain or low-level-design preparation may still be needed.</p>
+<h2 id="section-47">Sources informing the architecture and optional module reading</h2>
+<p>The source brief is the user-provided <strong>Pasted text.txt</strong>, especially its first-response requirements at lines 1373–1419 and its pedagogy/project/accuracy sections. Public sources below inform technical coverage; the module structure, timing, exercise selection, and rubric are original design decisions. Sources were checked on 29 September 2026. No entire external book or paper is required for a one-hour session.</p>
+<p>[R1] Amazon Jobs — SDE II Interview Prep. https://www.amazon.jobs/content/en/how-we-hire/sde-ii-interview-prep</p>
+<p>[R2] MIT — 6.5840, Spring 2026 schedule and linked readings/labs. https://pdos.csail.mit.edu/6.5840/schedule.html</p>
+<p>[R3] PostgreSQL — Transaction Isolation. https://www.postgresql.org/docs/current/transaction-iso.html</p>
+<p>[R4] Apache Kafka 4.3 — Design, especially Message Delivery Semantics. https://kafka.apache.org/43/design/design/</p>
+<p>[R5] Google — Site Reliability Engineering, table of contents and chapter readings. https://sre.google/sre-book/table-of-contents/</p>
+<p>[R6] OpenTelemetry — Signals. https://opentelemetry.io/docs/concepts/signals/</p>
+<p>[R7] IETF — RFC 9700, Best Current Practice for OAuth 2.0 Security. https://www.rfc-editor.org/rfc/rfc9700.html</p>
+<p>[R8] Model Context Protocol — Authorization specification, 2026-07-28. https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization</p>
+<p>[R9] vLLM — Parallelism and Scaling. https://docs.vllm.ai/en/latest/serving/parallelism_scaling/</p>
+<p>[R10] vLLM — Automatic Prefix Caching. https://docs.vllm.ai/en/latest/features/automatic_prefix_caching/</p>
+<p>[R11] vLLM — Production Metrics. https://docs.vllm.ai/en/latest/usage/metrics/</p>
+<p>Suggested reading locations: M01/M30 → R1; M04 → R3; M07–M09 → selected R2 readings; M11/M24 → R4; M13 → R5/R6; M14 → R7; M15/M29 → R8; M27–M29 → R9–R11. Readings supplement the lesson; they are not used to replace the promised explanation.</p>
+</main></body></html>

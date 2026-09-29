@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "111",
+  "objectives": [
+    "Separate command authority from a query projection.",
+    "Specify read-after-write behavior when projections lag.",
+    "Choose a simpler shared-store design when adequate."
+  ],
+  "retrieval": [
+    "L103: how does an authoritative change reach another store?",
+    "L072: what does a user expect immediately after their own write?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "The best write shape may be a poor screen shape",
+      "markdown": "A warehouse command reserves one item only if available stock remains nonnegative. The operator screen wants a joined summary by supplier, zone, and urgency. Updating a denormalized dashboard row is not a safe replacement for the stock invariant. Conversely, recomputing every screen through many joins may eventually miss its latency target. These are different needs that may justify separate models.\n\nCommand Query Responsibility Segregation separates the model used to accept changes from the model used to answer queries. It does not require separate services, databases, event sourcing, or a message broker. Start with clear command/query interfaces in one application and use indexes or views before distributing state merely to fit a pattern."
+    },
+    {
+      "id": "mechanism",
+      "title": "A projection is a derived promise",
+      "markdown": "The command path validates identity, authorization, input, and the invariant at the write authority. It commits a durable state transition and returns its identity or version. A query projection translates committed changes into a read-optimized shape. If updates are asynchronous, the view can lag behind successful commands.\n\nDefine what the API response means: accepted for processing, committed at the authority, or visible in a particular projection. A user who creates a reservation and immediately reads an old dashboard can believe it failed and retry. Options include showing the committed command result optimistically, reading that entity from the authority, or waiting for a projection version within a bounded budget. A loading state can truthfully say the write succeeded while the view catches up.\n\nThe projection must handle duplicates, out-of-order changes, deletes, and schema versions. An absolute versioned replacement may reject stale updates; an additive counter needs event identities or another repeat-safe protocol. “Eventually consistent” does not specify how to recover a stuck or corrupt projector."
+    },
+    {
+      "id": "worked",
+      "title": "A version token makes freshness explicit",
+      "markdown": "Reservation r9 commits at entity version 14. The read view currently has version 12. The command response includes r9 and version 14. A follow-up query can request at_least_version=14 for that entity. If the projection catches up within 300 ms, return it. If not, return a clear pending/freshness response or a permitted authoritative fallback; do not silently claim version 12 includes the new reservation.\n\nThis token is entity-scoped. Comparing version 14 of r9 with version 80 of r2 says nothing about a shared global snapshot. A screen aggregating thousands of entities needs a different freshness contract, such as a processing watermark, last-updated time with defined meaning, or a snapshot boundary. Authorization is evaluated for the reader, not inferred from possession of a version token.\n\nIllustrative load: 400 commands/s and 20,000 dashboard reads/s. A separate projection may reduce expensive read joins and allow independent capacity. But its benefit must cover duplicated storage, projector operations, extra failure paths, and reconciliation. A well-indexed shared relational store may still be enough; request counts alone do not prove otherwise."
+    },
+    {
+      "id": "failure",
+      "title": "Keep repair and deletion in the design",
+      "markdown": "Build a projection from a known source snapshot plus a correctly bounded change tail, or replay retained events when the source truly supports it. Compare counts and business aggregates before routing readers to a rebuilt version. Keep the existing view available during rebuild when possible.\n\nIf a permission or deletion change is delayed, stale projection content can become a security issue rather than merely a cosmetic freshness issue. Enforce current authorization at a trusted boundary and define how derived stores receive revocation/deletion. Include search indexes and caches in that inventory.\n\nCommon misconceptions: CQRS means event sourcing; every query must use a separate database; and asynchronous projection removes the need for transactions. It moves particular read work while leaving command correctness and propagation correctness to explicit mechanisms. Optional depth: compare per-entity version tokens with a consistent snapshot read for a cross-entity report."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and optional practice",
+      "markdown": "Core 55 minutes: retrieval 5, explanation 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Numerical workloads and architectural examples are original teaching assumptions, not production measurements."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "models",
+      "title": "Write authority and read projection have different roles",
+      "source": "flowchart LR\nU[User] -->|Command| C[Validate and enforce invariant]\nC --> W[(Authoritative state)]\nW -.->|Committed changes| P[Projection worker]\nP --> V[(Read model)]\nU -->|Query with freshness contract| Q[Query API]\nQ --> V",
+      "caption": "The asynchronous arrow creates a freshness gap. A command acknowledgment is not automatically a projection-visibility acknowledgment.",
+      "steps": [
+        "Commit the command at its authority.",
+        "Return its identity/version.",
+        "Apply changes repeat-safely to the read model.",
+        "Answer queries under an explicit freshness contract."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A user changes an order address and immediately sees the old address in a read projection. Design a response/query contract that distinguishes committed change from projection lag. State how you will rebuild the projection and protect a revoked user during lag.",
+    "rubric": [
+      "Explicit commit and freshness boundary.",
+      "Bounded wait/fallback with entity version.",
+      "Rebuild and current authorization."
+    ],
+    "solution": "Return the committed order version and updated address from the command. A follow-up entity query can require that version, wait within a deadline, then return pending or use an authorized authoritative fallback. Rebuild a shadow projection from a consistent source plus changes and reconcile before cutover. Check current user permission at the trusted query boundary; a stale cached projection or version token cannot grant continued access after revocation."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "CQRS necessarily requires two databases?",
+      "options": [
+        "Yes",
+        "No",
+        "Only for HTTP"
+      ],
+      "answer": "No",
+      "explanation": "The separation concerns command and query models; deployment/storage choices follow requirements."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A successful command proves every asynchronous projection is current?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with an event ID"
+      ],
+      "answer": "No",
+      "explanation": "The command and projection visibility are separate boundaries."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Version 8 of entity A can be numerically compared with version 6 of B for a global snapshot?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with a cache"
+      ],
+      "answer": "No",
+      "explanation": "Independent entity versions do not establish a cross-entity snapshot."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When keep one shared model?",
+      "answer": "When the workload and domain remain simple enough that indexes/views and clear interfaces meet objectives, avoiding duplicated state and propagation operations.",
+      "explanation": "When the workload and domain remain simple enough that indexes/views and clear interfaces meet objectives, avoiding duplicated state and propagation operations."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can projection lag matter for security?",
+      "answer": "Stale permissions or deleted content may remain visible. Enforce authorization and define deletion/revocation propagation rather than treating all staleness as harmless.",
+      "explanation": "Stale permissions or deleted content may remain visible. Enforce authorization and define deletion/revocation propagation rather than treating all staleness as harmless."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "CQRS separates?",
+      "back": "Models for accepting changes and answering queries."
+    },
+    {
+      "front": "Projection authority?",
+      "back": "Derived state; the write authority owns command invariants."
+    },
+    {
+      "front": "Read-after-write technique?",
+      "back": "Return a version and use bounded wait or authoritative fallback."
+    },
+    {
+      "front": "Entity version gives global order?",
+      "back": "No, its scope must be explicit."
+    },
+    {
+      "front": "Repair strategy?",
+      "back": "Build, reconcile, and cut over a separate projection."
+    }
+  ],
+  "mentalModel": "Separate models only when their benefits justify the consistency and repair work between them.",
+  "sources": [
+    {
+      "title": "Martin Fowler — CQRS",
+      "url": "https://martinfowler.com/bliki/CQRS.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

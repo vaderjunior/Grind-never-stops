@@ -1,0 +1,289 @@
+{
+  "id": "design-chat",
+  "title": "Design a chat service from first principles",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 17,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Build a small durable chat service, then add live delivery without confusing a connection with saved history.",
+  "objectives": [
+    "Separate durable message acceptance from live delivery and reading.",
+    "Design message identities, room membership, and a per-room order.",
+    "Trace both online delivery and offline history retrieval."
+  ],
+  "terms": [
+    {
+      "term": "WebSocket",
+      "definition": "A protocol for a persistent two-way connection between client and server."
+    },
+    {
+      "term": "Room",
+      "definition": "A conversation with a defined set of participants and a message history."
+    },
+    {
+      "term": "Client message ID",
+      "definition": "A stable identifier generated for one intended send and reused on retry."
+    },
+    {
+      "term": "Room sequence",
+      "definition": "An ordering number assigned within one conversation under a stated authority."
+    },
+    {
+      "term": "Presence",
+      "definition": "An approximate observation that a user or device is currently connected."
+    }
+  ],
+  "retrieval": [
+    "Why is a message queue’s acknowledgement different from a person reading a notification?",
+    "How does a stable operation key make a retry safer?"
+  ],
+  "sections": [
+    {
+      "id": "scope",
+      "title": "Start with a conversation that survives closing the app",
+      "markdown": "Start with study-group rooms of at most fifty people: authorized members send text, receive it promptly while online, and recover history after being offline.\n\nLeave voice calls, enormous public broadcasts, attachments, and end-to-end encryption architecture outside this first design. Transport encryption and authorization still apply to private text.\n\n| Visible state | Evidence required in this product | Still unknown |\n| --- | --- | --- |\n| Accepted | Message committed to durable storage | Whether another device received it |\n| Delivered | Recipient device acknowledged receipt | Whether the person viewed it |\n| Read | Client reported the defined viewing event | What the person understood or remembers |\n\nA successful socket write is not all three. Decide the meaning of each user-interface check mark before designing the messages that update it.\n\n**Pause and predict:** a recipient closes the app before the server stores a message. Which component must remember the message so it can appear tomorrow?"
+    },
+    {
+      "id": "model",
+      "title": "Give each fact an owner",
+      "markdown": "Give identity, content, and order separate fields.\n\n| Fact | Example | Owner or rule |\n| --- | --- | --- |\n| Room | study_6 | Room and membership records |\n| Intended send | user_14 / send_81 | Reused only for the same intended text in this room |\n| Accepted message | msg_108 | Durable message store |\n| Room position | sequence 108 | Assigned by the room’s defined authority |\n| Display time | server timestamp | Useful for display; not the sole ordering authority |\n\nStore the room, sender, client message ID, text, and accepted sequence. A unique room/sender/client-ID combination finds a repeated send. Reject different text under that same identity rather than silently changing its meaning.\n\nA database transaction or designated durable room owner assigns the sequence and stores the message. Unrelated rooms do not need one global order.\n\nDevice clocks can differ and network arrivals can be delayed. A timestamp alone therefore does not explain a strict room order. The next chapter adds edits, deletions, and reconnect behavior to this model."
+    },
+    {
+      "id": "send",
+      "title": "Follow a send until it becomes durable",
+      "markdown": "The client creates a client_message_id and submits the room ID and text over the send API. The server authenticates the sender, checks current room membership, validates text length, and applies admission controls. It then commits the message, sequence, duplicate-send result, and a delivery event in the same local transaction in this teaching design.\n\nOnly after commit does it return accepted with the authoritative message ID and sequence. If the response is lost, the client retries the same intended send with the same client_message_id. The server finds the saved result instead of inserting another message. A new button press for different text needs a new identity.\n\nIf persistence is unavailable, show pending or failed; displaying a confirmed save before the durable boundary would promise something the service has not done."
+    },
+    {
+      "id": "live",
+      "title": "Add a live path around the saved history",
+      "markdown": "A WebSocket gateway holds active client connections and their authorized room subscriptions. A delivery worker consumes committed events and routes each event to gateways that currently have interested members. Gateways send it to the connected devices. Clients deduplicate by the authoritative message identity or room sequence, because event publication and delivery may repeat.\n\nThe gateway is not the only copy of history. Its memory and sockets can disappear during a restart. The durable message store remains the source for history retrieval. A presence registry can help route current connections, but it is temporary and may lag a disconnection. Do not reject or discard a durable chat message just because the recipient appears offline. Persist first; live delivery and later retrieval are two ways to reach the recipient."
+    },
+    {
+      "id": "history",
+      "title": "Explain what an offline recipient sees",
+      "markdown": "When a device opens a room, it requests a bounded page of history ordered by the room sequence. A cursor tells the server where the next page begins; for catching up, the client can request messages after its saved sequence. Recheck room membership when reading history. A user removed from the room should not retain access merely because a gateway remembered an old subscription.\n\nImagine Alice sends messages 41, 42, and 43 while Ben is offline. Ben reconnects with a last-applied cursor of 40 and reads the missing records. A later live delivery of 43 is a duplicate, not a second message. Persist the client cursor only after the corresponding events are applied locally.\n\nThe exact handoff between fetching history and subscribing live has a race; we will solve that explicitly in the next guide instead of assuming WebSocket supplies replay automatically."
+    },
+    {
+      "id": "growth",
+      "title": "Scale responsibilities that grow differently",
+      "markdown": "Connection count, message writes, and delivery fan-out grow differently. Ten thousand mostly idle sockets may stress gateway memory without producing heavy database writes. One message to a fifty-member room may create up to fifty device deliveries, or more if people have several devices. Measure active connections, memory per connection, messages per second, and delivery work separately.\n\nPartition durable room history by room and, when needed, time ranges that bound partition size. Route each room’s ordered writes through a mechanism that preserves its authority during failover. A hot room still needs special handling; adding room partitions does not split that room automatically.\n\nFor this first design, test duplicate sends, lost responses, a gateway restart, and an unauthorized history request. Each test should preserve the durable accepted-message promise while exposing the live path’s limitations."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "chat-save-live",
+      "sectionId": "live",
+      "title": "Durable acceptance and live delivery are separate paths",
+      "source": "flowchart LR\nS[Sender] --> A[Send API and membership check]\nA --> D[(Message plus delivery event)]\nD -->|Committed result| S\nD --> P[Delivery worker]\nP --> G[WebSocket gateway]\nG --> R[Online recipient]\nH[History request] --> D\nD --> O[Returning offline recipient]",
+      "steps": [
+        "Accept only after durable commit.",
+        "Publish the stored delivery event.",
+        "Gateways send to currently connected recipients.",
+        "Offline recipients read the same saved history later."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "chat-evidence-stages",
+      "sectionId": "send",
+      "title": "Three observations require three different events",
+      "source": "sequenceDiagram\nparticipant S as Sender\nparticipant A as Chat API\nparticipant D as Durable history\nparticipant R as Recipient device\nS->>A: Send text with stable identity\nA->>D: Commit message and delivery event\nD-->>A: Accepted sequence\nA-->>S: Accepted\nA->>R: Illustrative live delivery\nR-->>A: Device receipt\nNote over R: User later opens the conversation\nR-->>A: Read report under product rule",
+      "caption": "The delivery arrow abstracts the worker and gateway shown elsewhere. Each receipt is application evidence, not proof of human comprehension.",
+      "steps": [
+        "Wait for durable commit before reporting accepted.",
+        "Deliver through the live path when a recipient is reachable.",
+        "Record device receipt separately.",
+        "Record read only under the stated client/product rule."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Draw a two-person room. Alice sends message c17; storage commits it as room sequence 42, but Alice loses the response. Ben is offline. Explain Alice’s retry, Ben’s later read, and a gateway crash after commit. State what “accepted” means.",
+    "rubric": [
+      "Reuse c17 on the same intended send.",
+      "Return the original authoritative message and sequence.",
+      "Keep history independent of the gateway.",
+      "Do not equate accepted with delivered or read."
+    ],
+    "solution": "The server finds the unique room/sender/c17 record and returns sequence 42; it must reject reuse with conflicting content. Ben later queries history after his last applied sequence and receives 42. A gateway crash loses live connections but not the committed message or durable delivery intent. Clients reconnect and replay/deduplicate. Accepted means the configured storage boundary has committed; it does not prove Ben’s device received it or Ben read it."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What should happen when an identical send is retried with the same client_message_id?",
+      "options": [
+        "Insert a second message",
+        "Return the original committed result",
+        "Choose a new sender identity"
+      ],
+      "answer": "Return the original committed result",
+      "explanation": "The stable identity refers to the same intended operation."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which component should be the durable history authority?",
+      "options": [
+        "Only gateway memory",
+        "The message store",
+        "The online presence indicator"
+      ],
+      "answer": "The message store",
+      "explanation": "Connections and presence are temporary; history must survive gateway loss."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "One message goes to a 50-member room with one connected device each. At most how many device deliveries are implied?",
+      "answer": 50,
+      "unit": "deliveries",
+      "tolerance": 0,
+      "explanation": "There are fifty recipient devices under the stated assumptions; whether the sender is echoed is a contract choice."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why not use a sender’s wall clock as the sole order for room messages?",
+      "answer": "Device clocks can differ, timestamps can repeat, and delayed arrivals can reorder events. Use a defined room authority or ordering mechanism and describe its failure behavior.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Where should membership be checked?",
+      "answer": "At send, history read, and subscription/dispatch boundaries appropriate to the design. Revocation must update or invalidate long-lived access; an old connection alone is not permanent authorization.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Accepted message?",
+      "back": "Durably stored under the service’s explicit storage guarantee."
+    },
+    {
+      "front": "Delivered message?",
+      "back": "A device acknowledged receipt under the application protocol."
+    },
+    {
+      "front": "Client message ID purpose?",
+      "back": "Tie retries to one intended send and reject conflicting reuse."
+    },
+    {
+      "front": "Why room-local ordering?",
+      "back": "The conversation needs an order; unrelated rooms need not share a global sequence."
+    },
+    {
+      "front": "Why separate history from sockets?",
+      "back": "Sockets and gateways restart, while accepted messages must remain recoverable."
+    }
+  ],
+  "mentalModel": "Save the message as a durable fact; use live connections to deliver it quickly and history to repair missed delivery.",
+  "sources": [
+    {
+      "title": "IETF — WebSocket protocol",
+      "url": "https://datatracker.ietf.org/doc/html/rfc6455",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Slack Engineering — Real-time messaging",
+      "url": "https://slack.engineering/real-time-messaging/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "AWS — Transactional outbox pattern",
+      "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "message-evidence",
+      "title": "Follow the evidence behind the check marks",
+      "sectionId": "scope",
+      "intro": "Sara sends “Review at 3?” in study_6. Omar is connected. We follow an ordinary successful send without assuming that saving and reading happen together.",
+      "steps": [
+        {
+          "title": "Sara presses send",
+          "explanation": "The client records an intended send and shows a pending state while the service validates it.",
+          "state": [
+            {
+              "label": "Room",
+              "value": "study_6"
+            },
+            {
+              "label": "Client identity",
+              "value": "send_81"
+            },
+            {
+              "label": "Client display",
+              "value": "pending"
+            }
+          ]
+        },
+        {
+          "title": "The service accepts the message",
+          "explanation": "The durable transaction commits msg_108 at room position 108. The sender can now see accepted.",
+          "state": [
+            {
+              "label": "Message",
+              "value": "msg_108"
+            },
+            {
+              "label": "Room position",
+              "value": "108"
+            },
+            {
+              "label": "Storage",
+              "value": "committed"
+            },
+            {
+              "label": "Recipient evidence",
+              "value": "none yet"
+            }
+          ]
+        },
+        {
+          "title": "Omar’s device receives it",
+          "explanation": "The device acknowledges the application message. It may be in the background while Omar does something else.",
+          "state": [
+            {
+              "label": "Message",
+              "value": "msg_108"
+            },
+            {
+              "label": "Device receipt",
+              "value": "recorded"
+            },
+            {
+              "label": "User viewing",
+              "value": "not reported"
+            }
+          ]
+        },
+        {
+          "title": "The client reports viewing",
+          "explanation": "Omar opens the conversation. Its read report updates the product’s read state under the chosen rule.",
+          "state": [
+            {
+              "label": "Message",
+              "value": "msg_108"
+            },
+            {
+              "label": "Read report",
+              "value": "through room position 108"
+            },
+            {
+              "label": "Meaning",
+              "value": "client reported viewing"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Do not compress durable acceptance, device receipt, and user-visible reading into one unexplained “sent” state."
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "total": 35,
+  "failed": 0,
+  "results": [
+    {
+      "guideId": "design-file-storage",
+      "diagramId": "file-roles",
+      "ok": true
+    },
+    {
+      "guideId": "design-file-storage",
+      "diagramId": "file-state",
+      "ok": true
+    },
+    {
+      "guideId": "file-sync-and-conflicts",
+      "diagramId": "sync-conflict",
+      "ok": true
+    },
+    {
+      "guideId": "file-sync-and-conflicts",
+      "diagramId": "sync-cursor",
+      "ok": true
+    },
+    {
+      "guideId": "design-video-platform",
+      "diagramId": "video-preparation",
+      "ok": true
+    },
+    {
+      "guideId": "design-video-platform",
+      "diagramId": "video-playback",
+      "ok": true
+    },
+    {
+      "guideId": "design-search-and-autocomplete",
+      "diagramId": "search-write",
+      "ok": true
+    },
+    {
+      "guideId": "design-search-and-autocomplete",
+      "diagramId": "search-read",
+      "ok": true
+    },
+    {
+      "guideId": "design-bookings",
+      "diagramId": "booking-race",
+      "ok": true
+    },
+    {
+      "guideId": "design-bookings",
+      "diagramId": "booking-late",
+      "ok": true
+    },
+    {
+      "guideId": "design-payments",
+      "diagramId": "payment-lost-reply",
+      "ok": true
+    },
+    {
+      "guideId": "design-payments",
+      "diagramId": "payment-reconcile",
+      "ok": true
+    },
+    {
+      "guideId": "coordination-and-leases",
+      "diagramId": "fence-timeline",
+      "ok": true
+    },
+    {
+      "guideId": "coordination-and-leases",
+      "diagramId": "majority",
+      "ok": true
+    },
+    {
+      "guideId": "change-data-safely",
+      "diagramId": "migration-stream",
+      "ok": true
+    },
+    {
+      "guideId": "change-data-safely",
+      "diagramId": "replay-effects",
+      "ok": true
+    },
+    {
+      "guideId": "ai-system-design",
+      "diagramId": "ai-gateway",
+      "ok": true
+    },
+    {
+      "guideId": "ai-system-design",
+      "diagramId": "ai-two-checks",
+      "ok": true
+    },
+    {
+      "guideId": "rag-and-inference",
+      "diagramId": "rag-ingest",
+      "ok": true
+    },
+    {
+      "guideId": "rag-and-inference",
+      "diagramId": "rag-query",
+      "ok": true
+    },
+    {
+      "guideId": "full-mock-interview",
+      "diagramId": "mock-process",
+      "ok": true
+    },
+    {
+      "guideId": "capstone-and-readiness-plan",
+      "diagramId": "evidence-loop",
+      "ok": true
+    },
+    {
+      "guideId": "capstone-and-readiness-plan",
+      "diagramId": "practice-loop",
+      "ok": true
+    },
+    {
+      "guideId": "dns-and-addresses",
+      "diagramId": "dns-lookup",
+      "ok": true
+    },
+    {
+      "guideId": "dns-and-addresses",
+      "diagramId": "dns-request",
+      "ok": true
+    },
+    {
+      "guideId": "gateways-and-proxies",
+      "diagramId": "proxy-roles",
+      "ok": true
+    },
+    {
+      "guideId": "gateways-and-proxies",
+      "diagramId": "gateway-request",
+      "ok": true
+    },
+    {
+      "guideId": "containers-and-deployment",
+      "diagramId": "container-layers",
+      "ok": true
+    },
+    {
+      "guideId": "containers-and-deployment",
+      "diagramId": "deployment-management",
+      "ok": true
+    },
+    {
+      "guideId": "job-lifecycle-and-backpressure",
+      "diagramId": "job-states",
+      "ok": true
+    },
+    {
+      "guideId": "job-lifecycle-and-backpressure",
+      "diagramId": "job-backpressure",
+      "ok": true
+    },
+    {
+      "guideId": "kubernetes-networking",
+      "diagramId": "kubernetes-internal",
+      "ok": true
+    },
+    {
+      "guideId": "kubernetes-networking",
+      "diagramId": "kubernetes-external",
+      "ok": true
+    },
+    {
+      "guideId": "kubernetes-operations",
+      "diagramId": "probe-actions",
+      "ok": true
+    },
+    {
+      "guideId": "kubernetes-operations",
+      "diagramId": "hpa-loop",
+      "ok": true
+    }
+  ]
+}

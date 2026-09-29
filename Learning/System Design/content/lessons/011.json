@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "011",
+  "objectives": [
+    "Trace name resolution separately from packet delivery.",
+    "Explain the roles of IP addresses, ports, and hostnames.",
+    "Locate request failures before changing application code."
+  ],
+  "retrieval": [
+    "From L003: which part of a latency objective includes time before the server receives a request?",
+    "From L009: name a boundary you should label on a request diagram."
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A request can fail before your code runs",
+      "markdown": "A student opens https://notes.example.test/api/notes/42. The application is healthy, yet the browser times out. Restarting the API may accomplish nothing: the browser must discover a destination, reach it, establish the selected transport, and negotiate any required security before your handler can see a request. The hostname identifies the intended service; a resolved address identifies a network destination; the port selects a receiving transport endpoint. Keep those identities distinct in your notebook.\n\nFor this lesson use a deliberately simple path: one recursive DNS resolver, one public reverse proxy, and one backend. Real browsers may reuse DNS results and existing connections. Proxies, service workers, VPNs, and alternate transports can alter the trace. State which path you are analyzing before counting round trips."
+    },
+    {
+      "id": "mechanism",
+      "title": "Name resolution and forwarding have different owners",
+      "markdown": "The client asks a resolver for records associated with the hostname. A recursive resolver may answer from cache. On a miss it follows DNS delegation, learning which authoritative server can answer for the relevant zone. An A record supplies an IPv4 address; an AAAA record supplies an IPv6 address. Aliases may require additional lookups. A TTL bounds normal cache reuse of a particular answer; it is not a synchronized switch that forces every client to change destination at the same instant.\n\nOnce an address is chosen, the operating system selects a route. Routers forward packets toward destination prefixes, not URL paths. Each hop uses its forwarding information; the web application's /api/notes path has no role in ordinary IP routing. The receiver demultiplexes traffic using transport information such as destination port. HTTPS commonly uses port 443, but the URL can specify another port. A listening port says that a process accepts a transport connection, not that a database or handler is healthy.\n\nThe HTTP Host field or authority still matters after DNS. Many named sites can share an address. The proxy must select the right virtual host, and the TLS peer must be authenticated for the intended name. Replacing a hostname with an IP address is therefore not generally an equivalent test. A connection refusal, DNS NXDOMAIN response, TLS identity failure, and HTTP 503 each establish that execution reached a different boundary."
+    },
+    {
+      "id": "trace",
+      "title": "Worked trace: separate cold setup from a warm request",
+      "markdown": "Assume an illustrative DNS lookup takes 20 ms, the client-to-edge RTT is 40 ms, a fresh TCP handshake costs one RTT, and a fresh TLS 1.3 handshake needs one further RTT before ordinary application data. Ignore connection racing and 0-RTT. Assume the response is small enough that transfer time adds little, and backend processing takes 15 ms. A simplified first response takes 20 + 40 + 40 + 40 + 15 = 155 ms. The final 40 ms covers request travel plus response travel. An already established connection with cached resolution needs roughly 40 + 15 = 55 ms under the same assumptions. These are derived examples, not browser benchmarks.\n\nIf server instrumentation reports 15 ms while the browser reports 155 ms, neither observation is inherently wrong. They cover different intervals. Record DNS duration, connect duration, security negotiation, time to first byte, and response transfer. Also record whether the request reused a connection. Without these labels, comparing cold and warm requests can manufacture an apparent regression."
+    },
+    {
+      "id": "failure",
+      "title": "Failure investigation and a safe DNS migration",
+      "markdown": "Consider replacing edge A with edge B. Before changing DNS, make B serve the same names and routes, deploy a valid certificate, and test application readiness. Keep A usable while previously cached addresses and established connections drain. Lowering a TTL immediately before the cutover does not change an earlier answer already cached with a longer TTL. DNS TTL and connection lifetime are independent clocks.\n\nOn Windows, Resolve-DnsName can inspect resolution and Test-NetConnection can probe a TCP port. These are optional terminal diagnostics, not required for offline study. Avoid interpreting a successful TCP probe as proof of HTTP correctness. Compare the browser's destination, hostname, port, resolver, and network path with the service's logs. If the request never appears in access logs, check earlier boundaries before adding more API replicas.\n\nA common misconception is that DNS sits in every request's data path. Normally the client obtains an address and then sends traffic toward that address. Another is that an IP address permanently identifies a machine: virtual addresses, load balancers, and reassignment break that shortcut."
+    },
+    {
+      "id": "practice",
+      "title": "Core and optional work",
+      "markdown": "Core 55 minutes: retrieval 5, explanation/diagram 18, worked trace 8, exercise 10, scheduled questions Q1–Q3 10, comparison/review 4. Q4 and Q5 are optional extra practice. Do not spend the exercise building a DNS server. The stop condition is an annotated trace with a justified first diagnostic at each failure point."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "resolution",
+      "title": "Where does DNS leave the request path?",
+      "source": "sequenceDiagram\nparticipant C as Browser\nparticipant R as Recursive resolver\nparticipant A as Authoritative DNS\nparticipant E as HTTPS edge\nparticipant B as Backend\nC->>R: Resolve notes.example.test\nR->>A: Query on cache miss\nA-->>R: Address with TTL\nR-->>C: Address\nC->>E: TCP plus TLS to address and port 443\nC->>E: HTTP GET with hostname authority\nE->>B: Proxy authorized request\nB-->>E: Response\nE-->>C: HTTP response",
+      "caption": "Solid arrows are synchronous requests; dashed arrows are replies. DNS provides naming data, not note content. The edge is the public trust boundary.",
+      "steps": [
+        "Resolve the name; a cached result can remove the authoritative query.",
+        "Reach the address and port; this says nothing yet about the HTTP route.",
+        "Authenticate the endpoint and send the hostname plus path.",
+        "Trace the proxy/backend response independently of DNS."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A deployment changes the API address. Some users reach the new version; others reach the old version for 20 minutes. Both servers are healthy. Draw two plausible request paths and propose a migration plan that avoids failed requests. Identify one observation that distinguishes stale DNS from an old persistent connection.",
+    "rubric": [
+      "Separate resolver cache lifetime and existing connection lifetime.",
+      "Keep both destinations valid during overlap.",
+      "Use a measured destination/connection identifier to distinguish paths."
+    ],
+    "solution": "Client A resolved before cutover and retains the old address until its cached TTL expires. Client B may have fresh DNS yet reuse a connection established to the old edge. Client C opens a new connection using the new answer. Retain service and certificate support on the old edge during an observed drain period. Compare DNS answers with the remote address of the actual socket and its connection creation time. TTL alone cannot drain persistent connections."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which component normally routes a packet using /api/notes/42?",
+      "options": [
+        "An ordinary IP router",
+        "The HTTP server or reverse proxy",
+        "The authoritative DNS server"
+      ],
+      "answer": "The HTTP server or reverse proxy",
+      "explanation": "HTTP intermediaries can inspect the path. IP routers forward by network addressing; DNS resolves names without serving the note path."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Under the worked cold-request assumptions, what is the simplified first-response time?",
+      "answer": 155,
+      "unit": "ms",
+      "tolerance": 0.01,
+      "explanation": "20 ms DNS + 40 TCP + 40 TLS + 40 request/response propagation + 15 processing = 155 ms."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A TCP port probe succeeds. What is established?",
+      "options": [
+        "The note is durable",
+        "A transport endpoint accepted the connection",
+        "Authorization is correct"
+      ],
+      "answer": "A transport endpoint accepted the connection",
+      "explanation": "HTTP, authorization, dependencies, and durability are later properties."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When would a low DNS TTL be worth its costs?",
+      "answer": "When planned address changes or recovery routing benefit from faster normal cache turnover, at the cost of more DNS queries and resolver dependence. It does not invalidate established connections or guarantee exact failover time.",
+      "explanation": "When planned address changes or recovery routing benefit from faster normal cache turnover, at the cost of more DNS queries and resolver dependence. It does not invalidate established connections or guarantee exact failover time."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is testing the raw IP different from testing the hostname?",
+      "answer": "The TLS identity and HTTP authority may differ, and multiple virtual hosts may share that address. Preserve the intended name while controlling destination when diagnosing.",
+      "explanation": "The TLS identity and HTTP authority may differ, and multiple virtual hosts may share that address. Preserve the intended name while controlling destination when diagnosing."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Name versus address versus port?",
+      "back": "Intended service identity; network destination; transport endpoint selector."
+    },
+    {
+      "front": "Does every HTTP request perform DNS?",
+      "back": "No. Resolution and connections can be reused."
+    },
+    {
+      "front": "What does TTL fail to control?",
+      "back": "Already established connection lifetime and instantaneous global cutover."
+    },
+    {
+      "front": "Where is a URL path used for routing?",
+      "back": "At HTTP-aware servers or intermediaries, not ordinary IP forwarding."
+    },
+    {
+      "front": "Why compare client and server timings carefully?",
+      "back": "They often measure different boundaries, especially cold connection setup."
+    }
+  ],
+  "mentalModel": "Resolve a name, reach an endpoint, authenticate it, then ask the application. Diagnose the first boundary that failed.",
+  "sources": [
+    {
+      "title": "RFC 1034 — DNS concepts and delegation",
+      "url": "https://datatracker.ietf.org/doc/html/rfc1034",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 9110 — authority and request routing",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "checked": "2026-09-29"
+    }
+  ]
+}

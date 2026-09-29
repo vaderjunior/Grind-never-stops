@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "107",
+  "objectives": [
+    "Locate the exact boundary of an exactly-once processing claim.",
+    "Separate unique output effects from unique execution attempts.",
+    "Design an external sink protocol that survives replay."
+  ],
+  "retrieval": [
+    "L103: why can a relay publish twice?",
+    "L104: what makes two resources part of one commit protocol?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Exactly once needs an object and a boundary",
+      "markdown": "A team says its streaming pipeline is exactly once, then discovers duplicate customer emails after a worker restart. The statement omitted what is counted and where the guarantee ends. A processor may commit input progress and broker output atomically while an email provider remains outside that transaction. The computation can execute again even when its committed internal result appears once.\n\nAsk four questions: which input identity, which visible effect, which durable state coordinates them, and which failures are covered? “Exactly once” without these details is not a usable design argument. Conversely, dismissing all such guarantees as impossible obscures real transactional mechanisms within defined boundaries."
+    },
+    {
+      "id": "mechanism",
+      "title": "An internal transaction can couple progress and output",
+      "markdown": "For a consume-transform-produce flow entirely within supported Kafka transaction semantics, output records and the consumed offsets can be committed together. Readers using the appropriate committed visibility exclude aborted transactional output. A crash can cause computation to repeat, but an aborted attempt's output is not treated as committed output by those readers. Correct configuration, error handling, ownership fencing, and recovery remain part of the protocol.\n\nAn HTTP request to an unrelated email service does not join that broker transaction just because the call happens between begin and commit in application code. If the email is accepted and the broker transaction aborts, replay can send it again. If the broker commits first and the email call never happens, a message can be omitted. This is the same dual-write shape from L103.\n\nAt an external SQL sink, one workable boundary is to store a processed-input identity or checkpoint with the projection update in the same sink transaction. The sink can then decide whether replay should reapply an effect. The broker checkpoint may lag without causing a repeated committed increment. The exact choice between event identity and partition offset depends on replay/routing semantics and how inputs can duplicate."
+    },
+    {
+      "id": "worked",
+      "title": "An increment is not made safe by an upsert name",
+      "markdown": "Input event e3 adds5 to account a. A worker executes UPDATE balances SET total=total+5, then crashes before checkpointing. On retry it executes the update again. An UPSERT that also adds5 has the same problem. The SQL verb does not make a non-idempotent operation idempotent.\n\nInstead, start one sink transaction; insert applied(event_id='e3') under a unique key; if newly inserted, increment balance by5; commit both. After the crash, a repeated e3 observes the existing identity and leaves total unchanged. A crash before commit rolls back both. This provides a once-applied local effect under the stated database durability and identity assumptions. Reusing e3 with a different payload must be rejected or explicitly versioned, not silently accepted.\n\nFor email, persist a durable command with a stable provider idempotency key if the provider supports one with adequate retention. If not, reconcile delivery by the provider's queryable identity or admit the remaining ambiguity and choose a business policy. A local dedupe flag written before sending can lose mail; written after sending can duplicate it. The destination's cooperation changes what can be promised."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Retention and identity are part of correctness",
+      "markdown": "A dedupe table that forgets identities after one day cannot suppress a replay of a week-old event unless another invariant prevents the duplicate effect. Match identity retention to supported replay and retry windows, or use versioned state that remains sufficient. Unbounded markers also have storage and privacy costs; design compaction or checkpoints carefully and prove what older replays can do.\n\nDeterministic transformations simplify replay comparisons. Nondeterministic enrichment, current-time reads, or mutable lookup data may change results during a rebuild. Record required versions or define a correction policy. A transaction that faithfully commits a wrong transformation exactly once is still wrong.\n\nCommon mistakes include counting handler executions instead of committed effects, extending a broker guarantee to arbitrary APIs, and assuming delivery semantics guarantee business correctness. Tests should crash before effect, after effect before checkpoint, and after checkpoint; repeat the same event; conflict on reused identities; and restart from durable state. Optional depth: inspect transaction timeout/fencing behavior in the selected broker client rather than extrapolating from this simplified trace."
+    },
+    {
+      "id": "schedule",
+      "title": "A bounded learning session",
+      "markdown": "Core55 minutes: retrieval5, explanation18, trace8, exercise10, scheduled Q1–Q3 ten minutes, comparison/cards4. Q4–Q5 and product deployment are optional depth outside this session. Diagrams and numeric workloads are original teaching models, not measurements of a deployed service."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "boundary",
+      "title": "The external effect lies outside the broker transaction",
+      "source": "flowchart TB\nsubgraph TX[Supported broker transaction]\nI[Input offsets] --> T[Transform]\nT --> O[Output records]\nend\nT -.->|Independent HTTP effect| E[Email provider]\nE -.->|Response may be lost| T",
+      "caption": "The box denotes a transaction boundary, not process placement. The dashed call is not enlisted in that transaction.",
+      "steps": [
+        "Identify the atomically committed input/output state.",
+        "Follow a call that leaves the boundary.",
+        "Crash after external acceptance but before internal commit.",
+        "Choose destination-supported idempotency or state the uncertainty."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A stream consumer increments a SQL counter and emails a receipt. It then commits the broker offset. Design separate guarantees for the counter and email. Include event identity retention and a failure test for each.",
+    "rubric": [
+      "Use one SQL transaction for marker and increment.",
+      "Keep email outside that guarantee.",
+      "State retention and observed crash outcomes."
+    ],
+    "solution": "For the counter, a unique processed-event identity and increment commit together; replay finds the marker and does not add again. Retain markers or an equivalent safe checkpoint/version scheme for the entire supported replay horizon. For email, use a stable destination operation key with known provider retention and reconciliation, or explicitly choose duplicate-versus-loss behavior for unresolved outcomes. Test crash after SQL commit before broker checkpoint and verify one increment. Test email acceptance followed by lost response and verify provider identity lookup or documented ambiguity; do not claim the SQL marker proves delivery."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Exactly-once committed output means the handler executes once?",
+      "options": [
+        "Always",
+        "No",
+        "Only in Python"
+      ],
+      "answer": "No",
+      "explanation": "Recovery can repeat computation while suppressing or aborting repeated committed effects."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which pair should commit together in an external SQL projection?",
+      "options": [
+        "Dedupe marker and projection update",
+        "Log line and HTTP timeout",
+        "Browser cache and process memory"
+      ],
+      "answer": "Dedupe marker and projection update",
+      "explanation": "The marker must describe the same committed local effect it suppresses on replay."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "An email call inside broker transaction code automatically joins that transaction?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with a short timeout"
+      ],
+      "answer": "No",
+      "explanation": "The destination needs actual transactional cooperation or its own idempotency/reconciliation protocol."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What limits a one-day dedupe retention policy?",
+      "answer": "Retries or replays older than one day can produce repeated effects unless another durable invariant rejects them. Align retention with supported recovery.",
+      "explanation": "Retries or replays older than one day can produce repeated effects unless another durable invariant rejects them. Align retention with supported recovery."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can a replay produce a different result without duplicates?",
+      "answer": "Mutable enrichment data, time-dependent logic, or changed code/schema can alter transformation meaning. Version inputs or explicitly support corrections.",
+      "explanation": "Mutable enrichment data, time-dependent logic, or changed code/schema can alter transformation meaning. Version inputs or explicitly support corrections."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Exactly once: ask what?",
+      "back": "Input identity, committed effect, transaction boundary, and failure assumptions."
+    },
+    {
+      "front": "Repeated execution versus repeated effect?",
+      "back": "Execution may retry while the durable effect is applied once."
+    },
+    {
+      "front": "Safe increment replay?",
+      "back": "Atomically commit dedupe identity with the increment."
+    },
+    {
+      "front": "External API boundary?",
+      "back": "Not automatically part of a broker or SQL transaction."
+    },
+    {
+      "front": "Dedupe retention must cover?",
+      "back": "The supported duplicate, retry, and replay horizon or an equivalent invariant."
+    }
+  ],
+  "mentalModel": "A once-only effect is an identity plus an atomic decision at the place that owns the effect.",
+  "sources": [
+    {
+      "title": "Apache Kafka4.1 — Message delivery semantics and transactions",
+      "url": "https://kafka.apache.org/41/design/design/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Kafka4.1 Streams — Processing guarantees",
+      "url": "https://kafka.apache.org/41/streams/core-concepts/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

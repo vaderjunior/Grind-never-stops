@@ -1,0 +1,143 @@
+{
+  "id": "007",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Use Little’s law with a consistent boundary and averages.",
+    "Distinguish arrival rate, concurrency, and worker count.",
+    "Explain why a queue grows when arrivals exceed completion capacity.",
+    "Estimate backlog drain time and challenge stability assumptions."
+  ],
+  "retrieval": [
+    "From L004: what is the difference between offered demand and completed throughput?",
+    "From L003: why is p99 not an average?"
+  ],
+  "sections": [
+    {
+      "id": "intuition",
+      "title": "Requests occupy the system while time passes",
+      "markdown": "Core budget: retrieval 5, mechanism 18, worked model 8, exercise 10, questions 10, review 4 minutes. Picture a service as a room with an entrance and an exit. Arrival rate counts how quickly work enters; concurrency counts how much unfinished work is inside; latency measures how long each item remains. Worker count tells you how many processing slots exist, which is related but not identical to unfinished work.\n\nFor a stable long-run system, Little’s law is L = λW: average items in the chosen system equals average effective throughput times average time spent there. If 200 requests/s complete and mean end-to-end time is 0.15 s, average in-flight requests are 30. The units cancel: requests/s × s = requests. The result says nothing by itself about CPU utilization or the number of operating-system threads.\n\nChoose the boundary before using the equation. If time includes waiting and execution, L includes queued and executing requests. If time covers only a database call, L counts database calls inside that boundary. Mixing total application latency with database-only throughput produces a number with no coherent interpretation.\n\nUse compatible averages over a representative stable period. Plugging p99 latency into Little’s law does not yield p99 concurrency. Correlations and distributions matter for tails. A continuously growing queue is not in the steady state assumed by the simple long-run calculation; it needs a transient backlog model."
+    },
+    {
+      "id": "queue",
+      "title": "The queue records work you have not finished",
+      "markdown": "Use a deliberately simple fluid model: in each one-second interval, 120 jobs arrive and workers can finish 100. Starting empty, backlog grows by 20 jobs/s: after ten seconds, 200 jobs wait. The model smooths event timing and job sizes; it is an illustration, not a prediction of real percentile latency.\n\nWhen arrivals fall to 80/s, spare completion capacity is 20/s, so those 200 extra jobs take ten seconds to drain. Dividing by total capacity would give two seconds and ignore the ongoing new arrivals. If arrivals stay at 100/s, there is no spare rate to clear the backlog. If each job times out before reaching a worker, the system must discard or cancel it deliberately; otherwise workers may spend capacity on results nobody needs.\n\nA queue does not add service capacity. It can absorb a finite burst by exchanging memory or durable storage and waiting time for smoother work. For an interactive operation with a short deadline, that exchange may be unacceptable. A finite queue plus explicit admission policy can provide a predictable failure instead of allowing memory to grow until the process dies. The detailed policies arrive in M10.\n\nEven average demand below capacity does not eliminate waiting. Real arrivals bunch together and job durations vary. A worker may be busy with a slow item when several short ones arrive. As spare capacity shrinks, there are fewer opportunities to catch up after variation. The exact delay distribution requires a more specific model or measurement; no universal “safe CPU percentage” follows from this lesson."
+    },
+    {
+      "id": "worked",
+      "title": "Concurrency is a resource budget",
+      "markdown": "Suppose a report endpoint accepts 50 requests/s and each request spends an average 2 seconds waiting for a remote source plus 0.1 seconds computing. Average end-to-end concurrency is approximately 50 × 2.1 = 105 requests, provided the system is stable and the measurements cover the same population. If each in-flight request retains a 4 MB buffer, those buffers alone average roughly 420 MB.\n\nThe endpoint is not necessarily using 105 CPU cores. Waiting may consume a socket and memory while little CPU executes. Conversely, CPU-heavy work needs actual execution capacity. Distinguish the resource occupied during each phase before choosing a concurrency model. M03 connects this to threads and event loops.\n\nA small deterministic Python simulation of the earlier queue:\n\n~~~python\ndef step(backlog: int, arrivals: int, capacity: int) -> int:\n    return max(0, backlog + arrivals - capacity)\n\nbacklog = 0\nfor _ in range(10):\n    backlog = step(backlog, 120, 100)\nassert backlog == 200\nfor _ in range(10):\n    backlog = step(backlog, 80, 100)\nassert backlog == 0\nprint(\"peak backlog=200; drained after 10 seconds\")\n~~~\n\nThis executable Python 3.11+ standard-library model treats arrivals and completion capacity as aggregate one-second quantities. It does not simulate individual service times, ordering, retries, or a real scheduler. Its test establishes the arithmetic behavior of the model only."
+    },
+    {
+      "id": "failures",
+      "title": "Slow dependencies become local pressure",
+      "markdown": "At unchanged arrival rate, a slower downstream service makes requests remain in your process longer. A jump from 100 ms to 2 s at 100 requests/s changes average in-flight work from 10 to 200. Memory, connections, and file descriptors can fill before CPU looks busy. Retrying adds arrivals, potentially making the original slowdown worse.\n\nA concurrency limit creates another boundary. If you allow only 50 downstream calls at once and each holds its slot for 2 s, a rough saturated completion bound is 25 calls/s under those assumptions. Accepting 100/s without another policy accumulates waiting work. Raising the limit might improve throughput if the dependency has spare capacity, or overload it further if it is already saturated. Measurement and dependency limits decide.\n\nCommon misconceptions: throughput equals concurrent users; average latency can be replaced with p99 in the equation; a queue solves overload forever; a larger thread pool creates CPU; low average utilization proves no burst risk. Keep the boundaries and assumptions visible.\n\nOptional depth: instrument a workload to estimate average in-flight work from area under a concurrency-versus-time curve, then compare it with completion rate × mean duration. Account for work already present at the window start and unfinished at its end."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "queue-boundary",
+      "title": "What is inside Little’s-law boundary?",
+      "source": "flowchart LR\nA[Arrivals per second] --> Q\nsubgraph SYS[Measured system boundary]\nQ[Waiting jobs] -->|Admit to worker| W[Executing jobs]\nend\nW --> D[Completed jobs per second]\nT[Mean time includes waiting and execution] -.-> SYS",
+      "caption": "L counts both waiting and executing jobs when W covers their full time inside this boundary. The dotted annotation is not a data flow.",
+      "steps": [
+        "Choose the entrance and exit.",
+        "Count every unfinished job inside.",
+        "Measure average time between those same boundaries.",
+        "Use compatible stable averages; model growing backlog separately."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A stable endpoint completes 80 requests/s at mean duration 250 ms. Estimate average in-flight requests. Then a burst delivers 140 jobs/s to a 100 jobs/s worker system for five seconds. How large is the extra backlog, and how long to drain it when arrivals drop to 75/s?",
+    "minutes": 10,
+    "rubric": [
+      "Converts milliseconds to seconds.",
+      "Uses mean, not a percentile.",
+      "Computes excess arrival rate for burst backlog.",
+      "Uses spare capacity during drain."
+    ],
+    "solution": "Average concurrency = 80 × 0.25 = 20. Burst backlog = (140 − 100) × 5 = 200 jobs. Spare capacity after the burst is 100 − 75 = 25/s; drain time = 200/25 = 8 seconds. These are stable-average and fluid-model estimates respectively, not measured tail latency."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Stable throughput 300/s and mean time 0.2 s imply what average concurrency?",
+      "answer": 60,
+      "unit": "requests",
+      "tolerance": 0.01,
+      "explanation": "L = 300 × 0.2 = 60."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Can p99 time replace mean time in Little’s law?",
+      "options": [
+        "Yes, yielding p99 concurrency",
+        "No, the simple relation uses compatible averages",
+        "Only when measured in milliseconds"
+      ],
+      "answer": "No, the simple relation uses compatible averages",
+      "explanation": "A relationship between means does not transform arbitrary percentiles."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Backlog 600, capacity 100/s, ongoing arrivals 80/s: fluid-model drain time?",
+      "answer": 30,
+      "unit": "seconds",
+      "tolerance": 0.01,
+      "explanation": "Spare capacity is 20/s; 600 / 20 = 30."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might memory rise while CPU stays low after a dependency slows?",
+      "answer": "More requests remain in flight waiting for the dependency, retaining buffers and connections without continuously executing CPU work.",
+      "explanation": "Reason from occupied resources and duration, not a generic “server is slow” label."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When can buffering a burst be a valid compromise?",
+      "answer": "When the burst is bounded, the queue has a bound, spare capacity later drains it, and the added delay remains acceptable for the operation.",
+      "explanation": "It cannot repair sustained excess demand or an already expired deadline."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Little’s law?",
+      "back": "Average work inside = effective throughput × mean time inside, under compatible stable conditions."
+    },
+    {
+      "front": "Concurrency versus worker count?",
+      "back": "Unfinished work versus execution slots; queued and waiting work may exceed workers."
+    },
+    {
+      "front": "Backlog growth rate?",
+      "back": "Arrival rate minus completion capacity when positive."
+    },
+    {
+      "front": "Drain time with ongoing arrivals?",
+      "back": "Backlog / (capacity − arrival rate), when the denominator is positive."
+    },
+    {
+      "front": "Can queues create capacity?",
+      "back": "No; they trade waiting and storage for temporary smoothing."
+    },
+    {
+      "front": "Why define boundaries?",
+      "back": "Counts, rate, and duration must describe the same system and population."
+    }
+  ],
+  "mentalModel": "A slowdown keeps work inside longer; the extra work must fit somewhere or be rejected.",
+  "sources": [
+    {
+      "title": "Google SRE: Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "id": "062",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain read-your-writes and monotonic reads through concrete user histories.",
+    "Route a read using a required visibility position rather than a guessed sleep.",
+    "Define bounded fallback when a replica cannot satisfy a session requirement."
+  ],
+  "retrieval": [
+    "L061: distinguish received, flushed, and applied changes.",
+    "L003: which user-visible objective should a latency optimization preserve?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "The profile you just saved disappears",
+      "markdown": "A user changes a profile name through the primary and sees success. The following page load is routed to a replica that has not applied the update, so the old name returns. The write need not be lost; read routing violated the expected session behavior. A later read from another slower replica can even appear to move backward after the user has already seen the new value.\n\nRead-your-writes means subsequent reads in the relevant session include that session's accepted writes. Monotonic reads mean the session does not move to an older observed state for the scoped history. These are more precise than “the replicas are usually fresh.” Neither alone gives every user a globally latest view or solves concurrent application invariants."
+    },
+    {
+      "id": "mechanism",
+      "title": "Use evidence of visibility",
+      "markdown": "A simple policy routes the required reads to the current authoritative primary. That increases primary read load and still requires a safe primary/epoch decision after failover. Another policy attaches a required replication position or application version to the session and selects a replica only after it can serve at least that state. The proof must concern applied/read-visible progress, not just received bytes.\n\nTokens must belong to the correct shard/history/epoch. Comparing the numeric position 500 from one unrelated shard with position 400 from another proves nothing. After failover, a new history may need mapping or an explicit fallback rather than comparing bare integers. A token for one update also does not claim that no other writer has changed the entity afterward.\n\nIf the replica cannot catch up before a bounded read deadline, route to an eligible authority, wait within the remaining budget, or return an explicit retry/unavailability response consistent with the API contract. Sleeping for a fixed 100 ms is a heuristic: lag can exceed it under load, maintenance, or failure. Sticky routing is helpful only if the chosen node meets the visibility requirement; repeatedly visiting one stale node is still stale."
+    },
+    {
+      "id": "worked",
+      "title": "A routing decision with one scoped history",
+      "markdown": "Assume all replicas belong to the same verified history H and the client requires applied position 120. Replica A reports 119, B reports 120, and C reports 125. A is ineligible for this read even if its measured latency is shortest. B and C satisfy the minimum visibility condition; selection among them can consider latency and capacity.\n\nThe following deterministic Python model omits real log positions and failover. It returns the eligible replica with the smallest supplied latency, or None if the caller must use its explicit fallback.\n\n```python\ndef route(required: int, replicas: list[tuple[str, int, float]]) -> str | None:\n    eligible = [r for r in replicas if r[1] >= required]\n    return min(eligible, key=lambda r: r[2])[0] if eligible else None\n\nnodes = [(\"A\", 119, 2.0), (\"B\", 120, 8.0), (\"C\", 125, 12.0)]\nassert route(120, nodes) == \"B\"\nassert route(126, nodes) is None\nprint(\"B; fallback required when no replica meets position 126\")\n```\n\nThe printed sentence is expected. It illustrates checking a safety predicate before optimizing latency. In production, the replica must enforce the read's required position at the serving boundary; a stale health sample alone can misrepresent readiness or a replaced process. A read transaction's snapshot also needs to be chosen after the required progress is visible."
+    },
+    {
+      "id": "failure",
+      "title": "Freshness is not an authorization shortcut",
+      "markdown": "A dashboard showing aggregate counts may permit bounded staleness. Reading a just-created short URL may need read-your-writes. Revoking a user's access can require stricter protection than returning an old public count. Classify reads by their contract rather than sending every GET to any replica.\n\nRead-your-writes scoped to one browser session does not automatically cover a second device. If cross-device continuity matters, persist or transmit the relevant requirement through a trusted server-side/session mechanism, or use an authority capable of meeting it. Tokens are not authorization and must not be trusted to grant access simply because the caller supplies them.\n\nLong analytical queries can interact with a replica's apply/recovery work; a server that is healthy for one purpose can be unsuitable for fresh interactive reads. Measure both user-visible lag and internal positions. Common mistakes are using wall-clock age as proof of applied state, checking receipt instead of replay, promising latest reads from every replica, and confusing session consistency with transaction isolation across multiple records."
+    },
+    {
+      "id": "time-budget",
+      "title": "Core and optional depth",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 mechanism and diagrams, 8 worked trace, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and deeper variations are optional. Examples are deterministic teaching models, not production replication or routing implementations."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "read-position",
+      "title": "Reject ineligible replicas before choosing the fastest one",
+      "source": "sequenceDiagram\nparticipant C as Session\nparticipant P as Authority\nparticipant G as Read router\nparticipant R as Replica\nC->>P: Save profile\nP-->>C: Success and scoped position 120\nC->>G: Read requiring H at least 120\nG->>R: Read only after position 120 applied\nalt Applied state satisfies requirement\nR-->>C: Eligible snapshot result\nelse Deadline cannot satisfy requirement\nG->>P: Bounded authoritative fallback\nP-->>C: Result or explicit unavailable\nend",
+      "caption": "H identifies a single compatible history. A numeric progress comparison without its scope is not sufficient.",
+      "steps": [
+        "Capture the accepted write requirement.",
+        "Attach the scoped minimum visibility requirement to the read.",
+        "Use an eligible applied snapshot or wait within a bound.",
+        "If it cannot be met, follow an explicit fallback rather than return an arbitrary stale result."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A session needs history H position 120. A has received 130 but applied 118; B has applied 122; C reports 500 from unrelated history J. Choose an eligible node and explain why a 100-ms sleep is not a proof. State a fallback if B is unavailable.",
+    "rubric": [
+      "Choose B based on applied progress in the correct history.",
+      "Reject received-only progress and unrelated numeric histories.",
+      "Define bounded wait/authority/unavailable fallback."
+    ],
+    "solution": "B is eligible because its applied position122 is at least120 in H. A has the bytes but cannot yet expose the required state; C’s larger number belongs to J and cannot be compared. A fixed sleep has no guarantee that replay catches up, especially under backlog or failure. The serving replica can wait until the requirement is visible within the read deadline; otherwise route to a verified eligible authority or return a documented unavailability/retry outcome. Avoid silently weakening the contract. A second client device needs the same scoped requirement if cross-device read-your-writes is promised."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which replica progress is needed for ordinary read visibility?",
+      "options": [
+        "Bytes received only",
+        "Applied/read-visible progress",
+        "Its process uptime"
+      ],
+      "answer": "Applied/read-visible progress",
+      "explanation": "Receiving or flushing a log entry need not apply it to the serving snapshot."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Can a larger log number from an unrelated shard prove freshness for this shard?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if it is much larger"
+      ],
+      "answer": "No",
+      "explanation": "Positions require a compatible scope and history."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A required position120 and applied position118 differ by how many model positions?",
+      "answer": 2,
+      "unit": "positions",
+      "tolerance": 0,
+      "explanation": "120−118=2 positions; this does not translate to a fixed time delay."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Does read-your-writes imply a globally newest value for every user?",
+      "answer": "No. It guarantees the session sees its own accepted writes within the defined scope.",
+      "explanation": "Other concurrent writes and global ordering require additional semantics."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why should authorization-sensitive reads be classified separately from stale dashboards?",
+      "answer": "Old access state can disclose protected data, while a permitted stale count may only reduce freshness.",
+      "explanation": "Freshness choices must preserve the user-visible correctness/security contract."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Read-your-writes?",
+      "back": "Subsequent scoped session reads include that session’s accepted writes."
+    },
+    {
+      "front": "Monotonic reads?",
+      "back": "A session does not regress to an older observed scoped state."
+    },
+    {
+      "front": "Why not fixed sleep?",
+      "back": "Delay does not prove the required change was applied."
+    },
+    {
+      "front": "Visibility token scope?",
+      "back": "Include the relevant shard/history/epoch, not a bare integer."
+    },
+    {
+      "front": "No eligible replica?",
+      "back": "Bounded wait, verified authoritative fallback, or explicit contract-preserving unavailability."
+    }
+  ],
+  "mentalModel": "Route a read by the state it must see before optimizing which node is fastest.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18 — Log-shipping standby servers",
+      "url": "https://www.postgresql.org/docs/18/warm-standby.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL 18 — Hot standby",
+      "url": "https://www.postgresql.org/docs/18/hot-standby.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

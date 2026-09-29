@@ -1,0 +1,12 @@
+{
+  "lessonId": "013",
+  "sha256": "46b9fe2f2ba900563cc9f3e9ecd6e604d566a1c3bcc2c892d6adfa22fd7a64bc",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: TLS endpoints, plaintext termination, trusted identity context, and object authorization remain distinct.",
+    "The forged-header exercise requires both channel and identity repair; 30 ms × 2 handshakes = 60 ms."
+  ]
+}

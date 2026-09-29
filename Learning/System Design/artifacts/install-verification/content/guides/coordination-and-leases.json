@@ -1,0 +1,286 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 22,
+  "title": "Leaders, leases, fencing, and consensus",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "coordination-and-leases",
+  "summary": "A worker can wake up after losing ownership. Learn how the destination rejects its old authority, and what a consensus service contributes to that decision.",
+  "objectives": [
+    "Explain why a paused worker may act after its lease expires.",
+    "Use a fencing token to protect a resource from stale ownership.",
+    "Describe consensus as agreement on decisions, not a substitute for every application guarantee."
+  ],
+  "terms": [
+    {
+      "term": "Leader",
+      "definition": "The participant currently responsible for ordering or coordinating a particular scope of work."
+    },
+    {
+      "term": "Lease",
+      "definition": "Time-limited ownership that must be renewed under a defined protocol."
+    },
+    {
+      "term": "Fencing token",
+      "definition": "An increasing ownership number that a protected resource checks to reject older owners."
+    },
+    {
+      "term": "Consensus",
+      "definition": "A protocol by which participants agree on a sequence of decisions despite specified failures."
+    },
+    {
+      "term": "Quorum",
+      "definition": "A set of participants large enough to satisfy a protocol’s agreement rule, often a majority."
+    }
+  ],
+  "retrieval": [
+    "Why could an expired seat hold not confirm a newly owned seat?",
+    "Does a timeout prove that a remote machine has stopped?"
+  ],
+  "sections": [
+    {
+      "id": "analogy",
+      "title": "A replacement manager needs more than a phone call",
+      "markdown": "Two workers can generate the same monthly report, but only the current worker should publish the final report. Worker A obtains ownership and starts. It then pauses for a long time. The coordinator decides A's lease has expired and grants ownership to B. B publishes a fresh report. A wakes up and tries to publish its older result.\n\nThink of a former building manager retaining a key after a replacement takes over. Announcing a new manager does not physically prevent the former manager from opening the door. The lock at the door must recognize that the old authority is no longer valid.\n\nA lease improves liveness by allowing work to move on when renewal stops. It cannot force an old process to cease executing. Long pauses, delayed messages, and network partitions are normal reasons why a process might act on outdated knowledge."
+    },
+    {
+      "id": "fence",
+      "title": "Move the check to the resource that can be damaged",
+      "markdown": "Give A ownership token 41 and B the later token 42. The report storage authority must atomically establish and enforce the current acceptable token for this report scope. Once ownership 42 is established there, a publish request carrying 41 is rejected, even if A believes it still owns the job.\n\nThis number is a fencing token. It is more than a random lock ID: its order reveals that 41 is older than 42. The token allocation and ownership protocol must prevent duplicated or backwards authority, and the resource must verify the relevant scope and caller. Merely attaching a number to a request without enforcement does nothing.\n\nAn implementation that only remembers the highest token seen rejects old writes after it has observed a newer token. If safety requires the old owner to be blocked immediately at handoff, register the new epoch at the resource before considering that handoff usable. This detail matters; a diagram arrow cannot make two unrelated stores atomic."
+    },
+    {
+      "id": "consensus",
+      "title": "Where can agreed ownership decisions live?",
+      "markdown": "A consensus-backed coordinator can keep an agreed record of ownership and issue ordered revisions under its protocol. In a typical three-voter arrangement, a majority is two. If one voter is unavailable, the other two can still form a majority when the protocol's conditions hold. Two isolated minority groups cannot independently form that same majority.\n\nRaft is one concrete consensus protocol. It includes leader election, a replicated log, and rules for committing and applying entries. “Two machines replied” is not a complete implementation of those rules. Terms, log agreement, persistence, membership changes, and crash recovery all matter. For application design, prefer a tested coordination service over inventing a consensus protocol during the interview.\n\nAgreement itself does not make report publishing safe. The report store still needs to respect the agreed ownership boundary. Nor does a consensus service make an external email, payment, and database row one atomic transaction. Their own identity and recovery rules remain necessary."
+    },
+    {
+      "id": "partition",
+      "title": "Choose what stops when agreement is unavailable",
+      "markdown": "When agreement is unavailable, name which operation must pause instead of labeling the whole product simply “down.”\n\n| Operation | Can it continue in this report example? | Reason |\n| --- | --- | --- |\n| Read an already published report | Often yes, if its storage is reachable | No new ownership decision is required |\n| Compute a private candidate report | Possibly, under a resource policy | Duplicate computation may only waste work |\n| Establish new publication ownership | Wait or fail if safe agreement cannot be obtained | Must not invent conflicting authority |\n| Replace the shared published result | Only under the resource’s current authority rule | This is where stale work can damage state |\n\nA worker unable to reach the coordinator cannot assume its old authority lasts forever. The report authority must enforce the chosen current-epoch and validity protocol.\n\nSeparating private calculation from shared publication often reduces the need for broad locking. If a unique constraint or conditional write already protects the real mutation, prefer explaining that boundary first.\n\n**Interview phrase:** “I can tolerate duplicate calculation here; I must prevent stale publication.”"
+    },
+    {
+      "id": "interview",
+      "title": "Explain the stale-worker timeline out loud",
+      "markdown": "Use a three-part explanation:\n\n~~~text\nwho grants authority → how new authority reaches the resource\n                    → where an old mutation is rejected\n~~~\n\nPoint to the destination check in the stale-worker diagram. A lease expiring is a protocol event, not a command that physically stops old code.\n\n| Mechanism | What it contributes | What it cannot establish alone |\n| --- | --- | --- |\n| Lease | A defined time-limited ownership rule | Old process termination |\n| Ordered fencing token | Distinguishes newer from older authority | Rejection by a destination that ignores it |\n| Consensus-backed coordinator | Agreement within its protocol scope | Atomicity of unrelated external effects |\n\nAsk whether the destination supports the required conditional update. If it ignores tokens, consider an enforceable gateway or another workflow; attaching an unused number changes nothing.\n\nConsensus internals are optional deeper study. General backend reasoning begins with the ownership scope, handoff, destination enforcement, and what becomes unavailable during uncertainty."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "fence-timeline",
+      "title": "An old worker reaches the destination after handoff",
+      "source": "sequenceDiagram\nparticipant A as Worker A\nparticipant C as Coordinator\nparticipant B as Worker B\nparticipant R as Report authority\nC-->>A: Ownership token 41\nNote over A: Long pause\nC-->>B: Ownership token 42\nB->>R: Establish current epoch 42\nB->>R: Publish with 42\nR-->>B: Accepted\nA->>R: Delayed publish with 41\nR-->>A: Rejected as stale",
+      "caption": "The destination participates in the ownership protocol. A new lease alone cannot stop old code from running.",
+      "steps": [
+        "A receives token 41, then pauses.",
+        "B receives token 42.",
+        "The resource establishes and enforces the new epoch.",
+        "A’s delayed write reaches that check and is rejected."
+      ],
+      "sectionId": "fence"
+    },
+    {
+      "id": "majority",
+      "title": "A majority can agree; a lone voter cannot",
+      "source": "flowchart LR\nA[Voter A] <-->|Agreement protocol| B[Voter B]\nC[Voter C: isolated]\nA --> M[Two of three form a majority]\nB --> M\nC --> N[One of three cannot decide alone]",
+      "caption": "This illustrates majority size, not the full Raft protocol or an implementation of consensus.",
+      "steps": [
+        "Three voters participate in an agreed protocol.",
+        "A and B can communicate and form a majority.",
+        "C alone cannot form a majority.",
+        "Application resources still enforce the decisions they rely on."
+      ],
+      "sectionId": "consensus"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A has token 7 and pauses. B gets token 8. Design a report publication handoff so A cannot overwrite B when it wakes. Name the limitation if the report store ignores tokens entirely.",
+    "rubric": [
+      "Establish token 8 as current at the protected authority.",
+      "Atomically reject token 7 publications after that boundary.",
+      "A lease/token generator alone cannot fence an unenforcing destination."
+    ],
+    "solution": "Before B is treated as the usable owner, establish epoch 8 at the report authority. Publish with the expected current epoch and authorized scope. A’s token 7 mutation fails even if its process still runs. If the destination ignores tokens or conditional versions, this scheme does not protect it; introduce an enforceable mutation boundary or select another workflow/guarantee. Majority agreement elsewhere is insufficient."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "When a lease expires, the old process…",
+      "options": [
+        "Is physically prevented from running",
+        "May still resume and send requests",
+        "Loses all network connections automatically"
+      ],
+      "answer": "May still resume and send requests",
+      "explanation": "A lease is a protocol fact; it does not kill paused code."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Where must fencing be enforced?",
+      "options": [
+        "At the protected resource or authoritative mutation boundary",
+        "Only in the old worker’s memory",
+        "Only on a dashboard"
+      ],
+      "answer": "At the protected resource or authoritative mutation boundary",
+      "explanation": "The destination must reject stale authority before performing the damaging change."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A majority of three voters has how many members?",
+      "options": [
+        "One",
+        "Two",
+        "Four"
+      ],
+      "answer": "Two",
+      "explanation": "This is the quorum size in the illustrated majority scheme, not the entire consensus algorithm."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might duplicate calculation be acceptable while duplicate publication is not?",
+      "answer": "Private computation may only waste resources. Publication mutates the shared authoritative result, so protect that boundary rather than requiring all computation to be exclusive.",
+      "explanation": "Private computation may only waste resources. Publication mutates the shared authoritative result, so protect that boundary rather than requiring all computation to be exclusive."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does consensus automatically make a payment and database update atomic?",
+      "answer": "No. It agrees on decisions within its scope. External effects and separate stores still need their own operation identity, commit, and recovery protocols.",
+      "explanation": "No. It agrees on decisions within its scope. External effects and separate stores still need their own operation identity, commit, and recovery protocols."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Lease expiration stops a process?",
+      "back": "No. An old worker can wake and send delayed requests."
+    },
+    {
+      "front": "Fencing token property?",
+      "back": "Ordered authority that the destination checks for the relevant scope."
+    },
+    {
+      "front": "Why check at the destination?",
+      "back": "That is where stale work could damage shared state."
+    },
+    {
+      "front": "Consensus provides?",
+      "back": "Agreement under the chosen protocol and failure assumptions."
+    },
+    {
+      "front": "Simpler alternatives to a lock?",
+      "back": "A unique constraint or conditional authoritative mutation when it directly protects the invariant."
+    }
+  ],
+  "mentalModel": "Changing who should write is only half the job. The destination must reject who should no longer write.",
+  "sources": [
+    {
+      "title": "Martin Kleppmann — Distributed locks and fencing",
+      "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Raft — In Search of an Understandable Consensus Algorithm",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "etcd — Coordination and consistency properties",
+      "url": "https://etcd.io/docs/v3.6/learning/why/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "private-work-public-result",
+      "title": "Separate work in progress from the protected publication",
+      "sectionId": "partition",
+      "intro": "Two workers have produced candidate reports. Follow how the resource accepts one current publication without pretending the coordinator can stop every old CPU instruction.",
+      "steps": [
+        {
+          "title": "Compute candidates privately",
+          "explanation": "Worker A has an older candidate. B has a newer ownership grant. Neither candidate path alone changes the public report.",
+          "state": [
+            {
+              "label": "A candidate",
+              "value": "private output a"
+            },
+            {
+              "label": "B candidate",
+              "value": "private output b"
+            },
+            {
+              "label": "Public report",
+              "value": "existing revision"
+            }
+          ]
+        },
+        {
+          "title": "Establish usable authority",
+          "explanation": "The handoff protocol registers B’s epoch 62 at the report authority before considering B’s publication authority usable.",
+          "state": [
+            {
+              "label": "Coordinator grant",
+              "value": "B / epoch 62"
+            },
+            {
+              "label": "Resource epoch",
+              "value": "62 established"
+            },
+            {
+              "label": "Scope",
+              "value": "monthly report for team_5"
+            }
+          ]
+        },
+        {
+          "title": "Publish under the protected check",
+          "explanation": "B’s authorized request carries epoch 62. The resource accepts the conditional publication for this scope.",
+          "state": [
+            {
+              "label": "Submitted epoch",
+              "value": "62"
+            },
+            {
+              "label": "Resource epoch",
+              "value": "62"
+            },
+            {
+              "label": "Published result",
+              "value": "B candidate"
+            }
+          ]
+        },
+        {
+          "title": "Reject stale mutation at its destination",
+          "explanation": "A’s delayed epoch 61 request reaches the same resource. Its old authority is rejected even if A is still running.",
+          "state": [
+            {
+              "label": "Submitted epoch",
+              "value": "61"
+            },
+            {
+              "label": "Resource epoch",
+              "value": "62"
+            },
+            {
+              "label": "Decision",
+              "value": "reject stale publication"
+            },
+            {
+              "label": "A process",
+              "value": "may still execute"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Protection comes from an enforced publication boundary. Agreement and token issuance elsewhere are necessary only as far as the chosen protocol requires, and are not substitutes for that check."
+    }
+  ]
+}

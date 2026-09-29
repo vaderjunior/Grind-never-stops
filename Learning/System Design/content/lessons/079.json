@@ -1,0 +1,150 @@
+{
+  "id": "079",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Choose an explicit conflict policy for concurrent edits.",
+    "Implement a state-based grow-only counter with componentwise-max merge.",
+    "Explain why idempotent state merge is different from duplicate user intent.",
+    "Demonstrate a convergent result that violates a business invariant."
+  ],
+  "retrieval": [
+    "L077: how do incomparable version vectors identify concurrent intentions?",
+    "L078: what assumptions are needed for eventual repair?",
+    "L037: why is operation identity separate from retrying delivery?"
+  ],
+  "sections": [
+    {
+      "id": "optional",
+      "title": "Extension: decide what a conflict means",
+      "markdown": "This red extension enriches later collaboration and multi-writer designs; it does not gate the essential L080 assessment. Use 5 minutes retrieval, 20 merge reasoning, 10 diagram walkthrough, 10 exercise, and 10 questions/cards. The goal is to explain a merge law and its limits, not memorize a catalog of data types.\n\nWhen two disconnected users change a repair note, possible policies include choosing a deterministic winner, retaining both versions for manual reconciliation, merging independent fields, or adopting a data type with defined concurrent-operation semantics. Each policy answers a product question. “Resolve conflicts automatically” is incomplete until a lost edit, concurrent delete, and repeated delivery have specified outcomes.\n\nLast-write-wins can be simple but may discard a valid concurrent intention. Field-level merge can preserve an address change and a phone change, yet independently merging start and end times may yield an invalid interval. The granularity at which values merge must respect relationships between fields."
+    },
+    {
+      "id": "algebra",
+      "title": "A state-based CRDT makes repeated merging predictable",
+      "markdown": "For a state-based CRDT, the state has a partial order, local updates move upward, and merge computes a least upper bound. The join is associative, commutative, and idempotent. With the required dissemination, replicas receiving the same information converge despite merge order and duplicate state delivery. Operation-based designs have their own delivery and ordering assumptions; do not transfer state-merge claims to arbitrary duplicated operations.\n\nThese conditions explain a concrete counter. Give each replica its own nonnegative component. Only A increments A’s component and only B increments B’s. Merge takes componentwise maximum; displayed value is the sum. From[0,0], A increments twice→[2,0], B increments three times→[0,3], and either merge order produces[2,3], value5.\n\nA single scalar counter merged with max would instead produce max(2,3)=3, losing two increments. Summing the two full states on every delivery would duplicate counts when a state is resent. The per-replica representation distinguishes independent contributions from repeated knowledge of the same contribution."
+    },
+    {
+      "id": "code",
+      "title": "Check the merge laws on the small model",
+      "markdown": "~~~python\ndef merge(a, b):\n    assert len(a) == len(b)\n    return tuple(max(x, y) for x, y in zip(a, b))\n\na, b, c = (2, 0), (0, 3), (1, 4)\nassert merge(a, b) == (2, 3)\nassert sum(merge(a, b)) == 5\nassert merge(a, a) == a\nassert merge(a, b) == merge(b, a)\nassert merge(merge(a, b), c) == merge(a, merge(b, c))\nassert merge(merge(a, b), b) == (2, 3)\nprint(\"grow-only state merge examples verified\")\n~~~\n\nThe example tests representative states; the componentwise maximum law supports the general argument. It assumes stable replica identity and no counter reset under the same identity. Adding and retiring actors requires a lifecycle protocol. A user clicking “add” twice may generate two legitimate local increments, and both will survive merging. Idempotent merge handles duplicate transmission of the same state, not duplicate business intent creation.\n\nFor decrementable values, a PN-counter uses separate grow-only positive and negative components, deriving sum(P)−sum(N). Merge remains componentwise maximum in each half. This gives arithmetic convergence, not a guarantee that the result stays nonnegative."
+    },
+    {
+      "id": "invariant",
+      "title": "Agreement can preserve the wrong outcome perfectly",
+      "markdown": "There is one portable generator. East and West are disconnected and each sees available=1. Each accepts a reservation and records its own decrement. A convergent PN representation later contains two decrements; starting from1 gives1−2=−1. The replicas agree on a negative result, but the product already promised one physical item to two jobs.\n\nClamping the displayed number to0 hides the arithmetic without retracting either accepted reservation. Last-write-wins discarding one reservation record erases evidence without notifying the affected job. A better design can require coordination for final allocation, preallocate non-overlapping reservation rights to sites, or accept tentative requests that are explicitly not confirmed. Preallocation limits availability when a site exhausts its rights and needs redistribution. Name that cost.\n\nConvergence is especially useful when operations can be defined so their combination is always acceptable, such as accumulating independent telemetry counts. For shared text, richer CRDT structures can preserve concurrent editing semantics, but deletion, ordering, metadata growth, identity, and user intention still need careful design. A grow-only counter example is not an implementation of collaborative text."
+    },
+    {
+      "id": "choose",
+      "title": "Specify the merge contract before selecting an algorithm",
+      "markdown": "For a repair checklist, ask whether concurrent add/remove should favor add, favor remove, or retain an explicit conflict. For a notification preference, ask whether a concurrent opt-out may be overridden. For a capacity-limited allocation, show the finite resource invariant before suggesting a counter. The data type must fit those decisions.\n\nThen state dissemination, duplicate/reorder assumptions, actor identity, persistence, and garbage-collection rules. A replica that is never heard from again cannot be assumed to have learned a deletion. The same metadata that supports convergence can impose retention costs.\n\nThe supplied local tests exercise the max-merge laws over a finite state set, repeated delivery, and the negative-stock counterexample. They do not model a production network or prove arbitrary domain invariants. Explain both success and failure: the counter converges under its model, and that is precisely why the invariant counterexample is so instructive."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "counter",
+      "title": "Independent contributions merge without duplicate delivery inflation",
+      "source": "flowchart LR\nZ[Initial state 0,0] --> A[A increments twice: 2,0]\nZ --> B[B increments three times: 0,3]\nA --> M[Componentwise maximum: 2,3]\nB --> M\nM --> V[Displayed value = 5]\nB --> D[Duplicate delivery of 0,3]\nM --> J[Merge again: still 2,3]\nD --> J",
+      "caption": "Each actor owns one component. The repeated object is the same state contribution; two newly created user increments would be distinct effects.",
+      "steps": [
+        "Keep each replica’s accumulated contribution separate.",
+        "Use maximum to retain the newest known component value.",
+        "Sum components only when reading the counter value.",
+        "Observe that duplicate state delivery cannot inflate it."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A and B start a grow-only counter at[0,0]. A increments4times and B2times. Merge the states, deliver B’s state again, and report both values. Then model one available item with two disconnected accepted decrements using a PN-style total. Explain one design that preserves the stock invariant and its availability cost.",
+    "minutes": 10,
+    "rubric": [
+      "Obtains[4,2] and total6.",
+      "Duplicate state delivery leaves total6.",
+      "Derives1−2=−1 without hiding accepted reservations.",
+      "Proposes actual authority or non-overlapping rights rather than merely a different merge order."
+    ],
+    "solution": "Merge[4,0] with[0,2] to obtain[4,2], value6; max-merging[0,2] again is unchanged. Starting stock1 with separate decrements from two sites yields−1 after convergence. Require final allocation through an invariant-preserving authority, refusing/pending when unavailable, or preallocate the single right to only one site so the other cannot confirm an allocation without transferring that right. Either limits acceptance on some disconnected path."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "G-counter states[5,1] and[3,4] merge. What is the displayed total?",
+      "answer": 9,
+      "unit": "count",
+      "tolerance": 0,
+      "explanation": "Componentwise max gives[5,4], whose sum is9."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Idempotent state merge ensures two independently created user requests count only once:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Duplicate state delivery is different from duplicate business intents."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A convergent PN-counter automatically prevents overselling:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It can converge to a negative quantity after independently accepted decrements."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does scalar max lose independent increments?",
+      "answer": "It chooses the largest aggregate rather than retaining each actor’s independent contribution.",
+      "explanation": "Per-actor components distinguish information sources."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What three algebraic merge properties handle order and repeated state delivery?",
+      "answer": "Associativity, commutativity, and idempotence, within the stated state-based protocol and dissemination assumptions.",
+      "explanation": "These are convergence properties, not all business invariants."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "State-based merge laws?",
+      "back": "Associative, commutative, and idempotent join."
+    },
+    {
+      "front": "G-counter value?",
+      "back": "Sum of per-replica grow-only components."
+    },
+    {
+      "front": "G-counter merge?",
+      "back": "Componentwise maximum."
+    },
+    {
+      "front": "PN-counter value?",
+      "back": "Sum of positive components minus sum of negative components."
+    },
+    {
+      "front": "Convergence guarantees nonnegative stock?",
+      "back": "No; concurrent accepted decrements can exceed available rights."
+    },
+    {
+      "front": "How preserve scarce rights without global contact each time?",
+      "back": "Preallocate disjoint rights under a correct transfer protocol, limiting acceptance where rights run out."
+    }
+  ],
+  "mentalModel": "A merge law can make replicas agree; only a domain argument shows whether the agreed result keeps the promises already made.",
+  "sources": [
+    {
+      "title": "Preguiça, Baquero, and Shapiro — Conflict-free Replicated Data Types overview (2018)",
+      "url": "https://arxiv.org/pdf/1805.06358",
+      "checked": "2026-09-29"
+    }
+  ]
+}

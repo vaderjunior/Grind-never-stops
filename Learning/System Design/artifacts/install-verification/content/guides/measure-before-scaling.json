@@ -1,0 +1,271 @@
+{
+  "id": "measure-before-scaling",
+  "title": "Latency, throughput, and simple estimates",
+  "version": 2,
+  "week": 5,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Count requests, time one user action, and estimate simple demand before deciding that the notes app needs more machines.",
+  "objectives": [
+    "Distinguish one operation’s duration from the number completed per second.",
+    "Keep seconds, requests, and bytes separate in an estimate.",
+    "Identify a slow part of one request path.",
+    "Separate a supplied teaching example from a measured result."
+  ],
+  "terms": [
+    {
+      "term": "Latency",
+      "definition": "How long one operation takes between a stated start and finish."
+    },
+    {
+      "term": "Throughput",
+      "definition": "How many operations finish per unit of time at a stated boundary."
+    },
+    {
+      "term": "Workload",
+      "definition": "The mix and amount of work users and background tasks ask the system to do."
+    },
+    {
+      "term": "Bottleneck",
+      "definition": "A resource or step that currently limits useful progress."
+    },
+    {
+      "term": "Peak",
+      "definition": "A high-demand interval with a stated duration, such as the busiest minute."
+    }
+  ],
+  "retrieval": [
+    "Why might an owner-list index help a read without changing the number of app servers?",
+    "Why does a note list usually fetch metadata rather than every original photo?"
+  ],
+  "sections": [
+    {
+      "id": "question",
+      "title": "Slow for whom, and during which action?",
+      "markdown": "Maya says the photo-notes app feels slow. That is useful feedback, but it is not yet a diagnosis. Saving a short note, uploading a large photo, and opening a list perform different work. Ask which action is slow and where the waiting begins. A small note may save quickly while one enormous photo takes several seconds to upload.\n\nTwo measurements answer different questions:\n\n| Measure | Question | Example and units |\n| --- | --- | --- |\n| Latency | How long did one operation take? | Save confirmation after 200 ms = 0.2 seconds |\n| Completed throughput | How much work finished per interval? | 50 saves ÷ 10 seconds = 5 saves/second |\n\nOne second contains 1,000 milliseconds. Keep time per operation separate from operations per time; overlapping work means these are not generally reciprocals.\n\nThink of a bakery. One order may take four minutes from joining the line to receiving bread, while the counter completes several orders each minute. Duration and rate can both be true because many orders overlap. The analogy does not tell us a computer’s capacity: different software requests use different resources, and a slow storage call may leave a processor mostly idle."
+    },
+    {
+      "id": "worked",
+      "title": "Use a small ledger before a formula",
+      "markdown": "Suppose ten students each save two notes during a ten-second classroom exercise. The exercise offers twenty save requests in that interval. If all twenty finish there, observed throughput is twenty divided by ten, or two saves per second. If only fifteen finish before the interval ends, completed throughput in that interval is 1.5 per second; five requests may still be unfinished or may have failed. Count those outcomes separately.\n\n| Observation | Count or duration | What it tells us |\n|---|---:|---|\n| Saves attempted in the window | 20 | Work offered to the app |\n| Saves completed in the window | 15 | Work finished within the window |\n| Window length | 10 seconds | Denominator for the rate |\n| One chosen save’s duration | 0.2 seconds | Latency of that one save |\n\nThese are invented teaching numbers, not measurements from your laptop. Notice that dividing fifteen by ten gives requests per second, not seconds per request. Units are a quick error detector. The duration of one chosen request also cannot stand in for the average of all fifteen.\n\nFor a storage estimate, suppose 1,000 new notes arrive each day and each saved text record averages 2 kB. Using decimal units, that is 2,000 bytes per note. Thirty days adds 1,000 × 2,000 × 30 = 60,000,000 bytes, or 60 MB of logical note records. This excludes photos, indexes, backups, and old versions. The estimate answers one narrow question; stating what is counted is more useful than a large unexplained total."
+    },
+    {
+      "id": "trace",
+      "title": "Find which step consumes the time",
+      "markdown": "Follow an album-opening request from click to visible page. The browser sends a request; the application checks permission; the database returns the note metadata; the response travels back; the browser fetches and displays images. Measure segments that correspond to those steps. A server timer that stops when it sends metadata does not include all image download and rendering time.\n\nKeep nested timers visible:\n\n| Timer or remainder | Illustrative duration | Relationship |\n| --- | --- | --- |\n| Click to useful visible page | 900 ms | Whole measured user action |\n| Application processing | 100 ms | Inside the user action |\n| Database query | 30 ms | Already included in the 100 ms |\n| Time outside the application timer | 800 ms | 900 − 100, not yet explained |\n\nDo not add 900 + 100 + 30; those intervals overlap by inclusion. The unexplained 800 ms may include network transfer, browser work, or separate image requests. Investigate those measurements before replacing the database.\n\nOne slow request can also be unusual. Collect several representative observations, including failed and timed-out requests. If nine actions take 100 ms and one takes 2,000 ms, the average is 290 ms. That average hides the person who waited two seconds. Later reliability lessons introduce percentiles for describing the distribution. Today, keep the individual times visible instead of assuming the average describes every user."
+    },
+    {
+      "id": "growth",
+      "title": "An estimate should choose the next experiment",
+      "markdown": "Demand varies with time. A hundred students may open the same shared album after a teacher posts a link. The busiest ten seconds can be far more intense than the average school day. A peak estimate must name its interval and cause. Do not multiply a daily average by an arbitrary number and present it as measured traffic.\n\nAlso count what one action triggers. Opening a page may request the note list and twenty separate thumbnails. One click is then several requests. Fetching full-size photos where thumbnails would suffice changes bytes transferred without changing the number of users. This is why a workload description includes both operation mix and payload size.\n\nBefore adding machines, write a hypothesis such as “the list is slow because it reads every note instead of using the owner index,” or “the page is slow because it downloads original photos.” Change one factor and compare representative observations. Preserve correctness and permissions during the experiment; a faster response with the wrong data is not an improvement.\n\nYour checkpoint is a small evidence note: which operation, which start and finish, how many attempts and completions, what sizes, and which next measurement would distinguish two explanations. You do not need a professional monitoring stack to learn this reasoning. The following guide uses those observations to decide whether the app should grow upward, outward, or simply do less unnecessary work."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "timing",
+      "title": "User-visible latency includes work outside the server timer",
+      "source": "sequenceDiagram\nparticipant U as User and browser\nparticipant A as Application\nparticipant D as Database\nU->>A: Open notes and start user timer\nNote over A: Application timer starts\nA->>D: Read permitted metadata\nD-->>A: Rows returned\nA-->>U: Metadata response and stop app timer\nU->>U: Fetch and display images\nNote over U: Stop user timer when useful page is visible",
+      "caption": "The arrows show order, not proportional duration. Record separate actual timings before naming the slowest step.",
+      "steps": [
+        "Start the user timer at the user action.",
+        "Measure application processing as one contained segment.",
+        "Locate the database query within that segment.",
+        "Include later image display before calling the user action complete."
+      ],
+      "sectionId": "trace"
+    },
+    {
+      "id": "timer-boundaries",
+      "sectionId": "trace",
+      "title": "A smaller timer can sit inside a larger one",
+      "source": "flowchart TB\nsubgraph U[User action: 900 ms]\nB[Browser and network work] --> A\nsubgraph A[Application timer: 100 ms]\nC[Checks and response work] --> D[Database query: 30 ms included]\nend\nA --> I[Images and browser display]\nend",
+      "caption": "Boxes indicate measurement inclusion, not scale or precise physical scheduling. Work outside the application timer is not yet attributed to a specific cause.",
+      "steps": [
+        "Choose the user-visible start and finish.",
+        "Locate the application interval within that measurement.",
+        "Recognize the database timer is part of application time and avoid double counting."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "An observation window lasts 20 seconds. The app receives 100 saves and completes 80 during that window. One save takes 300 ms. Compute the offered and completed rates, convert that latency to seconds, and explain why the missing 20 completions need investigation.",
+    "minutes": 8,
+    "rubric": [
+      "Computes 5 attempts/s and 4 completions/s.",
+      "Converts 300 ms to 0.3 seconds.",
+      "Keeps unfinished and failed requests distinct."
+    ],
+    "solution": "Offered rate is 100/20=5 saves/s; completed rate is 80/20=4 saves/s. The chosen save took 0.3 seconds. The other 20 may still be in progress, may have failed, or may fall outside the measurement boundary. Inspect outcomes before labeling all of them failures or claiming the system sustains 5 completed saves/s."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which quantity has units of seconds?",
+      "options": [
+        "Latency",
+        "Throughput in requests per second",
+        "Number of notes"
+      ],
+      "answer": "Latency",
+      "explanation": "It measures the duration of one operation."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Thirty requests finish in six seconds. Completed throughput is:",
+      "options": [
+        "5 requests/s",
+        "180 requests/s",
+        "0.2 requests/s"
+      ],
+      "answer": "5 requests/s",
+      "explanation": "Divide completed count by interval seconds."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A server timer includes every image download after its response:",
+      "options": [
+        "Always",
+        "Not necessarily"
+      ],
+      "answer": "Not necessarily",
+      "explanation": "The browser may perform additional requests and rendering after the server timer stops."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can a daily average hide a classroom event’s load?",
+      "answer": "Many users can act in the same short interval, producing a concentrated peak that is spread out by a daily average.",
+      "explanation": "State both the time window and the cause."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What distinguishes an estimate from evidence here?",
+      "answer": "An estimate follows stated assumptions and arithmetic; evidence records what was actually observed under a specified workload and boundary.",
+      "explanation": "Both are useful when they are labeled honestly."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Latency?",
+      "back": "One operation’s duration at a named boundary."
+    },
+    {
+      "front": "Throughput?",
+      "back": "Completed operations per unit time."
+    },
+    {
+      "front": "Milliseconds to seconds?",
+      "back": "Divide by 1,000."
+    },
+    {
+      "front": "Peak needs what?",
+      "back": "A time interval and a workload scenario or observation."
+    },
+    {
+      "front": "Before scaling?",
+      "back": "Measure the operation, locate the slow work, and test a specific explanation."
+    }
+  ],
+  "mentalModel": "Count the work and follow the waiting before choosing a larger machine.",
+  "sources": [
+    {
+      "title": "Google SRE: monitoring distributed systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE: handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "average-hides-slow-user",
+      "sectionId": "trace",
+      "title": "Ten requests, one unusually long wait",
+      "intro": "These are invented observations of the same action. Keep individual outcomes visible before reducing them to an average.",
+      "steps": [
+        {
+          "title": "Observe nine quick results",
+          "explanation": "Nine actions complete in 100 ms each. This says nothing yet about the tenth.",
+          "state": [
+            {
+              "label": "Observed results",
+              "value": "9"
+            },
+            {
+              "label": "Each duration",
+              "value": "100 ms"
+            },
+            {
+              "label": "Total of durations",
+              "value": "900 ms"
+            }
+          ]
+        },
+        {
+          "title": "Include the slow result",
+          "explanation": "The tenth user waits 2,000 ms. Adding durations is for computing a mean, not wall-clock batch duration.",
+          "state": [
+            {
+              "label": "Tenth duration",
+              "value": "2,000 ms"
+            },
+            {
+              "label": "Total of durations",
+              "value": "2,900 ms"
+            },
+            {
+              "label": "Number of results",
+              "value": "10"
+            }
+          ]
+        },
+        {
+          "title": "Compute the mean",
+          "explanation": "Divide the sum of these ten durations by ten.",
+          "state": [
+            {
+              "label": "Mean latency",
+              "value": "290 ms"
+            },
+            {
+              "label": "Quick users",
+              "value": "100 ms each"
+            },
+            {
+              "label": "Slow user",
+              "value": "2,000 ms"
+            }
+          ]
+        },
+        {
+          "title": "Choose the next investigation",
+          "explanation": "Inspect the slow request’s path and compare similar observations. The mean alone does not explain its cause.",
+          "state": [
+            {
+              "label": "Question",
+              "value": "Why was this request slow?"
+            },
+            {
+              "label": "Needed evidence",
+              "value": "Its measured segments"
+            },
+            {
+              "label": "Do not infer",
+              "value": "Every user waited 290 ms"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A mean summarizes observations; it does not replace their spread, their failure outcomes, or their measurement boundaries."
+    }
+  ]
+}

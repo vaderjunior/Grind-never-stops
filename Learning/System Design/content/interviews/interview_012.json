@@ -1,0 +1,110 @@
+{
+  "id": "interview_012",
+  "lessonId": "060",
+  "title": "[C] Scale a read-heavy service and defend every added component",
+  "version": 1,
+  "status": "drafted",
+  "aliases": [
+    "L060",
+    "lesson_060"
+  ],
+  "modeType": "C",
+  "minutes": 45,
+  "sessionMinutes": 60,
+  "brief": "Scale a public catalog service from500 to10,000 reads/s. Updates are infrequent, but users must see a confirmed update within30 seconds. Defend every new component, estimate capacity, and explain behavior during cache loss. Begin with the current simple service.",
+  "clarifications": [
+    {
+      "question": "What is the current design?",
+      "answer": "One API and one authoritative relational database. Reads are80% repeated popular catalog lookups; writes are10/s at peak."
+    },
+    {
+      "question": "What measured capacity is available?",
+      "answer": "The database sustains2,000 reads/s at the required latency under this mix. The API can be replicated; no shard requirement has been established."
+    },
+    {
+      "question": "What correctness/security constraints matter?",
+      "answer": "Only public catalog views may be shared cached. Administrative mutations require authorization. The30-second visibility goal includes cache and source freshness."
+    }
+  ],
+  "hints": [
+    "Calculate the hit ratio needed before assuming a cache solves demand.",
+    "A full cache loss can send the entire read stream to the database.",
+    "Draw a delayed-fill race for a concurrent update."
+  ],
+  "changes": [
+    "The cache is flushed during deployment. Protect the origin while recovering.",
+    "Catalog responses now vary by tenant entitlement. Revisit keys and shared-cache policy."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "Start by validating the10,000/s mix, payload sizes, latency objective, and measured baseline. Replicate stateless API work only if needed, budget aggregate pools, and cache repeated public reads when a measured hit ratio can reduce origin demand below2,000/s with headroom. At80% hits the database is exactly at2,000/s before writes/refreshes, so that is not comfortable capacity; measure achievable locality and improve the plan or provision justified headroom. Bound miss concurrency, coalesce hot-key refreshes, warm gradually, and deliberately reject/degrade excess traffic during cache loss. A30-second freshness goal requires TTL/source-age and invalidation-race reasoning; use authoritative versions or a tighter contract when needed. Keep admin writes authoritative and authorize them. When entitlement affects output, revise the representation key and access checks or avoid shared caching for those responses. Add CDN only if public-cacheable bytes/geography justify it; sharding is not justified merely by the RPS number.",
+  "debrief": "Review the decision chain: workload→measured bottleneck→smallest change→new failure obligation. Strong reasoning notices that exactly80% hits leaves no margin and that cache outage is a demand multiplier. Retry with immutable objects and a high byte-egress bottleneck to see which decision changes.",
+  "remediation": [
+    "051",
+    "052",
+    "054",
+    "056",
+    "057",
+    "058"
+  ]
+}

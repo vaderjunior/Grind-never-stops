@@ -1,0 +1,106 @@
+{
+  "id": "P1",
+  "title": "URL shortener",
+  "milestones": [
+    {
+      "lessonId": "039",
+      "number": 1,
+      "title": "[P1.1] URL shortener: persistent create/redirect path and correctness tests",
+      "focus": "Persistent create and redirect",
+      "task": "Implement create/resolve with a UNIQUE code constraint. Use the injected code factory to force a collision, retry at most ten times, and prove both destinations remain distinct after opening a second service instance. Validate destination protocol before any write.",
+      "failureInjection": "A collision overwrites an existing destination in an unsafe INSERT OR REPLACE implementation. Inject repeated identical codes; the original mapping must remain unchanged.",
+      "evidence": "Persist two URLs, force a collision, reopen the database, and capture the exact redirect destinations.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P1_1 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "059",
+      "number": 2,
+      "title": "[P1.2] URL shortener: add a cache and compare measured performance",
+      "focus": "Cache behavior and measurement",
+      "task": "Add cache-aside reads with metrics for DB reads, cache hits, and cache failures. Run the same redirect twice, disable the cache, then advance the fake clock exactly to expiration. Compare query counts under identical workloads before interpreting latency.",
+      "failureInjection": "A TTL checked only at cache insertion can serve expired links. Keep absolute expiry with the cached value and evaluate on every read.",
+      "evidence": "Record one DB read for two warm reads, a DB fallback during cache failure, and a not-found result at expiry.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P1_2 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "069",
+      "number": 3,
+      "title": "[P1.3] URL shortener: simulate partition movement and hotspot failures",
+      "focus": "Partition movement and hotspots",
+      "task": "Implement highest-score rendezvous assignment using SHA-256 of key plus node. Compare 1,000 keys on two nodes versus three. Identify which assignments change and explain why actual migration needs ownership epochs and read/write handoff.",
+      "failureInjection": "Hash distribution balances distinct keys, not accesses. Repeating a viral key still concentrates requests on one owner; adding nodes alone does not split that key.",
+      "evidence": "Show every moved key selects the new node; report moved fraction and distinguish the simulation from a storage migration.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P1_3 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "152",
+      "number": 4,
+      "title": "Design URL shortener II / [P1.4]: evolution, abuse, failures, and evidence",
+      "focus": "Evolution and evidence",
+      "task": "Run a skewed workload with 900 requests for one key and 100 distinct requests. Explain cache placement, admission controls, destination abuse checks, and the acceptable DB fallback load. Defend a single database until measured constraints justify more state machinery.",
+      "failureInjection": "Cache outage plus viral traffic can overload the database. State a bounded fallback policy; do not infer production throughput from this local harness.",
+      "evidence": "Submit operation counters, skew table, the collision exhaustion result, and one decision record with assumptions and a rollback trigger.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P1_4 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    }
+  ],
+  "baselineArtifact": "Persistent service, cache, partition simulation, architecture evolution",
+  "acceptanceEvidence": [
+    "Collision handling",
+    "correct redirects",
+    "cache outage behavior",
+    "measured load and skew"
+  ],
+  "source": "catalog",
+  "version": 1,
+  "status": "reference-tested",
+  "authorship": "original prepared teaching implementation; curriculum names and milestone IDs source-derived",
+  "invariant": "A code names exactly one immutable destination; successful create survives restart. Cache loss may add latency but cannot change a redirect.",
+  "requirements": [
+    "Accept only bounded HTTP(S) destinations without embedded credentials. Return a collision-safe code and a persistent redirect.",
+    "Support optional expiration; expired values must fail even when cached. Cache is derived, never authoritative.",
+    "Measure operations and skew locally. Demonstrate partition reassignment without claiming that the simulation moves durable data."
+  ],
+  "architecture": "POST /links → validated create → SQLite unique code; GET /code → cache → SQLite fallback → 302. Rendezvous assignment is a separate deterministic partition simulation.",
+  "limitations": "Single-machine SQLite, immutable links, an in-process cache, and a teaching HTTP harness. No abuse classifier, cross-node replication, account service, or distributed migration is implemented.",
+  "extensions": [
+    "Add authenticated mutable destinations using versions and cache invalidation tests.",
+    "Model partition owner epochs and stale-owner rejection before implementing network distribution."
+  ],
+  "learnerFile": "projects/learner/shortener.py",
+  "referenceFile": "projects/reference/shortener.py",
+  "instructionsFile": "projects/P1.md",
+  "testFile": "projects/tests/test_projects.py",
+  "referenceReveal": "Explicit reveal in the academy; reference source also remains inspectable on disk. Educational spoiler control, not secure examination."
+}

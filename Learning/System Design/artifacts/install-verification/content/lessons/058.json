@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "058",
+  "objectives": [
+    "Choose cache keys and directives for public versus private responses.",
+    "Explain validators, revalidation, and origin protection.",
+    "Separate CDN distribution from authorization and freshness."
+  ],
+  "retrieval": [
+    "L014: distinguish safe methods from cacheability.",
+    "L057: why can stale private state be a correctness problem?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "An impressive hit ratio can be a privacy incident",
+      "markdown": "A shared edge caches /account using only the path. Alice's personalized response is returned to Bob. The edge reduced origin requests perfectly while violating the most important requirement. Caching must preserve representation identity and access scope before optimizing traffic.\n\nA content delivery network places serving capacity near users and can cache reusable responses. Its useful effects include shorter network paths for cached objects and shielding origins from repeated demand. It does not make all responses public, remove the need for authorization, or guarantee that every edge sees a change instantly."
+    },
+    {
+      "id": "mechanism",
+      "title": "Fresh reuse, validation, and storage are separate decisions",
+      "markdown": "A cache key must distinguish inputs that change the representation: method/target and selected request fields, with a deliberate policy for query parameters, language, encoding, and access scope. HTTP Vary identifies request header fields that influence selection. A cache policy still must understand personalized/authenticated responses and shared-cache restrictions. Do not assume a cookie or Authorization header is safely included by every deployment's default key.\n\nCache-Control directives express storage and reuse constraints. no-store asks caches not to store the response. no-cache permits storage but requires successful validation before reuse under the relevant rules. private limits storage to private caches rather than shared caches. max-age controls freshness lifetime; shared-cache-specific policies can differ where explicitly configured. Read the full protocol and chosen CDN documentation for concrete behavior.\n\nETag or Last-Modified validators support conditional requests. A cache with a stored response can ask whether its representation remains valid. A304 response can let it reuse the stored body after updating applicable metadata. Validation still reaches a server or intermediary able to decide; it saves transferring unchanged content, not necessarily every origin computation. Invalidating a CDN cache is a separate operation with deployment-specific propagation behavior."
+    },
+    {
+      "id": "worked",
+      "title": "Public assets and private APIs need different contracts",
+      "markdown": "For an immutable public asset with a content-derived filename such as app.8f31.js, a long freshness lifetime is useful because a content change produces a new URL. HTML that references the asset may need a shorter lifetime or validation to discover the new version. This separates immutable payload reuse from mutable release discovery.\n\nFor /api/account, begin with a policy that avoids shared caching until a defensible key and authorization design exists. Private browser caching may still be inappropriate for sensitive state or shared-device behavior. A CDN configuration that ignores origin directives can override assumptions, so test actual headers and cross-user requests.\n\nSuppose traffic is2GB/s and the byte hit ratio is95%. Approximate origin body egress is0.10GB/s before refreshes, fills, revalidation, and protocol overhead. If the hottest object expires everywhere together, average hit ratio may conceal a sharp origin spike. Shielding, request coalescing, gradual warming, and bounded origin admission address different parts of that failure path."
+    },
+    {
+      "id": "failure",
+      "title": "Protect both origin capacity and representation correctness",
+      "markdown": "A CDN may terminate TLS and see plaintext, as in L013. Signed URLs or cookies can limit object access, but cache behavior must not allow one authorized fetch to make private data available to everyone under an incomplete key. Token expiry, object deletion, and permission revocation need documented serving behavior. Avoid credentials in broadly logged URLs unless the design explicitly controls exposure and lifetime.\n\nCache poisoning can occur when unkeyed request inputs affect a cacheable response. Normalize and validate host/forwarded headers, control which inputs generate redirects/links, and test unusual query/header combinations. Negative caching of errors can amplify a brief outage if failure responses are stored too long. Know what the edge caches on each status.\n\nCommon mistakes are equating no-cache with no-store, treating TTL as instant purge, and using request hit ratio for a bandwidth claim. Optional practice: inspect a local response-header fixture and identify the exact representation dimensions; no external CDN account is required."
+    },
+    {
+      "id": "schedule",
+      "title": "Core versus optional practice",
+      "markdown": "Core55 minutes: retrieval5, explanation/diagram18, worked trace8, exercise10, scheduled questionsQ1–Q3 for10, comparison/cards4. QuestionsQ4–Q5 are extra practice. Use the mechanism lab to explore illustrative models; its output is not a production measurement."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "validation",
+      "title": "Revalidation reuses a body after checking freshness",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant E as Shared edge cache\nparticipant O as Origin\nB->>E: GET public document\nNote over E: Stored body has validator v9 but is stale\nE->>O: Conditional GET with If-None-Match v9\nO-->>E: 304 not modified\nE-->>B: Reused body with applicable metadata",
+      "caption": "Example is public content. A304 validates a stored representation; it does not carry the entire body or authorize unrelated users.",
+      "steps": [
+        "Find a matching stored representation.",
+        "Determine that fresh reuse is no longer permitted.",
+        "Validate with its identity/validator.",
+        "Reuse the stored body only after the validation contract permits it."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Specify policies for immutable public JS, mutable public HTML, and a tenant-specific invoice response. Include cache key dimensions and one cross-user test. Then estimate origin body egress for2GB/s with95% byte hits.",
+    "rubric": [
+      "Use new URLs for immutable changed assets.",
+      "Distinguish validation/no-store/private semantics.",
+      "Prevent shared invoice reuse across tenants.",
+      "Calculate0.10GB/s and state exclusions."
+    ],
+    "solution": "Public content-hashed JS can have a long public freshness lifetime; changed bytes receive a new URL. Mutable HTML can use short freshness and validators to discover deployments. For invoices, start with no-store or a carefully justified private policy; any shared cache requires validated tenant/object authorization and complete representation keys, not just path. Test Alice then Bob requesting the same apparent route and verify no cross-user reuse. Egress estimate2×0.05=0.10GB/s excludes fills, validation traffic, headers, and correlated misses."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does no-cache mean?",
+      "options": [
+        "Never store",
+        "Validate before reuse under the caching rules",
+        "Always public"
+      ],
+      "answer": "Validate before reuse under the caching rules",
+      "explanation": "no-store is the directive against storage; the names are easy to confuse."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "2GB/s traffic with95% byte hits leaves approximate origin body egress?",
+      "answer": 0.1,
+      "unit": "GB/s",
+      "tolerance": 0.01,
+      "explanation": "2×0.05=0.10GB/s before other traffic."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Why use a content-derived filename for an immutable public asset?",
+      "options": [
+        "To make authorization unnecessary for private data",
+        "Changed content gets a new cache identity",
+        "To force every request to origin"
+      ],
+      "answer": "Changed content gets a new cache identity",
+      "explanation": "Long reuse is safe for that immutable representation; mutable HTML still discovers new URLs."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When does validation help less than expected?",
+      "answer": "When origin computation is still expensive, validators are unavailable/unstable, or validation traffic itself dominates. It primarily avoids transferring an unchanged body.",
+      "explanation": "When origin computation is still expensive, validators are unavailable/unstable, or validation traffic itself dominates. It primarily avoids transferring an unchanged body."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can high CDN hit ratio coexist with a severe security bug?",
+      "answer": "An incomplete key can reuse one user’s private representation for another. Correct identity and authorization precede performance.",
+      "explanation": "An incomplete key can reuse one user’s private representation for another. Correct identity and authorization precede performance."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "no-cache?",
+      "back": "Storage may occur; validation is required before reuse."
+    },
+    {
+      "front": "no-store?",
+      "back": "Do not store the response under the directive’s rules."
+    },
+    {
+      "front": "private?",
+      "back": "Response is for a private cache, not shared caching."
+    },
+    {
+      "front": "Vary?",
+      "back": "Names request header fields that affect representation selection."
+    },
+    {
+      "front": "304?",
+      "back": "Validation result enabling permitted reuse of an existing stored representation."
+    }
+  ],
+  "mentalModel": "Cache only the same permitted representation; distribution speed cannot repair a wrong identity.",
+  "sources": [
+    {
+      "title": "RFC9111 — HTTP Caching",
+      "url": "https://www.rfc-editor.org/rfc/rfc9111.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC9110 — Conditional requests and validators",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "checked": "2026-09-29"
+    }
+  ]
+}

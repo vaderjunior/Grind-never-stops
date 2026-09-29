@@ -1,0 +1,366 @@
+{
+  "id": "kubernetes-building-blocks",
+  "title": "Kubernetes: Pods, Deployments, Services, and the control loop",
+  "version": 2,
+  "week": 13,
+  "level": "intermediate",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Understand what Kubernetes keeps running, what carries application traffic, and why a healthy deployment needs more than a replica count.",
+  "objectives": [
+    "Distinguish Pods, Deployments, ReplicaSets, and Services.",
+    "Trace desired-state reconciliation separately from a user request.",
+    "Explain requests, limits, configuration, and basic probes.",
+    "Apply the model to a stateless MCP or AI gateway without assuming Kubernetes fixes application correctness."
+  ],
+  "terms": [
+    {
+      "term": "Container",
+      "definition": "An isolated application process environment created from an image, with configured runtime resources and interfaces."
+    },
+    {
+      "term": "Pod",
+      "definition": "Kubernetes’s scheduling unit containing one or more closely related containers with shared networking and configured volumes."
+    },
+    {
+      "term": "Node",
+      "definition": "A machine in the cluster that can run Pods."
+    },
+    {
+      "term": "Deployment",
+      "definition": "An object describing desired replicated application Pods and managing their rollout through ReplicaSets."
+    },
+    {
+      "term": "ReplicaSet",
+      "definition": "A Kubernetes object declaring a desired number of matching Pods; its controller works to maintain that number."
+    },
+    {
+      "term": "Service",
+      "definition": "A stable access abstraction for a set of eligible network endpoints, often selected Pods."
+    },
+    {
+      "term": "Controller",
+      "definition": "A loop that observes current state and acts to bring it closer to desired state."
+    },
+    {
+      "term": "Control plane",
+      "definition": "Components that store cluster intent and coordinate scheduling and reconciliation."
+    }
+  ],
+  "retrieval": [
+    "Why must two application replicas avoid keeping the only saved notes inside one process?",
+    "How does readiness differ from liveness?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "We need a way to keep the intended application running",
+      "markdown": "Pocket Notes now has several stateless API instances. Stateless here means a request can reach a suitable instance without requiring the only copy of its durable user data to live inside that instance. The notes remain in shared persistent storage. Somebody must start instances, replace failed ones, place them on available machines, and roll out a new image.\n\nKubernetes provides machinery for describing and reconciling that desired state. It does not decide the product’s data model, make every request idempotent, or automatically back up the database. It manages a workload under the configuration and resources it is given.\n\nThink of a building manager told to keep three staffed desks available. The manager arranges replacements and assignments; visitors talk to the desks for actual service. The analogy separates management from service delivery. Its limit is that software failures, network paths, and storage guarantees require explicit technical rules, not just a staffing instruction."
+    },
+    {
+      "id": "pod",
+      "title": "A Pod is the unit placed on a node",
+      "markdown": "An image supplies a packaged process environment; a container runs a process using that environment. A Pod contains one or more containers that belong together. Containers in a Pod share a network context and can share configured volumes. For a simple notes API, one application container in each Pod is enough for the mental model.\n\nA node runs Pods using node-side software and a container runtime. A scheduler chooses an appropriate node for a new unscheduled Pod using declared requirements and available placement information. Scheduling is a placement decision; it does not execute the user’s note-read logic.\n\nPods can be replaced. A replacement is a new Pod with its own identity, and addresses can change. The writable container layer is not a safe place for the only copy of accepted notes. Volumes can provide different lifetimes, including persistent storage when configured, but saying “it is in Kubernetes” does not establish backup, database recovery, or shared-write safety."
+    },
+    {
+      "id": "deployment",
+      "title": "A Deployment describes the intended replicas and rollout",
+      "markdown": "A Deployment declares the desired version and replica count for an appropriate application workload. For the notes API, start with three Pods using one template.\n\n| Object or participant | Responsibility | Does each user request pass through it? |\n| --- | --- | --- |\n| Deployment | Manages rollout and ReplicaSets | No |\n| ReplicaSet | Maintains matching Pod count | No |\n| Pod | Runs the application container(s) | The selected application receives the request |\n| Service/network data plane | Provides stable discovery and reaches eligible backends | Traffic uses its configured networking behavior |\n\nThe word replica here means another **application Pod**, not a synchronized database copy. Three API Pods may all depend on one database. If that dependency fails, all three can become unable to serve notes.\n\nDuring a release, the Deployment coordinates old and new ReplicaSets. Replacement still needs spare resources, startup, readiness, and safe shutdown. Old and new code must understand the stored data they share. A rollout object cannot make an incompatible migration safe just by starting containers gradually."
+    },
+    {
+      "id": "declarative",
+      "title": "Desired state is not a one-time remote command",
+      "markdown": "Declare what should be true, then inspect what is currently true. The Kubernetes API accepts configuration; controllers repeatedly compare it with observed state and act. This comparison is **reconciliation**.\n\n| Observation | Desired replicas | Existing/ready condition | What still needs to happen |\n| --- | --- | --- | --- |\n| Normal operation | 3 | Three ready Pods | Continue observing |\n| One managed Pod disappears | 3 | Two remain ready | Create and start a replacement if possible |\n| Replacement exists but cannot fit | 3 | New Pod Pending | Find suitable node capacity or correct its requirements |\n| Replacement starts but is unready | 3 | Three exist, two ready | Satisfy startup/readiness conditions |\n\nStopping a Pod manually does not change the declared count. To intentionally run two replicas, change the desired configuration rather than repeatedly fighting the controller.\n\n~~~text\nintent recorded → controller creates missing object → scheduler places Pod\n               → node starts containers → readiness makes it useful for traffic\n~~~\n\nEvery arrow can wait or fail. Inspect status and events at the boundary that is stuck. “Desired = 3” is an instruction; “ready = 3” is an observation. Neither alone proves every business request is correct."
+    },
+    {
+      "id": "service",
+      "title": "A Service lets callers use a stable target",
+      "markdown": "Callers should not permanently memorize a particular Pod’s changing address. A Service commonly gives them a stable name and virtual access point. Labels identify application Pods; a Service selector chooses matching Pods, and endpoint information tracks the appropriate destinations. Actual forwarding is implemented by the cluster’s networking machinery, which can vary.\n\nA request goes through the configured network path to an eligible Pod. It does not execute the Deployment object and then the ReplicaSet as if those were request-processing servers. The Deployment and ReplicaSet manage Pods; the Service helps callers reach them. This distinction fixes a common misleading arrow diagram.\n\nFor traffic arriving from outside the cluster, an ingress or gateway implementation may handle the external routing before the Service/Pod path. Creating an Ingress or Gateway configuration requires a compatible implementation to act on it. The core API object alone is not an internet-facing proxy process."
+    },
+    {
+      "id": "configuration",
+      "title": "Configuration and secrets have different handling needs",
+      "markdown": "A ConfigMap holds ordinary configuration, such as a feature setting or dependency address. A Secret is intended for sensitive configuration, such as a credential. Applications can consume these through supported environment-variable or file-mount arrangements. Decide how and when changes reach the application; a running process does not necessarily reread every changed setting automatically.\n\nBase64 representation is not encryption. A Secret object still needs appropriate access control, secure cluster configuration, and careful handling in logs and deployment workflows. Avoid baking credentials into a reusable image. Grant the application only the access it needs rather than relying on the object’s name to keep values private.\n\nConfiguration has versions and compatibility too. A new API image expecting a missing field can fail across all replicas. Validate required settings before declaring readiness and plan how rollout and configuration changes interact. Three identical misconfigurations are still one shared failure."
+    },
+    {
+      "id": "resources",
+      "title": "Requests help placement; limits constrain use",
+      "markdown": "A resource request declares what a container needs for scheduling and resource allocation. If each Pod requests 500 millicpu, that is half a CPU unit. Three such Pods request 1.5 CPU units in total. This is a simple accounting example, not proof that three Pods can serve a particular request rate.\n\nResource limits constrain use under the platform’s rules. A CPU limit can lead to throttling when the workload wants more CPU time. Memory enforcement can terminate a container that exceeds its limit under the applicable behavior. A request is not a hard upper bound, and memory limits are not a promise of graceful slowing.\n\nChoose values from representative measurements, including startup and peak conditions. Requests that are too small can contribute to crowded placement; requests that are unnecessarily large can leave Pods unschedulable or waste capacity. A replica increase is useful only if the scheduler can place the Pods and the application’s shared dependencies can support their work."
+    },
+    {
+      "id": "health",
+      "title": "Ready, alive, and starting are different states",
+      "markdown": "A readiness probe asks whether this Pod should receive new traffic through the normal Service endpoint selection. A liveness probe can cause a failing container to restart after its configured failure criteria. A startup probe gives a slowly initializing application time before the other probes govern it in their usual way.\n\nSuppose an AI gateway needs to load configuration before answering. It can be running but not ready. Suppose a worker has deadlocked and cannot recover internally. Restarting might help, so a liveness check can be appropriate. If every Pod merely cannot contact the same unavailable database, restarting them all is unlikely to repair that dependency.\n\nAt shutdown, allow time for routing changes and bounded draining of ongoing work. A readiness change does not erase requests already in flight or instantly update every network observer. Application deadlines and retry safety still matter. A green readiness probe is a narrow observation, not a full proof of every endpoint’s correctness."
+    },
+    {
+      "id": "ai",
+      "title": "Worked example: an MCP gateway in an AI platform",
+      "markdown": "MCP means Model Context Protocol: a protocol through which AI applications access tools and context offered by servers. A tool here is a named operation such as looking up a deployment, with defined inputs and results. You will study the protocol later; this example only needs the familiar request-and-response idea.\n\nAn MCP gateway accepts permitted tool requests and calls internal services. Start with a Deployment requesting three stateless gateway Pods, a Service selecting their application label, and shared storage for durable operation state. An external gateway handles the chosen public entry path. The application still validates callers and enforces permission for each tool operation.\n\nTrace one request: external entry, network routing toward the Service’s eligible endpoints, one ready gateway Pod, then the internal tool API. Neither the Deployment controller nor the scheduler handles the tool call’s business logic. If that Pod disappears after the tool committed, a retry may reach another Pod; stable operation identity and durable result handling remain application responsibilities.\n\nIf a GPU-backed model worker is added later, it needs its own image, supported device/resource configuration, and suitable node capacity. Scaling the lightweight gateway does not automatically increase GPU capacity. Keep those workloads and bottlenecks distinct. Kubernetes can manage both, but their startup times, memory use, and useful scaling signals can differ greatly."
+    },
+    {
+      "id": "failure",
+      "title": "Predict what a failure does before writing more YAML",
+      "markdown": "If one managed Pod stops, expect replacement when resources permit. If a node fails, replacement and traffic recovery take time and depend on failure detection and available capacity elsewhere. If all replicas sit on that node, the count of three did not provide protection from that node’s failure. Placement across appropriate failure boundaries must be deliberate.\n\nIf the control plane is temporarily unavailable, some already-running application traffic can continue using existing state, while scheduling, changes, and reconciliation are impaired. Exact behavior depends on what else failed. This illustrates why management and request paths should be drawn separately.\n\nYour checkpoint is to explain every arrow without saying only “Kubernetes handles it.” State who records intent, who creates Pods, who runs them, and which network mechanism reaches them. Then name one thing the application still owns: authorization, durable data, duplicate handling, or correctness during a rollout."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "control",
+      "title": "Management maintains Pods; it does not execute note requests",
+      "sectionId": "declarative",
+      "source": "flowchart TB\nU[Operator declares three replicas] -.-> API[Kubernetes API and desired state]\nAPI -.-> D[Deployment manages ReplicaSet]\nD -.-> R[ReplicaSet maintains matching Pods]\nR -.-> P[New Pod object]\nP -.-> S[Scheduler selects suitable node]\nS -.-> N[Node runtime starts containers]\nN -.-> O[Observed startup and readiness]",
+      "caption": "All dotted arrows here describe management, not the HTTP request path. Capacity, image availability, and application readiness can prevent desired state from becoming useful capacity.",
+      "steps": [
+        "Record the intended application version and count.",
+        "Let the ownership chain create missing Pods.",
+        "Place and start those Pods on suitable nodes.",
+        "Observe readiness separately from object creation."
+      ]
+    },
+    {
+      "id": "traffic",
+      "title": "Application traffic reaches Pods through the network path",
+      "source": "flowchart LR\nC[Client] --> G[Configured external gateway]\nG --> S[Service access and cluster routing]\nS --> P1[Ready API Pod A]\nS --> P2[Ready API Pod B]\nP1 --> D[(Shared saved application data)]\nP2 --> D\nM[Deployment manages Pod lifecycle] -.-> P1\nM -.-> P2",
+      "caption": "Solid arrows show the illustrative request path. Dashed arrows show management. Forwarding details depend on the installed networking implementation.",
+      "steps": [
+        "Enter through the configured public gateway.",
+        "Resolve and route toward the Service endpoints.",
+        "Choose an eligible application Pod.",
+        "Keep durable shared state separate from a replaceable Pod."
+      ],
+      "sectionId": "service"
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "A Deployment desires three Pods, but only two are Ready and one is Pending for insufficient resources. Explain what a caller through the normal Service path should reach, what the scheduler/controller can and cannot fix, and why sending a request through “Service → Deployment → Pods” is a misleading data-path diagram.",
+    "rubric": [
+      "Separates desired, scheduled, running, and ready state.",
+      "Recognizes capacity and eligibility limits.",
+      "Distinguishes management from request forwarding."
+    ],
+    "solution": "The normal eligible endpoint set includes the ready Pods under the configured Service behavior; the Pending Pod cannot serve traffic. Controllers maintain desired objects and the scheduler seeks a suitable node, but they cannot create missing CPU/GPU capacity from nothing. The Deployment manages Pod lifecycle and rollout; it is not a request-processing hop after the Service. Networking routes requests to suitable endpoints."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which item is Kubernetes’s scheduling unit?",
+      "options": [
+        "Pod",
+        "SQL row",
+        "HTTP header"
+      ],
+      "answer": "Pod",
+      "explanation": "Containers belonging together are placed as a Pod."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Does a Deployment normally process every HTTP request before its Pods?",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "It manages workload state; the application request follows the configured network path."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Three Pods each requesting 500 millicpu request what total CPU?",
+      "options": [
+        "0.5 CPU",
+        "1.5 CPU",
+        "5 CPU"
+      ],
+      "answer": "1.5 CPU",
+      "explanation": "500 millicpu is 0.5 CPU; three requests sum to 1.5 CPU units."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does a replica count of three not guarantee node-failure tolerance?",
+      "answer": "All three might share one failed node or another shared dependency, and replacement needs time and capacity.",
+      "explanation": "Placement, readiness, dependencies, and recovery behavior determine the real protection."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What application guarantee does Kubernetes not create automatically after a Pod crashes?",
+      "answer": "Examples include one-time effects for retried tool calls, access permissions, database backups, and durable operation results.",
+      "explanation": "Workload replacement is not the same as application correctness."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Deployment / ReplicaSet / Pod?",
+      "back": "Rollout and desired workload / desired matching count / scheduled container group."
+    },
+    {
+      "front": "Service role?",
+      "back": "Stable access abstraction for eligible endpoints, commonly selected Pods."
+    },
+    {
+      "front": "Reconciliation?",
+      "back": "Repeatedly observe actual state and act toward declared desired state."
+    },
+    {
+      "front": "Request versus limit?",
+      "back": "Declared allocation/placement need versus a runtime resource constraint."
+    },
+    {
+      "front": "Secret base64 means encrypted?",
+      "back": "No. Access control and secure storage/handling remain necessary."
+    }
+  ],
+  "mentalModel": "Draw one picture for keeping Pods running and another for serving a request. Connect them through observed readiness, not imaginary controller hops.",
+  "sources": [
+    {
+      "title": "Kubernetes: components",
+      "url": "https://kubernetes.io/docs/concepts/overview/components/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: Pods",
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: Deployments",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: Services",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: controllers",
+      "url": "https://kubernetes.io/docs/concepts/architecture/controller/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: ConfigMaps",
+      "url": "https://kubernetes.io/docs/concepts/configuration/configmap/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: Secrets",
+      "url": "https://kubernetes.io/docs/concepts/configuration/secret/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: container resources",
+      "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes: probes",
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/probes/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Model Context Protocol: introduction",
+      "url": "https://modelcontextprotocol.io/docs/getting-started/intro",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "desired-observed",
+      "title": "Three desired Pods can temporarily mean only two ready",
+      "sectionId": "declarative",
+      "intro": "The notes Deployment asks for three replicas. The database remains healthy; this walkthrough follows only one Pod replacement.",
+      "steps": [
+        {
+          "title": "The desired and observed counts agree",
+          "explanation": "Pods A, B, and C are ready and can be selected for ordinary traffic.",
+          "state": [
+            {
+              "label": "Desired",
+              "value": "3"
+            },
+            {
+              "label": "Existing",
+              "value": "A, B, C"
+            },
+            {
+              "label": "Ready",
+              "value": "3"
+            }
+          ]
+        },
+        {
+          "title": "One Pod disappears",
+          "explanation": "C is gone. The desired count remains three, so the controller sees a difference.",
+          "state": [
+            {
+              "label": "Desired",
+              "value": "3"
+            },
+            {
+              "label": "Existing",
+              "value": "A, B"
+            },
+            {
+              "label": "Ready",
+              "value": "2"
+            },
+            {
+              "label": "ManagementAction",
+              "value": "Create replacement D"
+            }
+          ]
+        },
+        {
+          "title": "A replacement object is not capacity yet",
+          "explanation": "D exists but is Pending while scheduling requirements are unresolved. A and B still carry available traffic.",
+          "state": [
+            {
+              "label": "Desired",
+              "value": "3"
+            },
+            {
+              "label": "Existing",
+              "value": "A, B, D"
+            },
+            {
+              "label": "Ready",
+              "value": "2"
+            },
+            {
+              "label": "DState",
+              "value": "Pending"
+            }
+          ]
+        },
+        {
+          "title": "Placement and readiness finish",
+          "explanation": "D is scheduled, starts, and meets readiness. Endpoint changes propagate before ordinary new traffic uses it.",
+          "state": [
+            {
+              "label": "Desired",
+              "value": "3"
+            },
+            {
+              "label": "Ready",
+              "value": "3 after propagation"
+            },
+            {
+              "label": "DState",
+              "value": "Ready"
+            },
+            {
+              "label": "Limit",
+              "value": "No claim of zero interrupted requests"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Reconciliation closes a desired-versus-observed gap over time. The application and data design still own correct requests and durable state."
+    }
+  ]
+}

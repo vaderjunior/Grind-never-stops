@@ -1,0 +1,325 @@
+{
+  "reviewer": "interface agent — independent review of curriculum agent refinements",
+  "reviewedAt": "2026-09-29T14:07:36.226Z",
+  "scope": [
+    "what-is-system-design",
+    "computer-and-server-basics",
+    "request-journey",
+    "dns-and-addresses",
+    "apis-without-jargon",
+    "connection-and-protocol-basics",
+    "data-that-survives",
+    "processes-threads-and-concurrency",
+    "databases-and-sql",
+    "sql-in-small-steps",
+    "find-data-with-indexes",
+    "database-families",
+    "transactions-and-correctness",
+    "data-modeling-basics",
+    "choose-a-database",
+    "blobs-files-and-objects",
+    "measure-before-scaling",
+    "grow-one-server",
+    "gateways-and-proxies",
+    "service-boundaries",
+    "load-balancing",
+    "remember-with-caches",
+    "redis-from-scratch",
+    "cache-patterns-and-invalidation"
+  ],
+  "method": "Read full updated prose, tables, diagrams, walkthrough transitions, exercises, objective answer keys, open-response guidance and flashcards. Checked illustrative arithmetic and accepted-state boundaries. Made six targeted teaching corrections plus concept-boundary paragraph breaks in seven guides, without altering protected assessment content.",
+  "referencesChecked": [
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc9293.html",
+      "purpose": "Ordered byte-stream contract for the framing walkthrough"
+    },
+    {
+      "url": "https://redis.io/docs/latest/commands/set/",
+      "purpose": "SET replacement and TTL behavior"
+    },
+    {
+      "url": "https://redis.io/docs/latest/commands/ttl/",
+      "purpose": "TTL special reply meanings"
+    }
+  ],
+  "checks": {
+    "records": 24,
+    "allProtectedAssessmentsUnchanged": true,
+    "walkthroughAndDiagramStructure": true,
+    "rendering": "Parent owns the final shared render after content freeze"
+  },
+  "records": [
+    {
+      "id": "what-is-system-design",
+      "sha256": "a8aa844bfafc68a2fbe9c4fea486d0e68370cce609692fd48f28416e39bf7f0c",
+      "beforeReviewSha256": "5158564a0a9b25ba08f812cd5b0c0012b4a6236ad0ed8597b39a7dda320a3bf3",
+      "notes": [
+        "Read the full three-role story, save/read diagrams, exercise and checks. The draft-to-record states correctly separate stored facts from confirmation.",
+        "Replaced stale week-specific wording for memory/storage study with “the next chapters,” matching the expanded foundation sequence."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "a7df5662be546171feef49ddc61b6ff761817a5a9902add308533af5ff392383"
+    },
+    {
+      "id": "computer-and-server-basics",
+      "sha256": "c726d206a531906a1697554ea5cb1725a4a247a15a927dcf98c7d5109caba905",
+      "beforeReviewSha256": "c726d206a531906a1697554ea5cb1725a4a247a15a927dcf98c7d5109caba905",
+      "notes": [
+        "Checked CPU-seconds, bits/bytes, and upload-memory arithmetic: 100 × 8 MB + 250 MB = 1,050 MB; limiting buffers to 50 gives 650 MB.",
+        "The resource diagnosis diagram presents hypotheses, and the walkthrough labels payload-only totals and bounded admission. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "ce56c8058351f8fd9a34d67549b846694b81ba7aea33bda62b16bb6f4819e510"
+    },
+    {
+      "id": "request-journey",
+      "sha256": "1dcbbc67b7bc911477ac67756399c44fff330d76d242b6467649f9a311076544",
+      "beforeReviewSha256": "296286ab742cbcd5bf048eb3cfc75b3306121fa8683f20c4fd8e48c056eb6528",
+      "notes": [
+        "Checked page-then-data chronology (40/70/75/120 ms), request fields, reuse diagram, and displayed-note failure cases.",
+        "The diagram and prose preserve connection security versus application authorization and label timing as illustrative. No content correction required.",
+        "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "5d962445a81610dbf02b4be7703f3c71a984cd710df3d791940e364ea7c38d74"
+    },
+    {
+      "id": "dns-and-addresses",
+      "sha256": "cd67b09c5ba4f46861a99d4e94d4f539e0949b4765706d507c415a27861a0d59",
+      "beforeReviewSha256": "e54c9dcaca648836ccb53166dc2e48f2fe4c466b2c86c87f17f9803abd66ee99",
+      "notes": [
+        "Checked hostname/path separation, DNS hierarchy, existing-cache TTL example, diagnostic table and path-change walkthrough.",
+        "Corrected the connection diagram to show the URL’s explicit/default port feeding the endpoint separately from the DNS address. Ordinary hostname lookup must not appear to supply the application port.",
+        "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "104cdf0889bc09dbe606e39a0a76905ab3df4b4c0a345546f0fa12be111b412e"
+    },
+    {
+      "id": "apis-without-jargon",
+      "sha256": "a145e7687e76b160205b76e38064fb86bfa5b73fc890847c967cb7977c91c3af",
+      "beforeReviewSha256": "a145e7687e76b160205b76e38064fb86bfa5b73fc890847c967cb7977c91c3af",
+      "notes": [
+        "Checked method/path and input/result examples, scoped edit walkthrough and timeout-result diagram.",
+        "Validation, caller identity and record permission remain separate; title update retains the same note identity. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "1412b626875517a0b93c50c2af44d897d73002cb48750afb0f951a6f10ed5740"
+    },
+    {
+      "id": "connection-and-protocol-basics",
+      "sha256": "9f54c17eb1e7da488175ebb131b25371020613a991a38d51bb897fe045aa4a56",
+      "beforeReviewSha256": "f1755976baa9dbfbec28026d28617aa4b368c2691b9f7b24bcac5af568e5f832",
+      "notes": [
+        "Checked all layer comparisons, TCP/QUIC limits, streaming direction, TLS-hop diagram and byte-stream walkthrough.",
+        "Clarified that the invented length prefix counts payload bytes and uses single-byte ASCII characters; changed the state label from 3 characters to 3 bytes. This prevents generalizing a character count to arbitrary encoded text.",
+        "Rechecked RFC 9293’s ordered byte-stream semantics and added the official TCP reference.",
+        "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "bcdcd620f38647f4710a85f612adaf9b6f403ca532c64e6878b77cb046e452f2"
+    },
+    {
+      "id": "data-that-survives",
+      "sha256": "60ee856ad255c2dcbea003362267c99476eb3fa11dd669f40a5fdeec59a9ccf2",
+      "beforeReviewSha256": "01757da70d20268a80c9859187c895634dbb327101c9dfdc96527952f73f38bd",
+      "notes": [
+        "Checked saved-copy versus cache-copy roles, process-restart walkthrough, backup timeline and exercise outcomes.",
+        "Aligned the pause-and-predict backup count with the adjacent diagram’s two notes. Persistent copies, retained backups and restore testing remain distinct."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "129fea644361a4245ed6e4fa3452becda2584de930e07fd5d56817e3cee66b95"
+    },
+    {
+      "id": "processes-threads-and-concurrency",
+      "sha256": "d469976424e2f68fa7c9fc5ca0b88ecb8bf260ae5fb62ee8136ee4aafd5dc068",
+      "beforeReviewSha256": "a384cc92598e8b59bd79ee88770c079a95183e6cea29e61da2a321689b68a948",
+      "notes": [
+        "Verified the blocking 210 ms versus overlapping 105/115 ms example and 20 ms CPU → ideal 50/s arithmetic.",
+        "Checked separate process dictionaries, thread sharing, callback-blocking diagram and seat-race explanation. The walkthrough’s shared-storage ending is a proposed redesign, not automatic copying. No content correction required.",
+        "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "b06ef2f72f61d1c9957f47144de48f5bca4b5fb0319a3aed2c8b75d822cccecc"
+    },
+    {
+      "id": "databases-and-sql",
+      "sha256": "fc82d32f80f1fddb8657279e37b8092a43c98db03e0331ee6338fb5f2935b41d",
+      "beforeReviewSha256": "76bb1712ac45e3e922adbe65ead58dcc0b1df59d4e973365a37b426e72fe4950",
+      "notes": [
+        "Checked every sample row, owner-filter result and rename-through-join walkthrough.",
+        "Stable identities, editable labels and foreign-key versus authorization meanings agree across tables, diagrams and checks. No content correction required.",
+        "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "b2a3c53f164692245e206a98c63fb458e7beadeee723fe60172d9acc9b66df18"
+    },
+    {
+      "id": "sql-in-small-steps",
+      "sha256": "76be8bbdc3778bbb557345194a6eba51003dcb899a4e92d6b335e8075674e8af",
+      "beforeReviewSha256": "76be8bbdc3778bbb557345194a6eba51003dcb899a4e92d6b335e8075674e8af",
+      "notes": [
+        "Verified original three-note query results, descending tie-breaker/limit walkthrough, join table, left-join zero-count rule and writes.",
+        "Parameters remain distinct from authorization; NULL and NOT NULL are not confused with empty strings. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "0dff114858b9234f882892f8ea1a8789ae8b5927b89733ff90d1d3709377bd23"
+    },
+    {
+      "id": "find-data-with-indexes",
+      "sha256": "941043d0a2b5ffcaafa0354018f7367fddb12d6b2e39a722714553ceb17c6c6a",
+      "beforeReviewSha256": "941043d0a2b5ffcaafa0354018f7367fddb12d6b2e39a722714553ceb17c6c6a",
+      "notes": [
+        "Checked directory-to-card mapping 41 → C, owner/note composite-index rationale and scan/output distinction.",
+        "The maintenance diagram assigns row/index coordination to the database, and diagrams make no physical-access-count or benchmark claim. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "26a32444c9d9834a37d4cbafeb0dd9ff18db2576b2793d7a15fcf6a69e413a9d"
+    },
+    {
+      "id": "database-families",
+      "sha256": "d525c1bca237398bed03ddee031e13c1cb01f9341f36887b54a4ad167b99ae04",
+      "beforeReviewSha256": "d525c1bca237398bed03ddee031e13c1cb01f9341f36887b54a4ad167b99ae04",
+      "notes": [
+        "Checked concrete document/key-value/event tables, tie-broken e3/e2/e1 range, graph direction/depth and changed-query walkthrough.",
+        "The comparisons present candidate fits with overlapping capabilities, independent growth limits and authorization. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "8c73c01db4d56001805834c6acc53f2e3e53973b759997c71e36c2d9f326bdda"
+    },
+    {
+      "id": "transactions-and-correctness",
+      "sha256": "aada4a7eab952aa419266309b4817462167f726dad52b2d422aab4e50a8f5d4f",
+      "beforeReviewSha256": "aada4a7eab952aa419266309b4817462167f726dad52b2d422aab4e50a8f5d4f",
+      "notes": [
+        "Checked half-completed move/activity table, affected-row caveat, stable-permission assumption, revision conflict example and commit/lost-response states.",
+        "The walkthrough distinguishes accepted state from caller knowledge and uses operation evidence rather than equating silence with rollback. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "8e536e750aad5b47f97f7b831975f6d7a1f4f475b929ebfd4a664672a7d520c4"
+    },
+    {
+      "id": "data-modeling-basics",
+      "sha256": "544333385a4e23c5aeb9b0625e3538b47d023b1d34e73761bcf5440eaa7d6d89",
+      "beforeReviewSha256": "02862513111c6a5b55269d035670ffcfac410f926d5a983542cd2f2a53e97506",
+      "notes": [
+        "Checked membership composite identities, rename and count-maintenance diagrams, deliberate historical snapshots and many-to-many exercise.",
+        "Made the reader-role walkthrough explicitly deny the attempted edit before the separate authorized promotion. The same user’s other notebook role stays unchanged."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "2aadef24986168119af5528bfb97adbbc70635ca78befb8ed56e40a6b5d17e16"
+    },
+    {
+      "id": "choose-a-database",
+      "sha256": "2c25838ebff6faca7849abe334fc7a51694b14f9c5303d32480dc5ea72f6ce0f",
+      "beforeReviewSha256": "2c25838ebff6faca7849abe334fc7a51694b14f9c5303d32480dc5ea72f6ce0f",
+      "notes": [
+        "Checked workload card, 20 × 1 kB versus 20 × 2 MB table, registry joins/JSON reasoning and evaluation walkthrough.",
+        "Performance and restoration steps are proposed evidence to collect, not reported outcomes. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "7b2a644a3b76d679bb0f23e0569f02d2c640c55c935457205e15576c96ac48dc"
+    },
+    {
+      "id": "blobs-files-and-objects",
+      "sha256": "2af2d3ba0f5972fa5462f24edc6f497d836aea8789aee8d16f5f6bcc0c64bbfb",
+      "beforeReviewSha256": "2af2d3ba0f5972fa5462f24edc6f497d836aea8789aee8d16f5f6bcc0c64bbfb",
+      "notes": [
+        "Verified 50 × 4 MB = 200 MB and metadata totals, interface distinction, private delivery path and upload lifecycle.",
+        "The walkthrough keeps bytes-existing, content-verified and metadata-ready separate, with access still required. Cross-store recovery and cleanup are explicit. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "967c4c37da203a41fb9915e4e148fd4f768e036f786abc5a2c56014de9a8d32b"
+    },
+    {
+      "id": "measure-before-scaling",
+      "sha256": "698fa066b037891bce991eb487413f3f56d0d60847d47d670d97931371ee1904",
+      "beforeReviewSha256": "698fa066b037891bce991eb487413f3f56d0d60847d47d670d97931371ee1904",
+      "notes": [
+        "Checked attempted/completed rates, 60 MB logical storage, nested 900/100/30 ms timers and (9 × 100 + 2,000) ÷ 10 = 290 ms walkthrough.",
+        "Means are not treated as every-user experience or batch wall time. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "55003a798cc35116b3d7912980791435c64db2d21ec4a90365fc8cb6ad1c8a52"
+    },
+    {
+      "id": "grow-one-server",
+      "sha256": "d2a405e5722d4e505247942f8c5d3b578de0a1356f8d2b59f8e14288b2c2762f",
+      "beforeReviewSha256": "d2a405e5722d4e505247942f8c5d3b578de0a1356f8d2b59f8e14288b2c2762f",
+      "notes": [
+        "Checked one/two/three app capacities against the 60/s shared dependency and the separate failure-headroom assumptions.",
+        "The walkthrough explicitly resets to a three-ready-instance starting scenario before losing one, rather than pretending capacity appears instantly after a failure. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "e9d79dc89c7908121e34c5fd3f33b8c514c49f903a921a5275c8bda0ec397708"
+    },
+    {
+      "id": "gateways-and-proxies",
+      "sha256": "cca911c5148969c625252cc58836b8c7b478daaa3c625425bd86652787637fa9",
+      "beforeReviewSha256": "75cc74c136910bbf184c7edf9ae27261565d3e230ed75e785e5ce28fefd4137b",
+      "notes": [
+        "Checked forward/reverse responsibilities, combined entry policies, trusted identity boundary, readiness lag and 2 → 1 → 0 in-flight draining states.",
+        "Corrected one diagram step to identify A as the instance being replaced; “replacement instance” could incorrectly imply draining the new backend."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "140d6071e692b113d25fd0cdb2b65352b2d4c93d23e21fd3456f43b90623fff7"
+    },
+    {
+      "id": "service-boundaries",
+      "sha256": "2d00d6230dafba92b829fd565eb852a7f45bf8f3f9e60ee004e6001135232954",
+      "beforeReviewSha256": "4db2ec7e71f534456ba60acc3352242b0c338cbece110dc2c02a82685e2dfb61",
+      "notes": [
+        "Checked modular versus deployment boundaries, partial failure, durable extraction and optional dependency fallback.",
+        "The 20 ms start / 100 ms elapsed deadline correctly gives an 80 ms wait, and cancellation does not claim remote termination. No content correction required.",
+        "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "a152e47a2090328d4ec6c24372de19d69d7bd53a07db8b335dad39d608ba9b64"
+    },
+    {
+      "id": "load-balancing",
+      "sha256": "c6cbf125ff9465025cb3ea8c7993cf6e8e6504cb5e0adf0198690f728f58a7ff",
+      "beforeReviewSha256": "c6cbf125ff9465025cb3ea8c7993cf6e8e6504cb5e0adf0198690f728f58a7ff",
+      "notes": [
+        "Checked round-robin outcomes, health-information lag and cumulative assigned CPU work A 400 ms versus B 20 ms.",
+        "Counts are not equated with simultaneous load or latency, and retries retain outcome uncertainty. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "7bcac83574bc47208d01779cab785c7d0d8ba4d56622b07f3772e403efea092b"
+    },
+    {
+      "id": "remember-with-caches",
+      "sha256": "bf90b08a7f98d5db937a9a23c08500db1401602c55109870abd9ec00d7ac0c19",
+      "beforeReviewSha256": "bf90b08a7f98d5db937a9a23c08500db1401602c55109870abd9ec00d7ac0c19",
+      "notes": [
+        "Verified 90% hit fraction, 5/55 ms paths → 10 ms modeled mean, and distinct main/cached values after edit.",
+        "The miss/hit/evict sequence preserves the saved record and explicit public representation scope. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "21d9608802372a317f125ea0103d257761889bb0db4729116a6187e9062caaa5"
+    },
+    {
+      "id": "redis-from-scratch",
+      "sha256": "ea0d108983177ee28bdd6cec452f738a332390e66b63f2a3ba10684b5ec67798",
+      "beforeReviewSha256": "ea0d108983177ee28bdd6cec452f738a332390e66b63f2a3ba10684b5ec67798",
+      "notes": [
+        "Checked command/type examples, atomic increment versus repetition, configured durability limits and the full 0/25/85 second TTL walkthrough.",
+        "Rechecked official Redis SET and TTL docs: plain SET discards an existing expiry, explicit EX establishes the replacement lifetime, and current TTL returns -1 for no expiry and -2 for absent keys. No content correction required."
+      ],
+      "changed": false,
+      "protectedAssessmentSha256": "107c8ac666ee433a06f7aa2f1da2e73bd21ce57ae2f9174baef96a1051e26b4b"
+    },
+    {
+      "id": "cache-patterns-and-invalidation",
+      "sha256": "cccb8ded9872ce8d2882735797e3a364b6cb83ff64e5bb49d1910cfefb40e86f",
+      "beforeReviewSha256": "ac659fa13ab92b7d555b1926e804cc42ed6d5e8966b71b3f7c91ec32c8c3c1d0",
+      "notes": [
+        "Checked stale-refill ordering, read/write-pattern limits, 100-to-1,000 fallback load and three-local-waiter timeline.",
+        "The coalescing example stays within one process and exact representation scope, bounds waiters and clears in-flight state; no global freshness or cross-process guarantee is implied. No content correction required.",
+        "Split remaining long prose at explicit concept boundaries (mechanism versus limits, setup versus result, or definition versus example); retained the causal order and all content."
+      ],
+      "changed": true,
+      "protectedAssessmentSha256": "0292309295d7e156c3d810fd7d1179b264ccdf3451dd6e772debdd4201c5015b"
+    }
+  ]
+}

@@ -1,0 +1,280 @@
+{
+  "id": "queues-and-retries",
+  "title": "Queues, retries, and doing work twice",
+  "version": 2,
+  "week": 8,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Crash a preview worker after it finishes the work but before it reports completion, then design a repeat attempt that does not create an unwanted extra effect.",
+  "objectives": [
+    "Explain why lost acknowledgments can cause repeated work.",
+    "Distinguish a repeated delivery from a new user intention.",
+    "Place the completion record next to the protected database effect.",
+    "Describe a bounded retry policy with visible failure."
+  ],
+  "terms": [
+    {
+      "term": "Retry",
+      "definition": "Another attempt to perform the same intended operation after an incomplete or uncertain attempt."
+    },
+    {
+      "term": "Acknowledgment",
+      "definition": "Confirmation of a specified stage, such as a worker declaring a job complete."
+    },
+    {
+      "term": "At-least-once delivery",
+      "definition": "A delivery contract that can repeat messages while trying to avoid loss under its stated assumptions."
+    },
+    {
+      "term": "Idempotent effect",
+      "definition": "Repeating the same intended operation does not add another unwanted effect beyond one successful execution."
+    },
+    {
+      "term": "Backoff",
+      "definition": "Increasing the delay between retry attempts to reduce repeated pressure."
+    },
+    {
+      "term": "Deduplication",
+      "definition": "Recognizing repeated operation identities and avoiding another application of the same protected effect."
+    }
+  ],
+  "retrieval": [
+    "What does the preview job receipt promise, and what does it not promise?",
+    "Why might an abandoned running job need another worker attempt?"
+  ],
+  "sections": [
+    {
+      "id": "gap",
+      "title": "Finishing and reporting completion are separate events",
+      "markdown": "The preview worker takes job 81, reads the saved original photo, and writes the finished preview. Just before it records completion, the worker stops. The job system sees no completion and offers the work again. A second worker may generate the same preview even though the first one already did so.\n\nThis is not an unusual loophole that disappears if the computer is fast. There is a boundary between an effect and the message or record confirming it. Either side can be interrupted. Acknowledging before the work is safely complete has the opposite danger: a worker can stop after acknowledgment but before producing the result, and the job may never be retried.\n\nImagine a courier delivering a parcel but losing the signed receipt on the way back. The sender cannot infer that the parcel was never delivered. The analogy has a limit: software can often attach a stable identifier and make a repeated action harmless, while a second physical parcel is still another object. We need to design that behavior, not assume every retry is safe."
+    },
+    {
+      "id": "crash",
+      "title": "Trace the uncertain window",
+      "markdown": "Write the evidence in order. A dispatcher and the result database are separate in this example.\n\n| Moment | Result authority | Dispatcher knows | Risk if the worker stops now |\n| --- | --- | --- | --- |\n| Job received | No result | Delivery is outstanding | Work needs recovery |\n| Result and success recorded | One accepted result | Delivery is still outstanding | The same job may return |\n| Acknowledgement accepted | One accepted result | Delivery handled | This delivery can be retired |\n\nThe job-table model can use its own saved succeeded state as completion evidence. A separate queue needs a consumer acknowledgement as well. Neither diagram should imply a transaction across unrelated systems.\n\nCarry the same intended operation identity on retries. Job 81 for photo 41, original version 2, is distinct from a later job for original version 3. The ID and recorded inputs must agree; reusing an ID with changed input needs a conflict response or another explicit contract.\n\n**A silent worker may be paused, not dead.** Another attempt can overlap when the old one resumes. The destination must reject stale ownership or tolerate safe repeated effects under the actual write protocol. A timer alone cannot make old code stop."
+    },
+    {
+      "id": "effect",
+      "title": "Make the effect safe at the place it is accepted",
+      "markdown": "For our deterministic preview transformation, use a result key derived from the photo version and transformation version, such as preview/41/original2/small1. Repeating the same transformation targets the same defined result rather than adding a second preview to a list. This assumes the transformation and storage-write behavior support that replacement safely. It does not automatically cover an email sent afterward.\n\nFor a database-only effect, such as inserting one preview-completion activity record, a unique operation ID can help. The duplicate check and the protected change must be accepted together. If the app first marks the operation done and later writes the activity, a crash between those steps can lose the activity. If it writes the activity first and records done later, a crash can duplicate it. A transaction and appropriate unique rule can protect both within one database.\n\nIdempotency is about effect, not identical response text. The first attempt may report newly completed; a repeated attempt may report already completed while referring to the same accepted result. Both can be correct. Merely adding a request-ID header without storing and enforcing its meaning does not create this property.\n\nExternal actions need the receiving system’s cooperation or a recovery process. If an email sender provides no operation-identity contract, our database transaction cannot guarantee that two calls cause exactly one delivered message. Name this limit instead of advertising a universal once-only promise."
+    },
+    {
+      "id": "policy",
+      "title": "Retry deliberately and stop when retrying cannot help",
+      "markdown": "Retry when another attempt could help and repeating the effect is safe under the contract.\n\n| Observation | Useful next action | What repetition cannot prove |\n| --- | --- | --- |\n| Temporary storage connection failure | Retry within deadline and budget | That the first attempt did nothing |\n| Unsupported input format | Fail visibly until input changes | That waiting will make the same bytes valid |\n| Response lost after submission | Resolve the same operation identity | That a fresh ID is merely a retry |\n| Retry allowance exhausted | Failed or needs-attention outcome | That silently dropping the job completed it |\n\nBackoff spaces attempts. Illustrative waits of about one, two, and four seconds can include small random variation, called jitter, so workers do not return together. Choose actual delays from the deadline and service needs.\n\nCount attempts separately from intended jobs. If 100 jobs each get two additional tries, the workers can perform 300 attempts. Repeated work can worsen the dependency failure that triggered it.\n\nFor interview practice, stop a worker after its result is accepted but before the dispatcher learns that fact. Explain the repeated identity and the exact protected effect. Then replace the database effect with external email: its receiver needs a separate contract, so the local transaction alone no longer proves a once-only outcome."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "redelivery",
+      "title": "A lost completion can repeat an already performed job",
+      "source": "sequenceDiagram\nparticipant Q as Job dispatcher\nparticipant W as First worker\nparticipant S as Result storage\nparticipant V as Second worker\nQ->>W: Job 81 with stable input\nW->>S: Store preview for photo version 2\nNote over W: Stops before completion is observed\nQ->>V: Retry same job 81\nV->>S: Inspect or safely repeat same defined effect\nS-->>V: Existing or same accepted result\nV-->>Q: Completion for job 81",
+      "caption": "The protected result identity and write behavior make this particular repeat safe. The diagram does not grant once-only behavior to unrelated external actions.",
+      "steps": [
+        "Let the first attempt perform its effect.",
+        "Lose the completion evidence at a precise point.",
+        "Retry the same operation identity and input.",
+        "Resolve the same result rather than inventing a new business action."
+      ],
+      "sectionId": "crash"
+    },
+    {
+      "id": "protected-effect",
+      "title": "Keep duplicate detection and the effect in one acceptance boundary",
+      "sectionId": "effect",
+      "source": "flowchart LR\nJ[Delivery with operation ID] --> T{Local database transaction}\nT -->|ID already committed| O[Return existing result]\nT -->|New valid ID| C[Insert effect and processed ID together]\nC --> K[Commit both]\nK --> A[Acknowledge delivery]\nO --> A",
+      "caption": "The atomic boundary covers only these local database records. An unrelated email, model call, or payment needs its own effect protocol.",
+      "steps": [
+        "Read the intended operation identity and compatible inputs.",
+        "Use one protected transaction for duplicate detection and the local effect.",
+        "Return the existing outcome for a committed duplicate.",
+        "Acknowledge after the authoritative result is durable."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A worker inserts a completion activity, then separately records job 81 as done. It stops between the writes, and a retry inserts the activity again. Describe a database-only repair. Then explain why sending an email between those database writes is not automatically covered by the repair.",
+    "minutes": 8,
+    "rubric": [
+      "Uses a stable operation ID.",
+      "Groups the deduplication decision and activity effect in a protected database transaction/unique rule.",
+      "Keeps external email outside that transaction’s guarantee."
+    ],
+    "solution": "Use one stable job/effect identity and accept the activity plus completion/deduplication decision together in the database, with a uniqueness rule that rejects a repeated effect. Do not leave a gap where one is durable without the other. An external email is controlled by another service; a local transaction cannot undo or deduplicate its delivery without an appropriate receiver contract or explicit reconciliation."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A missing acknowledgment proves the worker did no work:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The effect may have completed before its confirmation disappeared."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A repeat attempt for the same intent should normally use:",
+      "options": [
+        "The same stable operation identity and compatible input",
+        "A new unrelated identity every time",
+        "No input reference"
+      ],
+      "answer": "The same stable operation identity and compatible input",
+      "explanation": "The system needs to recognize that it is resolving the same intended action."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Mark done before doing the work always solves duplicate effects:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "A crash after the mark can lose the effect while preventing a needed retry."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why distinguish attempts from unique successful jobs in measurements?",
+      "answer": "Retries can multiply resource consumption without increasing intended results, hiding overload if only successes are counted.",
+      "explanation": "The system performs attempts but the user wants outcomes."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What should happen when an unsupported image reaches the retry limit?",
+      "answer": "Record a visible failure or needs-attention state with a useful reason and an appropriate user recovery path, rather than retrying forever or dropping it silently.",
+      "explanation": "Retries must have a purpose and a stopping condition."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Why can jobs repeat?",
+      "back": "The effect can finish while completion evidence is lost."
+    },
+    {
+      "front": "Stable operation ID?",
+      "back": "Identity for one intended action across attempts."
+    },
+    {
+      "front": "Idempotent effect?",
+      "back": "Repeated attempts do not add an unwanted extra effect."
+    },
+    {
+      "front": "Database deduplication needs?",
+      "back": "The duplicate decision and protected effect accepted together."
+    },
+    {
+      "front": "Backoff?",
+      "back": "Increasing delays between retries to reduce repeated pressure."
+    }
+  ],
+  "mentalModel": "A retry resolves an uncertain intent; safety comes from how its effect is accepted, not from how often the message is delivered.",
+  "sources": [
+    {
+      "title": "RabbitMQ: work queues and acknowledgments",
+      "url": "https://www.rabbitmq.com/tutorials/tutorial-two-python",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "HTTP semantics: idempotent methods",
+      "url": "https://httpwg.org/specs/rfc9110.html#idempotent.methods",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "ByteByteGo: delivery semantics, optional visual comparison",
+      "url": "https://bytebytego.com/guides/delivery-semantics/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "repeat-result",
+      "title": "Two attempts, one accepted activity entry",
+      "sectionId": "effect",
+      "intro": "Job J18 should create one local PreviewReady activity row. Its processed-ID record and activity row share a database transaction.",
+      "steps": [
+        {
+          "title": "First delivery",
+          "explanation": "No accepted effect exists yet, so the worker begins the protected local operation.",
+          "state": [
+            {
+              "label": "Delivery",
+              "value": "J18, attempt A"
+            },
+            {
+              "label": "ProcessedIds",
+              "value": "[]"
+            },
+            {
+              "label": "ActivityRows",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "title": "Commit the effect",
+          "explanation": "The transaction commits the activity and J18’s processed marker together.",
+          "state": [
+            {
+              "label": "ProcessedIds",
+              "value": "[J18]"
+            },
+            {
+              "label": "ActivityRows",
+              "value": "[PreviewReady for J18]"
+            },
+            {
+              "label": "Acknowledgement",
+              "value": "Not yet received by dispatcher"
+            }
+          ]
+        },
+        {
+          "title": "Crash and redeliver",
+          "explanation": "The dispatcher still lacks completion evidence. Attempt B receives the same identity and checks the destination.",
+          "state": [
+            {
+              "label": "Delivery",
+              "value": "J18, attempt B"
+            },
+            {
+              "label": "ProcessedIds",
+              "value": "[J18]"
+            },
+            {
+              "label": "ActivityRows",
+              "value": "Still one row"
+            }
+          ]
+        },
+        {
+          "title": "Recognize the existing outcome",
+          "explanation": "B returns the committed result and acknowledges. It does not insert another activity row.",
+          "state": [
+            {
+              "label": "AcceptedEffects",
+              "value": "1"
+            },
+            {
+              "label": "PhysicalDeliveries",
+              "value": "2"
+            },
+            {
+              "label": "Dispatcher",
+              "value": "Completion now observed"
+            }
+          ]
+        }
+      ],
+      "takeaway": "At-least-once delivery can repeat execution. Safe local effects come from the atomic identity-and-effect boundary, not the number of deliveries."
+    }
+  ]
+}

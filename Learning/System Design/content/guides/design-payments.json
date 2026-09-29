@@ -1,0 +1,286 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 21,
+  "title": "Design payment workflows and reconciliation",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "design-payments",
+  "summary": "Treat a payment as a recorded conversation with another system. A missing reply creates uncertainty to resolve, not permission to charge again under a new identity.",
+  "objectives": [
+    "Distinguish failed, successful, and still-unknown payment outcomes.",
+    "Carry one durable operation identity through retries.",
+    "Combine verified callbacks and reconciliation to recover missing results."
+  ],
+  "terms": [
+    {
+      "term": "Idempotency key",
+      "definition": "A stable identifier that tells a service retries belong to the same intended operation under its documented rules."
+    },
+    {
+      "term": "Payment attempt",
+      "definition": "A durable record of one intended payment operation and what is known about it."
+    },
+    {
+      "term": "Webhook",
+      "definition": "A provider-initiated HTTP notification sent to an application endpoint."
+    },
+    {
+      "term": "Reconciliation",
+      "definition": "Comparing records with an authoritative external source to find and resolve mismatches."
+    },
+    {
+      "term": "Ledger",
+      "definition": "A history of monetary entries designed to explain how balances changed, rather than only storing the latest total."
+    }
+  ],
+  "retrieval": [
+    "What does a timeout fail to tell the caller?",
+    "Why could a seat claim and an external charge disagree?"
+  ],
+  "sections": [
+    {
+      "id": "uncertainty",
+      "title": "The cashier printed a receipt, but you did not hear back",
+      "markdown": "You pay for a workshop. The application sends a charge request to a provider. The provider accepts it, but the network loses the response. The browser displays a timeout. Should pressing Try Again create another charge?\n\nThink of a phone call where the other person may have heard the instruction just before the call disconnected. Silence tells you the conversation stopped; it does not prove the instruction was ignored. For payments, that ambiguity has a real consequence. The system needs a state such as pending or unknown while it learns what happened.\n\nThis is a software-design lesson, not an integration checklist for a live financial product. We will model one currency and one provider operation, with provider-specific requirements left to its documented API. Keep raw card data out of this teaching design; use an appropriate provider collection flow rather than building a card-data store."
+    },
+    {
+      "id": "identity",
+      "title": "Give the intended operation a durable identity",
+      "markdown": "Persist one intended operation before asking the provider to act.\n\n| Field | Example role | Why retain it? |\n| --- | --- | --- |\n| Local attempt identity | P42 | Find the same intent after a retry or restart |\n| Order, amount, currency | Exact request parameters | Detect conflicting reuse |\n| Provider idempotency key | K42 | Invoke the provider’s repeat-operation contract |\n| Provider operation reference | E9 when learned | Resolve and compare external evidence |\n| Local knowledge state | pending / verified result | Tell the user what is actually known |\n\nProtect local duplicate checkout submissions so they find the same attempt rather than create racing records. A different purchase needs its own identity.\n\nProvider idempotency has a scope, retention period, and parameter policy. Reusing a key outside that contract is not a universal guarantee. Once retention may have expired, investigate the existing operation rather than assuming the next request will still be deduplicated.\n\nAn HTTP success can report an accepted, still-processing operation. Store the actual provider lifecycle state rather than translating every successful response into final settlement."
+    },
+    {
+      "id": "recover",
+      "title": "Walk through the lost reply",
+      "markdown": "Attempt P42 is saved as pending. The application calls the provider with key K42. The provider accepts the operation and creates provider record E9. Its reply is lost. Our application still knows only that P42 is unresolved.\n\nIt can retry or query according to the provider's contract using the existing identity, receive E9's current status, and update its durable record. Meanwhile a verified webhook may report the result. Whichever evidence arrives first, the local state transition should be repeatable and should not create a second business effect such as issuing the same ticket twice.\n\nRecord event identities to handle duplicated notifications, validate the notification's origin, and avoid regressing a completed state because an older event arrives late. If event order is ambiguous, retrieve authoritative current state or apply a documented version/state policy. A deduplication table alone does not decide which status is newer."
+    },
+    {
+      "id": "records",
+      "title": "Use two recovery routes, not one hopeful callback",
+      "markdown": "Use a second evidence route when callbacks are missing. Reconciliation compares unresolved local attempts with authoritative provider operations or the appropriate reports.\n\n| Local record | Verified external evidence | Appropriate next step |\n| --- | --- | --- |\n| Unresolved attempt | Operation still processing | Keep a truthful pending state |\n| Order says unpaid | Matching operation succeeded | Validate identity/amount and apply the allowed local transition once |\n| One order | Two distinct successful operations | Preserve evidence and open a discrepancy workflow |\n| Any state | Contradictory or unverified message | Investigate; do not silently force success |\n\nCallbacks and reconciliation may discover the same result. The business transition itself must be repeatable, not only the callback handler.\n\nKeep amounts exact and attach a currency. Retain operation history so a current total can be explained. Where a ledger is required, correcting entries preserve history instead of rewriting previous entries.\n\nThis teaching model is not an accounting or regulatory completeness claim. The actual product and provider contract define the required records.\n\n**Pause and predict:** does reaching a local “pending too long” timer prove the provider failed? An investigation deadline changes the recovery action, not the external fact."
+    },
+    {
+      "id": "user",
+      "title": "Give the user a truthful next step",
+      "markdown": "After a timeout, show “We are checking this payment” with a stable status endpoint and clear next action. Disable accidental rapid resubmission for usability, but keep server-side identity checks because another device or retry can bypass the button. Unknown operations need an age limit that triggers investigation, not a timer that invents failure.\n\nConsider refunding an accepted charge. That is a new tracked operation referencing the original payment, with its own retries and possible uncertainty. A refund request being accepted is not the same as money already arriving back to the customer. Use the provider's actual lifecycle and communicate it clearly.\n\nIn an interview, draw the line between your transaction and the provider. Then deliberately lose the response and duplicate the webhook. If the design can explain those two cases without “exactly once” as an unexplained slogan, it has a useful correctness story. Metrics should include unresolved-attempt age, reconciliation discrepancies, duplicate suppression, and user-visible completion failures."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "payment-lost-reply",
+      "title": "A lost response leaves our knowledge incomplete",
+      "source": "sequenceDiagram\nparticipant A as Application\nparticipant D as Local payment records\nparticipant P as Provider\nA->>D: Save attempt P42 and key K42\nA->>P: Submit operation with K42\nP->>P: Accept provider record E9\nP--xA: Reply is lost\nA->>D: Keep unresolved state\nA->>P: Resolve existing operation K42 or E9\nP-->>A: Authoritative current result\nA->>D: Record verified result once",
+      "caption": "The timeout changes what the application knows. It does not undo the provider’s operation.",
+      "steps": [
+        "Save the intended operation identity first.",
+        "Submit that identity to the provider.",
+        "A lost response leaves the local record unresolved.",
+        "Resolve the existing operation and record the observed result."
+      ],
+      "sectionId": "recover"
+    },
+    {
+      "id": "payment-reconcile",
+      "title": "Two evidence routes converge on one local transition",
+      "source": "flowchart LR\nW[Verified provider event] --> T[Version and state validation]\nR[Reconciliation query or report] --> T\nT --> D[(Durable payment attempt)]\nD --> O[Repeatable order update]\nT --> X[Discrepancy for investigation]",
+      "caption": "Callbacks and reconciliation complement each other. Neither should blindly overwrite newer verified state.",
+      "steps": [
+        "Validate provider-origin evidence.",
+        "Compare its identity and lifecycle state with local knowledge.",
+        "Persist an allowed transition and update the order repeatably.",
+        "Investigate contradictory or unresolved evidence."
+      ],
+      "sectionId": "records"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "P42 times out after the provider accepts it. A user retries, and the same success webhook arrives twice. Write the identifiers carried by the retry, the local states shown to the user, and the checks preventing two ticket issues.",
+    "rubric": [
+      "Reuse P42 and its provider identity under the provider retry contract.",
+      "Keep unresolved distinct from confirmed failure.",
+      "Deduplicate event handling and protect the ticket/order transition itself."
+    ],
+    "solution": "The retry looks up P42 and uses its existing provider key or operation ID, not a fresh charge identity. Until verified evidence resolves it, show processing/checking. Validate each webhook and record its event identity, but also conditionally transition the order from not-issued to issued so another valid result path cannot issue twice. Reconciliation covers a callback that never arrives. Provider idempotency retention and parameter rules still apply."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A provider reply times out. The payment is…",
+      "options": [
+        "Definitely failed",
+        "Definitely successful",
+        "Unknown to us until resolved"
+      ],
+      "answer": "Unknown to us until resolved",
+      "explanation": "The operation may have completed before the reply was lost."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A retry of one intended payment should normally use…",
+      "options": [
+        "A fresh key every time",
+        "The existing stable operation identity under the provider contract",
+        "Only a browser timestamp"
+      ],
+      "answer": "The existing stable operation identity under the provider contract",
+      "explanation": "A new identity can mean a new operation rather than a retry."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Why keep reconciliation if webhooks exist?",
+      "options": [
+        "Callbacks can be delayed or missed",
+        "To charge all users again",
+        "To remove the need for verification"
+      ],
+      "answer": "Callbacks can be delayed or missed",
+      "explanation": "An independent comparison can recover unresolved outcomes and expose discrepancies."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is disabling the Pay button insufficient?",
+      "answer": "Other clients, duplicate network delivery, browser reloads, and server retries can still submit the action. The server and provider need durable operation identity and protected state transitions.",
+      "explanation": "Other clients, duplicate network delivery, browser reloads, and server retries can still submit the action. The server and provider need durable operation identity and protected state transitions."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What should happen to a contradictory payment record?",
+      "answer": "Preserve the evidence, identify the mismatch, and follow a defined investigation or resolution workflow. Do not silently overwrite history to make totals look consistent.",
+      "explanation": "Preserve the evidence, identify the mismatch, and follow a defined investigation or resolution workflow. Do not silently overwrite history to make totals look consistent."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Timeout means what?",
+      "back": "The caller lacks a result; the external operation may have succeeded."
+    },
+    {
+      "front": "Retry identity?",
+      "back": "Reuse the identity of the intended operation according to the provider’s contract."
+    },
+    {
+      "front": "Webhook risk?",
+      "back": "Duplicate, delayed, unordered, or unverifiable notifications."
+    },
+    {
+      "front": "Reconciliation purpose?",
+      "back": "Find and resolve mismatches using authoritative external evidence."
+    },
+    {
+      "front": "Refund versus erasure?",
+      "back": "A refund is another tracked operation; the original history still matters."
+    }
+  ],
+  "mentalModel": "Record the intention, preserve uncertainty, and resolve the same operation from trustworthy evidence.",
+  "sources": [
+    {
+      "title": "Stripe — Idempotent requests",
+      "url": "https://docs.stripe.com/api/idempotent_requests",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Stripe — Webhook delivery and verification",
+      "url": "https://docs.stripe.com/webhooks",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18 — Transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "reconcile-one-attempt",
+      "title": "Resolve a pending record from verified evidence",
+      "sectionId": "records",
+      "intro": "Attempt P73 has waited longer than the investigation threshold. Follow a periodic status lookup that resolves the existing provider operation.",
+      "steps": [
+        {
+          "title": "Find unresolved work",
+          "explanation": "The reconciliation worker selects P73 using its saved provider reference. It does not create another intended charge.",
+          "state": [
+            {
+              "label": "Local attempt",
+              "value": "P73"
+            },
+            {
+              "label": "Provider reference",
+              "value": "ext_31"
+            },
+            {
+              "label": "Local knowledge",
+              "value": "unresolved"
+            },
+            {
+              "label": "Action",
+              "value": "query existing operation"
+            }
+          ]
+        },
+        {
+          "title": "Compare the evidence",
+          "explanation": "The provider reports the operation’s succeeded state. The application verifies that reference, amount, and currency match P73.",
+          "state": [
+            {
+              "label": "Reference",
+              "value": "ext_31 matches"
+            },
+            {
+              "label": "Amount/currency",
+              "value": "match saved request"
+            },
+            {
+              "label": "Provider operation",
+              "value": "succeeded"
+            }
+          ]
+        },
+        {
+          "title": "Accept one local transition",
+          "explanation": "An allowed conditional transition records the evidence and updates the associated order workflow. Another evidence path must resolve to the same business result.",
+          "state": [
+            {
+              "label": "Local attempt",
+              "value": "verified succeeded"
+            },
+            {
+              "label": "Order transition",
+              "value": "applied once"
+            },
+            {
+              "label": "Evidence reference",
+              "value": "ext_31 retained"
+            }
+          ]
+        },
+        {
+          "title": "Report the provider-specific outcome",
+          "explanation": "The status endpoint reports the known operation result. Later settlement, refunds, or disputes remain their own lifecycle facts where applicable.",
+          "state": [
+            {
+              "label": "User status",
+              "value": "verified operation result"
+            },
+            {
+              "label": "Original history",
+              "value": "retained"
+            },
+            {
+              "label": "New financial operation",
+              "value": "none created by reconciliation"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Reconciliation learns what happened to an existing operation; it should not manufacture a new operation to remove uncertainty."
+    }
+  ]
+}

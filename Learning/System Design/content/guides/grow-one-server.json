@@ -1,0 +1,275 @@
+{
+  "id": "grow-one-server",
+  "title": "Grow one server, then add more",
+  "version": 2,
+  "week": 5,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Compare making one machine larger with running more application copies, while preserving a shared home for saved notes.",
+  "objectives": [
+    "Explain vertical and horizontal scaling in a concrete app.",
+    "Identify when a shared database remains the limit.",
+    "Keep saved and user-specific state accessible across app copies.",
+    "Describe the difference between extra capacity and failure recovery."
+  ],
+  "terms": [
+    {
+      "term": "Vertical scaling",
+      "definition": "Giving one machine more resources, such as memory or processor capacity."
+    },
+    {
+      "term": "Horizontal scaling",
+      "definition": "Adding machines or application instances to share work."
+    },
+    {
+      "term": "Instance",
+      "definition": "One running copy of an application."
+    },
+    {
+      "term": "Shared dependency",
+      "definition": "A service or resource that several application instances all use."
+    },
+    {
+      "term": "State",
+      "definition": "Information that must be remembered between operations."
+    },
+    {
+      "term": "Headroom",
+      "definition": "Spare capacity reserved for a stated burst, uncertainty, or failure scenario."
+    }
+  ],
+  "retrieval": [
+    "How do latency and completed requests per second differ?",
+    "Why might downloading smaller images help more than changing the database?"
+  ],
+  "sections": [
+    {
+      "id": "first",
+      "title": "Growth is a response to a specific limit",
+      "markdown": "Our notes app runs one application and one database on a small machine. A classroom event makes it slow. Last guide asked us to measure before acting. Suppose the evidence now shows the application repeatedly spends most of its time resizing photos, while ordinary database reads remain quick. We have a concrete resource problem to discuss.\n\nFirst consider doing less work. Produce a thumbnail once and reuse it, rather than resizing the same photo on every view. If the work is still necessary and remains the limit, vertical scaling means giving the machine more resources. More processor capacity can help suitable computation; more memory can help a memory shortage. A larger disk does not automatically fix slow computation, and more processors do not automatically fix an overloaded remote database.\n\nThink of a workshop. Buying a more capable workbench is like growing one machine. Adding another equipped workbench is like adding an application instance. The analogy helps distinguish the choices, but it does not guarantee that workers can share the same tools safely or that two benches double finished work. Shared equipment can remain the limit."
+    },
+    {
+      "id": "horizontal",
+      "title": "Several application copies need a shared view of saved information",
+      "markdown": "Horizontal scaling adds running copies of the application. Browser requests can then go to instance A or instance B. Each copy understands the same API and performs the same permission checks. The load-balancing chapter in week 6 explains how to choose a destination; for now, trace the two possible paths.\n\nSuppose A stores Maya’s saved note only in its private in-memory dictionary. A later read goes to B, whose dictionary has no such note. The user sees missing data even though a save appeared successful. Adding servers did not fix the problem because important state was attached to one copy.\n\nKeep accepted notes in the shared persistent database, so either instance can retrieve them. A temporary variable used while processing one request can remain local. Information needed on a later request, such as a saved note or a login session record, needs a deliberate shared or verifiable design. Saying an application is stateless usually means its instance does not hold the only essential session/application state needed by later requests; it does not mean the product remembers nothing.\n\nThe database is now a shared dependency. Both A and B rely on it. It can be on another machine or a separately managed service, but moving the box on a drawing does not automatically make it faster or protect it from every failure. We study copying and dividing data later, after understanding this simple shared path.\n\n> **Pause and predict:** A has the only saved copy in its local dictionary; B is healthy and ready. Does routing the next read to B recover the note? No. Routing and saved-state placement are separate parts of the design."
+    },
+    {
+      "id": "arithmetic",
+      "title": "Add capacities only when the shared path permits it",
+      "markdown": "Use supplied teaching measurements: one application instance sustains 40 of our representative requests per second at acceptable latency. Two independent instances could offer 80 requests/s of application capacity if traffic is shared appropriately and their other dependencies can support it. This is a hypothesis about the combined system, not a benchmark you have already run.\n\nNow add a shared database limit. Assume each request needs one database operation:\n\n| Application arrangement | Nominal application capacity | Shared database limit | Combined upper bound in this model |\n| --- | --- | --- | --- |\n| One instance | 40 requests/s | 60 operations/s | 40 requests/s |\n| Two instances | 80 requests/s | 60 operations/s | 60 requests/s |\n| Three instances | 120 requests/s | 60 operations/s | 60 requests/s |\n\nThe smallest required capacity limits the completed path under these assumptions. Extra app instances alone do not raise the database limit. Real operation mix and contention must still be measured.\n\nIf database capacity is sufficient and peak demand is 50 requests/s, two 40-request instances have room while both run. Losing one leaves capacity 40, below demand. Three such instances would leave a nominal 80 after losing one, if routing, dependencies, and the measured per-instance behavior remain valid. This is an example of headroom reserved for one failed instance, not a universal required instance count.\n\nNotice the distinct questions: can healthy copies handle the peak, can surviving copies handle it, and how long does switching take? Enough spare capacity does not guarantee that failed requests are instantly rerouted or that a new copy is already warmed up."
+    },
+    {
+      "id": "decision",
+      "title": "Keep the smallest explanation that fits the evidence",
+      "markdown": "Compare the mechanism and its new responsibility:\n\n| Choice | What changes? | What still needs attention? |\n| --- | --- | --- |\n| Do less repeated work | Reuse a prepared thumbnail | Correct invalidation when the original changes |\n| Grow vertically | Give one machine the limiting resource | Size limits and replacement interruption |\n| Grow horizontally | Add application instances | Routing, shared state, deployment, and surviving capacity |\n\nNeither growth direction is automatically cheaper or more reliable in every context.\n\nFor the photo-notes app, a sensible progression is: remove repeated resizing, confirm whether one machine still misses the required workload, enlarge the relevant resource if that meets the need, then add application copies when justified. This is a reasoning sequence, not a mandatory product lifecycle. A new availability requirement may justify multiple copies before load becomes large.\n\nDo not create separate services merely because there are more users. Several identical copies of one application can remain a single coherent codebase. Splitting its business responsibilities into separately deployed services is another design choice with its own benefits and communication costs. Learning to add copies does not require learning every microservice pattern today.\n\nYour checkpoint is to redraw the save/read path through either A or B, identify where the note survives, and name the current shared limit. If you can explain what happens when A stops and why B can still read the note, you have understood the main new mechanism. Then ask which failure remains: if both need the same unavailable database, extra application copies alone cannot provide the missing data."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "copies",
+      "title": "Either application copy reads the same saved notes",
+      "source": "flowchart LR\nU[Browser request] --> R[Routing selects an application copy]\nR --> A[Application A]\nR --> B[Application B]\nA --> D[(Shared persistent notes)]\nB --> D",
+      "caption": "This shows application replication, not database replication. Both copies still depend on one saved-data path.",
+      "steps": [
+        "Follow a save through application A into persistent storage.",
+        "Follow a later read through application B to the same stored record.",
+        "Stop A and identify the surviving request path.",
+        "Stop the shared database and identify what neither app copy can do."
+      ],
+      "sectionId": "horizontal"
+    },
+    {
+      "id": "shared-capacity-limit",
+      "sectionId": "arithmetic",
+      "title": "Two app paths meet the same database limit",
+      "source": "flowchart LR\nR[Requests] --> A[App A: 40 requests per second]\nR --> B[App B: 40 requests per second]\nA --> D[Shared database: 60 operations per second]\nB --> D\nD --> O[At most 60 completed requests per second in this model]",
+      "caption": "Each request is assumed to need one database operation. These supplied capacities are illustrative and exclude other limits; the drawing is not a measured production result.",
+      "steps": [
+        "Add the capacities of independent application copies only under the stated assumptions.",
+        "Follow both paths into the required shared dependency.",
+        "Apply the shared limit to the end-to-end promise."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Each app copy supports 30 requests/s. The shared database supports 45 requests/s for this workload. Demand is 50 requests/s. Explain why adding a third app copy alone is insufficient. If the database is improved to support 100/s, how many copies cover demand after one copy fails?",
+    "minutes": 8,
+    "rubric": [
+      "Identifies the 45/s shared limit.",
+      "Does not add application capacity past that limit.",
+      "Needs two surviving copies plus one spare, total three."
+    ],
+    "solution": "The database’s 45/s limit is below demand regardless of whether there are two or three application copies. After that shared limit is raised, two survivors provide a nominal 60/s, so three total copies cover loss of one. This assumes the measured capacities remain valid together and requests can reach the survivors."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Adding more memory to the same machine is:",
+      "options": [
+        "Vertical scaling",
+        "Horizontal scaling",
+        "Database sharding"
+      ],
+      "answer": "Vertical scaling",
+      "explanation": "The resources of one machine increase."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Why must note state not exist only in application A’s memory?",
+      "options": [
+        "A request can later reach B or A can stop",
+        "Memory can never hold temporary values",
+        "Every app must use many databases"
+      ],
+      "answer": "A request can later reach B or A can stop",
+      "explanation": "Other request paths need access to accepted saved information."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Two app copies sharing a slow database always double useful throughput:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "A shared dependency can remain the limiting resource."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Does having spare capacity prove fast recovery after failure?",
+      "answer": "No. Detection, routing, startup, and state loading can delay recovery even when enough nominal capacity exists.",
+      "explanation": "Capacity and transition behavior are separate questions."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why need not adding app copies imply splitting into microservices?",
+      "answer": "The copies can run the same application and API; dividing business responsibilities into separately deployed services is a different design decision.",
+      "explanation": "Use only the added complexity required by the problem."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Vertical scaling?",
+      "back": "Increase resources of one machine."
+    },
+    {
+      "front": "Horizontal scaling?",
+      "back": "Add copies or machines to share work."
+    },
+    {
+      "front": "Instance?",
+      "back": "One running copy of the application."
+    },
+    {
+      "front": "Shared dependency?",
+      "back": "A resource used by several application copies."
+    },
+    {
+      "front": "Headroom?",
+      "back": "Spare capacity for a named scenario."
+    }
+  ],
+  "mentalModel": "More application copies help only if work can reach them and their shared state and dependencies can support them.",
+  "sources": [
+    {
+      "title": "Google SRE: handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE: simplicity",
+      "url": "https://sre.google/sre-book/simplicity/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "surviving-capacity",
+      "sectionId": "arithmetic",
+      "title": "Healthy capacity is not surviving capacity",
+      "intro": "For this separate example, assume the database supports at least 100 operations/s, each request needs one, and each app instance sustains 40 requests/s for this workload.",
+      "steps": [
+        {
+          "title": "Run two instances",
+          "explanation": "The nominal app capacity is 80 requests/s against a peak demand of 50.",
+          "state": [
+            {
+              "label": "Instances",
+              "value": "A and B"
+            },
+            {
+              "label": "Nominal capacity",
+              "value": "80 requests/s"
+            },
+            {
+              "label": "Peak demand",
+              "value": "50 requests/s"
+            }
+          ]
+        },
+        {
+          "title": "Lose instance A",
+          "explanation": "B remains healthy but its individual capacity is below peak demand.",
+          "state": [
+            {
+              "label": "Survivors",
+              "value": "B only"
+            },
+            {
+              "label": "Nominal capacity",
+              "value": "40 requests/s"
+            },
+            {
+              "label": "Capacity shortfall",
+              "value": "10 requests/s"
+            }
+          ]
+        },
+        {
+          "title": "Start from three ready instances",
+          "explanation": "With three instances before the failure, losing one leaves two ready survivors.",
+          "state": [
+            {
+              "label": "Initial instances",
+              "value": "A, B, C"
+            },
+            {
+              "label": "After losing A",
+              "value": "B and C"
+            },
+            {
+              "label": "Surviving capacity",
+              "value": "80 requests/s"
+            }
+          ]
+        },
+        {
+          "title": "State the remaining assumptions",
+          "explanation": "The arithmetic needs a working routing path and sufficient shared capacity. Detection and draining still take time.",
+          "state": [
+            {
+              "label": "Peak demand",
+              "value": "50 requests/s"
+            },
+            {
+              "label": "Required shared capacity",
+              "value": "At least the actual completed load"
+            },
+            {
+              "label": "Unproven by arithmetic",
+              "value": "Instant failover or latency guarantee"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Check peak demand against survivors, then verify routing and shared dependencies. Spare arithmetic capacity is only one part of failure handling."
+    }
+  ]
+}

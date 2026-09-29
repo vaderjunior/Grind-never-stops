@@ -1,0 +1,277 @@
+{
+  "id": "estimates-and-tradeoffs",
+  "title": "Make useful estimates and defend tradeoffs",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 15,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Use a few transparent calculations to decide what matters, and defend choices without pretending estimates are measurements.",
+  "objectives": [
+    "Separate users, operations, stored bytes, and network transfer.",
+    "Include peak load, amplification, and headroom in a bounded estimate.",
+    "Compare two designs against the same workload and requirements."
+  ],
+  "terms": [
+    {
+      "term": "QPS",
+      "definition": "Queries or requests per second; state exactly which operation is counted."
+    },
+    {
+      "term": "Amplification",
+      "definition": "Extra internal work caused by one logical user operation."
+    },
+    {
+      "term": "Headroom",
+      "definition": "Capacity kept above expected demand to handle variation or failures."
+    },
+    {
+      "term": "Retention",
+      "definition": "How long data is kept before deletion or archival."
+    },
+    {
+      "term": "Sensitivity",
+      "definition": "How much a conclusion changes when an uncertain input changes."
+    }
+  ],
+  "retrieval": [
+    "Why does one million registered users not directly imply one million requests each second?",
+    "Why can an average hide a peak that overloads a service?"
+  ],
+  "sections": [
+    {
+      "id": "question",
+      "title": "Estimate to answer a question",
+      "markdown": "You are designing a small photo-sharing service. An interviewer gives one million daily active users. Before doing arithmetic, choose a decision: can the application proxy every photo upload, or should clients send file bytes to object storage through authorized upload instructions? That decision depends on upload volume and byte traffic, not only the count of people.\n\nState assumptions where the prompt is silent. Suppose each daily active user uploads two photos, each photo averages three megabytes, and activity is uneven. These numbers are invented inputs for practice. Use decimal units consistently here: one megabyte is one million bytes, and one day is 86,400 seconds. If a storage tool reports binary units, convert before comparing. Label results as estimates and explain which measurement would replace the least certain input."
+    },
+    {
+      "id": "traffic",
+      "title": "Turn people into operations, then bytes",
+      "markdown": "Follow the units instead of jumping from people straight to servers. Under our invented inputs, one million daily active users each upload two 3 MB photos.\n\n| Calculation | Result | What it describes |\n| --- | --- | --- |\n| 1,000,000 × 2 | 2,000,000 uploads/day | User operations |\n| 2,000,000 ÷ 86,400 | about 23 uploads/s | Average operation rate |\n| 23 × 3 MB | about 69 MB/s | Average incoming file bytes |\n| About 5 × average | about 115 uploads/s and 345 MB/s | Assumed peak, rounded |\n\nThe peak factor is an assumption to investigate, not a law of traffic. Carry a sensible range instead of presenting the rounded numbers as exact measurements.\n\n**One request count can hide very different work.** Sending a 1 kB metadata request and uploading a 3 MB photo are both one operation, but their byte costs differ by roughly 3,000 times.\n\nThis supports investigating direct object uploads: the API authorizes the operation and records metadata, while the object-storage path carries the bytes. The application still owns permission, completion validation, and cleanup.\n\n**Interview phrase:** “The byte path is my first concern under these assumptions; I would verify the file-size distribution before choosing capacity.”"
+    },
+    {
+      "id": "storage",
+      "title": "Count retention and copies separately",
+      "markdown": "Two million photos per day at three megabytes each is six terabytes of new original files per day using our decimal units. Thirty days of retained originals gives 180 terabytes before replicas, thumbnails, versions, metadata, or overhead. If the logical original dataset has three physical copies, those copies alone would require roughly 540 terabytes.\n\nA managed storage service may use a different internal redundancy scheme, so do not multiply again unless you own that layout.\n\nNow add an explicit thumbnail assumption rather than hiding it in a mysterious factor. If each original creates two 100-kilobyte thumbnails, the extra logical bytes per day are 400 gigabytes. Ask whether deleted files disappear immediately, whether old versions are retained, and whether unfinished uploads expire. A retention rule changes storage continuously; it is part of the design, not a final cleanup detail."
+    },
+    {
+      "id": "amplification",
+      "title": "Follow one operation past the first arrow",
+      "markdown": "A feed request for twenty photos may produce one feed-index lookup, twenty metadata lookups, permission checks, and image transfers. Batched queries or cached objects can reduce some internal operations, but they do not make the work disappear by definition. Write amplification appears when one post creates hundreds of follower-feed entries. Retry amplification appears when each failed operation is attempted several times.\n\nEstimate the amplified path that controls your decision. If 100 requests each second each cause twenty independent metadata fetches, the naive path issues 2,000 fetches each second. A batch can reduce network round trips while still doing comparable database lookup work. Keep those measures distinct.\n\nFor fan-out, follower counts are often uneven, so an average may hide one author with a huge audience. Examine both an ordinary case and the extreme you promise to support."
+    },
+    {
+      "id": "capacity",
+      "title": "Separate arithmetic lower bounds from safe operation",
+      "markdown": "Suppose a representative load test finds that one worker sustainably processes fifty thumbnail jobs per second. Peak demand is 200 jobs/s.\n\n| Available workers | Modeled capacity | What the arithmetic says |\n| --- | --- | --- |\n| 4 | 200 jobs/s | Exactly matches demand; no spare worker |\n| 5 | 250 jobs/s | One worker can disappear while 200 jobs/s remains |\n| 5, but storage limits the fleet to 170 jobs/s | 170 jobs/s | More worker arithmetic does not remove the shared limit |\n\nThis is a capacity model with equal workers and the tested image mix. It is not a guarantee for larger images, a different machine, or a slower dependency.\n\nDuring a finite burst, a queue stores excess work. During a lasting deficit, the queue keeps growing. Decide how old a job may become before the service rejects, delays, or changes its promise.\n\n**Common mistake:** calling the arithmetic minimum “reliable.” A reliability argument must also name the failure being tolerated and the capacity that survives it."
+    },
+    {
+      "id": "defend",
+      "title": "Compare choices in the same units",
+      "markdown": "To defend direct object uploads, compare application byte traffic, permission control, upload completion handling, and cleanup of abandoned files. The design reduces the application’s involvement in transferring bytes, but introduces signed authorization and a finalization workflow. Say which cost you accept and why it suits the workload. Avoid claiming that one design is universally scalable or that another is universally wrong.\n\nFinally, vary the uncertain inputs. If average photos are ten times larger, byte traffic and storage grow tenfold while upload operation count stays unchanged. If daily activity is half the assumption, some costs shrink; a single viral event may still dominate the peak. A range can show whether the decision is robust.\n\nClose with the first measurement you would collect: actual size distribution, burst shape, or a representative load test. Estimates guide investigation; they do not replace it."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "estimate-chain",
+      "sectionId": "traffic",
+      "title": "Each unit answers a different capacity question",
+      "source": "flowchart LR\nU[Daily active users] --> O[Uploads per day]\nO --> R[Uploads per second]\nR --> B[Bytes per second]\nO --> S[Bytes retained per day]\nS --> T[Retention and extra representations]",
+      "steps": [
+        "Multiply people by their actual activity.",
+        "Divide operations by the time window.",
+        "Multiply by payload size for byte traffic.",
+        "Apply retention and separately named copies or derived files."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "operation-versus-bytes",
+      "sectionId": "defend",
+      "title": "Two paths answer two different load questions",
+      "source": "flowchart TB\nU[One authorized upload] --> A[API handles identity and metadata]\nU --> B[Object path handles file bytes]\nA --> Q[Measure operations per second]\nB --> V[Measure bytes per second]\nQ --> C[Choose capacity from measured bottleneck]\nV --> C",
+      "caption": "This compares responsibilities, not a complete signed-upload protocol. Authorization and publication checks remain required.",
+      "steps": [
+        "Separate the control request from the file transfer.",
+        "Count the operations on the API path.",
+        "Count the bytes on the content path.",
+        "Test the path that actually limits the workload."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "A service stores 400,000 files/day averaging 2 MB, keeps originals for 10 days, and creates one 0.1 MB preview per file. Use decimal units. Estimate daily original bytes, retained original bytes, and daily preview bytes. Then change average original size to 4 MB and explain what stays the same.",
+    "rubric": [
+      "Use explicit units throughout.",
+      "Keep previews separate from originals.",
+      "Distinguish logical storage from physical redundancy.",
+      "Explain sensitivity rather than only calculating."
+    ],
+    "solution": "Originals: 400,000 × 2 MB = 800,000 MB = 800 GB/day. Ten days gives 8 TB logical originals. Previews add 40,000 MB = 40 GB/day. Doubling originals to 4 MB doubles original storage and corresponding transfer to 1.6 TB/day and 16 TB retained. Operation count stays 400,000/day. Preview bytes stay unchanged if the 0.1 MB preview assumption remains true. Copies, metadata, versions and overhead are additional explicit assumptions."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "400,000 files/day × 2 MB each: decimal GB of new originals per day?",
+      "answer": 800,
+      "unit": "GB/day",
+      "tolerance": 0,
+      "explanation": "800,000 MB ÷ 1,000 = 800 GB/day."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "100 requests/s each cause 20 metadata fetches. How many naive fetches/s?",
+      "answer": 2000,
+      "unit": "fetches/s",
+      "tolerance": 0,
+      "explanation": "100 × 20 = 2,000 fetches/s."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Doubling file size while keeping uploads constant directly doubles what?",
+      "options": [
+        "Upload operation count",
+        "File byte traffic",
+        "Number of users"
+      ],
+      "answer": "File byte traffic",
+      "explanation": "Payload bytes increase; the number of upload operations is unchanged."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is four workers insufficient as a reliability argument for 200 jobs/s when each handles 50?",
+      "answer": "Four are only an arithmetic capacity match. There is no room for failure, workload variation, contention or measurement uncertainty, and shared dependencies may impose lower capacity.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Defend direct-to-object-storage upload and name a cost.",
+      "answer": "It keeps large byte transfers away from application servers while the API authorizes access. It requires scoped upload permission, completion validation, metadata state, and cleanup of abandoned objects.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Daily users → QPS?",
+      "back": "Multiply by operations per user, then divide by the measured time window."
+    },
+    {
+      "front": "Byte rate?",
+      "back": "Operations per second multiplied by average bytes per operation, with explicit units."
+    },
+    {
+      "front": "Logical storage versus copies?",
+      "back": "Count user data and retention first, then add explicit redundancy and derived representations."
+    },
+    {
+      "front": "What is amplification?",
+      "back": "One logical request produces multiple internal reads, writes, deliveries or retries."
+    },
+    {
+      "front": "What makes an estimate defensible?",
+      "back": "Stated inputs, units, a decision, uncertainty, and a measurement to validate it."
+    }
+  ],
+  "mentalModel": "Follow the units from people to work to bytes, then ask whether the uncertain inputs change your choice.",
+  "sources": [
+    {
+      "title": "AWS — Throughput versus latency",
+      "url": "https://aws.amazon.com/compare/the-difference-between-throughput-and-latency/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "small-attachment-estimate",
+      "title": "Make an estimate change one decision",
+      "sectionId": "defend",
+      "intro": "A separate practice scenario uses 120 attachments per minute at 5 MB each. We will change only file size to see what the conclusion depends on.",
+      "steps": [
+        {
+          "title": "Count the requests",
+          "explanation": "Convert the stated minute into seconds before considering storage or machine counts.",
+          "state": [
+            {
+              "label": "Input",
+              "value": "120 uploads/minute"
+            },
+            {
+              "label": "Time conversion",
+              "value": "60 seconds/minute"
+            },
+            {
+              "label": "Operation rate",
+              "value": "2 uploads/s"
+            }
+          ]
+        },
+        {
+          "title": "Attach the payload size",
+          "explanation": "Each operation carries 5 MB. The service receives 10 MB of file data each second under the smooth-arrival assumption.",
+          "state": [
+            {
+              "label": "Operation rate",
+              "value": "2 uploads/s"
+            },
+            {
+              "label": "Average file",
+              "value": "5 MB"
+            },
+            {
+              "label": "Incoming bytes",
+              "value": "10 MB/s"
+            }
+          ]
+        },
+        {
+          "title": "Vary the uncertain input",
+          "explanation": "Suppose real files average 20 MB. The number of uploads is unchanged, but the byte path now carries four times as much data.",
+          "state": [
+            {
+              "label": "Operation rate",
+              "value": "2 uploads/s"
+            },
+            {
+              "label": "Average file",
+              "value": "20 MB"
+            },
+            {
+              "label": "Incoming bytes",
+              "value": "40 MB/s"
+            }
+          ]
+        },
+        {
+          "title": "Name the next measurement",
+          "explanation": "Measure sizes and burst shape before selecting the transfer path or its capacity. The estimate points to the sensitive input.",
+          "state": [
+            {
+              "label": "Decision",
+              "value": "investigate file-transfer capacity"
+            },
+            {
+              "label": "Sensitive input",
+              "value": "file size and bursts"
+            },
+            {
+              "label": "Status",
+              "value": "estimate, not a benchmark"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Changing one input at a time reveals which design decision the estimate can actually support."
+    }
+  ]
+}

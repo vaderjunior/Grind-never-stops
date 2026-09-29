@@ -1,0 +1,11 @@
+{
+  "client": "Codex CLI",
+  "exitCode": 0,
+  "signal": null,
+  "observedGetLessonEvents": 2,
+  "passed": true,
+  "configuration": "ephemeral command-line overrides; user config ignored, authentication unchanged",
+  "limitations": [
+    "One bounded read-only retrieval; no model-led learner interview was conducted."
+  ]
+}

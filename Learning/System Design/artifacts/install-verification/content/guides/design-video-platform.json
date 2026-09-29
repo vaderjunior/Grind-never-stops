@@ -1,0 +1,282 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 20,
+  "title": "Design video upload and playback",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "design-video-platform",
+  "summary": "Follow one uploaded video as it becomes playable on different connections. Keep expensive preparation away from the viewer’s immediate request.",
+  "objectives": [
+    "Separate upload, preparation, and playback into three journeys.",
+    "Explain why a player downloads short pieces at different quality levels.",
+    "Recover a failed preparation job without publishing a broken video."
+  ],
+  "terms": [
+    {
+      "term": "Transcoding",
+      "definition": "Creating a new encoded version of a video, often at a different resolution or bitrate."
+    },
+    {
+      "term": "Bitrate",
+      "definition": "How many bits per second a media stream requires."
+    },
+    {
+      "term": "Segment",
+      "definition": "A short piece of a video downloaded separately during playback."
+    },
+    {
+      "term": "Playlist or manifest",
+      "definition": "A small description that tells the player which video pieces and quality options exist."
+    },
+    {
+      "term": "CDN",
+      "definition": "A content delivery network: distributed servers that deliver cached content closer to viewers."
+    }
+  ],
+  "retrieval": [
+    "What made a file ready in the upload lesson?",
+    "Why does a queue help when work takes longer than a normal web request?"
+  ],
+  "sections": [
+    {
+      "id": "start",
+      "title": "Think of a kitchen before a delivery service",
+      "markdown": "A creator uploads a 20-minute lesson. A viewer later watches it on a phone while the network changes from fast Wi-Fi to a weaker connection. Our initial product supports recorded videos, not live broadcasts. It needs private drafts, published videos, and playback that can adapt to available bandwidth.\n\nThink of preparing meals before sending them to customers. The uploaded original is an ingredient, processing creates usable portions, and delivery brings portions to each customer. The analogy helps separate preparation from delivery. It does not mean every video is prepared in advance of every possible request or that a CDN can replace access control.\n\nUse the recoverable upload from week 19. Store the original video in object storage and its owner, identity, processing status, and permissions in metadata. Return “uploaded; processing” once the upload is verified. Do not keep one browser request waiting for the whole conversion pipeline."
+    },
+    {
+      "id": "prepare",
+      "title": "Turn one upload into several playable versions",
+      "markdown": "A durable job says which immutable source version to process. A worker reads it and produces a few quality levels, such as lower and higher resolution. Each output is divided into short segments. Each execution attempt writes to its own output namespace beneath the source/configuration version.\n\nEven duplicate workers for the same job cannot overwrite one another’s segments. Once published, those output objects are immutable: a late attempt must not change bytes behind an already validated playlist.\n\nOnce the required outputs exist, validate them and publish a playlist referring to those exact output versions. The metadata then becomes playable. Some products deliberately publish a low-resolution version first and add others later, but that is a different, explicit readiness policy. Missing segments should never be advertised as complete merely because the worker started.\n\nThe processing queue may deliver a job again. Make the job identity include the source version and processing configuration, and publish with a conditional state transition. A retried job can reuse or replace its own incomplete output without creating duplicate public videos. A cleanup process can later remove abandoned outputs that are no longer referenced."
+    },
+    {
+      "id": "watch",
+      "title": "Walk through a viewer pressing Play",
+      "markdown": "Follow the viewer’s operations in order:\n\n~~~text\npermission check → permitted playlist → segment request → buffered playback\n                                              ↑\n                              choose the next suitable quality\n~~~\n\nOn a CDN miss, the permitted source supplies the segment. The player keeps a buffer so a short network delay need not immediately stop playback.\n\nUse a separate six-second segment encoded at 1 Mbps. It contains about 6 megabits, or 0.75 MB, before container overhead.\n\n| Available transfer rate | Ideal transfer time | Implication for six seconds of media |\n| --- | --- | --- |\n| 3 Mbps | 2 seconds | Can replenish the buffer under these assumptions |\n| 0.5 Mbps | 12 seconds | This quality consumes buffer faster than it replenishes it |\n\nLowering future quality can preserve playback. A player cannot retroactively make a slow segment arrive sooner; it chooses subsequent segments using observed throughput and buffer state.\n\nReal network measurements vary. Players smooth observations rather than assuming one sample predicts the future. HLS describes playlist and segment delivery; these numbers are a simplified original example.\n\n**Pause and predict:** does a fast metadata API help if every segment takes longer to transfer than its playback duration? Point to the byte path that is actually behind."
+    },
+    {
+      "id": "recover",
+      "title": "Name the failure before adding more machines",
+      "markdown": "A worker crash should leave a retryable processing job, not a permanently playable flag. A missing segment should fail validation before publication, or trigger repair and clear user-visible failure after discovery. Repeatedly failing source files need bounded retries and a visible processing error, rather than a queue that spends all its time on one bad input.\n\nA popular video can create a sudden delivery spike. CDN caching keeps repeated immutable segment requests away from origin, but cold caches still need bounded origin capacity. Signed access should cover the relevant playlist and media requests according to the privacy policy. Do not assume protecting only the page protects the video bytes.\n\nDeletions have several layers: remove discovery, revoke future access, invalidate or expire cached delivery where supported, and clean stored versions according to policy. Previously downloaded media cannot be made unseen by changing a database flag."
+    },
+    {
+      "id": "explain",
+      "title": "Tell the story in the order a user experiences it",
+      "markdown": "Use two drawings: preparation and playback. Each has a different definition of success.\n\n| Journey | Successful outcome | Useful observation |\n| --- | --- | --- |\n| Upload | Original verified and recoverable | Failed or abandoned uploads |\n| Preparation | A coherent output version is published | Oldest processing job and conversion failures |\n| Playback | A permitted viewer starts and keeps watching | Start delay and rebuffering |\n\nAt 10,000 concurrent viewers averaging 2 Mbps, delivery is roughly 20 Gbps before overhead. This estimate explains why one small application server should not carry every playback byte.\n\nA healthy upload API does not establish smooth viewing. Likewise, a working CDN does not prove newly uploaded videos become playable.\n\n**Interview phrase:** “I will explain the ready-to-play boundary first, then the viewer’s byte path.” Advanced codecs, live latency, and digital-rights systems are separate extensions after these three journeys are clear."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "video-preparation",
+      "title": "Prepare and publish a specific playable version",
+      "source": "flowchart LR\nU[Verified original upload] --> J[Durable processing job]\nJ --> W[Transcoding worker]\nW --> O[(Versioned segments)]\nO --> V[Validate required outputs]\nV --> P[Publish playlist and playable metadata]",
+      "caption": "The preparation pipeline is asynchronous. The final step publishes references to verified outputs.",
+      "steps": [
+        "Verify the original upload.",
+        "Queue a versioned processing job.",
+        "Write segments without advertising them as complete.",
+        "Validate and publish the playable version."
+      ],
+      "sectionId": "prepare"
+    },
+    {
+      "id": "video-playback",
+      "title": "The player downloads a sequence of small pieces",
+      "source": "sequenceDiagram\nparticipant P as Player\nparticipant A as Application\nparticipant C as CDN\nparticipant O as Origin storage\nP->>A: May I play this video?\nA-->>P: Authorized playlist access\nP->>C: Request first segment\nC->>O: Fetch on cache miss\nO-->>C: Segment bytes\nC-->>P: Segment bytes\nP->>C: Next segment at suitable bitrate",
+      "caption": "The player changes future quality choices as connection and buffer conditions change. Authorization rules apply to media access too.",
+      "steps": [
+        "Obtain authorized playback information.",
+        "Ask the CDN for a segment.",
+        "A cache miss reaches origin storage.",
+        "Keep a buffer and choose a suitable next segment."
+      ],
+      "sectionId": "watch"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw both video journeys. A worker writes all but one segment, crashes, and later receives the same job again. Explain publication and retry. Then calculate whether a four-second 2-Mbps segment fits a steady 1-Mbps connection.",
+    "rubric": [
+      "Do not publish a complete playlist with a known missing required segment.",
+      "Use a repeatable job and versioned outputs.",
+      "8 megabits take about 8 seconds, longer than the 4-second playback duration."
+    ],
+    "solution": "Keep the video processing until all required output is verified. Retry the same source/configuration job using isolated attempt output, complete or regenerate that output set, and conditionally publish one coherent playlist pointing to immutable objects. The segment contains about 4 × 2=8 megabits; at 1 megabit per second transfer takes 8 seconds before overhead. Playback will drain its buffer, so choose a lower bitrate or pause to refill. This model ignores variable throughput and protocol overhead."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why does video preparation usually run in the background?",
+      "options": [
+        "It can be expensive and much slower than an interactive request",
+        "It needs no failure handling",
+        "It avoids storing the source"
+      ],
+      "answer": "It can be expensive and much slower than an interactive request",
+      "explanation": "A durable job lets upload acknowledgement and processing recovery have separate lifecycles."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What does a playback playlist describe?",
+      "options": [
+        "Available media segments and quality options",
+        "The entire user password database",
+        "Only the video title"
+      ],
+      "answer": "Available media segments and quality options",
+      "explanation": "The player uses this small description to request actual media pieces."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Protecting the HTML watch page always protects the segment URLs.",
+      "options": [
+        "True",
+        "False",
+        "Only for long videos"
+      ],
+      "answer": "False",
+      "explanation": "Media access has its own delivery and authorization boundaries."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why publish versioned outputs rather than mixing worker attempts?",
+      "answer": "A coherent playlist must point to a validated set generated from one source/configuration; retries and older workers should not create a mixed or incomplete public result.",
+      "explanation": "A coherent playlist must point to a validated set generated from one source/configuration; retries and older workers should not create a mixed or incomplete public result."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Which two viewer-facing signals matter beyond upload success?",
+      "answer": "Playback start delay and rebuffering reveal whether viewers can actually begin and sustain playback.",
+      "explanation": "Playback start delay and rebuffering reveal whether viewers can actually begin and sustain playback."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Three video journeys?",
+      "back": "Upload, preparation, and playback."
+    },
+    {
+      "front": "Transcoding?",
+      "back": "Create encoded output versions suitable for different playback needs."
+    },
+    {
+      "front": "Segment benefit?",
+      "back": "The player downloads and adapts in bounded pieces."
+    },
+    {
+      "front": "Playable boundary?",
+      "back": "Publish references only to outputs meeting the declared readiness policy."
+    },
+    {
+      "front": "Why CDN delivery?",
+      "back": "Reuse immutable media near viewers and reduce repeated origin traffic."
+    }
+  ],
+  "mentalModel": "Prepare reliable pieces in the background, then let the player choose and fetch the next suitable piece.",
+  "sources": [
+    {
+      "title": "RFC8216 — HTTP Live Streaming",
+      "url": "https://www.rfc-editor.org/rfc/rfc8216.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon S3 — Multipart upload",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Monitoring distributed systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "buffer-behavior",
+      "title": "See the difference between downloading and playing",
+      "sectionId": "watch",
+      "intro": "A player already has four seconds buffered. The next segment contains six seconds of media. For this idealized trace, playback continues at one media-second per real second.",
+      "steps": [
+        {
+          "title": "Choose the next segment",
+          "explanation": "The playlist offers allowed qualities. The player selects one using measured conditions and its current buffer.",
+          "state": [
+            {
+              "label": "Buffered media",
+              "value": "4 seconds"
+            },
+            {
+              "label": "Next segment duration",
+              "value": "6 seconds"
+            },
+            {
+              "label": "Selected quality",
+              "value": "suitable measured bitrate"
+            }
+          ]
+        },
+        {
+          "title": "Download while playback continues",
+          "explanation": "Suppose the transfer takes two seconds. Those two seconds also consume two seconds of the existing buffer.",
+          "state": [
+            {
+              "label": "Transfer time",
+              "value": "2 seconds"
+            },
+            {
+              "label": "Old buffer remaining",
+              "value": "2 seconds"
+            },
+            {
+              "label": "New segment",
+              "value": "6 seconds complete"
+            }
+          ]
+        },
+        {
+          "title": "Add the completed media",
+          "explanation": "The completed segment extends the playable buffer. Under this simplified model, two old seconds plus six new seconds gives eight.",
+          "state": [
+            {
+              "label": "Buffered media",
+              "value": "8 seconds"
+            },
+            {
+              "label": "Playback",
+              "value": "continues"
+            },
+            {
+              "label": "Segment state",
+              "value": "complete"
+            }
+          ]
+        },
+        {
+          "title": "React before the next decision",
+          "explanation": "If the connection weakens, the player can choose a lower bitrate for a later segment. The buffer is temporary time to react, not extra network capacity.",
+          "state": [
+            {
+              "label": "Network signal",
+              "value": "slower than before"
+            },
+            {
+              "label": "Next choice",
+              "value": "consider lower bitrate"
+            },
+            {
+              "label": "Buffer purpose",
+              "value": "absorb temporary variation"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Downloaded bytes become playable time. Compare how fast that time is added with how fast playback consumes it."
+    }
+  ]
+}

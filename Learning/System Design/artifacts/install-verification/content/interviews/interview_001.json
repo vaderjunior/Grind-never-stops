@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "interview_001",
+  "lessonId": "005",
+  "title": "Clarify a vague product request and defend its estimates",
+  "aliases": [
+    "L005",
+    "lesson_005",
+    "m01_concept_check"
+  ],
+  "modeType": "concept-check",
+  "minutes": 45,
+  "brief": "A university wants a service that lets students share announcements with groups. The sponsor asks for it to be “fast, reliable, and ready for everyone on campus.” Clarify what the first release should do, identify its important guarantees and non-goals, and derive an average and peak request model. Focus on reasoning taught in L001–004; no distributed-system product knowledge is required.",
+  "clarifications": [
+    {
+      "question": "Who uses it and how many are active?",
+      "answer": "There are 40,000 enrolled students, of whom 12,000 use the service on a normal day."
+    },
+    {
+      "question": "Which actions matter in the first release?",
+      "answer": "Users read their group announcements and authorized group organizers create announcements. Exclude comments, attachments, payments, and external sharing."
+    },
+    {
+      "question": "How often do they act?",
+      "answer": "Each active student reads announcement lists ten times per day. There are 600 new announcements daily. Each list action makes one API request in the supplied baseline."
+    },
+    {
+      "question": "What should be private and who may publish?",
+      "answer": "Only group members may read private group announcements. Only organizers may create them. A success response means the announcement is stored."
+    },
+    {
+      "question": "What does fast mean?",
+      "answer": "The proposed target is 99% of valid list reads under 500 ms at the agreed peak. Treat this as a product target to test, not a measured current capability."
+    },
+    {
+      "question": "What peak or growth assumption may I use?",
+      "answer": "Use a busiest one-minute rate six times the daily average, initially with the same read/write mix. State the limitation of that assumption."
+    },
+    {
+      "question": "What may happen during an outage?",
+      "answer": "Creation may be unavailable rather than falsely confirmed. Existing public announcements may be shown from a slightly old view; private membership must still be respected."
+    }
+  ],
+  "hints": [
+    "Separate the population active in one day from total enrolled accounts.",
+    "Write each action count per day before dividing by seconds.",
+    "Ask what an accepted write promises and who is allowed to see a private group."
+  ],
+  "changes": [
+    "The sponsor schedules a campus-wide event; 8,000 students may open the same announcement within one minute. How does this change the workload assumption?",
+    "A product manager suggests treating any failed creation request as if nothing was saved. Explain the uncertainty using an ordered request trace."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "A strong answer narrows the initial product to list reads and organizer creates, with comments and media out of scope. It distinguishes private membership and authorized creation as correctness boundaries, and stored-before-confirmed as the acceptance contract. Baseline reads are 12,000 × 10 = 120,000/day, writes 600/day, total 120,600/86,400 ≈ 1.396 requests/s average. Sixfold peak is ≈8.375/s under the fixed-mix assumption. The event produces 8,000/60 ≈133.3 list reads/s in that minute, overwhelming the previous peak assumption; this does not itself prove a server limit. The candidate should ask whether arrivals are uniform within the minute. A simple app and persistent authority is a plausible initial sketch, but capacity and recovery remain unmeasured. A lost response after saving makes the outcome uncertain, so safe behavior requires inspecting or identifying the accepted operation rather than assuming no write. Do not demand queue, cache, sharding, protocol, or transaction terminology not yet taught.",
+  "debrief": "Compare the actual transcript against clarification quality, unit consistency, stated assumptions, and the distinction between correctness and service objectives. The supplied full rubric remains visible, but early dimensions should be judged at M01 depth: an API may be plain input/output contracts and data modeling may be named ownership. Do not penalize absence of later mechanisms. Record one strongest decision, one consequential missing assumption, and a changed-number retry. A self-assessment must be labeled as such; model feedback needs actual cited candidate turns.",
+  "remediation": [
+    "001",
+    "002",
+    "003",
+    "004"
+  ]
+}

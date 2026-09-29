@@ -1,0 +1,6 @@
+- Lesson ID: `001`
+- Section ID: `start`
+- Section title: “A small problem with real consequences”
+- Lesson title: “What system design is; diagnostic and your design notebook”
+
+The section introduces system design through an equipment borrowing register, connecting requirements to data, permissions, persistence, and failure recovery.

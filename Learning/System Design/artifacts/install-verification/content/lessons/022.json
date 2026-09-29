@@ -1,0 +1,149 @@
+{
+  "id": "022",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Construct an interleaving that loses an update.",
+    "Protect a local critical section and state its scope.",
+    "Bound active work separately from queued work.",
+    "Propagate cancellation while releasing owned resources."
+  ],
+  "retrieval": [
+    "From L021: why can tasks interleave on a single event-loop thread?",
+    "From L002: describe an invariant independent of a locking mechanism."
+  ],
+  "sections": [
+    {
+      "id": "race",
+      "title": "A single thread does not make a multi-step operation atomic",
+      "markdown": "Core: retrieval 5, mechanism 18, trace 8, exercise 10, questions 10, review 4 minutes. Suppose two requests increment a shared counter. Each reads the value, waits for another operation, then writes the old value plus one. Starting at zero, A reads zero, B reads zero, A writes one, and B writes one. Two successful increments leave one: a lost update.\n\nThe bug is an interleaving across a read-modify-write operation. Threads are not required; tasks can yield between those steps. Conversely, the presence of multiple threads does not automatically make every operation incorrect. Identify the shared state, invariant, and critical section precisely. Here the invariant is that each accepted increment contributes one to the counter.\n\nA local asynchronous lock can serialize those steps within one event loop. A thread lock can coordinate participating threads in one process. Neither lock coordinates a second application process or a second server unless an explicit shared authority participates. Using a process-local lock around a database update does not establish system-wide correctness. M04 introduces the database boundary where persistent invariants belong."
+    },
+    {
+      "id": "limits",
+      "title": "Bound ownership, not only the rate of starting tasks",
+      "markdown": "A semaphore with capacity N limits how many cooperating operations hold a slot at once. It is useful for protecting a downstream connection pool or CPU executor. But launching a million tasks that all wait for a semaphore still creates a million waiting tasks. Bound both active work and waiting work, or reject admission before retaining a large request body.\n\nSuppose at most ten external calls may run and at most twenty requests may wait. The thirty-first request should receive an explicit overload policy rather than silently allocating another waiting task. That policy may reject immediately, ask a client to retry later, or defer durable background work under a separate contract. A semaphore by itself expresses none of those choices.\n\nHolding a lock while waiting for unrelated network I/O lengthens the critical section and creates convoying. If the state transition can be safely split, take a snapshot under the lock, release it, compute outside, then validate a version before committing. That is a pattern requiring careful correctness reasoning, not permission to release a lock halfway through an invariant. Prefer the simplest protected operation until you can prove the split."
+    },
+    {
+      "id": "cleanup",
+      "title": "Cancellation is a request to stop, not time travel",
+      "markdown": "In cooperative async code, cancellation is delivered at an opportunity for the task to observe it. Use finally or context managers to release slots, close owned resources, and finish required cleanup. After cleanup, allow cancellation to propagate; swallowing it may keep unwanted work alive and confuse its caller. A database write already committed cannot be undone just because the client disconnected.\n\nAn executable Python 3.11+ illustration protects two intentionally interleaved updates:\n\n~~~python\nimport asyncio\n\nasync def main() -> None:\n    lock = asyncio.Lock()\n    counter = 0\n    async def increment() -> None:\n        nonlocal counter\n        async with lock:\n            previous = counter\n            await asyncio.sleep(0)  # force a scheduling opportunity\n            counter = previous + 1\n    await asyncio.gather(increment(), increment())\n    assert counter == 2\n    print(\"counter=2\")\n\nasyncio.run(main())\n~~~\n\nThe sleep is deliberate test instrumentation, not a recommended reason to hold a lock. Remove the lock while keeping this interleaving and both tasks read zero before either writes. The L029 harness tests that failure deterministically. This is a local concurrency demonstration, not a durable distributed counter."
+    },
+    {
+      "id": "failure",
+      "title": "Trace ownership during every exit",
+      "markdown": "Consider a request that acquires a downstream slot, starts a call, then is canceled. If release happens only after a normal return, the slot leaks. Repeated cancellations eventually leave no capacity even while no useful calls run. An asynchronous context manager around slot ownership makes normal completion, exceptions, and cancellation share the release path.\n\nCleanup itself can fail or block. Set reasonable bounds, log an actionable error, and distinguish resource cleanup from compensating a business action. Deleting a confirmed booking because its client disconnected is not merely cleanup; it changes product state and requires an explicit policy.\n\nCommon misconceptions are “the GIL protects my business transaction,” “async code cannot race,” “a semaphore bounds every queue,” “a timeout rolls back all effects,” and “catching every exception makes shutdown reliable.” Ask what each participant owns, which transitions are protected, and where cancellation can be observed. Optional depth: test cancellation while waiting for a slot versus while holding one; the resource accounting should return to its baseline in both cases."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "lost-update",
+      "title": "Two requests overwrite the same old value",
+      "source": "sequenceDiagram\nparticipant A as Request A\nparticipant C as Shared counter\nparticipant B as Request B\nA->>C: Read 0\nB->>C: Read 0\nA->>A: Compute 0 plus 1\nB->>B: Compute 0 plus 1\nA->>C: Write 1\nB->>C: Write 1\nNote over A,B: Final value 1 loses one accepted increment",
+      "caption": "This unsafe history concerns local shared state. A protected read-modify-write must exclude the competing operation across the entire critical section.",
+      "steps": [
+        "A takes a snapshot.",
+        "B takes the same snapshot before A commits.",
+        "Each computes a locally plausible answer.",
+        "The second write replaces, rather than adds to, the first effect."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Review this pseudocode: acquire_slot(); result = await provider(); release_slot(); return result. Describe the cancellation leak, rewrite the ownership structure, and explain why a ten-slot semaphore still allows an unbounded waiting queue.",
+    "minutes": 10,
+    "rubric": [
+      "Shows cancellation or exception bypassing release.",
+      "Uses finally/context manager with matching acquisition scope.",
+      "Separates active-call count from waiting-task count.",
+      "Does not claim that caller cancellation reverses remote effects."
+    ],
+    "solution": "If provider() raises or the task is canceled, release_slot() is skipped. Use an async slot context manager or acquire followed by try/finally with release in the finally block. Ensure only successfully acquired slots are released. A semaphore limits holders; every additional task can still wait, holding memory and request context. Add a bounded admission queue or reject excess arrivals. If the remote provider already acted, cancellation does not automatically undo its action."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Can a single-threaded event loop lose a read-modify-write update?",
+      "options": [
+        "No",
+        "Yes, when competing tasks interleave across yields",
+        "Only if there are two CPUs"
+      ],
+      "answer": "Yes, when competing tasks interleave across yields",
+      "explanation": "Atomicity is about the whole transition, not the thread count alone."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A process-local lock coordinates:",
+      "options": [
+        "All servers automatically",
+        "Only participants sharing that lock in its supported scope",
+        "Every database client"
+      ],
+      "answer": "Only participants sharing that lock in its supported scope",
+      "explanation": "Other processes do not share the same in-memory lock."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What must be bounded besides active calls?",
+      "answer": "Waiting tasks or requests and retained input/resources, with a defined admission policy when full.",
+      "explanation": "A semaphore alone does not limit the number of waiters."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why re-raise cancellation after cleanup?",
+      "answer": "So the caller and structured execution scope can observe that the work was canceled instead of accidentally continuing it as success.",
+      "explanation": "Cleanup should not hide the operation’s state."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When is releasing a lock before I/O unsafe?",
+      "answer": "When another operation can change the protected state and the later write no longer validates the invariant or original version.",
+      "explanation": "A safe split needs a proof or revalidation, not merely a shorter lock duration."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Lost update?",
+      "back": "Two operations derive writes from the same old value, and one overwrites the other effect."
+    },
+    {
+      "front": "Critical section?",
+      "back": "The complete state transition that competing operations must not interleave unsafely."
+    },
+    {
+      "front": "Semaphore bounds?",
+      "back": "Concurrent holders, not automatically the number waiting."
+    },
+    {
+      "front": "Local lock scope?",
+      "back": "Its participating event loop or process, not other servers."
+    },
+    {
+      "front": "Why finally?",
+      "back": "To release owned resources across normal, error, and cancellation exits."
+    },
+    {
+      "front": "Cancellation cannot do what?",
+      "back": "Undo effects already committed locally or remotely by itself."
+    }
+  ],
+  "mentalModel": "Every resource needs an owner, every shared transition a protected boundary, and every exit a cleanup path.",
+  "sources": [
+    {
+      "title": "Python 3.14 documentation: asyncio synchronization primitives",
+      "url": "https://docs.python.org/3/library/asyncio-sync.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python 3.14 documentation: Coroutines and tasks",
+      "url": "https://docs.python.org/3/library/asyncio-task.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "060",
+  "objectives": [
+    "Diagnose from supplied evidence.",
+    "Defend a bounded design and its failure behavior."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate brief",
+      "markdown": "Scale a public catalog service from500 to10,000 reads/s. Updates are infrequent, but users must see a confirmed update within30 seconds. Defend every new component, estimate capacity, and explain behavior during cache loss. Begin with the current simple service."
+    },
+    {
+      "id": "format",
+      "title": "Assessment workflow",
+      "markdown": "Use the interview center for the saved attempt. Ask clarifying questions, record actual evidence, and finish the answering phase before opening the separate debrief. Scheduled hour:45 minutes reasoning and15 minutes feedback/retry planning."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "prompt": "Scale a public catalog service from500 to10,000 reads/s. Updates are infrequent, but users must see a confirmed update within30 seconds. Defend every new component, estimate capacity, and explain behavior during cache loss. Begin with the current simple service.",
+    "minutes": 45,
+    "rubric": [
+      "Scope and workload.",
+      "Mechanism and bottleneck.",
+      "Failure and tradeoff reasoning."
+    ],
+    "solution": "Reference reasoning is available through the interview debrief after submission."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "Use observations to narrow the mechanism before adding capacity.",
+  "sources": []
+}

@@ -1,0 +1,216 @@
+[
+  {
+    "id": "bbg-what-happens-when-you-type-a-url-into-your-browser",
+    "title": "What Happens When You Type a URL Into Your Browser?",
+    "url": "https://bytebytego.com/guides/what-happens-when-you-type-a-url-into-your-browser/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Visual reinforcement for the browser-to-server journey after the original first explanation. The example is HTTP/TCP; it is not every modern transport.",
+    "weeks": [
+      1
+    ]
+  },
+  {
+    "id": "bbg-how-does-the-domain-name-system-dns-lookup-work",
+    "title": "How Does the Domain Name System (DNS) Lookup Work?",
+    "url": "https://bytebytego.com/guides/how-does-the-domain-name-system-dns-lookup-work/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Follow a named resolver through DNS lookup after domain and address are defined. Treat timings as context-specific.",
+    "weeks": [
+      1
+    ]
+  },
+  {
+    "id": "bbg-how-does-rest-api-work",
+    "title": "How does REST API work?",
+    "url": "https://bytebytego.com/guides/how-does-rest-api-work/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A visual checklist after the original request/response guide; its short text is not a standalone beginner lesson.",
+    "weeks": [
+      2
+    ]
+  },
+  {
+    "id": "bbg-what-does-acid-mean",
+    "title": "What does ACID mean?",
+    "url": "https://bytebytego.com/guides/what-does-acid-mean/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A vocabulary recap after a concrete transaction example. Read alongside the guide’s explicit failure and isolation scope.",
+    "weeks": [
+      4
+    ]
+  },
+  {
+    "id": "bbg-what-is-a-load-balancer",
+    "title": "What is a Load Balancer?",
+    "url": "https://bytebytego.com/guides/what-is-a-load-balancer/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Locate the traffic distributor in a small multi-server app before exploring its many types.",
+    "weeks": [
+      6
+    ]
+  },
+  {
+    "id": "bbg-proxy-vs-reverse-proxy",
+    "title": "Proxy vs Reverse Proxy",
+    "url": "https://bytebytego.com/guides/proxy-vs-reverse-proxy/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Compare which side of a conversation the intermediary serves, after the main load-balancing walkthrough.",
+    "weeks": [
+      6
+    ]
+  },
+  {
+    "id": "bbg-top-5-caching-strategies",
+    "title": "Top 5 Caching Strategies",
+    "url": "https://bytebytego.com/guides/top-5-caching-strategies/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Optional visual vocabulary for read/write cache paths. Our original guide supplies freshness and failure reasoning.",
+    "weeks": [
+      6,
+      7
+    ]
+  },
+  {
+    "id": "bbg-a-crash-course-in-database-sharding",
+    "title": "A Crash Course on Database Sharding",
+    "url": "https://bytebytego.com/guides/a-crash-course-in-database-sharding/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Introduces partition keys, placement approaches, and cross-shard costs after the learner understands one table.",
+    "weeks": [
+      9
+    ]
+  },
+  {
+    "id": "bbg-consistent-hashing",
+    "title": "Consistent Hashing Explained",
+    "url": "https://bytebytego.com/guides/consistent-hashing/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Shows why changing a modulo divisor moves keys. Treat vendor examples as historical illustrations, not current architecture evidence.",
+    "weeks": [
+      9
+    ]
+  },
+  {
+    "id": "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+    "title": "CAP Theorem: One of the Most Misunderstood Terms",
+    "url": "https://bytebytego.com/guides/cap-theorem-one-of-the-most-misunderstood-terms/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A discussion prompt after precise partition histories. Keep formal availability distinct from merely returning an HTTP response.",
+    "weeks": [
+      10
+    ]
+  },
+  {
+    "id": "bbg-delivery-semantics",
+    "title": "Delivery Semantics",
+    "url": "https://bytebytego.com/guides/delivery-semantics/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Compare delivery terms after tracing one thumbnail task. Our guide distinguishes message delivery from a once-only business effect.",
+    "weeks": [
+      8,
+      11
+    ]
+  },
+  {
+    "id": "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+    "title": "How to Detect Node Failures in Distributed Systems",
+    "url": "https://bytebytego.com/guides/how-do-we-detect-node-failures-in-distributed-systems/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A visual catalog of heartbeat approaches after learning that timeout means suspicion, not proof of death.",
+    "weeks": [
+      13,
+      22
+    ]
+  },
+  {
+    "id": "bbg-how-to-ace-system-design-interviews-like-a-boss",
+    "title": "How to Ace System Design Interviews",
+    "url": "https://bytebytego.com/guides/how-to-ace-system-design-interviews-like-a-boss/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Optional interview structure once components have concrete meaning. Use a complete small design before deep dives.",
+    "weeks": [
+      15,
+      24
+    ]
+  },
+  {
+    "id": "bbg-how-to-design-google-docs",
+    "title": "How to Design Google Docs",
+    "url": "https://bytebytego.com/guides/how-to-design-google-docs/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Later comparison exercise for collaboration paths; a teaching sketch, not verified current product internals.",
+    "weeks": [
+      19
+    ]
+  },
+  {
+    "id": "bbg-how-to-avoid-double-payment",
+    "title": "How to Avoid Double Payment",
+    "url": "https://bytebytego.com/guides/how-to-avoid-double-payment/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Motivates stable operation identity through a user-visible duplicate-charge problem. Our core material supplies the atomic effect/deduplication boundary and limits.",
+    "weeks": [
+      21
+    ]
+  }
+]

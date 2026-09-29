@@ -1,0 +1,93 @@
+import { z } from 'zod';
+
+export const lessonId = z.string().regex(/^\d{3}$/);
+export const guideId = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);
+export const sessionId = z.string().uuid();
+export const key = z.string().min(8).max(120);
+const targetId = z.string().max(100).regex(/^(\d{3}|interview_[a-zA-Z0-9_-]+|[a-f0-9-]{36}|project_[a-zA-Z0-9_-]+|(?:exercise|design|quiz):\d{3}|project:P[1-6]|guide:[a-z0-9][a-z0-9-]{0,63})$/);
+const revision = z.number().int().nonnegative();
+const sessionWrite = { sessionId, revision, idempotencyKey: key };
+const boundedText = z.string().max(60000);
+
+export const actions = {
+  get_learning_path: z.object({}).strict(),
+  get_guide: z.object({guideId}).strict(),
+  open_guide: z.object({guideId}).strict(),
+  save_guide_progress: z.object({guideId,revision,completed:z.boolean().optional(),bookmarked:z.boolean().optional(),position:z.string().max(100).optional(),idempotencyKey:key.optional()}).strict(),
+  reveal_guide: z.object({guideId}).strict(),
+  submit_guide_quiz: z.object({guideId,answers:z.record(z.string().max(100),z.union([z.string().max(12000),z.number().finite()])),idempotencyKey:key}).strict(),
+  search_course: z.object({ query: z.string().min(2).max(100), offset: z.number().int().min(0).max(10000).default(0), limit: z.number().int().min(1).max(30).default(12) }).strict(),
+  get_lesson: z.object({ lessonId, sectionId: z.string().max(100).optional() }).strict(),
+  get_study_state: z.object({}).strict(),
+  open_lesson: z.object({ lessonId }).strict(),
+  set_progress: z.object({ lessonId, completed: z.boolean().optional(), bookmarked: z.boolean().optional() }).strict(),
+  save_note: z.object({ targetId, text: boundedText, revision, idempotencyKey: key.optional() }).strict(),
+  save_draft: z.object({ targetId, text: boundedText, revision, idempotencyKey: key.optional() }).strict(),
+  submit_quiz_attempt: z.object({ lessonId, answers: z.record(z.string().max(100), z.union([z.string().max(12000), z.number().finite()])), idempotencyKey: key }).strict(),
+  reveal_lesson: z.object({ lessonId }).strict(),
+  get_due_reviews: z.object({ limit: z.number().int().min(1).max(100).default(30) }).strict(),
+  get_wrong_answers: z.object({ offset: z.number().int().min(0).max(10000).default(0), limit: z.number().int().min(1).max(100).default(30) }).strict(),
+  record_review: z.object({ cardId: z.string().regex(/^(\d{3}:\d{1,3}|guide:[a-z0-9][a-z0-9-]{0,63}:\d{1,3})$/), rating: z.number().int().min(0).max(3), idempotencyKey: key }).strict(),
+  list_interviews: z.object({ offset: z.number().int().min(0).max(1000).default(0), limit: z.number().int().min(1).max(100).default(100) }).strict(),
+  start_interview: z.object({ interviewId: z.string().min(1).max(100), mode: z.enum(['coaching', 'exam']).default('coaching'), idempotencyKey: key }).strict(),
+  get_interview_session: z.object({ sessionId }).strict(),
+  record_interview_turn: z.object({ ...sessionWrite, role: z.enum(['candidate', 'interviewer']), kind: z.enum(['question', 'answer', 'artifact']), text: z.string().min(1).max(60000) }).strict(),
+  request_interview_hint: z.object(sessionWrite).strict(),
+  get_interview_clarification: z.object({ sessionId, index: z.number().int().min(0).max(100) }).strict(),
+  pause_interview: z.object(sessionWrite).strict(),
+  resume_interview: z.object(sessionWrite).strict(),
+  finish_interview: z.object(sessionWrite).strict(),
+  save_interview_feedback: z.object({ ...sessionWrite, source: z.enum(['ai', 'self']), components: z.array(z.object({ dimensionId: z.string().max(100), score: z.number().min(0).max(4), evidence: z.array(z.object({ turnId: z.string().uuid(), quote: z.string().min(1).max(1000) }).strict()).max(12), reasoning: z.string().min(1).max(4000) }).strict()).min(1).max(20), missedOpportunities: z.array(z.string().min(1).max(2000)).max(20), alternatives: z.array(z.string().min(1).max(2000)).max(20), remediation: z.array(z.object({ lessonId, reason: z.string().min(1).max(2000) }).strict()).max(20), retryExercise: z.string().min(1).max(6000), uncertainty: z.string().min(1).max(3000) }).strict(),
+  get_interview_debrief: z.object({ sessionId }).strict(),
+  export_data: z.object({}).strict(),
+  import_data: z.object({ data: z.unknown() }).strict(),
+  create_backup: z.object({}).strict(),
+  list_backups: z.object({}).strict(),
+  restore_backup: z.object({ backupId: z.string().regex(/^backup-[\dT-]+-[a-f0-9]{8}\.sqlite$/) }).strict(),
+  get_workbook: z.object({ lessonIds: z.array(lessonId).min(1).max(300), solutions: z.boolean().default(false) }).strict(),
+  get_project: z.object({ projectId: z.string().regex(/^P[1-6]$/) }).strict(),
+  reveal_project: z.object({ projectId: z.string().regex(/^P[1-6]$/) }).strict(),
+  get_project_reference: z.object({ projectId: z.string().regex(/^P[1-6]$/) }).strict(),
+} as const;
+export type ActionName = keyof typeof actions;
+export const readActions = new Set<ActionName>(['get_learning_path','get_guide','search_course', 'get_lesson', 'get_study_state', 'get_due_reviews', 'get_wrong_answers', 'list_interviews', 'get_interview_session', 'get_interview_clarification', 'get_interview_debrief', 'export_data', 'list_backups', 'get_workbook', 'get_project', 'get_project_reference']);
+export const actionDescriptions: Record<ActionName, string> = {
+  get_learning_path:'Read the six-month guided path and actual published-guide availability.',
+  get_guide:'Read an original guided lesson with solutions withheld until explicit reveal.',
+  open_guide:'Record opening a guide without awarding completion.',
+  save_guide_progress:'Save self-completion, bookmark, or section position with optimistic revision control.',
+  reveal_guide:'Explicitly reveal guide exercise solutions, question explanations and recall cards.',
+  submit_guide_quiz:'Persist an objective guide quiz attempt. Open responses remain ungraded; no interview-readiness claim is inferred.',
+  search_course: 'Search safe course sections, bounded and paginated. Never includes answer keys.',
+  get_lesson: 'Read one lesson or section with stable course:// references; respects active assessment restrictions.',
+  get_study_state: 'Read learner progress, due count, sessions, and prerequisite-aware next step.',
+  open_lesson: 'Record a lesson opened; this does not award completion or proficiency.',
+  set_progress: 'Self-mark completion or bookmark a lesson. Self-completion is not demonstrated proficiency.',
+  save_note: 'Save a note with optimistic revision control. Initial revision is 0.',
+  save_draft: 'Save a design or exercise draft with optimistic revision control.',
+  submit_quiz_attempt: 'Persist and deterministically grade objective/numeric answers; open responses require self or AI assessment.',
+  reveal_lesson: 'Explicitly reveal a lesson solution outside an active related interview.',
+  get_due_reviews: 'Read due spaced-review cards. Active assessment cards are withheld.',
+  get_wrong_answers: 'Read a bounded collection of incorrect objective attempts with original responses and explained corrections. Active assessment answers are withheld.',
+  record_review: 'Rate recall 0=again, 1=hard, 2=good, 3=easy. Persist a deterministic spaced-review interval.',
+  list_interviews: 'List stable interview IDs and aliases without reference solutions.',
+  start_interview: 'Start an authoritative durable interview session in coaching or timed-exam mode.',
+  get_interview_session: 'Resume a saved session including actual recorded turns, revision, and elapsed time.',
+  record_interview_turn: 'Save an actual attributed candidate/interviewer turn. Never infer or fabricate transcript.',
+  request_interview_hint: 'Explicitly request and record one allowed hint, also in exam mode.',
+  get_interview_clarification: 'Read one prepared factual clarification by index without disclosing solution material.',
+  pause_interview: 'Pause an active timer, preserving elapsed time and all submissions.',
+  resume_interview: 'Resume a paused session; revision must match current state.',
+  finish_interview: 'Close answering and mark feedback pending without inventing a grade.',
+  save_interview_feedback: 'Save attributed AI/self feedback; validate weighted rubric, exact transcript evidence and remediation references.',
+  get_interview_debrief: 'Read reference reasoning only after the answering phase has ended.',
+  export_data: 'Export versioned learner records; disabled during active assessments to prevent feedback spoilers.',
+  import_data: 'Validate and transactionally merge versioned learner records without deleting existing data.',
+  create_backup: 'Create a database-consistent SQLite backup inside the application data directory.',
+  list_backups: 'List available local application backups without arbitrary filesystem access.',
+  restore_backup: 'Restore a validated application backup by ID, first backing up current records.',
+  get_workbook: 'Read printable course content for selected lessons; explicit solutions mode respects reveal guards.',
+  get_project: 'Retrieve one project specification, source-mapped milestones and deliberate learner skeleton.',
+  reveal_project: 'Explicitly reveal a project reference solution outside an active related assessment.',
+  get_project_reference: 'Retrieve a previously revealed project reference implementation; restricted during active related assessments.',
+};

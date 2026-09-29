@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "checks": [
+    "Production dashboard loads with outbound browser requests blocked.",
+    "Begin session navigation and locally rendered SVG diagram.",
+    "Note saved to SQLite and restored after browser refresh.",
+    "Unsaved draft recovers from local browser storage.",
+    "Objective quiz submission persists and shows explained deterministic feedback.",
+    "Explicit reveal, bookmark, and self-completion remain separate from proficiency.",
+    "Light and dark lesson rendering.",
+    "Website starts a durable interview and pauses/resumes its timer.",
+    "Feedback saved through shared API appears in the website; test fixture is explicitly self-attributed.",
+    "All30 modules visible in the catalog without claiming all content is authored.",
+    "390px mobile dashboard has no horizontal viewport overflow.",
+    "Same-content questions workbook rendered to A4 PDF."
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "dataDir": "D:\\AIOps Infra Path\\Learning\\System Design\\artifacts\\browser\\test-data-NA27VZ",
+  "limitations": [
+    "Feedback was entered through the shared API for deterministic browser verification; genuine MCP lifecycle is tested separately.",
+    "PDF pagination still requires visual inspection.",
+    "Test data is isolated and retained under artifacts/browser for reproducible evidence."
+  ]
+}

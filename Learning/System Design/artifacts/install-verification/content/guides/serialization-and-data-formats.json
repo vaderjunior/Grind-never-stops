@@ -1,0 +1,314 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 7,
+  "title": "JSON, bytes, serialization, and compression",
+  "level": "beginner",
+  "minutes": 60,
+  "id": "serialization-and-data-formats",
+  "summary": "Understand how an in-memory value becomes bytes on a network, why formats need schemas, and what compression changes—and does not change.",
+  "objectives": [
+    "Separate a program value, serialized representation, encoding, and compression.",
+    "Read a JSON example and name its missing business guarantees.",
+    "Compare JSON and schema-based binary formats without assuming one is always better.",
+    "Explain safe format evolution and payload limits."
+  ],
+  "terms": [
+    {
+      "term": "Serialization",
+      "definition": "Turning a value or structure into a representation that can be stored or transmitted."
+    },
+    {
+      "term": "Deserialization",
+      "definition": "Parsing a serialized representation back into a program value or structure."
+    },
+    {
+      "term": "Encoding",
+      "definition": "A rule for representing information as bytes or symbols, such as UTF-8 for text."
+    },
+    {
+      "term": "Schema",
+      "definition": "A definition of expected fields, types, and constraints for data."
+    },
+    {
+      "term": "Compression",
+      "definition": "Representing data using fewer bytes when patterns allow it, with work needed to encode/decode."
+    },
+    {
+      "term": "Binary format",
+      "definition": "A format designed directly around bytes rather than primarily human-readable text."
+    }
+  ],
+  "retrieval": [
+    "What does the body of an HTTP request carry?",
+    "Why do network transfer rate and CPU work both affect response time?"
+  ],
+  "sections": [
+    {
+      "id": "story",
+      "title": "The other computer cannot read your variables directly",
+      "markdown": "Your application holds a note as a structured value: an identity, title, owner, and tags. Another process does not automatically share that memory. To send the note through an API, the application must represent it as bytes that the receiver knows how to interpret.\n\nSerialization performs that conversion. Deserialization reads the representation and builds values the receiver can use. Think of packing labeled items for shipment and unpacking them using an agreed description. The analogy has a limit: software needs exact rules for field names, numbers, missing values, and malformed input, not just readable labels.\n\nThe network transports bytes; it does not know that one string is a note title and another is a private token. The format and application contract give those bytes meaning. This distinction helps you reason about APIs, messages, files, and database change events using the same basic concepts."
+    },
+    {
+      "id": "json",
+      "title": "JSON is a text representation, not a database",
+      "markdown": "A note can be represented as JSON:\n\n~~~json\n{\"id\":\"n42\",\"title\":\"Queue notes\",\"ownerId\":\"u7\",\"tags\":[\"backend\",\"practice\"],\"archived\":false}\n~~~\n\nObjects contain named fields; arrays contain ordered elements; JSON also has strings, numbers, booleans, and null. Field names and string values use double quotes. JSON itself does not define comments or date objects. A date-like string needs a separate agreement about its format and timezone.\n\nThe same JSON can be sent over HTTP, saved in a file, or stored in a database column. JSON is therefore not synonymous with a document database or a REST API. It is one representation that several systems can use. An API can use JSON while its authoritative records live in relational tables.\n\nReadable text makes examples easy to inspect, which is valuable during learning and debugging. Avoid logging the entire payload merely because it is readable; it may contain private content or credentials."
+    },
+    {
+      "id": "bytes",
+      "title": "Text still needs a byte encoding",
+      "markdown": "Computers transmit bytes, so text needs an encoding. **UTF-8** maps characters to byte sequences. Some characters use one byte; others use several.\n\n| Value being counted | Visible characters | UTF-8 bytes | Why it matters |\n| --- | --- | --- | --- |\n| cat | 3 | 3 | These simple Latin letters use one byte each |\n| café | 4 | 5 | The é in this precomposed example uses two bytes |\n| JSON string \"cat\" | 3 content characters | 5 | The representation also contains two quotes |\n\nThese examples count the exact displayed strings, not an entire HTTP message. More complex text can involve multiple code points for what a person sees as one character. Say whether a limit counts bytes, code points, or user-perceived characters instead of treating them as interchangeable.\n\nAn HTTP Content-Type such as application/json identifies the representation type. It does not prove the body parses, meets the schema, or requests an authorized action. Read the walkthrough as distinct checkpoints: decode, parse, validate, then decide permission."
+    },
+    {
+      "id": "schema",
+      "title": "A valid format is not necessarily valid business data",
+      "markdown": "The text {\"title\":17} is valid JSON, but it violates a contract that requires title to be a string. Successfully parsing a message is only the beginning.\n\n~~~text\nbytes → decode text → parse JSON → validate fields → authorize action\n        readable?    valid syntax? permitted types? may THIS caller do it?\n~~~\n\nFor a note update, define the meanings before writing the handler:\n\n| Input | Example contract |\n| --- | --- |\n| title absent | Leave the existing title unchanged |\n| title is a string | Validate length, then request that change |\n| title is null | Reject unless clearing is explicitly supported |\n| ownerId is a real user ID | Still check whether changing ownership is allowed |\n\nChoose an unknown-field policy and payload limits too. Compatibility might require ignoring a new optional field, while a sensitive command may reject unexpected fields. A schema describes valid data; it does not grant the sender authority to use another user's identity. Keep both checks on the receiving side."
+    },
+    {
+      "id": "numbers",
+      "title": "Numbers and identities need portable meanings",
+      "markdown": "Programming languages do not all represent numbers in the same way. JavaScript's ordinary Number cannot exactly represent every integer larger than 2^53−1. A very large identifier serialized as a JSON number may therefore lose precision in a client that parses it into that type.\n\nA practical API can use strings for opaque identifiers rather than inviting arithmetic on them. Monetary quantities may use integer minor units or a specified decimal representation and currency, with clear rounding rules; an unqualified floating-point value is not a complete financial contract. These are data-model choices, not a claim that JSON cannot carry numbers.\n\nFor time, specify a representation and semantics. An ISO-style timestamp with an explicit offset is different from a local clock string with no offset. A timestamp also does not automatically establish causal order across machines. Preserve the operation/version identity when ordering matters."
+    },
+    {
+      "id": "binary",
+      "title": "Schema-based binary formats trade readability for other benefits",
+      "markdown": "Protocol Buffers is one example of a schema-based serialization system. A schema assigns field identities and types, and tools generate code for compatible languages. The encoded message uses those rules rather than repeating all the same descriptive field names in a human-readable object.\n\nThis can reduce payload size and support generated interfaces, but the benefit depends on the workload and implementation. Binary does not automatically mean smaller than compressed text in every case, and serialization speed is not the only source of end-to-end latency. Benchmark representative messages and include parsing, compression, and network effects.\n\nJSON is often convenient for public/debuggable APIs and simple integrations. A schema-based format can be useful for controlled service-to-service interfaces with many messages. Choosing one format does not choose your database, guarantee delivery, or prove the business operation is idempotent."
+    },
+    {
+      "id": "evolution",
+      "title": "Old and new readers overlap during a rollout",
+      "markdown": "Suppose an older consumer understands id and title, while a new producer adds language. A compatible evolution policy might allow the old consumer to ignore the unknown optional field. A new reader must also have a defined behavior when reading an older message without language.\n\nRemoving or repurposing a field can be more dangerous. Changing title from a string to a nested object while keeping the same contract can break existing readers. In Protocol Buffers, field numbers are wire identities; do not reuse removed numbers for unrelated meanings, and reserve them as appropriate. Format-specific compatibility rules matter.\n\nTest mixed-version messages before deployment. A service rollback may reintroduce an old reader after new messages have already been written. Retained logs and stored documents can keep old representations alive far longer than one deployment window. A migration plan should include those historical readers and records."
+    },
+    {
+      "id": "compression",
+      "title": "Fewer transmitted bytes costs some computation",
+      "markdown": "Compression spends computation to transmit fewer bytes. Lossless compression reconstructs the original bytes; lossy media compression deliberately changes information. Our JSON example uses lossless compression.\n\n| Stage in the illustrative transfer | Uncompressed | Compressed |\n| --- | --- | --- |\n| Payload size | 200 KB | 50 KB |\n| Transfer at an ideal 1 MB/s | 0.20 s | 0.05 s |\n| Extra encode/decode work assumed | 0 | 0.02 s |\n| Simplified total | 0.20 s | 0.07 s |\n\nWe use decimal units and omit other delays. This is arithmetic, not a benchmark or a promise for every payload. Already-compressed photos may shrink little; repetitive text can behave differently. Measure representative data and include computation as well as network time.\n\nCompression is not encryption. Both compressed and expanded private data need protection. The sender and receiver must agree on the content coding. Bound expanded size as well as transferred size: a tiny compressed input can still demand a large amount of memory when opened."
+    },
+    {
+      "id": "limits",
+      "title": "Bound parsing work and treat input as untrusted",
+      "markdown": "A small compressed payload can expand into a much larger body. Limit both transmitted and expanded sizes where appropriate. Excessive nesting, enormous arrays, or huge strings can consume CPU and memory during parsing even when the format is technically valid.\n\nUse established parsers for data formats and avoid evaluating received text as executable code. Deserializers that can instantiate arbitrary executable object types need particular care; a data interchange message should not grant the sender code execution. After parsing, apply schema and business validation before expensive downstream work.\n\nError responses should explain the problem without echoing secrets or entire private documents. A useful error might identify an invalid field and permitted type. Logs can record payload size and an event reference without storing the complete body."
+    },
+    {
+      "id": "platform",
+      "title": "Apply the layers to a platform message",
+      "markdown": "An AI platform submits a job containing a model version, object-store reference, tenant context, and requested options. The application validates the allowed model and action, serializes the job, and sends the representation to a queue. A worker parses it and verifies the trusted scope before loading the referenced content.\n\nAvoid putting a giant dataset directly in every message. A durable reference plus an integrity/version identifier can keep the control message small, while storage carries the bulk bytes. That reference still needs permissions and lifecycle rules; a URL alone is not proof of authorization or permanent availability.\n\nFinish by naming each layer: a business value, a schema, a serialized representation, its byte encoding, optional compression, and transport. If you can explain what each changes, you can compare formats without confusing storage, delivery, privacy, and correctness guarantees."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "format-layers",
+      "title": "Representation and permission are separate checkpoints",
+      "sectionId": "schema",
+      "source": "flowchart LR\nB[Received bytes] --> D[Decode agreed encoding]\nD --> P[Parse JSON]\nP --> V[Validate schema and limits]\nV --> A[Authorize caller and action]\nA --> R[Execute permitted operation]\nV -->|Invalid| E[Reject with bounded error]\nA -->|Forbidden| E",
+      "caption": "This is a logical teaching pipeline. Implementations may combine checks or reject earlier; successfully parsing input never grants permission.",
+      "steps": [
+        "Interpret bytes using the agreed encoding.",
+        "Parse the representation and enforce field and size rules.",
+        "Check the caller against the requested resource and action.",
+        "Run only the permitted operation and avoid echoing sensitive rejected payloads."
+      ]
+    },
+    {
+      "id": "versions",
+      "title": "Compatibility must work in both rollout directions",
+      "source": "flowchart TB\nO[Old message: id and title] --> NR[New reader handles missing optional language]\nN[New message: id, title, language] --> OR[Old reader follows unknown-field policy]\nNR --> T[Test stored records and live traffic]\nOR --> T",
+      "caption": "This example assumes language is an optional additive field; other changes may be incompatible.",
+      "steps": [
+        "Define the optional addition.",
+        "Test old data with the new reader.",
+        "Test new data with the old reader.",
+        "Keep rollback and replay compatibility in view."
+      ],
+      "sectionId": "evolution"
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Design the message shape for a document-summary job. Name five fields, specify required versus optional values, and explain why the document bytes might be stored separately. Then calculate the simplified compressed-response time using the chapter numbers.",
+    "rubric": [
+      "Identity, model/version, and input reference have explicit meanings.",
+      "Missing fields and permission scope are considered.",
+      "Transfer and computation units are correct."
+    ],
+    "solution": "A possible schema includes required jobId, modelVersion, inputObjectVersion, and trusted tenant context, plus optional requestedLanguage with a defined default. Keep large document bytes in controlled storage and send a versioned reference; the worker still checks access and object availability. With 50 KB at 1 MB/s, transfer is 0.05 s; adding 0.02 s encode/decode gives 0.07 s under the stated assumptions. Compression does not encrypt the content or authorize access."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Syntactically valid JSON guarantees a valid business request?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if sent over HTTPS"
+      ],
+      "answer": "No",
+      "explanation": "Shape, field constraints, and authorization require additional checks."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "50 KB at 1 MB/s plus 0.02 s processing takes how many seconds in the simplified model?",
+      "answer": 0.07,
+      "unit": "seconds",
+      "explanation": "0.05 + 0.02 = 0.07 seconds with decimal units.",
+      "tolerance": 0.001
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Compression provides confidentiality by itself?",
+      "options": [
+        "Yes",
+        "No",
+        "Only for JSON"
+      ],
+      "answer": "No",
+      "explanation": "Compression reduces representation size; encryption and access controls address confidentiality."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why use strings for some large numeric-looking IDs?",
+      "answer": "An opaque identity does not need arithmetic, and some client numeric types cannot exactly represent every large integer.",
+      "explanation": "An opaque identity does not need arithmetic, and some client numeric types cannot exactly represent every large integer."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why must an event schema consider old stored records?",
+      "answer": "Replay and rollback can encounter records from older versions long after deployment, so new readers need an explicit compatibility policy.",
+      "explanation": "Replay and rollback can encounter records from older versions long after deployment, so new readers need an explicit compatibility policy."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Serialization?",
+      "back": "Turn values into a storable/transmittable representation."
+    },
+    {
+      "front": "Encoding versus compression?",
+      "back": "Map information to bytes versus reduce byte representation size where possible."
+    },
+    {
+      "front": "JSON validity versus schema validity?",
+      "back": "Correct syntax versus the expected field types and constraints."
+    },
+    {
+      "front": "Format evolution test?",
+      "back": "Old messages with new readers and new messages with old readers."
+    },
+    {
+      "front": "Compressed input safety?",
+      "back": "Bound expanded size and parsing work, then validate and authorize."
+    }
+  ],
+  "mentalModel": "Data meaning, representation, size, transport, and permission are separate contracts. Name each one.",
+  "sources": [
+    {
+      "title": "MDN — Serialization",
+      "url": "https://developer.mozilla.org/en-US/docs/Glossary/Serialization",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 8259 — JSON format",
+      "url": "https://www.rfc-editor.org/rfc/rfc8259",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Protocol Buffers — Proto3 language guide and evolution",
+      "url": "https://protobuf.dev/programming-guides/proto3/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MDN — Compression in HTTP",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Compression",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "note-message",
+      "title": "One note update travels as bytes",
+      "sectionId": "story",
+      "intro": "The example contract permits a string title and treats an absent archived field as unchanged. No actual network call is made.",
+      "steps": [
+        {
+          "title": "Start with an intended change",
+          "explanation": "The application wants to change n55 to a new title. It has a value in memory, not yet a transport message.",
+          "state": [
+            {
+              "label": "Note",
+              "value": "n55"
+            },
+            {
+              "label": "Title",
+              "value": "Queue map"
+            },
+            {
+              "label": "Archived",
+              "value": "Not part of this update"
+            }
+          ]
+        },
+        {
+          "title": "Serialize the agreed fields",
+          "explanation": "The sender produces JSON text and encodes it as UTF-8. Object meaning and transmitted representation are different layers.",
+          "state": [
+            {
+              "label": "JSON",
+              "value": "{\"id\":\"n55\",\"title\":\"Queue map\"}"
+            },
+            {
+              "label": "Encoding",
+              "value": "UTF-8"
+            },
+            {
+              "label": "ContentType",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "title": "Parse and validate at the receiver",
+          "explanation": "The receiver checks the message type, allowed fields, string type, and size limits. It can now interpret the requested change.",
+          "state": [
+            {
+              "label": "ParsedId",
+              "value": "n55"
+            },
+            {
+              "label": "TitleType",
+              "value": "string"
+            },
+            {
+              "label": "Schema",
+              "value": "Valid under this example contract"
+            }
+          ]
+        },
+        {
+          "title": "Check authority before applying",
+          "explanation": "The authenticated caller must have edit permission on n55. A valid ownerId or well-formed message would not establish that right.",
+          "state": [
+            {
+              "label": "Caller",
+              "value": "u9"
+            },
+            {
+              "label": "Permission",
+              "value": "Editor of n55"
+            },
+            {
+              "label": "Result",
+              "value": "Title updated; archived remains unchanged"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A representation tells another process what data means. Validation and authorization decide whether the requested change can proceed."
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+{
+  "id": "transactions-and-correctness",
+  "title": "Transactions: keep related changes together",
+  "version": 2,
+  "week": 4,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Use a failed note move to understand all-or-nothing changes, then see why simultaneous edits need an additional rule.",
+  "objectives": [
+    "Describe a transaction using two related changes.",
+    "Explain commit and rollback without imagining simultaneous physical writes.",
+    "Distinguish an incomplete operation from two conflicting completed edits.",
+    "Name which effects lie outside one database transaction."
+  ],
+  "terms": [
+    {
+      "term": "Transaction",
+      "definition": "A group of database operations handled together under specified correctness rules."
+    },
+    {
+      "term": "Commit",
+      "definition": "Accept the transaction’s changes as the completed database result."
+    },
+    {
+      "term": "Rollback",
+      "definition": "Discard the transaction’s uncommitted changes."
+    },
+    {
+      "term": "Atomicity",
+      "definition": "The transaction’s changes are accepted together or not accepted."
+    },
+    {
+      "term": "Isolation",
+      "definition": "Rules governing how concurrent transactions can observe and affect one another."
+    },
+    {
+      "term": "Version number",
+      "definition": "A stored revision value used to recognize whether a record changed since it was read."
+    }
+  ],
+  "retrieval": [
+    "What does note_id identify if the note’s title changes?",
+    "Can a foreign key alone decide which user is allowed to edit a note?"
+  ],
+  "sections": [
+    {
+      "id": "story",
+      "title": "A move that stops halfway",
+      "markdown": "Maya keeps notes in two notebooks, Personal and Shared. Moving a note changes its notebook_id. The app also records a small activity row saying which note moved, from where, and to where. Both records live in the same database. Our product rule is simple: an accepted move must have its matching activity record, and an activity record must not claim a move that never happened.\n\nTwo separately accepted writes leave a dangerous gap:\n\n| Accepted state when the process stops | Note location | Activity | Product rule satisfied? |\n| --- | --- | --- | --- |\n| Before either write | Personal | No move recorded | Yes: no move accepted |\n| Move saved, activity not saved | Shared | Missing | No |\n| Activity saved first, move not saved | Personal | Claims Shared | No |\n| Both related changes accepted | Shared | Matching move | Yes |\n\nSimply reversing two independent writes moves the gap. We need the database to accept the related changes as one group.\n\nA transaction groups those database operations. Think of filling out a two-part form before submitting it as one application. You can work through the fields one after another; acceptance concerns the completed form. The analogy stops at the database boundary: a real database can undo its own uncommitted changes, but it cannot erase an email somebody has already read."
+    },
+    {
+      "id": "commit",
+      "title": "Accept both changes or discard both",
+      "markdown": "For a successful move, the server first checks that Maya may edit the note and use the destination notebook. Then it begins a transaction, changes the note’s notebook, records the activity, and commits. Commit is the database’s acceptance of that group of changes. Only then should the server tell Maya that the move succeeded.\n\nFor this first trace, assume Maya’s permission does not change while the move runs. If permissions can be revoked concurrently and that revocation must block the move, the permission decision and update need a protected acceptance rule too; an earlier check alone is not sufficient. We return to access rules in the security chapters.\n\nHere is an illustrative sequence using SQL names. The application still needs proper parameters and permission checks; the short sketch highlights grouping rather than providing a deployable endpoint.\n\n~~~sql\nBEGIN;\nUPDATE notes SET notebook_id = 20 WHERE note_id = 41;\nINSERT INTO note_activity(note_id, action)\nVALUES (41, 'moved to notebook 20');\nCOMMIT;\n~~~\n\nIf a problem makes the group unacceptable before commit, rollback discards its uncommitted changes. After rollback, the note and activity should still reflect the earlier accepted state. This all-or-nothing property is called atomicity. It does not mean both disk writes physically happen in the same instant. It means the accepted database outcome treats the transaction’s changes as a group.\n\nAtomicity does not automatically prove that the code changed the intended row. If the UPDATE matched no note, a careless application might still insert an activity row. Check that exactly the expected row was changed, and reject the transaction otherwise. The transaction protects the declared group; the program must still choose correct operations and enforce its rules."
+    },
+    {
+      "id": "concurrency",
+      "title": "Two complete edits can still disagree",
+      "markdown": "Maya opens note 41 in two browser tabs. Both see title Garden and revision 3. The first tab saves Garden in spring. The second, unaware of that save, submits Garden at sunset. Even if each save is a perfectly complete transaction, the second may overwrite the first. All-or-nothing did not explain which edit should win.\n\nIsolation describes how transactions interact when they overlap. Different database settings permit different observations, so saying “we used a transaction” is not the end of the design. We can also make this editing policy explicit: accept a save only if the stored revision still matches the revision the editor saw.\n\nThe rule has an observable result:\n\n| Attempt | Expected revision | Stored revision before attempt | Result |\n| --- | --- | --- | --- |\n| First tab | 3 | 3 | Save new title and revision 4 |\n| Second tab | 3 | 4 | Change no row; report conflict |\n\nThe second tab should offer Maya the current text to compare. It must not quietly label a zero-row change successful. This protects the editing intention without requiring every isolation level today.\n\nThe version check and change must be one conditional database operation, rather than checking revision, waiting, and later writing without the condition. Otherwise two tabs can both pass the earlier check. The rule belongs where the change is accepted."
+    },
+    {
+      "id": "boundaries",
+      "title": "Know what a transaction cannot undo",
+      "markdown": "Our database transaction covers the note and its activity row because both are managed together there. If the server uploads a photo to a separate file service or sends an email, those actions are not automatically rolled back by this database. A failure can leave an uploaded photo without a note, or a sent email whose associated change failed. Later background-work lessons introduce explicit states and recovery for such boundaries.\n\nThere is also a difference between saving and hearing about saving. If commit succeeds but the response to Maya disappears, the transaction may be complete while her browser is uncertain. A timeout does not prove rollback. For now, let the app retrieve the note and explain the uncertain outcome. Week 8 will introduce stable operation identifiers for safer repeated requests.\n\nTry the failure story on paper. Stop before commit: the intended result is neither change accepted. Stop after commit but before response: both database changes are accepted, but the browser may not know. Then try two editors: the revision rule makes one conflicting stale save fail explicitly. These are three different questions, each with its own evidence.\n\nYour checkpoint is to point at the boundary around the two related database changes, explain when success is returned, and describe one thing outside that boundary. Keeping the drawing small makes the guarantee understandable; adding the word transaction to every box would not make the external effects part of it.\n\n> **Interview phrasing:** “My transaction covers the note and activity in this database. A response can be lost after commit, so I distinguish the stored outcome from what the browser knows. A separate email or file operation needs its own recovery rule.”"
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "transaction",
+      "title": "The database accepts the move and activity together",
+      "source": "flowchart LR\nC[Server checks permission] --> B[Begin transaction]\nsubgraph DB[One database transaction]\nB --> N[Change note notebook]\nN --> A[Insert matching activity]\nA --> D{Group acceptable?}\nD -->|Yes| K[Commit both]\nD -->|No| R[Rollback both]\nend\nK --> U[Tell browser move succeeded]",
+      "caption": "The boundary includes two changes in one database. It does not include an email server or a separate photo-storage service.",
+      "steps": [
+        "Check the user’s permission before accepting a move.",
+        "Group the related note and activity changes.",
+        "Commit only when the required operations succeeded.",
+        "Send the success response after commit."
+      ],
+      "sectionId": "commit"
+    },
+    {
+      "id": "commit-versus-response",
+      "sectionId": "boundaries",
+      "title": "A completed commit can outlive a lost response",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant A as Application\nparticipant D as Database\nB->>A: Move note 41\nA->>D: Commit move and matching activity\nD-->>A: Commit accepted\nA--xB: Success response lost\nNote over B: Outcome unknown to browser\nNote over D: Both database changes accepted",
+      "caption": "This trace assumes commit succeeded and the later response was lost. Other timeouts can happen earlier, so a timeout alone does not tell which trace occurred.",
+      "steps": [
+        "The database accepts the grouped changes.",
+        "The application tries to return the successful outcome.",
+        "A lost response leaves the browser uncertain without undoing the commit."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Two tabs read note 41 at revision 8. Tab A saves a new title using a conditional update and raises the revision to 9. Tab B then saves using expected revision 8. State the accepted result and the message B should see. Separately, explain what happens if the move/activity transaction fails before commit.",
+    "minutes": 8,
+    "rubric": [
+      "Accepts A and rejects B’s stale condition.",
+      "Explains conflict without silently losing A’s text.",
+      "Rolls back both related database changes on pre-commit failure."
+    ],
+    "solution": "A’s condition matches revision 8 and changes the row to revision 9. B’s condition no longer matches, so B changes no row and receives a conflict with a path to compare the current text. In the separate move transaction, failure before commit should leave neither the move nor its activity accepted. Neither behavior automatically undoes an external email."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Atomicity means transaction writes must physically happen at the same instant:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It concerns accepting all the group’s changes or none, not simultaneous hardware events."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "When should the move-success response be sent?",
+      "options": [
+        "Before attempting storage",
+        "After the required transaction commits",
+        "Whenever the browser requests it"
+      ],
+      "answer": "After the required transaction commits",
+      "explanation": "Success then corresponds to the accepted group of changes."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "The database committed, but the response was lost. Did the missing response prove rollback?",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "The browser’s observation can be missing even after the change is accepted."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can two atomic saves still lose a user’s edit?",
+      "answer": "Both saves may complete, but the later one can overwrite text based on an older revision unless the editing policy detects that conflict.",
+      "explanation": "Atomic grouping and concurrent-edit policy answer different questions."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is an email outside this transaction’s rollback promise?",
+      "answer": "It is an external effect controlled by another system; the database cannot retract a message already delivered.",
+      "explanation": "Name the actual boundary instead of assuming one transaction covers everything."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Commit?",
+      "back": "Accept the group’s changes as the database result."
+    },
+    {
+      "front": "Rollback?",
+      "back": "Discard the transaction’s uncommitted changes."
+    },
+    {
+      "front": "Atomicity?",
+      "back": "All of the grouped changes are accepted, or none are."
+    },
+    {
+      "front": "Revision condition protects?",
+      "back": "A save from silently overwriting a record changed since the editor read it."
+    },
+    {
+      "front": "Lost response proves rollback?",
+      "back": "No; an accepted result may not have reached the browser."
+    }
+  ],
+  "mentalModel": "A transaction protects a group of database changes; you still choose the right group, concurrent-edit rule, and external boundaries.",
+  "sources": [
+    {
+      "title": "PostgreSQL18: transactions",
+      "url": "https://www.postgresql.org/docs/current/tutorial-transactions.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18: transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "accepted-but-not-heard",
+      "sectionId": "boundaries",
+      "title": "Two views of the same completed move",
+      "intro": "Follow a successful commit followed by a missing browser response. Permission is stable during the move, as assumed in the earlier transaction trace.",
+      "steps": [
+        {
+          "title": "Before the move",
+          "explanation": "The two records agree that no move has been accepted yet.",
+          "state": [
+            {
+              "label": "Note 41",
+              "value": "Personal"
+            },
+            {
+              "label": "Move activity",
+              "value": "None for this operation"
+            },
+            {
+              "label": "Browser",
+              "value": "Move requested"
+            }
+          ]
+        },
+        {
+          "title": "Commit the group",
+          "explanation": "The database accepts both related changes. The application receives that result.",
+          "state": [
+            {
+              "label": "Note 41",
+              "value": "Shared"
+            },
+            {
+              "label": "Move activity",
+              "value": "Personal → Shared"
+            },
+            {
+              "label": "Application knows",
+              "value": "Commit accepted"
+            }
+          ]
+        },
+        {
+          "title": "Lose the response",
+          "explanation": "The browser’s waiting period ends without a result. Its knowledge differs from the stored facts.",
+          "state": [
+            {
+              "label": "Database state",
+              "value": "Both changes accepted"
+            },
+            {
+              "label": "Browser knows",
+              "value": "No response received"
+            },
+            {
+              "label": "Browser display",
+              "value": "Outcome uncertain"
+            }
+          ]
+        },
+        {
+          "title": "Read to establish current state",
+          "explanation": "The app can retrieve permitted current state and relevant operation evidence. It must not infer rollback from silence.",
+          "state": [
+            {
+              "label": "Current note",
+              "value": "Shared"
+            },
+            {
+              "label": "Matching activity",
+              "value": "Present"
+            },
+            {
+              "label": "Next action",
+              "value": "Explain confirmed state before repeating"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Database atomicity describes the accepted records. It does not guarantee the caller receives the confirmation message."
+    }
+  ]
+}

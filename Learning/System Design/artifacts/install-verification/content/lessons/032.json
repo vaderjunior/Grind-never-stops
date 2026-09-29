@@ -1,0 +1,143 @@
+{
+  "id": "032",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Place a business invariant at its shared authority.",
+    "Select appropriate row, uniqueness, and reference constraints.",
+    "Recognize normalization and deliberate duplication tradeoffs.",
+    "Explain why application prechecks cannot replace database constraints."
+  ],
+  "retrieval": [
+    "From L031: distinguish a copy identity from a display description.",
+    "From L030: show two requests overselling one item."
+  ],
+  "sections": [
+    {
+      "id": "authority",
+      "title": "Every writer must face the same rule",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, worked SQL 8, exercise 10, questions 10, review 4. Suppose a UI checks that barcode B17 is unused before creating an item. Two clients both check before either writes. Both see absence. Without a shared uniqueness rule, both insert successfully. The application precheck improves the message but cannot arbitrate concurrent writers.\n\nPut enforceable invariants at the database authority used by all relevant writes. A NOT NULL requirement prevents missing mandatory data; a row CHECK can bound quantity; a UNIQUE rule arbitrates key collisions; a foreign key constrains references. The application still validates early for helpful errors and limits, but the authority remains the final defense.\n\nConstraints express only the rules actually encoded. A primary key prevents duplicate identity, not unauthorized ownership transfer. A nonnegative available count may still coexist with two accepted reservations if the application loses one decrement. Test the complete business invariant across all involved records, not only the easiest numeric column."
+    },
+    {
+      "id": "normalization",
+      "title": "Store each current fact under a clear owner",
+      "markdown": "Imagine every loan row repeats the borrower's current email. Changing that address requires updating many historical rows, and a partial update leaves conflicting “current” values. Separating borrower identity and current profile gives one owner for that fact. Loans reference the borrower. This is the practical motivation for normalization: avoid update, insertion, and deletion anomalies created by mixing independent facts.\n\nNormalization does not forbid every duplicate. A shipping address captured on a completed order is historical evidence, not another current profile field. A derived current-loan count can accelerate a frequent query, but it creates a maintenance and reconciliation obligation. Call it derived, identify its source of truth, and decide whether lag is acceptable.\n\nIf a denormalized count controls acceptance, stale maintenance can break correctness. “Borrower has fewer than three active loans” cannot safely rely on an asynchronously updated display counter unless the product accepts the possible excess. Performance decisions must preserve the role of the field in the invariant."
+    },
+    {
+      "id": "constraints",
+      "title": "Make one-active-loan explicit",
+      "markdown": "For the equipment service, PostgreSQL supports a unique partial index to restrict only active loans:\n\n~~~sql\nCREATE UNIQUE INDEX one_active_loan_per_item\nON loans(department_id, item_id)\nWHERE returned_at IS NULL;\n~~~\n\nThis permits many completed loans for an item and at most one row considered active by that predicate. Every path that creates or reopens a loan must face the rule. A concurrent conflict becomes an explicit unsuccessful write rather than two accepted borrowers. The index expresses this particular state model; if reservations, loans, and maintenance blocks all compete for the same item across separate tables, a new shared model or transaction protocol is needed.\n\nFor a positive quantity, use both NOT NULL and CHECK(quantity > 0). PostgreSQL CHECK treats a null result differently from false; do not assume a comparison alone rejects missing values. PostgreSQL does not support arbitrary cross-row queries as a reliable CHECK invariant. Prefer supported uniqueness, reference, exclusion, or transaction mechanisms appropriate to the rule. Other engines have their own semantics, so verify the target version.\n\nTrace a return: update the active row's returned_at under authorization. After the update commits, a later loan can satisfy the unique active predicate. If return and replacement loan belong to one business operation, their atomicity and ordering need a transaction. Do not temporarily delete the old history to bypass the index."
+    },
+    {
+      "id": "failures",
+      "title": "The maintenance path is also a writer",
+      "markdown": "An import script, administrator tool, migration, and background job can bypass UI validation. Database rules help preserve shared invariants across those paths. They can also reject a backfill unexpectedly if old data violates the proposed rule. Before adding a constraint, inspect and reconcile existing data, plan how validation interacts with writes, and test migration failure behavior. L113 later treats online migrations in depth.\n\nConsider a derived active-loan count updated in a separate transaction. If the loan insert succeeds but count update fails, the display is wrong. If the count is used to authorize the next loan, the business rule may be wrong too. Decide whether to maintain it atomically with the source, recompute it, or keep it nonauthoritative with a reconciliation process.\n\nCommon misconceptions: constraints make transactions unnecessary; normalization means joins are always expensive; any duplicated value is bad; a uniqueness precheck is enough under low traffic; a migration is outside the application's correctness boundary. Even two overlapping requests suffice to expose the race. Optional practice: attempt duplicate active loans and completed historical loans in the local relational lab, and explain why only the former must fail."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "constraint",
+      "title": "All writers meet one authoritative rule",
+      "source": "flowchart LR\nU[User API] --> D[(Loans authority)]\nI[Import tool] --> D\nJ[Background job] --> D\nD --> C{Unique active item constraint}\nC -->|Rule satisfied| A[Accepted write]\nC -->|Competing active loan| R[Conflict]\nD -.->|Derive accepted-row count| S[Display active count]",
+      "caption": "The dotted arrow describes a derived view; acceptance depends on the authoritative rule, not a stale displayed count.",
+      "steps": [
+        "Enumerate every writer.",
+        "Encode the shared active-loan invariant at the authority.",
+        "Translate constraint failure into the operation contract.",
+        "Keep derived views from silently becoming acceptance authority."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "An app limits each username to one account and stores a current display name in both accounts and every comment. Propose a uniqueness rule and a normalized model. Then identify a legitimate reason to preserve a separate historical display-name snapshot, and explain why a pre-insert SELECT does not prevent collisions.",
+    "minutes": 10,
+    "rubric": [
+      "Defines username normalization/scope before uniqueness.",
+      "Uses authoritative database uniqueness.",
+      "Separates current profile from comment identity.",
+      "Distinguishes historical snapshot from accidental duplicate current state."
+    ],
+    "solution": "Define whether usernames are case-sensitive and tenant-scoped; enforce uniqueness on the chosen canonical value and scope. Comments reference account_id; current display name comes from accounts. A display_name_at_post snapshot can be legitimate if the product needs historical presentation, but it must be named as such and not treated as current. Two SELECT checks can both observe absence before inserts; the database uniqueness rule arbitrates the race."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why retain a database uniqueness rule after app validation?",
+      "options": [
+        "All writers and concurrent attempts need one arbiter",
+        "It replaces authorization",
+        "It guarantees low latency"
+      ],
+      "answer": "All writers and concurrent attempts need one arbiter",
+      "explanation": "Prechecks alone cannot exclude another concurrent insertion."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A historical order address should always update with the user profile:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It may intentionally record the delivery instruction at purchase time."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why can a nonnegative stock column still coexist with overselling?",
+      "answer": "Lost updates can leave the displayed count at zero while two reservation rows were accepted; the invariant spans accepted effects, not only a column range.",
+      "explanation": "Inspect the full history and related records."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is denormalization appropriate?",
+      "answer": "When measured access needs justify it and its ownership, update, lag, and reconciliation behavior are explicit.",
+      "explanation": "A derived display can tolerate lag that an acceptance decision cannot."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why check existing data before adding a constraint?",
+      "answer": "A new rule may reject old rows or ongoing writes; migration must reconcile violations and preserve a valid transition plan.",
+      "explanation": "A schema change is itself a state transition requiring evidence."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Precheck versus constraint?",
+      "back": "Helpful early feedback versus shared authoritative enforcement."
+    },
+    {
+      "front": "Normalization helps avoid?",
+      "back": "Conflicting copies and update/insertion/deletion anomalies."
+    },
+    {
+      "front": "Partial unique index?",
+      "back": "Uniqueness over only rows satisfying its predicate."
+    },
+    {
+      "front": "Derived field needs?",
+      "back": "A source owner, maintenance path, lag policy, and reconciliation."
+    },
+    {
+      "front": "Who counts as a writer?",
+      "back": "APIs, imports, jobs, admin tools, and migrations."
+    },
+    {
+      "front": "History duplication?",
+      "back": "Valid when it deliberately preserves a past fact with clear semantics."
+    }
+  ],
+  "mentalModel": "One current fact has one owner; every accepted writer must obey the invariant at that owner.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Constraints",
+      "url": "https://www.postgresql.org/docs/18/ddl-constraints.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

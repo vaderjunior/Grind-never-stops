@@ -1,0 +1,144 @@
+{
+  "id": "026",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Separate establishing identity from granting permission.",
+    "Trace a session-based request from credential to object access.",
+    "Scope API keys and plan expiration, rotation, and revocation.",
+    "Identify cross-user access despite successful authentication."
+  ],
+  "retrieval": [
+    "From L013: what does TLS establish and what does it not authorize?",
+    "From L023: can a well-shaped owner_id be trusted?"
+  ],
+  "sections": [
+    {
+      "id": "identity",
+      "title": "A known caller can still make a forbidden request",
+      "markdown": "Core: retrieval 5, mechanism 18, trace 8, exercise 10, questions 10, review 4 minutes. In a private research-notebook service, authentication establishes an identity or principal. Authorization decides whether that principal may perform this action on this resource in this context. “Logged in” answers the first question only.\n\nSuppose Alice can read notebook 17 and Bob can read notebook 22. Bob sends GET /notebooks/17 using a valid session. Authentication succeeds; authorization must reject the object access. Checking that a session exists and then looking up any supplied ID is a broken boundary. Random identifiers can make guessing harder, but they do not define permission.\n\nThe permission check should reflect authoritative ownership or membership and the requested operation. Read and edit are different actions. Administrative access is a deliberate policy, not a hidden bypass for any user named admin in a request field. Default to denying access when no rule grants it, and test allowed as well as forbidden cases."
+    },
+    {
+      "id": "session",
+      "title": "Follow a session without treating its token as magic",
+      "markdown": "After a successful sign-in, a server-side session design generates an unpredictable identifier and associates it with a principal, expiry, and relevant state. The browser sends that identifier on later requests, often in a cookie. The server validates the session, derives the principal, and then checks object permission. The client never gets to choose the principal merely by sending a user_id next to the session token.\n\nA session token is a credential: disclosure can let another party impersonate the session. Transport protection, secure cookie settings, careful logging, expiration, rotation, and revocation all matter. HttpOnly can reduce exposure to script access but does not make every browser action safe; cookies sent automatically by a browser also create request-forgery concerns. M14 develops these defenses. This lesson establishes why the credential boundary is separate from the object boundary.\n\nRevocation needs an enforcement path. If the server stops accepting a session identifier, later checks can reject it. If another layer caches old identity or membership information, its lifetime affects when revocation takes effect. Define the required behavior rather than promising immediate revocation while allowing unbounded stale authorization data."
+    },
+    {
+      "id": "keys",
+      "title": "An API key is a credential with a lifecycle",
+      "markdown": "An API key commonly identifies a client application or service account and authorizes a limited set of operations. It does not inherently prove which human is currently using that application. Bind it to a principal, scope, environment, and lifecycle. A key for reading development telemetry should not grant production deletion.\n\nGenerate high-entropy secrets, reveal them through a controlled path, and avoid storing raw reusable secrets when a verifier can be stored instead. Key identifiers can support lookup while a one-way verification value checks the secret. Do not implement a custom password protocol here; key generation and verification should use appropriate cryptographic libraries and documented patterns. Secrets must not appear in URLs, analytics, or routine logs.\n\nRotation can use an overlap window: issue a replacement, update consumers, observe use of the new key, then revoke the old one. The overlap is a policy with a deadline. Revoking first without updating consumers can cause an outage; leaving both active forever turns rotation into accumulation.\n\nExample request trace: machine client sends key K; the gateway resolves K to service account S with read-only scope; the application verifies S may read tenant T; only then does it query T's data. A gateway-level key check does not excuse a downstream service from enforcing the resource boundary it owns."
+    },
+    {
+      "id": "tests",
+      "title": "Test the matrix, including ownership changes",
+      "markdown": "For two users and two notebooks, write a small matrix: owner reads own notebook, stranger reads it, member reads shared notebook, removed member retries, and member attempts an edit when granted read-only access. Exercise the actual API path, not just a helper that is never called by the endpoint.\n\nKeep credentials out of diagnostics. Log a stable request identifier, principal identifier when appropriate, decision outcome, and resource scope, with deliberate retention and access controls. A failed authorization log should help investigate abuse without disclosing the rejected object's private contents to the caller.\n\nFailure scenarios include a stale membership cache, an expired key accepted by a forgotten endpoint, a background worker that trusts a client-supplied owner, and an error response that leaks another user's email. Authentication middleware may be correct while each of these remains broken.\n\nCommon misconceptions: TLS grants account permission; a secret-looking resource ID is authorization; sessions are always human identities; API keys can be put safely in query strings; hiding a button prevents a request. Optional practice: inspect a local app's permission paths using test identities only and record the expected matrix before sending requests."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "authorization",
+      "title": "Identity and object permission are separate gates",
+      "source": "flowchart LR\nC[Client with credential] --> S[Validate credential and expiry]\nS -->|Principal ID| P[Permission check for action and object]\nR[Requested notebook ID] --> P\nM[(Authoritative membership)] --> P\nP -->|Allowed| D[Read scoped notebook]\nP -->|Denied| E[Safe denial response]",
+      "caption": "The resource identifier is untrusted input. A valid credential reaches the permission gate; it does not bypass it.",
+      "steps": [
+        "Verify the credential and derive the principal.",
+        "Combine actor, action, and requested resource.",
+        "Consult the applicable ownership or membership policy.",
+        "Only return data from the authorized scope."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "An endpoint validates a session, then executes SELECT * FROM notebooks WHERE id = :id. Explain the cross-user failure and propose a permission-aware trace. Add tests for owner, stranger, removed member, and read-only member attempting an edit. Describe how to keep the denial response useful without leaking notebook contents.",
+    "minutes": 10,
+    "rubric": [
+      "Identifies successful authentication with missing object authorization.",
+      "Derives actor from validated credentials.",
+      "Checks membership for each action.",
+      "Covers revocation and safe denial behavior."
+    ],
+    "solution": "Bob can supply Alice’s notebook ID after authenticating as Bob. Derive Bob from the session, load or join the notebook’s owner/membership policy, and permit only the requested action if that policy grants it. Test owner read allowed, stranger read denied, removed member read denied according to the agreed revocation boundary, and read-only edit denied. Return a consistent forbidden or concealed-not-found policy with a request identifier, not notebook title or owner details. The database query and permission check must remain scoped coherently."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A valid session proves:",
+      "options": [
+        "The caller may read every object",
+        "A principal has been established under the session policy",
+        "The resource ID is secret"
+      ],
+      "answer": "A principal has been established under the session policy",
+      "explanation": "Object/action authorization is still required."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A random notebook ID replaces authorization:",
+      "options": [
+        "Always",
+        "Never as the sole control for private data",
+        "When it is long enough"
+      ],
+      "answer": "Never as the sole control for private data",
+      "explanation": "Identifiers can leak; permission must be evaluated independently."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why scope a key to environment and action?",
+      "answer": "To limit the impact of disclosure or misuse and prevent a development/read-only client from obtaining unrelated production/write authority.",
+      "explanation": "Name the principal and allowed resource scope as well as the key."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "How can permission caching affect revocation?",
+      "answer": "A cached old grant may remain accepted until invalidated or expired; the design must align that delay with the required revocation semantics.",
+      "explanation": "Immediate revocation cannot be claimed with arbitrary stale grants."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What makes a safe rotation plan?",
+      "answer": "Issue a replacement, update consumers, observe migration, and revoke the old key within an explicit overlap window, with rollback and audit as appropriate.",
+      "explanation": "Both outage risk and unlimited credential accumulation matter."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Authentication asks?",
+      "back": "Which principal is this under the credential policy?"
+    },
+    {
+      "front": "Authorization asks?",
+      "back": "May this principal perform this action on this resource now?"
+    },
+    {
+      "front": "Resource ID implies permission?",
+      "back": "No; it identifies the requested object."
+    },
+    {
+      "front": "API key commonly identifies?",
+      "back": "An application or service account, not necessarily a human user."
+    },
+    {
+      "front": "Revocation depends on?",
+      "back": "Every enforcement path and the lifetime of cached grants."
+    },
+    {
+      "front": "Credential logging rule?",
+      "back": "Avoid raw secrets; use safe identifiers and bounded diagnostic context."
+    }
+  ],
+  "mentalModel": "A credential establishes a caller; every resource operation still needs its own permission decision.",
+  "sources": [
+    {
+      "title": "OWASP Authorization Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

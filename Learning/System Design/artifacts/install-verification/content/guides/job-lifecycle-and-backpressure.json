@@ -1,0 +1,327 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 8,
+  "title": "Job states, retries, and backpressure",
+  "level": "beginner",
+  "minutes": 55,
+  "id": "job-lifecycle-and-backpressure",
+  "summary": "Make a slow task understandable to the user from acceptance to completion. Then calculate what happens when work arrives faster than workers can finish it.",
+  "objectives": [
+    "Distinguish accepting a job from finishing it.",
+    "Define durable job states and safe retry/cancellation transitions.",
+    "Calculate backlog growth and explain how admission limits protect the system."
+  ],
+  "terms": [
+    {
+      "term": "Job",
+      "definition": "A recorded unit of work that can outlive the request that submitted it."
+    },
+    {
+      "term": "Worker",
+      "definition": "A process that claims and performs background work."
+    },
+    {
+      "term": "Acknowledgement",
+      "definition": "A message confirming a particular stage; its meaning depends on who sends it and what has been persisted."
+    },
+    {
+      "term": "Backpressure",
+      "definition": "A signal or control that limits incoming work when downstream capacity cannot keep up."
+    },
+    {
+      "term": "Concurrency limit",
+      "definition": "A bound on the number of operations running at the same time."
+    },
+    {
+      "term": "Dead-letter queue",
+      "definition": "A separate place for messages that cannot be processed successfully under the retry policy."
+    },
+    {
+      "term": "Polling",
+      "definition": "Asking for status repeatedly instead of keeping the original request waiting."
+    }
+  ],
+  "retrieval": [
+    "Why might a one-minute export be awkward inside a short interactive request?",
+    "Why can a timeout leave the caller uncertain about whether work happened?"
+  ],
+  "sections": [
+    {
+      "id": "ticket",
+      "title": "A ticket is a promise to track work, not proof it is finished",
+      "markdown": "Pocket Notes adds “Export all my notes as a PDF.” A large export can take a minute. Holding the original browser request open for every stage makes the experience fragile: connections end, proxies have timeouts, and the user may close the tab. Instead, create a job that has its own identity and lifecycle.\n\nThink of ordering food at a busy counter. Receiving ticket J42 means your order is recorded. It does not mean the meal is cooked. A visible order board lets you check whether it is waiting, being prepared, ready, or has a problem. Our application should offer the same clarity.\n\nThe analogy also reveals a boundary. If the cashier hands out a ticket but forgets to record the order anywhere, the ticket is misleading. Likewise, “accepted” should mean the system has durably recorded enough information to recover the promised work under its declared failure model. A number created only in temporary memory is not that guarantee."
+    },
+    {
+      "id": "accept",
+      "title": "Give submission a durable result",
+      "markdown": "The browser asks to create an export and includes a stable submission identity. The server authenticates the user, checks permission and input limits, and creates job J42 with the relevant input version or query scope. Repeating the same intended submission should return J42 when that is the documented policy, rather than creating two expensive exports.\n\nA typical asynchronous HTTP response can use status 202 with the job identity and a status URL. The important meaning is accepted for processing, not completed successfully. The browser can show “Export requested” and later ask about J42. Protect the status and result endpoints with the same user/tenant access rules as the submitted task.\n\nIf job state and a separate message broker both need updates, do not casually perform two unrelated writes and assume they succeed together. One approach records the job and an outbox entry in one database transaction, then publishes the outbox repeatedly until acknowledged. Another supported queue-backed design may make the queue itself the durable acceptance boundary. State which design you are using."
+    },
+    {
+      "id": "states",
+      "title": "Use states that tell the truth about the lifecycle",
+      "markdown": "A state should make one claim the system can support. For our export service, keep the public meanings distinct even if some transitions are too quick to notice.\n\n| State | Evidence behind it | What it does not claim |\n| --- | --- | --- |\n| accepted / queued | Durable submission / ready work is waiting | A worker finished |\n| running | A current attempt owns execution | Completion is inevitable |\n| succeeded | The expected result is durably published | Every browser has downloaded it |\n| failed | The terminal policy has ended or input must change | No attempt ever performed work |\n| cancellation requested | The intent to stop is recorded | All work has stopped |\n| cancelled | The chosen cancellation outcome is established | An earlier external effect was undone |\n\nStore a job version and current attempt identity. A delayed worker can publish only if its expected state and ownership still match at the authoritative transition. Those checks protect the lifecycle; the status badge merely displays it.\n\nA failed attempt can return to waiting while retry budget remains. It should not temporarily announce that the overall job is permanently failed. Similarly, a user clicking Cancel records intent before the worker necessarily stops. **Ask what has actually happened before choosing the word on screen.**"
+    },
+    {
+      "id": "worker",
+      "title": "Walk through one attempt and one lost acknowledgement",
+      "markdown": "A worker claims J42, records or obtains the current attempt identity, and begins. It reads the intended input, writes an output artifact, verifies it, and conditionally publishes the result to J42. Only after the accepted result is durable should it acknowledge completion according to the queue's contract.\n\nNow stop the worker after publishing the result but before the broker receives its acknowledgement. The message may be delivered again. The next worker checks J42, finds its completed result, and handles the redelivery without creating a second logical export. This is repeatable processing, not proof that the message was physically delivered once.\n\nDifferent queue products express ownership differently. Some use explicit consumer acknowledgements; some temporarily hide a claimed message for a visibility period and require deletion after processing. If the period expires while a worker still runs, another worker may receive the job. Extend ownership under the product contract when appropriate, and still protect the durable result from stale or duplicate attempts."
+    },
+    {
+      "id": "retry",
+      "title": "Retry problems that can improve, and stop problems that cannot",
+      "markdown": "A short network interruption may justify retrying. An unsupported file format will usually fail again unchanged. Distinguish these cases, use a bounded attempt count or overall deadline, and space retries with delay and jitter so many failed jobs do not return simultaneously.\n\nA dead-letter queue or failed-job collection retains enough identity and failure information for investigation. Moving a message there is not equivalent to finishing the user's request. The status should explain that processing failed and provide an appropriate next action, such as correcting input or contacting support. Avoid exposing internal stack traces or sensitive document contents in the public error.\n\nReprocessing a failed job should be intentional. It may create a new attempt under the same logical job or a new job with changed input, according to your API. Preserve the earlier evidence. Otherwise a repair can erase the only clue explaining why the original result never arrived."
+    },
+    {
+      "id": "cancel",
+      "title": "Cancellation is another race to explain",
+      "markdown": "The user presses Cancel while J42 is running. The application records a cancellation request and signals the current worker. The worker checks at safe points, stops further work when possible, and cleans temporary output. Marking the job cancelled should reflect the actual chosen outcome, not simply that a browser button was clicked.\n\nWhat if the result finishes at the same instant? Define a policy and enforce its transition atomically. For example, whichever valid terminal transition commits first wins; a completed export may remain available while a later cancel reports that completion already happened. Another product may discard a result after cancellation wins. The important rule is that a late worker cannot silently turn a cancelled job back into succeeded.\n\nExternal effects complicate cancellation. You can stop further computation, but cannot unsend an already delivered email or pretend an accepted external operation never occurred. A compensating action may be necessary. The export example intentionally has a relatively manageable effect: publishing a downloadable artifact."
+    },
+    {
+      "id": "capacity",
+      "title": "A queue stores waiting time, not extra computing power",
+      "markdown": "A queue stores waiting work. It does not add workers or make each worker faster.\n\n| Quantity in the simple steady-rate model | Value |\n| --- | --- |\n| Arrival rate | 8 jobs/s |\n| Five workers at 1 job/s each | 5 jobs/s total completion |\n| Backlog growth | 8 − 5 = 3 jobs/s |\n| Extra backlog after 60 seconds | 180 jobs |\n| Extra backlog after 300 seconds | 900 jobs |\n\nWith 900 jobs already ahead and 5 completions each second, a new FIFO job waits roughly 180 seconds before its turn. This assumes similar job costs and no priority changes. Later arrivals join behind it in this model; variability, retries, and scheduling can change the real wait.\n\nIncreasing storage for the queue only permits a longer wait. If arrivals permanently exceed completion capacity, every finite waiting room eventually fills. Admission control must reject or defer some demand, or useful capacity must rise.\n\nFor a changing rate, recalculate the spare rate. A backlog drains at **completions minus ongoing arrivals**, not at all completions. The walkthrough uses a separate miniature burst to make that visible. Measure oldest-job age alongside counts, because ten long AI jobs can wait differently from ten tiny exports."
+    },
+    {
+      "id": "protect",
+      "title": "Choose where the system says “not yet”",
+      "markdown": "Backpressure deliberately slows or rejects work when accepting more would violate the service's limits. The gateway can enforce per-user quotas, maximum queued jobs, and bounded input size. Workers can limit concurrent processing so a database, disk, or accelerator is not overwhelmed. Return a clear busy response with an appropriate retry policy rather than accepting an impossible deadline.\n\nScaling workers can help when their work is independently parallel and downstream capacity remains available. It can hurt when every new worker competes for the same constrained database or loads large models into insufficient memory. More consumers are not a substitute for understanding the bottleneck.\n\nFor AI jobs, two requests can have radically different token lengths and memory demand. Bound both concurrent jobs and the resource demand of each. A long generation or large document should not invisibly consume the entire interactive budget. Separate classes of work or fairness policies can protect short tasks, but document the tradeoff instead of promising equal latency to every workload."
+    },
+    {
+      "id": "status",
+      "title": "Keep the user informed without creating another overload",
+      "markdown": "The browser can poll J42 every few seconds with backoff, or use a supported event stream to learn changes. Polling is easy to understand and recovers after reconnecting, but thousands of clients polling many times per second can overwhelm the status service. Give a reasonable refresh interval and cache only under an acceptable freshness policy.\n\nDo not display a precise percentage unless the job has meaningful measured stages or a trustworthy total. “Preparing,” “processing,” and “finalizing” can be more honest than an invented 87%. Include the last update time and an explicit stale/unresolved state when useful. A healthy status endpoint does not prove that workers are making progress, so watch actual job age and transitions.\n\nFor your self-check, follow submit→accepted→waiting→running→published result. Then insert a worker crash, a duplicated delivery, and a cancellation. Explain the record that lets the system recover each case. You do not need to install a broker to do this exercise: a paper timeline already reveals missing boundaries that an extra box would hide."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "job-states",
+      "title": "A job is a durable lifecycle, not one HTTP response",
+      "source": "flowchart LR\nA[Accepted durably] --> Q[Queued]\nQ --> R[Running attempt]\nR -->|Durable result published| S[Succeeded]\nR -->|Retryable failure and budget remains| Q\nR -->|Terminal failure| F[Failed]\nQ --> C[Cancellation requested]\nR --> C\nC -->|Cancellation wins safely| X[Cancelled]\nC -->|Completion wins under policy| S",
+      "caption": "This is a simplified state model. Conditional ownership/version checks protect transitions, and a documented completion/cancellation race policy is required.",
+      "steps": [
+        "Persist enough information before accepting the job.",
+        "Let a current attempt claim and run it.",
+        "Publish a durable result before acknowledging successful completion.",
+        "Retry or cancel through explicit protected transitions."
+      ],
+      "sectionId": "states"
+    },
+    {
+      "id": "job-backpressure",
+      "title": "The admission decision protects a finite waiting room",
+      "sectionId": "protect",
+      "source": "flowchart LR\nU[New job with known cost bounds] --> A{Queue and resource budget available?}\nA -->|Yes| Q[Accept into bounded queue]\nA -->|No| B[Busy response with retry policy]\nQ --> W[Workers with concurrency limit]\nW --> D[(Durable job and result state)]\nW --> M[Measure completions and oldest age]\nM -.->|Adjust policy| A",
+      "caption": "Admission is based on the promised workload and finite resources. The queue cannot guarantee a deadline without capacity and job-cost assumptions.",
+      "steps": [
+        "Bound the work requested by one job.",
+        "Accept only while the chosen queue and resource budget permits.",
+        "Limit active work so downstream capacity remains usable.",
+        "Use completion rate and waiting age to revisit admission."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "At 8 jobs/second arriving and 5 jobs/second completing, calculate extra backlog after 60 seconds. Then trace a worker crash after result publication but before acknowledgement. Finally describe what “Cancel requested” means if the worker has not yet stopped.",
+    "rubric": [
+      "Compute 180 extra queued jobs under the fixed-rate model.",
+      "A redelivery observes the existing logical result rather than publishing a duplicate.",
+      "Cancellation request and completed cancellation are distinct states."
+    ],
+    "solution": "Backlog grows by 3 jobs/second, so 60 seconds adds 180 jobs. A worker crashing after publication may cause redelivery; a subsequent attempt checks the durable job identity/result and handles the duplicate without creating another logical result. Cancel requested means the intent to stop is recorded, not that all work or external effects have already ceased. Enforce the documented race between cancellation and completion using the current job/attempt version."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "An accepted job response means…",
+      "options": [
+        "The task is already finished",
+        "The service has recorded responsibility under its acceptance contract",
+        "No failure can occur later"
+      ],
+      "answer": "The service has recorded responsibility under its acceptance contract",
+      "explanation": "Acceptance and successful completion are separate lifecycle facts."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A larger queue fixes sustained arrivals above service capacity.",
+      "options": [
+        "True",
+        "False; it holds more delay",
+        "Only when jobs have names"
+      ],
+      "answer": "False; it holds more delay",
+      "explanation": "Capacity or admission must change to stop indefinite backlog growth."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A lost worker acknowledgement can lead to…",
+      "options": [
+        "Redelivery of already processed work",
+        "Proof no result exists",
+        "Automatic deletion of every duplicate"
+      ],
+      "answer": "Redelivery of already processed work",
+      "explanation": "The durable result boundary must tolerate repeated handling."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can adding workers make overload worse?",
+      "answer": "Workers can contend for a shared constrained database, disk, network, or accelerator. Increasing consumers without downstream headroom raises contention and failures.",
+      "explanation": "Workers can contend for a shared constrained database, disk, network, or accelerator. Increasing consumers without downstream headroom raises contention and failures."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why distinguish cancellation requested from cancelled?",
+      "answer": "The worker may still be running or an effect may already have occurred. The application needs an explicit terminal-transition policy and truthful status.",
+      "explanation": "The worker may still be running or an effect may already have occurred. The application needs an explicit terminal-transition policy and truthful status."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Job acceptance versus completion?",
+      "back": "Durable responsibility to process versus a durably published successful result."
+    },
+    {
+      "front": "Acknowledgement timing?",
+      "back": "After the protected work is durably complete under the queue/application contract."
+    },
+    {
+      "front": "Backlog growth model?",
+      "back": "Arrival rate minus completion rate while arrivals exceed service capacity."
+    },
+    {
+      "front": "Backpressure purpose?",
+      "back": "Limit accepted or active work so finite capacity is not overwhelmed."
+    },
+    {
+      "front": "Useful waiting metric?",
+      "back": "Oldest-job age, alongside backlog, throughput, and retry/failure rates."
+    }
+  ],
+  "mentalModel": "A background job needs an identity, truthful states, and a bounded waiting room—not just a queue box.",
+  "sources": [
+    {
+      "title": "RabbitMQ — Consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon SQS — Visibility timeout",
+      "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Monitoring distributed systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Hugging Face TGI — Streaming and overload behavior",
+      "url": "https://huggingface.co/docs/text-generation-inference/en/conceptual/streaming",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "burst-and-drain",
+      "title": "Watch a backlog grow, then drain",
+      "sectionId": "capacity",
+      "intro": "This arithmetic model begins empty, completes 4 jobs/s, and uses smooth rates. At second 3, admission lowers accepted arrivals from 7/s to 2/s.",
+      "steps": [
+        {
+          "title": "Begin a short burst",
+          "explanation": "Seven jobs arrive each second while only four finish. Waiting work grows at three per second.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 s"
+            },
+            {
+              "label": "AcceptedArrivals",
+              "value": "7 jobs/s"
+            },
+            {
+              "label": "Completions",
+              "value": "4 jobs/s"
+            },
+            {
+              "label": "Backlog",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "title": "See the accumulated wait",
+          "explanation": "Three seconds of excess arrivals add nine waiting jobs. The service changes admission rather than accepting indefinite growth.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "3 s"
+            },
+            {
+              "label": "Backlog",
+              "value": "9 jobs"
+            },
+            {
+              "label": "NewAcceptedRate",
+              "value": "2 jobs/s"
+            },
+            {
+              "label": "SpareCapacity",
+              "value": "2 jobs/s"
+            }
+          ]
+        },
+        {
+          "title": "Drain while new jobs still arrive",
+          "explanation": "Three more seconds remove six net waiting jobs. Counting all twelve completions as backlog reduction would ignore six new arrivals.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "6 s"
+            },
+            {
+              "label": "Backlog",
+              "value": "3 jobs"
+            },
+            {
+              "label": "CompletionsSinceChange",
+              "value": "12"
+            },
+            {
+              "label": "NewArrivalsSinceChange",
+              "value": "6"
+            }
+          ]
+        },
+        {
+          "title": "Return to an empty waiting room",
+          "explanation": "Another 1.5 seconds at two spare completions per second drains the remaining three.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "7.5 s"
+            },
+            {
+              "label": "Backlog",
+              "value": "0"
+            },
+            {
+              "label": "Assumption",
+              "value": "Steady costs and rates; real queues vary"
+            }
+          ]
+        }
+      ],
+      "takeaway": "An admission policy changes the incoming rate; a concurrency policy bounds active work. Both are different from storing more waiting jobs."
+    }
+  ]
+}

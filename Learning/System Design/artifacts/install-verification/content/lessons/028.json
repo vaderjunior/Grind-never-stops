@@ -1,0 +1,144 @@
+{
+  "id": "028",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish module boundaries from deployment boundaries.",
+    "Assign one owner to a business state transition.",
+    "Explain the new failure modes introduced by service extraction.",
+    "Choose measurable reasons and a migration path for extraction."
+  ],
+  "retrieval": [
+    "From L027: why do network timeouts complicate side effects?",
+    "From L023: what belongs to an API contract besides its path?"
+  ],
+  "sections": [
+    {
+      "id": "boundaries",
+      "title": "You can organize a program before distributing it",
+      "markdown": "Core: retrieval 5, mechanism 18, worked extraction 8, exercise 10, questions 10, review 4 minutes. A small course platform contains enrollment, lesson progress, and email notifications. These responsibilities should have clear interfaces even if one process deploys all of them. A modular monolith is one deployable application organized into explicit modules with deliberate ownership; it is not a promise that every module may mutate every table.\n\nA module boundary is a code and responsibility boundary. A service boundary also creates an independently deployed and communicated-with runtime boundary. Extraction can permit independent scaling, release cadence, fault isolation, or team ownership, but it adds serialization, networking, credentials, observability, version compatibility, and partial failure. Decide which concrete benefit pays for those obligations.\n\nAvoid defining services by table names alone. Enrollment's responsibility is to decide whether a learner is enrolled under the product rules, not merely to expose CRUD for an enrollments table. Progress records evidence of learning activity. A public interface should express valid operations so callers cannot bypass the owning module's invariants."
+    },
+    {
+      "id": "ownership",
+      "title": "A boundary needs authority as well as a method name",
+      "markdown": "Suppose enrollment validates eligibility, then progress inserts an initial checklist, then notification sends a welcome email. Inside one process, function calls can pass structured errors without a network. Persistent effects still need transaction design, but the application has fewer communication failure boundaries.\n\nIf notification becomes a service, a call can be accepted while its response is lost. Retrying may duplicate email. If enrollment and progress become separate data owners, a single local database transaction may no longer cover both. The requirement must say what partial completion means and how to recover. Later outbox and workflow lessons provide mechanisms; do not assume that an HTTP call magically preserves the old atomic boundary.\n\nOwnership also prevents hidden coupling. If progress reaches directly into notification's private tables, separate deployment will remain fragile even if there are two processes. Prefer a small contract with stable semantics and deliberate version evolution. Shared libraries can share definitions, but should not silently force every independent service to deploy in lockstep."
+    },
+    {
+      "id": "worked",
+      "title": "Extract only the measured problem",
+      "markdown": "Imagine a report generator consumes CPU for several minutes and disrupts interactive reads. The first question is whether a separate worker process behind a bounded internal job interface solves the resource problem. Independent public microservices are not automatically necessary. You might keep one repository and shared deployment tooling while isolating the heavy execution path.\n\nA decision record could say: “Report execution has measured p99 impact on reads; move that execution to a worker with its own CPU limit. Keep enrollment and progress together because they share a small team and closely related state transitions. Use a bounded submission contract, explicit job status, and owned report artifacts.” This introduces only the boundary justified by evidence.\n\nBefore extraction, define input data, output result, identity context, deadlines, failure states, and compatibility. Trace an accepted report: interactive request authorizes the user, records a job, returns a job ID under a pending contract, and a worker produces the artifact. If no durable job mechanism exists yet, do not claim the accepted job survives a crash. A simple synchronous isolated process may be a better temporary boundary until durable work is implemented.\n\nMigration should allow verification. Route a controlled subset through the new path, compare expected outputs, collect latency and failures, and preserve a rollback path. Avoid dual independent writers to the same authoritative state without a coordination plan. “Strangler” migration is a name for gradual replacement, not proof that both paths agree."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Evaluate the cost of another on-call surface",
+      "markdown": "An independent service may need deployment automation, dependency patching, credentials, dashboards, alerts, compatibility tests, incident ownership, and a data migration story. For a single learner's local course app, these costs can overwhelm any theoretical scaling benefit. For a large team with independent release needs or strict isolation, the balance can differ. Team structure and failure consequences are requirements, not afterthoughts.\n\nFailure scenario: three services each look healthy, but requests fail because one deployed a new required field before its callers. Another: a network interruption causes “enrolled” state to exist without its initial progress record. Another: the reporting service retries an email callback and sends duplicate notices. These failures arise from boundaries and contracts, not from a lack of more services.\n\nCommon misconceptions: monolith means unstructured code; microservices guarantee scale; one service per table is domain modeling; sharing a database removes all distributed consistency questions; extraction can be reversed without migration work. State the benefit, added obligations, and evidence before drawing another network arrow.\n\nOptional practice: inspect a familiar project and identify one module whose interface could be clarified without changing deployment. Refactoring ownership is often useful even if no service is ever extracted."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "boundary",
+      "title": "One deployable can contain clear owners",
+      "source": "flowchart LR\nC[Browser] --> API\nsubgraph APP[One application deployment]\nAPI[API contract] --> E[Enrollment module]\nAPI --> P[Progress module]\nE --> N[Notification interface]\nE --> ES[(Enrollment state)]\nP --> PS[(Progress state)]\nend\nN -.->|Possible later network boundary| X[External delivery worker]",
+      "caption": "State boxes denote ownership responsibilities, not a requirement for separate database products. The optional dotted path introduces failure and retry obligations.",
+      "steps": [
+        "Separate responsibilities in code first.",
+        "Assign one owner to each transition.",
+        "Identify the actual scaling or isolation pressure.",
+        "Extract only when its benefit justifies a network boundary."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A two-person team has a working booking app. Image resizing uses most CPU; booking writes need consistent seat counts; notification templates change weekly. Propose an initial module/deployment structure and one evidence-based extraction trigger. Name two new obligations if notifications become a separate service.",
+    "minutes": 10,
+    "rubric": [
+      "Keeps closely related authoritative booking transitions coherent.",
+      "Targets measured CPU pressure without distributing everything.",
+      "Separates code modularity from deployment.",
+      "Names concrete partial-failure and compatibility obligations."
+    ],
+    "solution": "Keep booking authority and its related validation together in a modular application. Isolate image resizing in a bounded worker/process if measurements show interactive impact; do not split every booking table. A notification module can retain a clear interface while remaining in the deployment. Extract notifications when independent scaling, release ownership, or isolation creates a demonstrated need. New obligations include retry/duplicate-effect behavior, delivery status and recovery, authenticated service calls, version compatibility, and operational ownership."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A modular monolith means:",
+      "options": [
+        "Every module can write every table",
+        "One deployable with explicit responsibility and ownership boundaries",
+        "No possibility of concurrent requests"
+      ],
+      "answer": "One deployable with explicit responsibility and ownership boundaries",
+      "explanation": "Deployment count does not determine code quality or runtime concurrency."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which is a concrete extraction reason?",
+      "options": [
+        "Microservices are fashionable",
+        "A measured CPU-heavy workload needs independent resource isolation",
+        "There are three database tables"
+      ],
+      "answer": "A measured CPU-heavy workload needs independent resource isolation",
+      "explanation": "A demonstrated requirement can justify a new boundary."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What changes when a function call becomes a network call?",
+      "answer": "Latency, serialization, authentication, partial failure, version compatibility, and uncertain outcomes enter the contract.",
+      "explanation": "A list is strongest when tied to the actual state transition."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is direct access to another service’s private tables risky?",
+      "answer": "It bypasses ownership and couples callers to internal schemas, undermining independent evolution and invariant enforcement.",
+      "explanation": "Separate processes alone do not create a clean boundary."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When might one application be the better architecture?",
+      "answer": "When its workload, team, consistency needs, and operations fit one deployable and additional boundaries have no justified benefit.",
+      "explanation": "This is a contextual tradeoff, not a universal rule against services."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Module boundary?",
+      "back": "A responsibility and code interface boundary."
+    },
+    {
+      "front": "Service boundary adds?",
+      "back": "Independent runtime/deployment plus communication and failure obligations."
+    },
+    {
+      "front": "State owner?",
+      "back": "The component authorized to decide valid transitions for that state."
+    },
+    {
+      "front": "Extraction evidence?",
+      "back": "Measured scaling, isolation, release, or ownership requirements."
+    },
+    {
+      "front": "Why clarify interfaces first?",
+      "back": "Distribution magnifies hidden coupling rather than removing it."
+    },
+    {
+      "front": "One service per table?",
+      "back": "A naming scheme, not automatically a sound business boundary."
+    }
+  ],
+  "mentalModel": "Distribute a responsibility only when a real benefit pays for the new failure and operational boundary.",
+  "sources": [
+    {
+      "title": "Google SRE: Simplicity",
+      "url": "https://sre.google/sre-book/simplicity/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

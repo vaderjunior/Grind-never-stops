@@ -1,0 +1,506 @@
+{
+  "reviewer": "Independent curriculum agent",
+  "name": "Four new visual foundation chapters",
+  "reviewedAt": "2026-09-29T14:00:16.261Z",
+  "source": "Full independent textual and state-transition review of the current JSON, including assessment answer keys; arithmetic recomputed by reviewer.",
+  "limits": [
+    "AI editorial review, not human or learner-outcome validation.",
+    "Global Mermaid render and browser/PDF checks are owned by the parent agent."
+  ],
+  "records": [
+    {
+      "id": "read-system-diagrams",
+      "sha256": "949c549d3896194c927d1cdd6811c9cf762d8d8b781121948a23b516e6a09824",
+      "notes": [
+        "Read complete prose, diagrams, walkthrough, exercise, questions and cards.",
+        "No substantive issue found: local arrow legend, responsibility versus deployment, order versus elapsed time, and saved fact versus browser knowledge are explicit."
+      ],
+      "protectedAssessmentSha256": "94416100051601c217317aa7ed5ac0c2c75e6999db8d9819e073751e4263444f"
+    },
+    {
+      "id": "http-requests-and-errors",
+      "sha256": "ab3da809a0cb8b54d3bcb105d767b9fce1bc80a9df5fc4d3e1cf2a6521aec18b",
+      "notes": [
+        "Read complete prose, diagrams, walkthrough, exercise, questions and cards.",
+        "Fixed recovery trace: the caller now retains operation key op-17 before submission, and the fictional API explicitly supports lookup by that key. A lost resource identity alone would not have supported the shown status lookup.",
+        "Clarified 404 as no current representation or undisclosed existence, and labeled the error-response diagram branch broadly enough to include temporary server failures."
+      ],
+      "protectedAssessmentSha256": "710241ddb9cebf539a23acf4b78c0ce923275a0118cf9b8eb9b674839df91d12"
+    },
+    {
+      "id": "pagination-from-scratch",
+      "sha256": "06cdbf403cb8344103b4d2d6f35ace0f24fb93ba3cf7b831bb9724d5be26fa9c",
+      "notes": [
+        "Read complete prose, diagrams, walkthrough, exercise, questions and cards.",
+        "Manually traced insertion example and deletion exercise: offset and keyset outputs are correct. Full ordering, tie-breaker, authorization, mutable data and snapshot limits are stated. No substantive change needed."
+      ],
+      "protectedAssessmentSha256": "b65c0a266c085ba08cae2c844d557211dd84fa2c7c45c9076ac63cb1eff0ac88"
+    },
+    {
+      "id": "numbers-bytes-and-units",
+      "sha256": "10acd4c66b8cf07a36e418541c73ccfdd5a9a5cee198deb1826a29b7a513db01",
+      "notes": [
+        "Read complete prose, diagrams, walkthrough, exercise, questions and cards.",
+        "Recomputed 100 Mbit/s = 12.5 MB/s; 6 GB transfer = 480 s; 50 × 2 MB/s = 800 Mbit/s; retention = 1.296 TB and three copies = 3.888 TB; exercise = 10 MB/s = 80 Mbit/s.",
+        "Defined telemetry in ordinary language and added decimal TB to the unit table before its later use."
+      ],
+      "protectedAssessmentSha256": "01000e4e6bef770254e7f83e55b599529b8632f124f42292c6a126b520ed3431"
+    }
+  ],
+  "previousReview": {
+    "reviewer": "/root/curriculum",
+    "source": "Independent editorial review of /root-authored guide JSON and corresponding original authoring scripts",
+    "date": "2026-09-29",
+    "count": 18,
+    "criteria": [
+      "Full teaching prose, examples, exercise solution, objective answers, and diagram meaning read directly.",
+      "Explanations traced against stated assumptions; prerequisite vocabulary and known correctness pitfalls checked.",
+      "Selected claims cross-checked with primary documentation for PostgreSQL, Jepsen models, Debezium, Kafka, MCP security, OWASP, Protocol Buffers, RFC6585, MLflow, and KServe."
+    ],
+    "statusMeaning": "Textual editorial review only. File status remains drafted; this is not full runtime validation.",
+    "diagramEvidence": {
+      "priorBatch": "artifacts/diagram-validation.json",
+      "priorBatchTotal": 106,
+      "priorBatchFailures": 2,
+      "corrections": [
+        "computer-and-server-basics/save semicolon changed to explicit line break",
+        "cache-patterns-and-invalidation/race semicolon changed to comma"
+      ],
+      "finalRerenderOwner": "/root"
+    },
+    "records": [
+      {
+        "id": "what-is-system-design",
+        "file": "content/guides/what-is-system-design.json",
+        "sha256": "b56d9aedff305d7b8d90e5e29cb32357a593270d8f2bfa07f01a6f603fdcbbac",
+        "beforeThisFinalPassSha256": "b56d9aedff305d7b8d90e5e29cb32357a593270d8f2bfa07f01a6f603fdcbbac",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Roles versus machines, saved-note identity, success ordering, and deliberately omitted login are consistent.",
+          "Fixed unspaced note identity in the exercise."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "request-journey",
+        "file": "content/guides/request-journey.json",
+        "sha256": "51ff1bca195fc0bc2b5bd06f780f56a6225953106e1bed79284bd14e0f0d8556",
+        "beforeThisFinalPassSha256": "51ff1bca195fc0bc2b5bd06f780f56a6225953106e1bed79284bd14e0f0d8556",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "DNS lookup, connection reuse, page/data requests, and failure localization are correctly separated.",
+          "Moved TCP/TLS/QUIC comparison to explicitly optional depth and made HTTPS explanation plain."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "apis-without-jargon",
+        "file": "content/guides/apis-without-jargon.json",
+        "sha256": "30a119ca15515470c8b795101e34ff88d33b5cb705149174ee2f97cfc1fc767b",
+        "beforeThisFinalPassSha256": "938675f1b6de3fbc5aed5359b97a5add9d1158e13361a02c03fa2118b25d9598",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Methods, status examples, validation versus permission, and timeout uncertainty match the examples and answer key.",
+          "Fixed number/unit spacing in prose without changing endpoint paths."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "data-that-survives",
+        "file": "content/guides/data-that-survives.json",
+        "sha256": "b1d2b7a4ff1ea99983aaa8f3a281fbced35a76e84773f5519d3f729271c901c4",
+        "beforeThisFinalPassSha256": "253d3af906acea7f0f0b2501be986fab4df916f6f6bcaeaec627495c018952a4",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Process restart, disk destruction, and historical restore are distinguished; exercise states recovery limits.",
+          "Defined dictionary inline and replaced unexplained authoritative-data wording."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "copying-data",
+        "file": "content/guides/copying-data.json",
+        "sha256": "b5aaaf822b21dc4faede47e2ddb675d43e72d44e602bceb2dd7710bf3c85c9e4",
+        "beforeThisFinalPassSha256": "b5aaaf822b21dc4faede47e2ddb675d43e72d44e602bceb2dd7710bf3c85c9e4",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Asynchronous acknowledged-loss possibility and received/durable/applied synchronous milestones are accurately scoped.",
+          "900 minus 600 equals 300 reads/s; no unearned CPU-speed claim. Fixed prose spacing."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "split-data-into-shards",
+        "file": "content/guides/split-data-into-shards.json",
+        "sha256": "561d18549458f757ba228cccbf73675edd491059f9fc88d890c83376063b9b79",
+        "beforeThisFinalPassSha256": "561d18549458f757ba228cccbf73675edd491059f9fc88d890c83376063b9b79",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Key choice follows owner-list queries; migration and hot-owner limits are explicit.",
+          "Added a concrete remainder example for mod 3; checked 20 times 8 equals 160 candidates."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "consistency-in-plain-language",
+        "file": "content/guides/consistency-in-plain-language.json",
+        "sha256": "cdb112740c50bc640f34c4d64ccc9faad825ef2848f8b549c2b819f25b7bb560",
+        "beforeThisFinalPassSha256": "cdb112740c50bc640f34c4d64ccc9faad825ef2848f8b549c2b819f25b7bb560",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Read-your-writes, monotonic reads, and real-time order have distinct histories; overlap example is valid.",
+          "Quizzes avoid treating linearizability as an atomic seat-claim implementation. Fixed version/history spacing."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "partitions-and-quorums",
+        "file": "content/guides/partitions-and-quorums.json",
+        "sha256": "e66931858c67c9aaef8744c5cdfc543339ad03cc502ede659903b2d50d8ef29e",
+        "beforeThisFinalPassSha256": "e66931858c67c9aaef8744c5cdfc543339ad03cc502ede659903b2d50d8ef29e",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Partition story avoids pick-any-two shorthand and defines successful service rather than arbitrary errors.",
+          "Fixed-set overlap math is correct, with version/concurrency/membership limits stated. Fixed prose spacing."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "reliable-events",
+        "file": "content/guides/reliable-events.json",
+        "sha256": "42e1d47e19a940fb85a45505da4e58a11d4fa8ecf35a5e6a6b7456e004ee5be2",
+        "beforeThisFinalPassSha256": "42e1d47e19a940fb85a45505da4e58a11d4fa8ecf35a5e6a6b7456e004ee5be2",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Outbox local transaction, relay duplicate window, consumer atomic deduplication, and external-effect boundaries are correct.",
+          "Version replacement differs from incremental event handling; checks follow the worked crash."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "streaming-and-replay",
+        "file": "content/guides/streaming-and-replay.json",
+        "sha256": "44f35c6cddac494126874b8f91aa1b5c43b4c7c9d3be9a8064b149e84747cd29",
+        "beforeThisFinalPassSha256": "44f35c6cddac494126874b8f91aa1b5c43b4c7c9d3be9a8064b149e84747cd29",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Next-offset convention and the 43/44 two-record example are consistent; partition-order boundary is explicit.",
+          "Replay side effects, retention, and external-sink transaction limits are correctly separated."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "identity-and-permissions",
+        "file": "content/guides/identity-and-permissions.json",
+        "sha256": "a5ae0c93f0dc2dc8115eb1c7cd69621f8eb7b394e91dfe5249cd59804566e42b",
+        "beforeThisFinalPassSha256": "2c9cf8772711147298c4f7c14c4fbbab3f561e5240867a249655a7c2d1fe5424",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Identity, per-action authorization, tenant scope, cookies, revocation, and asynchronous/export paths remain distinct.",
+          "Answer keys correctly deny viewer, removed member, and unrelated tenant; no unsupported permission-by-ID shortcut."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "rate-limits-and-abuse",
+        "file": "content/guides/rate-limits-and-abuse.json",
+        "sha256": "cf7a6c6275b5ffa15881f81cd4e4ec662e9e24a34104c84aa6235a5c5003951e",
+        "beforeThisFinalPassSha256": "8d914d190083ed16f0c25cb850eb6c31e9796073e1a328e4026516746feecba2",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Fixed-window boundary burst and token-bucket 10→2→4→1 example are correct.",
+          "Distributed local budgets and concurrency versus rate are explicit; 10/s times 30s is 300 under stated steady assumptions."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "computer-and-server-basics",
+        "file": "content/guides/computer-and-server-basics.json",
+        "sha256": "fae6a413c7777052234ad0145e3521dfade161a62829bb83fe6c599c55af7016",
+        "beforeThisFinalPassSha256": "fee6f0b0703b5d366cb8f966c6b3c771c86b17ac3f305ee644b492ed01c597d0",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "CPU work, memory capacity, durable write boundary, and network payload arithmetic use explicit assumptions.",
+          "Fixed Mermaid semicolon parse failure and simplified an undefined authority phrase."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "sql-in-small-steps",
+        "file": "content/guides/sql-in-small-steps.json",
+        "sha256": "93dda5ca0dab0aa0606902d9852e0038eeb9448d38c61b5a16ec76bebfac10c9",
+        "beforeThisFinalPassSha256": "93dda5ca0dab0aa0606902d9852e0038eeb9448d38c61b5a16ec76bebfac10c9",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "All original-row outputs, ordering tie-breaker, join matches, and grouped counts were traced.",
+          "COUNT(notes.id) versus COUNT(*) under a left join is correct; parameters do not replace authorization. No technical edit required."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "cache-patterns-and-invalidation",
+        "file": "content/guides/cache-patterns-and-invalidation.json",
+        "sha256": "6ac87000579b88013af7a7968c9587fa05fcd66db15427bd981b07daaeee9c1e",
+        "beforeThisFinalPassSha256": "ce4cae89e3369730c844a4e094b81e8b90239cbaf45ce8b1852ef0a4a81eefe7",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Paused reader race survives update-then-invalidate; TTL, eviction, coalescing, and tenfold fallback load are distinguished.",
+          "Fixed Mermaid semicolon parse failure and clarified source-of-truth terms."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "serialization-and-data-formats",
+        "file": "content/guides/serialization-and-data-formats.json",
+        "sha256": "f94d672d7c4dee3575db035c25a9882a4badc458c34e6257d0d970233b50f436",
+        "beforeThisFinalPassSha256": "b00bd555cf3279fff5d108138c84cd9ae7bca57912f06c678d7600c79082c21b",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "JSON/encoding/schema layers, large-integer portability, additive compatibility, and compression arithmetic are coherent.",
+          "Replaced naive local time jargon with an explicit no-offset description."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "platform-security-and-tenancy",
+        "file": "content/guides/platform-security-and-tenancy.json",
+        "sha256": "0eacd19b2c6e2f4d5c67bc0bbccedba17547c4e275164f1810259cb6b4d7a317",
+        "beforeThisFinalPassSha256": "d8d00ddfa3299c965e8cf5bcbd8e64ad6b3839ae01e0eba89cd5456a052bfc59",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "User versus workload identity, token audience, per-object checks, tenant scope, and delayed-job revocation are scoped correctly.",
+          "Made token authenticity verification explicit using supported signature validation or issuer introspection; added plain access-token definition."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      },
+      {
+        "id": "ai-platform-operations",
+        "file": "content/guides/ai-platform-operations.json",
+        "sha256": "6e417da30e22a7eb4616a395c050c6c0779bca3b5de6cecb47bc2320846702b0",
+        "beforeThisFinalPassSha256": "61ea066faeb7f7c08dba424295b18647ea8db876b041ef1a413b15f14fd53f31",
+        "reviewed": true,
+        "reviewType": "independent substantive editorial review with targeted corrections",
+        "findings": [
+          "Registry/deployment/routing, control/data planes, warm-up, quality gates, TTFT arithmetic, and fallback limits are correctly separated.",
+          "Added token/tokenizer definitions so the chapter also supports review outside the preceding model-serving chapter."
+        ],
+        "checks": {
+          "fullBodyRead": true,
+          "exerciseAndSolutionRead": true,
+          "answerKeyReasoned": true,
+          "diagramSemanticsRead": true,
+          "choiceAnswersInOptions": true,
+          "diagramSectionIdsValid": true
+        },
+        "remainingLimitations": [
+          "No beginner learner study or timed comprehension trial.",
+          "No deployed Redis, Kubernetes, Kafka, model-serving, or identity-provider integration test is implied."
+        ]
+      }
+    ]
+  }
+}

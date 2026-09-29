@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "interview_002",
+  "lessonId": "010",
+  "title": "Design a small single-server service without overengineering",
+  "aliases": [
+    "L010",
+    "lesson_010",
+    "m01_partial_design"
+  ],
+  "modeType": "partial-design",
+  "minutes": 45,
+  "brief": "A research group needs a private experiment-notebook service for a single laboratory. Researchers save short observations, view their own entries, and share selected notebooks with teammates. Design a small single-server baseline, derive its workload and capacity questions, trace a write and a read, and defend what it can and cannot promise during failure. Use the concepts from M01; implementation details from later modules are optional stretch.",
+  "clarifications": [
+    {
+      "question": "How many researchers and actions?",
+      "answer": "There are 500 researchers, 200 active daily. Each active researcher opens notebooks 30 times and adds ten observations per day. Each action is one API request in the baseline."
+    },
+    {
+      "question": "How large are observations and how long retained?",
+      "answer": "An observation averages 2,000 bytes without attachments. Keep five years of observations, approximated as 365 days/year. Exclude version history initially. Photos, search ranking, offline editing, and global deployment are non-goals."
+    },
+    {
+      "question": "What peak and latency target?",
+      "answer": "Use a tenfold one-minute peak. Target 99% of valid notebook reads under 400 ms; collect writes separately. These targets are proposed and unmeasured."
+    },
+    {
+      "question": "What access guarantees matter?",
+      "answer": "Entries are private unless their owner shares a notebook with named teammates. Knowing a notebook identifier is not authorization. Revoking access should apply to the next read."
+    },
+    {
+      "question": "What does successful saving promise?",
+      "answer": "A confirmed observation is stored persistently. Restarting the application should preserve it. The team accepts brief downtime; do not promise uninterrupted availability from one server."
+    },
+    {
+      "question": "What resource evidence is available?",
+      "answer": "A supplied representative baseline test sustains 100 mixed requests/s at the desired read latency; mean end-to-end time during that test is 80 ms. This is teaching evidence, not a measurement on your device."
+    },
+    {
+      "question": "What recovery constraints are agreed?",
+      "answer": "A daily backup is available, but restoration has not been tested. The sponsor has not yet approved how much confirmed work may be lost after disk failure. Surface this gap explicitly."
+    }
+  ],
+  "hints": [
+    "Separate the app’s process memory from persistent authoritative observations and membership.",
+    "Compute reads and writes per day, then retention bytes; do not multiply read rate into storage growth.",
+    "A single-server design can fit the workload while still having an outage and recovery limitation."
+  ],
+  "changes": [
+    "A failed response reaches the user after an observation was actually saved. What uncertainty must the client handle?",
+    "The group now imports historical observations at 150 requests/s for ten minutes while ordinary interactive traffic continues. Explain the overload risk and propose a scoped policy without assuming that a queue creates capacity.",
+    "The sponsor asks whether daily backups guarantee zero lost confirmed observations. Explain the missing recovery agreement and validation."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "Scope one app and one persistent database or persistent store holding observations, notebooks, and access membership. Define save inputs (notebook, content, authenticated actor), accepted output (stored observation ID), and read inputs/output with authorization before entries are returned. Reads = 6,000/day; writes = 2,000/day; combined 8,000/day ≈0.0926/s average and 0.926/s at tenfold peak. The supplied mixed benchmark suggests ample baseline rate margin, but does not prove every operation or failure behavior. Five-year logical observation storage = 2,000 × 2,000 × 365 × 5 = 7.3 GB, before metadata/indexes/backups/reserve. At the benchmark boundary, Little’s law gives 100 × 0.08 = 8 average in-flight requests; using p99 would be invalid. The write trace verifies permission, accepts and persists the record, then confirms. The read trace checks current membership before returning private records. State that one server can be unavailable and that a daily backup can leave a loss window after disk failure; persistence after process restart is weaker than zero data loss under disk loss. During a sustained 150/s import against a 100/s mixed limit, excess work grows at least 50/s before foreground load; use explicit admission, slow the importer, schedule it, or test separate capacity. A bounded asynchronous import is a changed response contract with pending status, not magically faster completion. Reference solutions are examples of defensible reasoning, not required product selections.",
+  "debrief": "Evaluate whether the candidate built a complete small path before adding complexity, used units correctly, kept membership authoritative, and acknowledged the single-server and backup limits. Preserve defensible alternatives such as file-backed storage when the candidate explains safe ownership and update requirements, without pretending all concurrency details were taught. For a critical correctness omission, retry with a different private-resource scenario and inspect the new trace rather than reciting this solution.",
+  "remediation": [
+    "001",
+    "002",
+    "003",
+    "004",
+    "006",
+    "007",
+    "008",
+    "009"
+  ]
+}

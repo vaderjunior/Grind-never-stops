@@ -1,0 +1,323 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 1,
+  "title": "Domains, IP addresses, ports, and DNS",
+  "level": "beginner",
+  "minutes": 55,
+  "id": "dns-and-addresses",
+  "summary": "Before a browser can ask for a note, it needs to find the right service. Follow the name, network address, and port without confusing any of them with the note itself.",
+  "objectives": [
+    "Separate a domain name, IP address, port, and URL path.",
+    "Follow an ordinary DNS lookup with and without cached answers.",
+    "Explain why changing a DNS record does not instantly move every client."
+  ],
+  "terms": [
+    {
+      "term": "Domain name",
+      "definition": "A human-readable name in the DNS hierarchy, such as notes.example.com."
+    },
+    {
+      "term": "IP address",
+      "definition": "A network-layer address used to route packets toward an interface or destination; it is not necessarily one permanent application machine."
+    },
+    {
+      "term": "Port",
+      "definition": "A transport-layer number used with an address and protocol to identify a communication endpoint."
+    },
+    {
+      "term": "Resolver",
+      "definition": "Software or a service that finds DNS answers for a client, often using cached information."
+    },
+    {
+      "term": "Authoritative DNS server",
+      "definition": "A server responsible for answering from the DNS data for a particular zone."
+    },
+    {
+      "term": "TTL",
+      "definition": "Time to live: a limit on how long a DNS answer may normally be reused from cache before it needs refreshing."
+    }
+  ],
+  "retrieval": [
+    "What job does the browser do in Pocket Notes?",
+    "Does the text of a note live in its website address?"
+  ],
+  "sections": [
+    {
+      "id": "address",
+      "title": "Begin with a place you want to reach",
+      "markdown": "You type https://notes.example.com/notes/42 into a browser. You want note 42, but the browser cannot send a message to those words as though they were a physical cable. Several jobs must happen before the application can answer. It must interpret the URL, find a usable network destination, establish the appropriate connection, and send an application request.\n\nThink of visiting a department in a large office building. A familiar business name helps you decide where you want to go. A street address helps you travel to the building. A reception desk or department tells you which service to approach. Your actual question tells that service what you need. These are related pieces of information, but they do different work.\n\nThe analogy has limits. One network address can represent many websites, a service may use many addresses, and machines can move without the public name changing. That flexibility is useful. We will keep the example small enough to follow before exploring those changes."
+    },
+    {
+      "id": "url",
+      "title": "Take the URL apart before following it",
+      "markdown": "Take https://notes.example.com/notes/42 apart before following it:\n\n| Part | Value | Who uses it in this example? |\n| --- | --- | --- |\n| Scheme | https | Browser chooses the protected web interaction |\n| Hostname | notes.example.com | Name resolution finds destination information |\n| Path | /notes/42 | Application chooses the requested note |\n\nThe full URL identifies a resource using these parts together.\n\nA URL can also contain a port, such as https://notes.example.com:8443/notes/42. For an ordinary HTTPS URL without an explicit port, the default is 443; ordinary HTTP defaults to 80. A query after a question mark carries additional request information, such as a page number or filter. A fragment after a hash normally identifies a position within the retrieved document and is not sent as part of the HTTP request target.\n\nDNS does not look up /notes/42. It resolves information about the hostname. Changing the note number changes the application request, not necessarily the destination address. This distinction will later help you understand how one application server serves thousands of different resources."
+    },
+    {
+      "id": "ip",
+      "title": "What an address and a port each contribute",
+      "markdown": "A packet is a small unit of data sent across a network. Routers are devices that forward those units toward their destination. An IP address supplies the network address information they use. IPv4 addresses look like four decimal numbers separated by dots. IPv6 addresses use a longer hexadecimal notation.\n\nFor this lesson, you do not need to calculate network masks or memorize either format. You only need to recognize that the address is part of reaching the service over a network.\n\nA port helps distinguish communication endpoints using a transport protocol on that destination. One machine can host a web application, a database listener, and other services on different ports. The port number is not a physical socket on the laptop and is not a private database row identifier. Opening port 443 says where an HTTPS connection is usually received, not which customer note should be returned.\n\nFor a local development URL such as http://localhost:4310, localhost refers to the local machine through its configured name resolution, and 4310 selects the app's listener. It does not mean the application has automatically been published to everyone on the internet. Network exposure, routing, and firewalls are separate concerns.\n\n> **Common mistake:** Treating port 443 as the note identity. The address and port help reach a communication endpoint. The HTTP path tells the application which note you want."
+    },
+    {
+      "id": "dns",
+      "title": "DNS is a lookup system, not the website itself",
+      "markdown": "The Domain Name System, or DNS, supplies records associated with names. An A record can provide an IPv4 address; an AAAA record can provide an IPv6 address. Other record types have different purposes. You do not need all of them to explain opening this page. Names may also point through aliases, which can require additional resolution.\n\nThe DNS answer might point to a public entry service that later forwards the request to an application. It does not have to reveal the final database or application machine. Hosting teams can change internal machines while retaining a stable public name. Later lessons call some of those entry services reverse proxies or load balancers.\n\nMost browsers and operating systems use configured resolver services rather than asking every DNS authority themselves for every page. A resolver may be provided by a home network, organization, internet provider, or chosen DNS operator. Browser and operating-system configuration affects the exact path. Our next diagram describes a common logical lookup, not a packet capture guaranteed to match every computer."
+    },
+    {
+      "id": "lookup",
+      "title": "Follow a lookup when the answer is not cached",
+      "markdown": "Assume the browser and local system do not already have a reusable answer for notes.example.com. The client's resolver asks a recursive resolver to find it. “Recursive” means the service takes responsibility for finding the answer on the client's behalf, potentially making several other queries.\n\nIf the recursive resolver lacks the necessary cached information, it can follow referrals through the DNS hierarchy. A root server points toward the relevant top-level-domain (TLD) servers, such as those for com. That server points toward the authoritative servers for example.com. An appropriate authoritative server supplies the records or further information needed for notes.example.com. The resolver follows the applicable records and returns the answer.\n\nThe root server does not normally know every website's final address. The hierarchy distributes responsibility. The resolver can cache referrals as well as final answers, so future work may skip several steps. A successful DNS response completes name lookup; it still does not prove that the website process is healthy or that the user may read note 42."
+    },
+    {
+      "id": "cache",
+      "title": "A cached answer saves work but has an age",
+      "markdown": "Suppose the resolver obtains an address at 10:00 with a 300-second TTL. In a simplified example, it can reuse that answer for up to five minutes, with the remaining lifetime decreasing as time passes. At 10:02 another client asking through that resolver may receive the cached address without a new authoritative lookup. This is why every page navigation does not walk the whole hierarchy.\n\nNow an operator changes the authoritative record at 10:01. A client using the old cached answer may continue connecting to the earlier address until that information expires or is otherwise refreshed. Reducing the TTL at 10:01 does not reach back in time and shorten a 300-second answer already cached at 10:00. Planned changes often lower TTL sufficiently in advance and keep old and new service paths working during the transition.\n\nThis model omits implementation policies such as serving stale data in constrained situations, resolver limits, and caching of negative answers. The core lesson is that a name change is observed over time by independent caches, rather than through a single instant update everywhere."
+    },
+    {
+      "id": "connection",
+      "title": "Only now can the application conversation begin",
+      "markdown": "After obtaining a suitable address, the browser establishes a connection using an appropriate web transport and negotiates security for HTTPS. A traditional explanation first establishes TCP, which provides an ordered byte stream, then TLS, which establishes encryption and checks the server identity.\n\nModern HTTP/3 uses QUIC, a transport built over UDP datagrams, with integrated TLS security. The next week explains these protocols; here they are two ways to build the protected connection. You need not implement either to keep the stages straight: name lookup finds a destination; the connection carries a protected application conversation.\n\nHTTPS certificate validation helps the browser check that the peer is authorized for the requested hostname and establish an encrypted channel. DNS lookup by itself is not that certificate check. The application still needs to authenticate the user and authorize access to the note. Encryption does not mean every logged-in person may read every record.\n\nThe browser then sends an HTTP request referring to the path and other request information. The entry server can use the hostname and request path to select the application route. The application reads the permitted note and sends a response. All these steps may reuse existing connections or caches in a real browser, so a second request can be faster without skipping the need for correct semantics."
+    },
+    {
+      "id": "diagnose",
+      "title": "Use the stages to explain different failures",
+      "markdown": "Use the observed stage to choose the next check:\n\n| Observation | What it tells you | A useful next check |\n| --- | --- | --- |\n| Hostname cannot be resolved | No usable name result was obtained | Resolver response and hostname spelling |\n| DNS succeeds, connection fails | An address was found, but the next stage failed | Destination, listening service, and network policy |\n| HTTP error returns | An HTTP-speaking component answered | Status, request details, and relevant server records |\n\nA note-table index cannot fix a missing name result. Likewise, an HTTP error does not by itself identify the final failing machine.\n\nThese are diagnostic starting points, not perfect conclusions. A cache can hide a DNS outage temporarily, a proxy may return an error for an upstream failure, and a timeout leaves ambiguity. Say which observation supports your hypothesis and which check would distinguish alternatives.\n\nDNS can return several addresses or steer clients toward different entry points. That helps distribute access, but it is not an instantaneous health decision for every request. Cached answers and persistent connections limit how quickly clients react to a record change. Later we will compare this with a load balancer that chooses among live application instances."
+    },
+    {
+      "id": "explain",
+      "title": "Explain one URL from beginning to end",
+      "markdown": "Without looking back, describe https://notes.example.com/notes/42 using five sentences. The hostname names the service. DNS helps find a network address. The address and appropriate port/transport help reach an endpoint. HTTPS establishes the protected conversation with hostname validation. The HTTP request asks the application for note 42, and the application checks access and returns the result.\n\nNow change only the path to /notes/43. Ask which stages can be reused and which application data changes. Then change the DNS answer while leaving the URL unchanged. Ask why two clients can temporarily reach different entry addresses. These small variations check that you understand the roles rather than memorizing a single arrow order.\n\nFor now, stop before deep routing algorithms, certificate-chain administration, or DNSSEC internals. Those are useful extensions, but the foundation is enough to explain a production diagram's first arrows. In an interview, this clarity prevents mixing up finding a service, connecting securely, and asking it for a particular resource."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "dns-lookup",
+      "title": "Find the address before asking for the note",
+      "source": "sequenceDiagram\nparticipant B as Browser and local resolver\nparticipant R as Recursive resolver\nparticipant H as Root and TLD hierarchy\nparticipant A as Authoritative DNS\nB->>R: Address for notes.example.com?\nR->>H: Follow needed referrals\nH-->>R: Appropriate authoritative servers\nR->>A: Address records for hostname?\nA-->>R: Address answer and TTL\nR-->>B: Usable address information",
+      "caption": "Original logical example when relevant caches are empty. Root and TLD queries are grouped for readability; real resolution can reuse cached referrals.",
+      "steps": [
+        "The client asks its configured resolver.",
+        "The resolver follows referrals it does not already know.",
+        "An authoritative answer provides records with a cache lifetime.",
+        "The client receives address information; the note request has not happened yet."
+      ],
+      "sectionId": "lookup"
+    },
+    {
+      "id": "dns-request",
+      "title": "The name, connection, and resource are separate steps",
+      "source": "flowchart LR\nU[URL: scheme hostname and path] --> D[Resolve hostname when needed]\nD --> A[Usable network address]\nU --> P[Explicit port or scheme default]\nA --> C[Reach endpoint and establish HTTPS security]\nP --> C\nC --> H[HTTP request for notes slash 42]\nH --> S[Application checks access and returns note]",
+      "caption": "Ordinary hostname lookup supplies address information; the URL supplies an explicit port or a scheme default. DNS success does not itself establish HTTPS, authenticate the user, or fetch the note.",
+      "steps": [
+        "Parse the URL into its roles.",
+        "Resolve the hostname when a lookup is needed.",
+        "Reach the endpoint and establish the secure conversation.",
+        "Send the resource request and let the application enforce access."
+      ],
+      "sectionId": "connection"
+    },
+    {
+      "id": "one-host-many-paths",
+      "sectionId": "url",
+      "title": "Different note paths can use the same destination",
+      "source": "flowchart LR\nU[notes.example.com] --> D[DNS address information]\nD --> S[HTTPS endpoint on port 443]\nS --> A[Application route]\nA --> N42[Path notes slash 42]\nA --> N43[Path notes slash 43]",
+      "caption": "The diagram separates destination lookup from application routing. One address may also host several names; this example shows only one.",
+      "steps": [
+        "Resolve the hostname, not the note path.",
+        "Reach the HTTPS endpoint using the address and appropriate port.",
+        "Let the application interpret each path and check permission."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Label the scheme, hostname, explicit port, path, query, and fragment in https://notes.example.com:8443/notes/42?view=compact#comments. Then explain: a resolver caches an old address at 10:00 for 300 seconds; the operator changes the record at 10:01. Why might a client still use the old address at 10:02?",
+    "rubric": [
+      "Distinguish hostname lookup from path/query handling and client-side fragment use.",
+      "Identify 8443 as the explicit port.",
+      "Explain existing cache lifetime without claiming instantaneous global propagation."
+    ],
+    "solution": "Scheme=https; hostname=notes.example.com; port=8443; path=/notes/42; query=view=compact; fragment=comments. DNS resolves hostname information, not the path or note identity. The fragment is normally used by the browser rather than sent as part of the HTTP request target. In the simplified cache example, the old answer has about 180 seconds left at 10:02, so a resolver can still return it. Changing the authoritative record does not push a replacement into every existing cache immediately. Keep the old service path valid during a planned transition."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does ordinary DNS resolution use from our note URL?",
+      "options": [
+        "The hostname",
+        "The note’s body",
+        "Only the fragment"
+      ],
+      "answer": "The hostname",
+      "explanation": "The application path and content are separate from hostname lookup."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What does port 8443 identify in the example?",
+      "options": [
+        "A communication endpoint number used with address and transport",
+        "The note number",
+        "The DNS cache lifetime"
+      ],
+      "answer": "A communication endpoint number used with address and transport",
+      "explanation": "It selects the listener endpoint; the path identifies the application resource."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "An authoritative DNS record changes. All clients immediately use it.",
+      "options": [
+        "True",
+        "False because cached information may remain valid",
+        "True if the hostname is short"
+      ],
+      "answer": "False because cached information may remain valid",
+      "explanation": "Clients and resolvers can reuse answers until their applicable cache policy requires refresh."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "How does a DNS failure differ from an HTTP 404 response?",
+      "answer": "A DNS failure prevents obtaining usable name-resolution information. An HTTP 404 means an HTTP-speaking server responded that the requested resource was not found under that request; the application conversation got further.",
+      "explanation": "A DNS failure prevents obtaining usable name-resolution information. An HTTP 404 means an HTTP-speaking server responded that the requested resource was not found under that request; the application conversation got further."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can one IP address serve multiple websites?",
+      "answer": "The network destination can be a shared entry service that uses the requested hostname and application request information to select a website. An IP address is not a permanent one-to-one label for a single website.",
+      "explanation": "The network destination can be a shared entry service that uses the requested hostname and application request information to select a website. An IP address is not a permanent one-to-one label for a single website."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Domain versus address?",
+      "back": "The name is a human-friendly service identifier; address information helps route a network connection."
+    },
+    {
+      "front": "Port versus URL path?",
+      "back": "The port selects an endpoint; the path identifies the requested application resource."
+    },
+    {
+      "front": "DNS resolver job?",
+      "back": "Find relevant DNS answers, often using cached records and referrals."
+    },
+    {
+      "front": "TTL tradeoff?",
+      "back": "Reuse answers to save lookup work, while accepting a bounded period of ordinary staleness."
+    },
+    {
+      "front": "DNS success proves authorization?",
+      "back": "No. Secure connection establishment and application access checks are separate steps."
+    }
+  ],
+  "mentalModel": "A name helps you find the service, an address and port help you reach it, and the HTTP request says what you want.",
+  "sources": [
+    {
+      "title": "MDN — URL components",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MDN — Domain names",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_domain_name",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Cloudflare — DNS resolution roles",
+      "url": "https://www.cloudflare.com/learning/dns/what-is-dns/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC1034 — DNS concepts and facilities",
+      "url": "https://www.rfc-editor.org/rfc/rfc1034",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "change-path-keep-destination",
+      "sectionId": "url",
+      "title": "Change the note without changing the hostname",
+      "intro": "Assume one browser has a valid address result and an open reusable HTTPS connection.",
+      "steps": [
+        {
+          "title": "Open note 42",
+          "explanation": "The URL supplies a hostname and path with different roles.",
+          "state": [
+            {
+              "label": "Hostname",
+              "value": "notes.example.com"
+            },
+            {
+              "label": "Path",
+              "value": "/notes/42"
+            },
+            {
+              "label": "Destination",
+              "value": "Known HTTPS endpoint"
+            }
+          ]
+        },
+        {
+          "title": "Request the first note",
+          "explanation": "The HTTP request names note 42. DNS does not receive a query for the path.",
+          "state": [
+            {
+              "label": "Connection",
+              "value": "Established"
+            },
+            {
+              "label": "HTTP target",
+              "value": "/notes/42"
+            },
+            {
+              "label": "Lookup subject",
+              "value": "Hostname only"
+            }
+          ]
+        },
+        {
+          "title": "Choose note 43",
+          "explanation": "The app can send a second request through the existing connection when supported.",
+          "state": [
+            {
+              "label": "Hostname",
+              "value": "Unchanged"
+            },
+            {
+              "label": "HTTP target",
+              "value": "/notes/43"
+            },
+            {
+              "label": "New connection",
+              "value": "Not necessarily needed"
+            }
+          ]
+        },
+        {
+          "title": "Apply the application rule",
+          "explanation": "Even with the same endpoint, note 43 needs its own access decision and data lookup.",
+          "state": [
+            {
+              "label": "Requested record",
+              "value": "43"
+            },
+            {
+              "label": "Permission",
+              "value": "Checked for note 43"
+            },
+            {
+              "label": "Response",
+              "value": "Allowed data or documented error"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Changing a resource path changes application work, not necessarily DNS resolution or connection setup."
+    }
+  ]
+}

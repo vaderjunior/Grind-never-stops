@@ -1,0 +1,287 @@
+{
+  "id": "observe-and-debug",
+  "title": "Logs, metrics, traces, and debugging",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 13,
+  "level": "intermediate",
+  "minutes": 45,
+  "summary": "Use measurements to narrow a slow request to a cause, without guessing from a single chart.",
+  "objectives": [
+    "Choose logs, metrics, and traces for different questions.",
+    "Read an end-to-end request timeline without adding parallel durations.",
+    "Form and test a debugging hypothesis from user symptoms."
+  ],
+  "terms": [
+    {
+      "term": "Metric",
+      "definition": "A numerical measurement recorded repeatedly, often summarized over time."
+    },
+    {
+      "term": "Log",
+      "definition": "A record of an individual event with useful context."
+    },
+    {
+      "term": "Trace",
+      "definition": "Linked spans describing one request’s journey across components."
+    },
+    {
+      "term": "Span",
+      "definition": "A timed operation inside a trace."
+    },
+    {
+      "term": "Cardinality",
+      "definition": "The number of distinct combinations of labels attached to a metric."
+    },
+    {
+      "term": "Connection pool",
+      "definition": "A bounded set of reusable database connections; a request may wait when all are in use."
+    }
+  ],
+  "retrieval": [
+    "Why is a server returning errors quickly still unhealthy?",
+    "What does p95 latency describe, and what does it not describe?"
+  ],
+  "sections": [
+    {
+      "id": "symptom",
+      "title": "Begin with the person waiting",
+      "markdown": "A user says, “Saving my note sometimes takes five seconds.” The CPU chart averages 35%, so the first instinct is to blame the network. That is a hypothesis, not a conclusion. Start by defining the symptom precisely: which operation, which time window, which users, how often, and whether the save eventually succeeds. A concrete symptom gives your investigation a boundary.\n\nCompare save latency with read latency and separate successful results from errors. A service may become faster on average because many requests fail immediately. A daily average may also hide a ten-minute incident. For our investigation, examine the last fifteen minutes and compare that with a recent healthy period. Record deployment or configuration changes on the same timeline. Correlation suggests where to look; it does not prove a cause."
+    },
+    {
+      "id": "signals",
+      "title": "Ask each signal the question it can answer",
+      "markdown": "Ask each signal a question it can answer. A restaurant analogy helps: a count of late orders is a metric, a record about order 42 is a log, and the timed journey of that order resembles a trace.\n\n| Signal | Useful question | Notes-app example | Limit |\n| --- | --- | --- | --- |\n| Metric | How much, how often, and when? | Save-error fraction or latency distribution | Aggregation can hide one request's cause |\n| Log | What happened to this event? | Save request r82 waited for a connection | One record does not measure population frequency |\n| Trace | Where did this request spend time? | Connection wait, query, downstream call | A sampled trace does not prove all requests behave alike |\n\nConnect them using stable operation names and controlled request/trace identities. Start with request volume, success/errors, and latency, then follow a representative affected request.\n\n“One trace is slow” and “20% of eligible requests are slow” require different evidence. A fast error can also improve average latency while worsening the service. Compare outcomes as well as durations."
+    },
+    {
+      "id": "timeline",
+      "title": "Walk one slow save through its spans",
+      "markdown": "Use this **invented measured request** to locate waiting. The browser observes 1,000 ms; the server span covers 850 ms.\n\n| Part of this request | Time | Interpretation |\n| --- | --- | --- |\n| Wait for database connection | 600 ms | No query is executing in this interval |\n| Execute database query | 120 ms | Actual query work |\n| Other server work | 130 ms | Remaining non-overlapping server time in this example |\n| Outside server span | 150 ms | Needs further client/transport instrumentation |\n| Total browser observation | 1,000 ms | 850 ms inside + 150 ms outside |\n\nThe largest observed wait is acquiring a connection. Investigate pool use and long-held connections before assuming the SQL query itself is slow. CPU at 35% does not contradict a queue of requests waiting on another resource.\n\nThe table assumes these intervals do not overlap. Two concurrent 200 ms child spans contribute about 200 ms, not 400 ms, to the shared elapsed path. Follow timestamps and dependencies rather than summing every box in a trace tree.\n\n**Pause and predict:** doubling query speed saves at most 60 ms in this particular breakdown. Would that explain a 600 ms pool wait? Separate a possible improvement from the mechanism causing the symptom."
+    },
+    {
+      "id": "hypothesis",
+      "title": "Test a narrow explanation",
+      "markdown": "Our first hypothesis is that a recent release holds a connection while requesting tag suggestions. Find slow save traces, inspect the relevant operation logs, and compare connection usage before and after that release. Then inspect the request flow: does it acquire a database connection before making an unrelated network call? These observations can support or weaken the hypothesis.\n\nChoose a reversible mitigation with a predicted result. For example, disabling the optional tag call should reduce connection holding time and save latency if this explanation is right. Watch both latency and error rate; a change that reduces waiting by dropping writes is not a success. Keep a short investigation record: observation, hypothesis, proposed test, result. This prevents a series of unrelated changes from making the actual cause impossible to distinguish."
+    },
+    {
+      "id": "instrument",
+      "title": "Collect useful context without creating a second problem",
+      "markdown": "A request ID allows related log events to be found. Propagated trace context links spans across process boundaries. Record stable operation names such as save_note rather than making every note ID a new metric label. One million distinct note IDs can create one million time series, raising collection and query costs. Use aggregate labels for metrics and controlled event context for individual investigations.\n\nDo not put note bodies, passwords, access tokens, or unnecessary personal information in logs. Decide retention and access controls. Telemetry itself needs a budget: bounded log size, sampling where appropriate, and a policy for a slow collector. Logging every byte synchronously can make the application slower during the incident you want to study. Record what lets you explain behavior, and describe what sampling may have missed."
+    },
+    {
+      "id": "alert",
+      "title": "Turn observations into a useful response",
+      "markdown": "An alert should identify an actionable user problem or an imminent capacity limit. “Save errors exceeded our chosen threshold for ten minutes” can justify investigation. “CPU moved from 30% to 32%” usually cannot. Choose thresholds and windows from the service’s promise and traffic; do not copy a number because another team used it. A low-traffic endpoint needs particular care because percentages can change sharply after one failure.\n\nFor the exercise, produce a tiny dashboard with four panels: request volume, save errors, save latency distribution, and connection-pool waiting. Add a link to the runbook describing how to find a representative trace. Finish the incident by confirming the user symptom recovered and recording a preventive change. A graph returning to normal is evidence about the measured window, not a guarantee that every hidden cause is gone."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "save-trace",
+      "sectionId": "timeline",
+      "title": "One save, with time attributed to the waiting step",
+      "source": "flowchart LR\nB[Browser: 1000 ms observed] --> S[Server span: 850 ms]\nS --> W[Wait for connection: 600 ms]\nW --> Q[Database query: 120 ms]\nQ --> O[Other server work: 130 ms]",
+      "steps": [
+        "Start from the browser symptom.",
+        "Find the longest wait inside the server span.",
+        "Check whether pool saturation supports the trace example."
+      ],
+      "caption": "Illustrative sequential timings; the 150 ms outside the server span has not yet been attributed."
+    },
+    {
+      "id": "debug-hypothesis",
+      "title": "Treat a suspected cause as a testable prediction",
+      "sectionId": "hypothesis",
+      "source": "flowchart LR\nS[Slow saves observed] --> H[Hypothesis: optional call holds DB connections]\nH --> E[Inspect traces and connection usage]\nE --> T[Bounded reversible change]\nT --> P[Predict lower pool wait]\nP --> V{Latency and correct saves improve?}\nV -->|Yes| R[Record supporting evidence and limits]\nV -->|No| N[Revise hypothesis]",
+      "caption": "An observed correlation is not proof. The controlled test must preserve correct saves; dropping work is not a latency fix.",
+      "steps": [
+        "Define the affected operation and window.",
+        "State a mechanism that could produce the observed wait.",
+        "Choose a bounded test with a predicted change.",
+        "Compare both user outcomes and the proposed mechanism."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "A 900 ms server request spends 650 ms waiting for a connection, 150 ms querying, and 100 ms elsewhere. CPU is 30%. Write one hypothesis, two additional observations, and one reversible mitigation with a predicted result. Design three log fields that help without recording note text.",
+    "rubric": [
+      "Identify connection waiting as the measured dominant delay.",
+      "Treat cause as a hypothesis.",
+      "Specify a testable mitigation and success/error checks.",
+      "Avoid secrets and private content in logs."
+    ],
+    "solution": "Investigate connections held too long or a pool undersized for admitted work. Inspect pool wait/usage and traces of connection holding before and after a deployment. Temporarily disable an optional operation performed while holding a connection, or reduce admitted concurrency under controlled conditions. Predict shorter pool waits without increased failed saves, then measure. Safe fields could include request_id, operation, duration_ms, and a bounded outcome code; do not record note bodies or credentials."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which signal best shows one request’s path across services?",
+      "options": [
+        "A distributed trace",
+        "A daily request count",
+        "A CPU average"
+      ],
+      "answer": "A distributed trace",
+      "explanation": "A trace links timed operations associated with a request."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "A 900 ms request waits 650 ms for a connection. How much time remains outside that wait?",
+      "answer": 250,
+      "unit": "ms",
+      "tolerance": 0,
+      "explanation": "900 − 650 = 250 ms."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which metric label is generally safer for bounded cardinality?",
+      "options": [
+        "Every unique note ID",
+        "A fixed operation name such as save_note",
+        "Every request UUID"
+      ],
+      "answer": "A fixed operation name such as save_note",
+      "explanation": "A bounded vocabulary avoids one new time series for every individual request or note."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is one slow trace insufficient to measure incident frequency?",
+      "answer": "It is an example, often sampled. Use aggregate counts and distributions over a defined interval to determine prevalence, then traces to explore mechanisms.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "How would you distinguish a slow query from waiting for a connection?",
+      "answer": "Instrument pool acquisition separately from query execution, compare their durations across representative requests, and inspect pool saturation and transaction lifetimes.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Metric question?",
+      "back": "How much, how often, and when?"
+    },
+    {
+      "front": "Log question?",
+      "back": "What happened in this particular event?"
+    },
+    {
+      "front": "Trace question?",
+      "back": "Where did this request spend time across linked operations?"
+    },
+    {
+      "front": "Why avoid user IDs as metric labels?",
+      "back": "They can create very large numbers of distinct time series."
+    },
+    {
+      "front": "What closes a debugging hypothesis?",
+      "back": "A predicted observation or controlled test result, with user impact checked."
+    }
+  ],
+  "mentalModel": "Measure the symptom, follow one concrete request, and test the smallest explanation supported by both.",
+  "sources": [
+    {
+      "title": "OpenTelemetry — Traces",
+      "url": "https://opentelemetry.io/docs/concepts/signals/traces/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Monitoring distributed systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "trace-a-wait",
+      "title": "A slow save can be mostly waiting rather than computing",
+      "sectionId": "timeline",
+      "intro": "These before/after values are fictional observations for learning. They illustrate how to form and test a hypothesis, not a benchmark of this academy.",
+      "steps": [
+        {
+          "title": "Locate a slow example",
+          "explanation": "Population metrics identify a slow-save period, and a sampled affected request takes 1,500 ms.",
+          "state": [
+            {
+              "label": "BrowserElapsed",
+              "value": "1,500 ms"
+            },
+            {
+              "label": "ServerSpan",
+              "value": "1,200 ms"
+            },
+            {
+              "label": "OutsideServer",
+              "value": "300 ms, cause not yet assigned"
+            }
+          ]
+        },
+        {
+          "title": "Break down server time",
+          "explanation": "The server spends most of its interval waiting for a database connection.",
+          "state": [
+            {
+              "label": "PoolWait",
+              "value": "800 ms"
+            },
+            {
+              "label": "Query",
+              "value": "200 ms"
+            },
+            {
+              "label": "OtherNonOverlappingWork",
+              "value": "200 ms"
+            }
+          ]
+        },
+        {
+          "title": "Form a mechanism and prediction",
+          "explanation": "Code inspection suggests an optional network call holds connections. Removing that hold should reduce pool wait if this explanation is right.",
+          "state": [
+            {
+              "label": "Hypothesis",
+              "value": "Connection held during optional call"
+            },
+            {
+              "label": "PredictedChange",
+              "value": "Pool wait decreases"
+            },
+            {
+              "label": "RequiredCheck",
+              "value": "Saves remain correct"
+            }
+          ]
+        },
+        {
+          "title": "Compare the controlled result",
+          "explanation": "A representative post-change example has 100 ms pool wait. With the other illustrated intervals unchanged, elapsed time becomes 800 ms.",
+          "state": [
+            {
+              "label": "PoolWait",
+              "value": "100 ms"
+            },
+            {
+              "label": "ServerElapsed",
+              "value": "500 ms"
+            },
+            {
+              "label": "BrowserElapsed",
+              "value": "800 ms"
+            },
+            {
+              "label": "Conclusion",
+              "value": "Supports hypothesis within this tested case"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Use a trace to identify a waiting boundary, use other evidence to explain it, and test a prediction without sacrificing the user outcome."
+    }
+  ]
+}

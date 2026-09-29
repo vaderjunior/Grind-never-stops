@@ -1,0 +1,281 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 2,
+  "title": "APIs: a menu for your application",
+  "level": "beginner",
+  "minutes": 45,
+  "id": "apis-without-jargon",
+  "summary": "An API is a clear way to ask another program for work. Design a small notes API and read its requests and responses.",
+  "objectives": [
+    "Explain an API as a contract rather than a product.",
+    "Design create/read/update/delete operations for notes.",
+    "Distinguish input validation, permission, and error results."
+  ],
+  "terms": [
+    {
+      "term": "API",
+      "definition": "Application Programming Interface: the operations and rules one program offers to another."
+    },
+    {
+      "term": "Endpoint",
+      "definition": "A particular operation/address a client can call, such as GET /notes/42."
+    },
+    {
+      "term": "JSON",
+      "definition": "A text format for structured data, using objects, lists, strings, numbers, and other simple values."
+    },
+    {
+      "term": "Validation",
+      "definition": "Checking whether submitted data has an acceptable shape and value."
+    },
+    {
+      "term": "Status code",
+      "definition": "A number in an HTTP response summarizing its result, such as 200 for success or 404 for not found."
+    }
+  ],
+  "retrieval": [
+    "Which participant receives the browser’s request?",
+    "What is the difference between asking for a page and asking for a saved note?"
+  ],
+  "sections": [
+    {
+      "id": "menu",
+      "title": "An API is a menu with rules",
+      "markdown": "At a café, a menu tells you what you can order and what information the staff needs. You can order a drink without knowing how the machine works. An API gives a program a similar boundary: available operations, required inputs, and possible results.\n\nThe analogy stops at the boundary. An API is a precise software contract, not a human who can guess an unclear order. It must say what missing fields, invalid values, repeated calls, and failures mean. A well-designed API lets the browser and server evolve without either one relying on hidden guesses about the other.\n\nAPI does not mean “a paid online service.” The notes application running on your laptop has an API if its browser calls its server. A library can also expose an API inside one process. This chapter focuses on HTTP APIs because they fit the web request journey you just learned."
+    },
+    {
+      "id": "operations",
+      "title": "Start with the user’s actions",
+      "markdown": "Begin with the user's action, then choose a method and path:\n\n| User action | Example request | What the operation addresses |\n| --- | --- | --- |\n| Create a note | POST /notes | The notes collection |\n| Read a note | GET /notes/42 | One saved note |\n| Change part of a note | PATCH /notes/42 | Specified fields of that note |\n| Delete a note | DELETE /notes/42 | Removal of that note |\n\nThe method and path work together. A path alone does not say whether the client wants to read or change the note.\n\nDo not worry about memorizing every HTTP method today. GET asks to read a representation. POST commonly submits a new operation or creates a resource under a collection. PATCH describes a partial change under a defined format. DELETE requests removal of the addressed resource. The server must actually implement these meanings; a familiar method name does not make unsafe code safe.\n\nThe path /notes/42 names note 42. It is not a command to read an arbitrary file on the server. The server maps the request to a permitted application operation and checks the caller. This boundary is one reason browsers should not directly control the database."
+    },
+    {
+      "id": "example",
+      "title": "Read one request and response",
+      "markdown": "Here is illustrative data, not code you need to run. Creating a note can send a JSON body with title “Shopping” and text “Buy coffee.” The server can return a new identity and the accepted content.\n\n~~~json\n{\"title\":\"Shopping\",\"text\":\"Buy coffee\"}\n~~~\n\nA successful response might contain:\n\n~~~json\n{\"id\":\"42\",\"title\":\"Shopping\",\"text\":\"Buy coffee\"}\n~~~\n\nThe response identity lets the browser open /notes/42 later. A create response commonly uses 201 Created; a successful read commonly uses 200 OK. A status is a summary, not the whole contract. The response body and documented behavior explain what happened.\n\nNow imagine the title is missing. The API must define whether that is permitted, whether a default is used, or whether it returns a clear validation error. An error message should help the client repair the request without exposing internal database details or secrets."
+    },
+    {
+      "id": "checks",
+      "title": "Three different checks before saving",
+      "markdown": "Three checks answer different questions:\n\n| Check | Concrete question | Passing it does not prove… |\n| --- | --- | --- |\n| Validate input | Is this text within the size limit? | The caller owns the note |\n| Identify caller | Which account is making the request? | That account may edit this note |\n| Check permission | May this account edit note 42? | The submitted value is valid |\n\nWe will study caller identity and permissions deeply in week 12. The order and implementation can vary; all applicable rules must hold before the change is accepted.\n\nA request can have perfect JSON and still be forbidden. Alice submitting a valid edit for Bob’s private note is not fixed by a better JSON parser. Likewise, being logged in does not make a 10 gigabyte note acceptable when the service allows only small text notes.\n\nFor this teaching app, choose explicit limits such as a title of at most 100 characters and text of at most 10,000 characters. Those are example requirements, not universal best values. The important habit is defining the boundary and returning a predictable result when it is exceeded."
+    },
+    {
+      "id": "errors",
+      "title": "What a client should do with a result",
+      "markdown": "If the server returns a clear invalid-input result, the browser can show a message and let the user fix the note. If the note is missing, the app can show “not found” without pretending the whole service is down. If there is a temporary server problem, the app can preserve the user’s unsaved text.\n\nA timeout is subtler: the browser waited but did not receive a result in time. The server might not have received the request, might still be working, or might already have saved it. We will learn safe retries later. For now, do not equate “I did not see success” with “nothing happened.” Preserve the draft and avoid inventing a confirmed outcome.\n\nCommon beginner mistake: beginning the design with dozens of endpoint names. Begin with the user actions and only enough operations to support them. A tiny useful API is easier to explain and test than a large unmotivated list."
+    },
+    {
+      "id": "practice-plan",
+      "title": "Explain the contract to another person",
+      "markdown": "Use this sentence for each endpoint: “The client supplies __; the server checks __; success returns __; a likely failure returns __.” Try it for GET /notes/42 and POST /notes before looking at the solution.\n\nFor interview practice, you usually do not need a full production API specification. You need enough detail to show how the proposed system is used and where key rules live. Choose one important request, show its inputs and outputs, and connect it to the data model. Later chapters add pagination, operation identities, and version checks when the problem requires them."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "contract",
+      "title": "An endpoint is a checked boundary",
+      "source": "flowchart LR\nB[Browser request] --> A[API: method and path]\nA --> V[Check input and permission]\nV --> S[Save or read a note]\nS --> R[Status plus result]\nR --> B",
+      "caption": "This is an application-level view. The network and database details remain the same roles learned earlier.",
+      "steps": [
+        "Choose the operation from method and path.",
+        "Check the submitted data and caller permission.",
+        "Perform the allowed note operation.",
+        "Return a result the client can interpret."
+      ],
+      "sectionId": "example"
+    },
+    {
+      "id": "result-interpretation",
+      "sectionId": "errors",
+      "title": "Interpret the evidence in the result",
+      "source": "flowchart TB\nR[Client waits for an API result] --> V[Clear validation error]\nR --> S[Confirmed success]\nR --> T[No result before timeout]\nV --> F[Keep draft and repair input]\nS --> U[Update display from accepted result]\nT --> Q[Keep draft and outcome uncertain]",
+      "caption": "A timeout is not a confirmed failure. Safe repeat behavior needs an operation-specific contract, which later lessons develop.",
+      "steps": [
+        "Separate an actual error response from no response.",
+        "Use a confirmed result to update the display.",
+        "Retain unsaved input and uncertainty when the outcome is unknown."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Write a small contract for creating and reading a note. Include method/path, example input, a success result, and one invalid-input or permission failure. Explain it aloud without reading the API acronym.",
+    "rubric": [
+      "Operations follow the user’s actions.",
+      "Inputs and results are concrete.",
+      "Validation and permission are not confused."
+    ],
+    "solution": "POST /notes accepts a bounded title/text and returns 201 with a stable note identity after saving. GET /notes/42 returns 200 with that note’s permitted representation, or a documented not-found/permission response. The create operation checks input limits and caller identity; the read operation checks the caller may see that note. Returning a note ID does not itself grant permission. A timeout preserves uncertainty and the user’s draft rather than proving the save failed."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does an API primarily define?",
+      "options": [
+        "The brand of database",
+        "Operations, inputs, and possible results",
+        "The number of server fans"
+      ],
+      "answer": "Operations, inputs, and possible results",
+      "explanation": "It is a boundary another program can use without depending on hidden implementation details."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which operation fits reading note 42?",
+      "options": [
+        "GET /notes/42",
+        "DELETE /notes/42",
+        "POST /erase-everything"
+      ],
+      "answer": "GET /notes/42",
+      "explanation": "GET expresses retrieval; deleting or creating is a different operation."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A request has valid JSON. Does that prove the caller may edit the note?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if it uses HTTPS"
+      ],
+      "answer": "No",
+      "explanation": "Data shape and caller permission are separate checks."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why return a stable note identity?",
+      "answer": "It lets clients refer to the same saved note later even when its title or text changes.",
+      "explanation": "It lets clients refer to the same saved note later even when its title or text changes."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What should the app preserve when a save times out?",
+      "answer": "The user’s draft and the uncertainty about the outcome. A later safe retry or status lookup can resolve it under the API’s operation contract.",
+      "explanation": "The user’s draft and the uncertainty about the outcome. A later safe retry or status lookup can resolve it under the API’s operation contract."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "API?",
+      "back": "A contract exposing operations to another program."
+    },
+    {
+      "front": "Endpoint?",
+      "back": "A callable operation/address, often method plus path."
+    },
+    {
+      "front": "JSON?",
+      "back": "A structured text format, not a permission system."
+    },
+    {
+      "front": "Validation versus permission?",
+      "back": "Acceptable input versus whether this caller may perform the action."
+    },
+    {
+      "front": "Timeout means no save?",
+      "back": "No. The caller may not know the actual outcome."
+    }
+  ],
+  "mentalModel": "An API turns a user action into a precise request and an understandable result.",
+  "sources": [
+    {
+      "title": "MDN — Overview of HTTP",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC9110 — HTTP semantics",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "partial-title-change",
+      "sectionId": "checks",
+      "title": "An edit passes through three different checks",
+      "intro": "Use a permitted title change, not a new endpoint. Account 7 owns note 42 in this teaching example.",
+      "steps": [
+        {
+          "title": "Form the partial change",
+          "explanation": "The client sends only the field it wants to change under the API’s documented PATCH format.",
+          "state": [
+            {
+              "label": "Request",
+              "value": "PATCH /notes/42"
+            },
+            {
+              "label": "Input title",
+              "value": "Weekend shopping"
+            },
+            {
+              "label": "Caller",
+              "value": "Account 7"
+            }
+          ]
+        },
+        {
+          "title": "Check the submitted value",
+          "explanation": "The title is text and is within this app’s 100-character limit. That says nothing yet about ownership.",
+          "state": [
+            {
+              "label": "Input",
+              "value": "Valid bounded text"
+            },
+            {
+              "label": "Ownership decision",
+              "value": "Still required"
+            },
+            {
+              "label": "Stored title",
+              "value": "Shopping"
+            }
+          ]
+        },
+        {
+          "title": "Check access to this record",
+          "explanation": "The server identifies account 7 and checks its permission on note 42 before saving.",
+          "state": [
+            {
+              "label": "Caller",
+              "value": "Account 7"
+            },
+            {
+              "label": "Note owner",
+              "value": "Account 7"
+            },
+            {
+              "label": "Allowed action",
+              "value": "Edit"
+            }
+          ]
+        },
+        {
+          "title": "Return the accepted result",
+          "explanation": "After saving succeeds, the response describes the updated note. Unmentioned fields retain their documented behavior.",
+          "state": [
+            {
+              "label": "Stored title",
+              "value": "Weekend shopping"
+            },
+            {
+              "label": "Saved note",
+              "value": "42"
+            },
+            {
+              "label": "Client display",
+              "value": "Updated from response"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A well-formed request, an identified caller, and permission on a particular record are separate facts."
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "id": "078",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Calculate read/write overlap for a fixed replica set.",
+    "State the assumptions needed before a quorum equation has meaning.",
+    "Construct an incomplete-write read-regression counterexample.",
+    "Distinguish read repair, hinted handoff, and background anti-entropy."
+  ],
+  "retrieval": [
+    "L072: how can a later read of an earlier value violate linearizability?",
+    "L077: why do concurrent values need version context?",
+    "L071: what does a write timeout leave uncertain?"
+  ],
+  "sections": [
+    {
+      "id": "replicas",
+      "title": "Coordinate an operation without a permanent write leader",
+      "markdown": "A leaderless store can let a request coordinator contact multiple replicas for a key. Let N denote the key’s fixed home replica count, W the number of required write acknowledgments, and R the number of read responses. These quantities describe a request path; they do not by themselves specify version ordering, durability, repair, membership, or conflict resolution.\n\nUse 5 minutes retrieval, 20 quorum histories, 10 diagram walkthrough, 10 exercise, and 10 questions/cards. Keep replica identities on the page. Drawing “three boxes” without saying which boxes acknowledged the write and answered the read makes an intersection argument impossible to check."
+    },
+    {
+      "id": "overlap",
+      "title": "The equation is a set-intersection fact",
+      "markdown": "For one fixed set of N replicas, any W-member acknowledgment set and R-member response set must overlap if R+W>N. Their minimum intersection size is max(0,R+W−N). For N=5,W=3,R=3, every such pair overlaps in at least one member. With W=2,R=3, disjoint sets of sizes2 and3 can partition the five replicas, so overlap is not guaranteed.\n\nThis establishes an opportunity to encounter information from an acknowledged write. The overlapping member must still retain and return the relevant state or version. The reader must compare responses correctly. Concurrent writes, failed partial writes, discarded versions, membership changes, and stale coordinators need protocol behavior beyond the arithmetic. W>N/2 similarly provides intersection between write-acknowledgment sets in the fixed membership; it does not alone serialize every write.\n\nIf three stored copies occupy one failed machine or one failure domain, the equation does not create independent durability. N counts logical participants in this argument, while failure correlation and stable storage semantics belong to separate requirements. State what an acknowledgment means: received in RAM, journaled, or persisted to the required durability boundary."
+    },
+    {
+      "id": "regression",
+      "title": "Overlap alone permits a damaging history",
+      "markdown": "Use replicas A,B,C, all x=0, W=2,R=2. A writer starts write1 and reaches A only, then stalls. It never receives W acknowledgments. A first read queries A and B, sees1 and0, chooses1 using the store’s version comparison, and returns1 without writing it back. After that read completes, a second read queries B and C and returns0.\n\nBoth reads used R=2, and R+W=4>3. Yet the history cannot be explained as a linearizable register if the pending write is included to justify the first read: that write must precede read1, and real time places read1 before read2, leaving no write0 to justify the later0. If the pending write is omitted, the first1 is unexplained. Quorum intersection with a completed W-set did not help because the new value existed on only one replica.\n\nSome atomic-register protocols use carefully ordered versions and a read write-back phase so an observed value becomes sufficiently established before read completion. Other stores deliberately offer weaker semantics and application conflict resolution. The repair is a complete protocol with assumptions, not the sentence “we use majority reads.”"
+    },
+    {
+      "id": "sloppy",
+      "title": "Changing the participant set can remove the promised overlap",
+      "markdown": "Suppose the home set is A,B,C. During failure a sloppy write quorum accepts acknowledgments from A and fallback D. A later read from B and C has no overlap with that acknowledged set, even though someone reports N=3,W=2,R=2. The arithmetic was applied to different universes. The Dynamo paper’s preference-list and temporary fallback mechanisms are useful availability techniques, but their behavior must not be confused with fixed-set overlap.\n\nHinted handoff stores data temporarily for an unavailable intended replica and later attempts delivery. Read repair compares versions during reads and repairs stale copies according to the selected rules. Background anti-entropy compares replica state independently of foreground reads, often using compact summaries to locate differences. These mechanisms have different triggers and coverage.\n\nA cold key may never benefit from read repair. A lost temporary hint may not supply the intended durability. Background repair must eventually run, have adequate resources, and respect deletes/tombstones and retention rules. Repair restores convergence under conditions; it does not erase a stale answer already returned or restore an earlier broken business promise."
+    },
+    {
+      "id": "budget",
+      "title": "Choose a measurable path and a clear contract",
+      "markdown": "Increasing R or W changes latency and tolerance to unavailable replicas. If a write waits for three of five acknowledgments, the third qualifying acknowledgment lies on its critical path; the fastest replica is insufficient and the slowest is not always required. Parallel dispatch, timeouts, version reconciliation, read write-back, and repair can add work beyond the simple count.\n\nFor the repair app, a draft note store may permit concurrent siblings and later reconciliation. A final exclusive allocation needs a mechanism that enforces exclusivity; putting reservation counters on a leaderless store does not automatically supply it. Select a data path whose actual guarantees fit the invariant.\n\nThe local model tests enumerate fixed-set overlaps and reproduce the partial-write/read-regression history. They establish the set calculation and counterexample, not the correctness of a production replication protocol. During an interview, put acknowledged/returned versions next to each node, trace the failure, then name the missing condition. That is stronger evidence than quoting R+W>N."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "regression",
+      "title": "A partially propagated write can be read and then disappear",
+      "source": "sequenceDiagram\nparticipant W as Writer\nparticipant A as Replica A\nparticipant B as Replica B\nparticipant C as Replica C\nparticipant R as Reader\nW->>A: write x = 1\nNote over W: W = 2 not reached<br/>write remains pending\nR->>A: First read request\nA-->>R: x = 1\nR->>B: First read request\nB-->>R: x = 0\nNote over R: Return 1 without write-back\nR->>B: Later read request\nB-->>R: x = 0\nR->>C: Later read request\nC-->>R: x = 0\nNote over R: Return 0",
+      "caption": "The diagram shows two completed, non-overlapping reads. Both use R=2 from N=3, but the in-flight write reached only A and the first read did not stabilize it.",
+      "steps": [
+        "Distinguish partial propagation from a completed write quorum.",
+        "Let the first read expose the newer partial version.",
+        "Omit a stabilizing phase in the deliberately weak protocol.",
+        "Observe a subsequent read regress to the old value."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "For N=5 calculate minimum R/W overlap for(R=3,W=3) and(R=2,W=3). Then explain why N=3,R=2,W=2 does not prove linearizability using a partial write to A and reads from{A,B} then{B,C}. Finally give a sloppy-quorum example whose acknowledged set and home read set are disjoint.",
+    "minutes": 10,
+    "rubric": [
+      "Computes1 and0.",
+      "Keeps incomplete write distinct from W acknowledgments.",
+      "Shows returned1 then0 with no intervening overwrite.",
+      "Names the fixed-universe assumption violated by fallback placement."
+    ],
+    "solution": "Minimum overlap is max(0,R+W−N), so1 and0. If an incomplete write1 reaches only A, read{A,B} may return1 while a later read{B,C} returns0 unless the protocol prevents it. The pending write cannot explain both reads under linearizability. For home set{A,B,C}, acknowledgments{A,D} using fallback D can be disjoint from home read{B,C}; quoting N=3 for both sets is invalid."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "N=7,R=4,W=5: minimum fixed-set overlap?",
+      "answer": 2,
+      "unit": "replicas",
+      "tolerance": 0,
+      "explanation": "4+5−7=2."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "R+W>N alone proves a linearizable register:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Version semantics, incomplete operations, membership, and protocol phases remain relevant."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which mechanism can repair a key that nobody reads?",
+      "options": [
+        "Read repair alone",
+        "Background anti-entropy"
+      ],
+      "answer": "Background anti-entropy",
+      "explanation": "It runs independently of foreground reads."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What breaks the naive overlap proof for sloppy quorums?",
+      "answer": "Writes may be acknowledged by fallback nodes outside the fixed home set used for reads, so the compared sets do not share the claimed universe.",
+      "explanation": "Write the actual participant IDs."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why cannot repair retroactively fix an already returned stale result?",
+      "answer": "It changes future replica state; the earlier completed operation remains part of the observed history.",
+      "explanation": "A history guarantee concerns what clients already observed."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Minimum fixed-set R/W overlap?",
+      "back": "max(0,R+W−N)."
+    },
+    {
+      "front": "R+W>N proves?",
+      "back": "Set intersection under fixed membership, not a complete consistency protocol."
+    },
+    {
+      "front": "Sloppy quorum caveat?",
+      "back": "Fallback acknowledgments may not overlap the home read set."
+    },
+    {
+      "front": "Read repair trigger?",
+      "back": "A foreground read encounters divergent replica versions."
+    },
+    {
+      "front": "Hinted handoff?",
+      "back": "Temporary storage later forwards data to its intended unavailable replica."
+    },
+    {
+      "front": "Anti-entropy purpose?",
+      "back": "Background comparison and repair, including cold data under its assumptions."
+    }
+  ],
+  "mentalModel": "Quorum arithmetic tells you where evidence can meet; the protocol determines what that evidence means and when a result is safe to return.",
+  "sources": [
+    {
+      "title": "DeCandia et al. — Dynamo: Amazon’s Highly Available Key-value Store (2007)",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Herlihy and Wing — Linearizability: A Correctness Condition for Concurrent Objects (1990)",
+      "url": "https://cs.brown.edu/~mph/HerlihyW90/p463-herlihy.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

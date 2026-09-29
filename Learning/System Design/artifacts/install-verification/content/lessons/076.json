@@ -1,0 +1,158 @@
+{
+  "id": "076",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Choose wall-clock or monotonic time for a stated measurement.",
+    "Calculate the effect of clock offset on a cross-machine ordering claim.",
+    "Apply Lamport-clock send/receive rules.",
+    "Explain why a larger logical timestamp does not prove causality."
+  ],
+  "retrieval": [
+    "L071: why should a timeout trace use one local monotonic clock?",
+    "L072: which operation order matters for linearizability?",
+    "L073: how does a message create a causal dependency?"
+  ],
+  "sections": [
+    {
+      "id": "purpose",
+      "title": "A clock answers one kind of question",
+      "markdown": "The repair service stores a customer appointment date, measures an API deadline, and sorts events from different workers. Those tasks need different time concepts. A physical wall clock gives a date/time estimate useful to humans and external schedules. A monotonic clock measures elapsed time without moving backward when wall time is adjusted. A logical clock records ordering constraints without claiming elapsed seconds.\n\nUse 5 minutes retrieval, 20 worked calculations, 10 diagram walkthrough, 10 exercise, and 10 questions/cards. Before every timestamp comparison write the intended claim: calendar time, local duration, causal order, or authority expiry. Many bugs arise because a number recorded for one purpose is silently reused for another."
+    },
+    {
+      "id": "skew",
+      "title": "Wall-clock order may reverse the actual event order",
+      "markdown": "At true time100.000s, worker A completes an edit. A’s clock is80ms fast, so it logs100.080. Worker B observes that completion and performs a dependent action at true time100.030s. B’s clock is60ms slow, so it logs99.970. Sorting those logs by raw wall time puts B before A, although the action depended on the edit. The observed timestamp gap is110ms in the wrong direction.\n\nClock offset is the difference from a reference at a moment; drift is the rate at which that difference changes. Synchronization can reduce uncertainty under its operating assumptions, but “NTP is enabled” does not provide an application-level zero-skew proof. If clocks have independently bounded error ±ε, timestamps separated by less than or equal to2ε may not establish a strict real-time order. With ε=10ms, a recorded30ms separation establishes an order under that bound; a recorded15ms gap does not.\n\nLast-write-wins using client wall timestamps may choose a clock-fast edit rather than the edit users consider later. Repeating that merge eventually makes replicas agree, but agreement does not repair the lost intention. A deterministic tie-breaker solves equal timestamps, not clock error or missing causal context."
+    },
+    {
+      "id": "duration",
+      "title": "Use a local duration clock for local budgets",
+      "markdown": "For a one-process deadline, capture start=time.monotonic(), compute deadline=start+budget, and repeatedly compute max(0,deadline-time.monotonic()). The returned reference point is arbitrary; differences between readings are useful. Python’s documentation specifies a monotonic clock unaffected by system-clock updates. Do not store that raw value as an appointment date or compare it directly with a different machine’s raw value.\n\n~~~python\ndef remaining(deadline, now):\n    return max(0.0, deadline - now)\n\nstart = 500.0  # injected local monotonic reading\ndeadline = start + 0.8\nassert abs(remaining(deadline, 500.3) - 0.5) < 1e-9\nassert remaining(deadline, 500.9) == 0.0\n# A wall-clock correction has no input to this calculation.\nprint(\"one deadline, remaining budget verified\")\n~~~\n\nThe injection makes the arithmetic test deterministic. It does not test an operating system’s clock implementation. Passing a deadline between hosts requires a protocol for expressing remaining budget or time uncertainty; raw monotonic readings have no portable shared epoch. Restart and suspend behavior also require attention for the chosen API and contract. Do not infer a safe distributed lease from a local timeout example."
+    },
+    {
+      "id": "lamport",
+      "title": "Logical time preserves known causal order",
+      "markdown": "Define happened-before from local process order, message send before receipt, and transitive closure. With Lamport clocks, increment the local counter for each event. A send carries its counter. On receive, set local=max(local,received)+1. This guarantees that a causally earlier event has a smaller timestamp. The reverse implication does not hold.\n\nStart A=0 and B=0. A performs a local event→1, then sends message M→2. B performs three independent events→1,2,3, then receives M→max(3,2)+1=4. B’s reply send→5; A receives→max(2,5)+1=6. The counter values describe an ordering discipline, not six seconds. B’s independent event at3 has a larger timestamp than A’s send at2 without being caused by it.\n\nAn agreed node-ID tie-breaker on (counter,nodeID) can impose a deterministic total order. That order extends the known causal order but also chooses arbitrary order between some concurrent events. It does not turn the system into a consensus protocol or prove that all replicas have learned the same event set."
+    },
+    {
+      "id": "choice",
+      "title": "Keep the claim aligned with the mechanism",
+      "markdown": "For an incident log, retain wall time for human navigation plus request/trace IDs and causal links where available. For an end-to-end local deadline, use one monotonic budget rather than refreshing the timeout at each hop. For causality, propagate logical context. For ownership, use the actual authority protocol and its stated timing assumptions; attaching a timestamp to a request is insufficient.\n\nThe common interview shortcut is “timestamps solve ordering.” Respond with the kind of ordering and a counterexample. Wall clocks can misorder due to skew. Lamport clocks cannot tell whether two unequal counters are causally related. A tie-break can choose an order without validating it as real time. The next lesson adds more causal information through vector timestamps."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "logical",
+      "title": "Counters move forward when a message carries newer context",
+      "source": "sequenceDiagram\nparticipant A as A counter 0\nparticipant B as B counter 0\nNote over A: Local event gives 1\nA->>B: Send M with counter 2\nNote over B: Three independent events give 3\nNote over B: Receive M gives max of 3 and 2 plus 1 = 4\nB->>A: Reply with counter 5\nNote over A: Receive gives max of 2 and 5 plus 1 = 6",
+      "caption": "The sent message can be in flight while B performs its three local events. Counter magnitudes are not wall-clock durations or proof of causality in the reverse direction.",
+      "steps": [
+        "Increment before the send and carry its value.",
+        "Let the receiver advance independently while the message is delayed.",
+        "Take the maximum and increment on receipt.",
+        "Propagate the new context in the reply."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A logs an event at100.080s with a clock80ms fast. B logs a dependent event at99.970s with a clock60ms slow. Recover the true times and explain the misleading order. Separately, a process at Lamport7 receives timestamp11 and then sends a reply: give both resulting counters and state what cannot be inferred from a different independent event with counter10.",
+    "minutes": 10,
+    "rubric": [
+      "Recovers100.000 and100.030.",
+      "Explains offset rather than negative actual latency.",
+      "Computes receive12 and send13.",
+      "Rejects the converse inference from logical counter order."
+    ],
+    "solution": "Subtract A’s+0.080 offset to get100.000. Subtract B’s−0.060 offset to get100.030. B occurred30ms later although its recorded time is110ms earlier. Lamport receipt yields max(7,11)+1=12 and a later send increments to13. An independent event with counter10 is not necessarily a cause of the counter12 event; inequality alone is insufficient."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which clock is appropriate for measuring a local request’s elapsed duration?",
+      "options": [
+        "Wall time with arbitrary adjustments",
+        "A local monotonic clock",
+        "A Lamport counter"
+      ],
+      "answer": "A local monotonic clock",
+      "explanation": "Elapsed differences should not move backward with wall-clock correction."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Local Lamport counter8 receives message timestamp5. What is the receive-event counter?",
+      "answer": 9,
+      "unit": "counter",
+      "tolerance": 0,
+      "explanation": "max(8,5)+1=9."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "L(a)<L(b) proves a happened before b:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The implication only runs from causal order to counter order."
+    },
+    {
+      "id": "q4",
+      "type": "numeric",
+      "prompt": "Each physical clock has error at most10ms. What is the largest possible relative error between two clocks?",
+      "answer": 20,
+      "unit": "ms",
+      "tolerance": 0,
+      "explanation": "One may be10ms fast and the other10ms slow."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can you not subtract two hosts’ raw monotonic readings to estimate request latency?",
+      "answer": "Their reference points are not a portable shared epoch, so the difference is not a meaningful cross-host duration.",
+      "explanation": "Use an appropriate measurement boundary or clock-uncertainty protocol."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Wall clock purpose?",
+      "back": "Calendar timestamps and external dates with clock uncertainty."
+    },
+    {
+      "front": "Monotonic clock purpose?",
+      "back": "Elapsed time and local deadline budgets."
+    },
+    {
+      "front": "Lamport receive rule?",
+      "back": "max(local, received)+1."
+    },
+    {
+      "front": "Causality implies Lamport order?",
+      "back": "Yes under the protocol; the converse is false."
+    },
+    {
+      "front": "Tie-breaker provides?",
+      "back": "A deterministic total order, including arbitrary order between concurrent events."
+    },
+    {
+      "front": "Relative uncertainty of two±ε clocks?",
+      "back": "Up to2ε."
+    }
+  ],
+  "mentalModel": "A timestamp is evidence with a scope: calendar estimate, local duration, or causal ordering constraint.",
+  "sources": [
+    {
+      "title": "Lamport — Time, Clocks, and the Ordering of Events in a Distributed System (1978)",
+      "url": "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python — time.monotonic and time.perf_counter documentation",
+      "url": "https://docs.python.org/3/library/time.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

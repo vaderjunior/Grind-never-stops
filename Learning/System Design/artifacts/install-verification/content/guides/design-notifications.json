@@ -1,0 +1,293 @@
+{
+  "id": "design-notifications",
+  "title": "Design a notification service",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 16,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Design email and in-app notifications with durable intent, preferences, bounded retries, and honest delivery states.",
+  "objectives": [
+    "Trace a notification from business event to channel attempt.",
+    "Keep source changes and delivery intent from falling into a dual-write gap.",
+    "Explain duplicate handling, preferences, and provider uncertainty."
+  ],
+  "terms": [
+    {
+      "term": "Notification intent",
+      "definition": "The durable decision that a particular user should be informed about a particular event."
+    },
+    {
+      "term": "Channel",
+      "definition": "A delivery medium such as email, push, SMS, or an in-app inbox."
+    },
+    {
+      "term": "Outbox",
+      "definition": "A durable event record committed with the business change, then published asynchronously."
+    },
+    {
+      "term": "Dead-letter queue",
+      "definition": "A holding area for messages that exhaust the normal retry policy."
+    },
+    {
+      "term": "Delivery state",
+      "definition": "A precisely named stage such as queued or accepted by provider; it is not automatically proof of being read."
+    }
+  ],
+  "retrieval": [
+    "Why can a queue deliver the same message more than once?",
+    "Why does a provider timeout leave an uncertain result?"
+  ],
+  "sections": [
+    {
+      "id": "scope",
+      "title": "Choose a useful first notification product",
+      "markdown": "Our course app notifies a learner when a study partner comments on a shared design. Start with in-app and email delivery, preferences, history, and bounded retries. The comment must remain discoverable even when email is delayed.\n\n| State you can observe | What it supports | What it does not establish |\n| --- | --- | --- |\n| Comment and outbox committed | The source change and publication intent were saved | A notification worker has run |\n| In-app item created | One inbox item exists | The learner opened it |\n| Provider accepted | The provider accepted that email submission | Inbox delivery or human reading |\n\nLeave marketing campaigns and international SMS routing outside this first design. State names should describe evidence rather than make “sent” cover every stage.\n\n**Interview phrase:** “I can promise durable notification intent at comment acceptance; external delivery has a separate state and failure policy.”"
+    },
+    {
+      "id": "data",
+      "title": "Model intent and attempts separately",
+      "markdown": "Separate the message we intend to show from the attempts used to deliver it.\n\n| Record | Example | Its responsibility |\n| --- | --- | --- |\n| Comment | c_47 on design_9 | Own the actual discussion text |\n| Notification | n_63 for event e_47 and learner_12 | Own one logical inbox item |\n| Channel attempt | a_1: n_63 by email | Record one attempt and provider evidence |\n\nA uniqueness rule on event, recipient, and category can keep repeated event processing from creating two logical inbox items. It does not prevent all repeated external emails.\n\nAn attempt also needs status, next_attempt_at, and any provider reference. Several attempts can belong to one notification without becoming several user intentions.\n\nPreferences say which categories and channels the learner permits. A template version identifies the wording used. Link to the real comment rather than copying unnecessary private discussion text into queues and logs.\n\n**Pause and predict:** if a message is offered twice by the queue, which identity should stay the same? Keep the business event identity separate from an individual worker attempt."
+    },
+    {
+      "id": "outbox",
+      "title": "Make the event survive a crash between systems",
+      "markdown": "The naive implementation saves the comment and then sends a queue message. If the process crashes between those operations, the comment exists but the notification request is missing. Reversing the order creates the opposite problem: an event may describe a comment that never committed. Neither ordering makes two independent writes atomic.\n\nIn a relational teaching design, commit the comment and an outbox row in the same database transaction. A publisher later reads committed outbox rows and sends them to a queue. If publication succeeds but its acknowledgement is lost, the publisher may repeat it. Keep a stable event ID, and make consumers recognize already created notification intents.\n\nThis solves a defined database-to-publication gap; it does not magically turn every external side effect into an exactly-once operation."
+    },
+    {
+      "id": "flow",
+      "title": "Follow one event through the workers",
+      "markdown": "A notification worker receives the comment event and verifies the event category and recipient relationship. In this teaching design, one transaction in the notification database creates the unique intent, in-app item, and durable records for eligible channel work. Commit them together so a crash cannot leave an accepted intent with missing delivery work. A duplicate event finds that same committed set.\n\nAn email worker separately claims the durable channel work, checks current relevant preferences, chooses the template, acquires a provider rate budget, and submits the message. Store the attempt state and provider reference when available. The local transaction does not include the external provider; that later boundary still needs the retry and uncertainty policy below.\n\nRecheck preferences near dispatch so a stale queued marketing notification does not ignore a later opt-out. Exact behavior during a race must be defined; a message already handed to an external provider may not be retractable. Security or transactional notifications may have a different product policy from optional categories, but that policy must be explicit. Treat preference and authorization checks as part of correctness, not a user-interface decoration."
+    },
+    {
+      "id": "retry",
+      "title": "Separate retryable failures from impossible requests",
+      "markdown": "A temporary provider outage may merit bounded retry with increasing, randomized delays. A permanently invalid destination should not consume retries forever. After the chosen attempt or age limit, move the item to a visible failed state or dead-letter workflow with a reason. A manual replay should preserve the original logical identity and should be deliberate, especially if the provider may already have accepted the message.\n\nUse a provider’s idempotency mechanism when it exists and matches your operation. Without one, a timeout after acceptance can create an unavoidable choice between possible duplicate delivery and possible omission. Say that clearly. For in-app items, your own database uniqueness rule can prevent duplicates at the logical item boundary. For external email, do not claim a guarantee your provider contract and reconciliation process do not support."
+    },
+    {
+      "id": "scale",
+      "title": "Protect urgent work and observe real progress",
+      "markdown": "Assume two million notification intents per day, about twenty-three each second on average, with an invented tenfold peak of roughly 230. Channel fan-out increases actual attempts. Separate urgent security events from bulk study digests so a digest backlog cannot occupy all workers or provider quota. Bound concurrency to provider limits; adding workers does not make a fixed external quota larger.\n\nTrack oldest pending age, accepted and failed attempt counts, duplicate-intent prevention, and preference skips. Queue length alone is ambiguous: ten very slow items can be more urgent than a thousand quick ones. Test a worker crash after provider acceptance, a repeated event, an opt-out while queued, and recovery after an outage. The design is convincing when every case has an observable durable state and an honest user-facing outcome."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "notification-outbox",
+      "sectionId": "outbox",
+      "title": "A committed comment creates durable notification intent",
+      "source": "flowchart LR\nA[Create comment] --> T[Source database transaction]\nT --> C[(Comment)]\nT --> O[(Outbox event)]\nO --> P[Publisher]\nP --> Q[Queue]\nQ --> N[Notification database transaction]\nN --> I[(Unique intent and inbox item)]\nN --> J[(Durable channel work)]\nJ --> E[Email attempt worker]",
+      "steps": [
+        "Commit the source fact and event together.",
+        "Publish after commit; duplicates remain possible.",
+        "Commit the unique notification, inbox item, and channel work together.",
+        "Dispatch external channels separately with current preferences and tracked outcomes."
+      ],
+      "caption": "The source commit and the notification commit are separate local transactions; email submission remains an external effect."
+    },
+    {
+      "id": "notification-state-boundaries",
+      "sectionId": "flow",
+      "title": "One logical item can have several channel attempts",
+      "source": "flowchart TB\nE[Event e_47] --> N[Notification n_63 for learner_12]\nN --> I[One in-app inbox item]\nN --> J[Durable email work]\nJ --> A[Email attempt a_1]\nA --> P[Provider acceptance evidence]\nA --> R[Retry decision if temporary failure]\nR --> B[Attempt a_2 for same n_63]",
+      "caption": "Intent, inbox item, and channel work commit together. Email submission happens later and has its own uncertain outcome.",
+      "steps": [
+        "Keep the event and recipient tied to one notification identity.",
+        "Commit the unique inbox item and durable channel work with that intent.",
+        "Track provider evidence on the channel attempt.",
+        "If retry is allowed, keep the logical notification identity."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Draw the comment→notification path and mark durable boundaries. A worker sends email, the provider accepts it, and the worker crashes before recording success. Explain recovery with and without provider idempotency. Add one preference-change test.",
+    "rubric": [
+      "Source event and outbox commit together.",
+      "Stable logical identity stops duplicate inbox entries.",
+      "External uncertain delivery is acknowledged.",
+      "Preference change is checked near dispatch and its race is stated."
+    ],
+    "solution": "Recover the queued/outbox work using its original event and notification IDs. A uniqueness constraint preserves one in-app notification. With a provider-supported idempotency key, repeat the same valid operation within that provider’s documented semantics or reconcile by its reference. Without that mechanism, the accepted-but-unrecorded interval cannot generally guarantee both no duplicate and no loss; choose and disclose a policy. Test opt-out before dispatch: the worker should skip the optional channel. A provider-accepted message may already be beyond cancellation."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why commit a comment and outbox row in one transaction?",
+      "options": [
+        "To make email delivery exactly once",
+        "To avoid a committed comment with missing durable publication intent",
+        "To eliminate all worker failures"
+      ],
+      "answer": "To avoid a committed comment with missing durable publication intent",
+      "explanation": "Atomic local persistence closes that specific dual-write gap; delivery remains separate."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A provider accepted an email. What does that prove?",
+      "options": [
+        "The recipient read it",
+        "The provider accepted that submission",
+        "The inbox cannot filter it"
+      ],
+      "answer": "The provider accepted that submission",
+      "explanation": "Acceptance is one stage, not evidence of receipt or reading."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "250 intents/s each create two eligible channel attempts. How many channel attempts/s?",
+      "answer": 500,
+      "unit": "attempts/s",
+      "tolerance": 0,
+      "explanation": "250 × 2 = 500 before retry amplification."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What should happen to a permanently invalid email destination?",
+      "answer": "Classify it as a permanent failure, stop blind retries, expose a useful bounded reason, and allow an appropriate correction/replay workflow.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "How can a bulk digest harm security notifications?",
+      "answer": "It can consume all worker slots, queue service, or provider quotas. Reserve or isolate capacity and priorities, and monitor age separately for the important category.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Outbox solves what gap?",
+      "back": "The source change committing without durable intent to publish its event."
+    },
+    {
+      "front": "Why stable event IDs?",
+      "back": "Consumers can recognize retries and avoid duplicate logical effects."
+    },
+    {
+      "front": "Accepted versus read?",
+      "back": "Provider acceptance does not demonstrate delivery to or attention from a person."
+    },
+    {
+      "front": "Why check preferences near dispatch?",
+      "back": "Queued work may outlive a user’s earlier preference."
+    },
+    {
+      "front": "Most useful backlog signal?",
+      "back": "Age of pending work alongside throughput, failures, and queue size."
+    }
+  ],
+  "mentalModel": "Persist the intent once, expect repeated attempts, and name the delivery evidence precisely.",
+  "sources": [
+    {
+      "title": "AWS — Transactional outbox pattern",
+      "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon SQS — At-least-once delivery",
+      "url": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-at-least-once-delivery.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon SNS — Service overview",
+      "url": "https://docs.aws.amazon.com/sns/latest/dg/welcome.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "repeated-comment-event",
+      "title": "A repeated event does not need a second inbox item",
+      "sectionId": "outbox",
+      "intro": "Follow successful publication and then a repeated queue delivery. This trace concerns our own inbox database, whose uniqueness rule we control.",
+      "steps": [
+        {
+          "title": "Accept the comment",
+          "explanation": "One database transaction saves the comment and its outbox event.",
+          "state": [
+            {
+              "label": "Comment",
+              "value": "c_47 committed"
+            },
+            {
+              "label": "Outbox event",
+              "value": "e_47 committed"
+            },
+            {
+              "label": "Inbox item",
+              "value": "none yet"
+            }
+          ]
+        },
+        {
+          "title": "Deliver the event",
+          "explanation": "The publisher offers e_47 to the queue. The source comment already exists even if the publisher later runs again.",
+          "state": [
+            {
+              "label": "Event identity",
+              "value": "e_47"
+            },
+            {
+              "label": "Queue deliveries",
+              "value": "first delivery"
+            },
+            {
+              "label": "Source record",
+              "value": "c_47"
+            }
+          ]
+        },
+        {
+          "title": "Create the logical notification",
+          "explanation": "One local transaction accepts the unique intent, inbox item, and durable channel work for this event, recipient, and category. They either commit together or can all be retried.",
+          "state": [
+            {
+              "label": "Notification",
+              "value": "n_63"
+            },
+            {
+              "label": "Uniqueness key",
+              "value": "e_47 / learner_12 / comment"
+            },
+            {
+              "label": "Inbox items",
+              "value": "1"
+            },
+            {
+              "label": "Channel work",
+              "value": "durable in the same commit"
+            }
+          ]
+        },
+        {
+          "title": "See the same event again",
+          "explanation": "Another delivery has the same business identity. The database resolves it to the existing notification instead of creating another.",
+          "state": [
+            {
+              "label": "Event identity",
+              "value": "e_47 again"
+            },
+            {
+              "label": "Notification",
+              "value": "existing n_63"
+            },
+            {
+              "label": "Inbox items",
+              "value": "still 1"
+            },
+            {
+              "label": "Email evidence",
+              "value": "tracked separately"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Queue deliveries and logical notifications are different counts. The uniqueness boundary protects only the effect it actually owns."
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "id": "029",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Run the supplied local harness and interpret its scope.",
+    "Predict and observe a forced lost update.",
+    "Verify bounded admission and cleanup after failure.",
+    "Trace cursor pagination through an insertion and deletion."
+  ],
+  "retrieval": [
+    "From L022: why does a semaphore not bound all waiting requests?",
+    "From L024: which ordered value should the next cursor store?",
+    "From L028: how is a local module boundary different from a network service?"
+  ],
+  "sections": [
+    {
+      "id": "setup",
+      "title": "One bounded lab with an explicit stop condition",
+      "markdown": "This 60-minute lab uses the prepared files in labs/runtime-harness. Budget 5 minutes retrieval, 5 setup verification, 10 reading the harness, 15 controlled experiments, 10 tracing results, 10 questions, and 5 evidence notes. Stop after the supplied tests pass and you can explain the race, admission, cleanup, and pagination results. Building a production server or installing a web framework is outside the scheduled work.\n\nThe harness uses Python 3.11 or newer and only its standard library. The academy website does not require Python merely to study; this lab does. If Python setup is missing, record setup as separate time rather than rushing the learning exercise. On Windows, use PowerShell and the python executable or an absolute interpreter path invoked with &. WSL is optional, not assumed.\n\nFrom the repository root run:\n\n~~~powershell\npython --version\npython labs/runtime-harness/harness.py demo\npython -m unittest discover -s labs/runtime-harness -v\n~~~\n\nExpected demo values are unsafe_counter=1, protected_counter=2, and cursor_after_insert=[3,2]. The 12 tests cover local state and a real loopback HTTP path. This build executed them using Python 3.12.14; preserve your own version and outputs in the notebook. A test result is evidence about these bounded scenarios, not a capacity benchmark."
+    },
+    {
+      "id": "race",
+      "title": "Experiment one: predict before running",
+      "markdown": "Read counter_example. In the unsafe branch, each task snapshots the old counter value and increments a reads counter. An Event forces both snapshots to exist before either task writes. This is more informative than repeatedly hoping that the scheduler happens to create a race. Starting at zero, both snapshots are zero and each writes one.\n\nThe protected branch holds one asyncio lock across the snapshot and update. An explicit sleep(0) creates a scheduling opportunity while the lock is held; the other increment cannot enter its critical section until the first finishes. The final value is two. Do not delete the yield and declare the bug fixed: that would remove the demonstration's interleaving without proving the whole application transition atomic.\n\nNext inspect Inventory.reserve. It uses a thread lock around checking quantity and decrementing it. A barrier starts two competing claims against one unit; exactly one succeeds. This authority exists only in one process and has no persistence. Two independent instances would each begin with their own quantity and lock, so this implementation is not a distributed stock service."
+    },
+    {
+      "id": "limits",
+      "title": "Experiment two: prove the resource returns",
+      "markdown": "WorkBudget acquires a slot without waiting. When full, it rejects work with OverflowError. The HTTP adapter translates this into a documented 503 capacity_full response. The scenario intentionally has no application waiting queue; it does not claim that every operating-system or HTTP-server resource is bounded.\n\nIn test_bound_rejects_and_releases, one worker holds the only slot until a test event releases it. A second request must be rejected while that event remains unsignaled. After release, another operation succeeds. test_exception_does_not_leak_slot injects a failure and verifies the slot is reusable. Finally, a separate async test cancels a task holding a semaphore and checks that its context manager releases it.\n\nThe event timeouts stop a hung test; they do not assert that your computer is fast. The teaching property is the maximum number of admitted operations and correct ownership across exits. This distinction keeps the test stable across Windows hardware and load."
+    },
+    {
+      "id": "http",
+      "title": "Experiment three: observe the contract over HTTP",
+      "markdown": "The tests start a ThreadingHTTPServer on an automatically selected loopback port and shut it down afterward. They call the actual HTTP paths for health, valid work, invalid delay, and cursor-based items. An import-only unit test could miss a route that never invokes the correct helper; these integration checks connect the contract to the execution path.\n\nFor optional manual inspection within the lab, start:\n\n~~~powershell\npython labs/runtime-harness/harness.py serve --slots 2\n~~~\n\nOpen http://127.0.0.1:8766/health and /items?after=8&size=2. The second should return IDs [7,6]. /work?delay_ms=9000 must reject its out-of-range input instead of sleeping arbitrarily. Ctrl+C stops the server. Do not expose it publicly: it is a deliberately simple teaching harness without production authentication or connection-admission controls.\n\nThe pagination tests add a new largest ID and remove the cursor anchor. The value predicate still continues below the stored ID. It does not need the old anchor row to remain present. This test concerns immutable IDs; it proves nothing about a mutable ranking score or snapshot consistency."
+    },
+    {
+      "id": "evidence",
+      "title": "Write a result that someone else can reproduce",
+      "markdown": "Record command, interpreter version, observed assertion outcomes, and the mechanism each result challenges. Example: “Two coordinated tasks read zero before writing; unsafe result one, protected result two. The local async lock covers the complete transition. This does not protect multiple processes or survive restart.” This is stronger than “concurrency works.”\n\nFor a deliberate variation, change the test scenario to two slots with two held operations and a third rejected one. Use events or barriers rather than arbitrary long sleeps. Restore or preserve the original passing tests and keep your variation separately. Do not make an unrelated production refactor just to complete the exercise.\n\nIf a test fails, first distinguish an assertion failure from setup or port/permission failure. Inspect the specific boundary. A cursor error should not prompt a change to the thread pool. An exception leak should be repaired in ownership cleanup, not hidden by adding more slots.\n\nOptional additional practice: add a composite timestamp-and-ID cursor test or a test that injects an exception inside the protected state transition. These are extra tasks beyond the scheduled stop condition, and neither is required to mark this lab attempted."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "harness",
+      "title": "The harness ties an HTTP contract to bounded work",
+      "source": "flowchart LR\nC[Test HTTP client] -->|GET work| H[Loopback HTTP handler]\nH -->|Try admission| B{Work slot free?}\nB -->|Yes| W[Simulated I/O in thread]\nB -->|No| E[503 capacity_full]\nW -->|Normal or exception exit| F[Finally release slot]\nF --> R[Return documented outcome]",
+      "caption": "The harness bounds admitted simulated work. Its standard-library HTTP connection handling is intentionally not a production accept-queue design.",
+      "steps": [
+        "The client exercises the real route.",
+        "Admission rejects when all work slots are held.",
+        "Accepted work owns a slot for its lifetime.",
+        "Cleanup releases the slot before future work reuses it."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Run the demo and all tests. Save an evidence note explaining why unsafe_counter is one, why a failed operation does not leak a slot, and why deleting the cursor anchor does not break continuation. State two guarantees the harness does not provide. If time remains, design a two-slot rejection test without using arbitrary sleeps.",
+    "minutes": 15,
+    "rubric": [
+      "Records actual commands, version, and observed results.",
+      "Explains the forced interleaving rather than attributing it to randomness.",
+      "Points to finally/context-manager cleanup.",
+      "Names local/in-memory/teaching scope limits."
+    ],
+    "solution": "The event ensures both unsafe snapshots are zero, so both write one. WorkBudget releases its semaphore in finally even if the callback raises; the async semaphore context exits on cancellation too. cursor_page compares stored values, not the continued existence of the anchor. The harness provides neither durable persistence nor cross-process state protection; its HTTP server is not a production admission system. A two-slot test holds two workers with events, confirms both entered, asserts the third is rejected, then releases both and verifies reuse."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why force a race with an Event?",
+      "options": [
+        "To reproduce the relevant interleaving deterministically",
+        "To prove production throughput",
+        "To avoid understanding the shared state"
+      ],
+      "answer": "To reproduce the relevant interleaving deterministically",
+      "explanation": "A controlled history makes the failed guarantee observable without relying on scheduler luck."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What do the short test timeouts establish?",
+      "options": [
+        "A production latency SLO",
+        "A bound on a hung test, not a performance claim",
+        "Network bandwidth"
+      ],
+      "answer": "A bound on a hung test, not a performance claim",
+      "explanation": "The assertions concern state and ownership; elapsed machine performance is not measured."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What extra value do HTTP tests add over helper tests?",
+      "answer": "They verify route parsing, status mapping, and connection to the correct helper through the actual API path.",
+      "explanation": "A correct helper can still be unused or miswired."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is the local inventory lock insufficient for two processes?",
+      "answer": "Each process has independent in-memory quantity and lock, so neither coordinates the other’s accepted state transition.",
+      "explanation": "Persistent shared authority is later work, not supplied by this lock."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What belongs in honest lab evidence?",
+      "answer": "The command, runtime, observed result, challenged property, and explicit limits; do not label predicted or unexecuted checks as passed.",
+      "explanation": "Evidence should be reproducible and scoped."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Deterministic race test?",
+      "back": "Controls the interleaving that violates the invariant."
+    },
+    {
+      "front": "Integration test here?",
+      "back": "A real loopback HTTP request through route and helper boundaries."
+    },
+    {
+      "front": "Stop condition for L029?",
+      "back": "Tests pass and the race, bounds, cleanup, and cursor outcomes can be explained with scope limits."
+    },
+    {
+      "front": "Why no speed assertion?",
+      "back": "Scheduler and hardware variability are irrelevant to these correctness properties."
+    },
+    {
+      "front": "In-memory inventory survives restart?",
+      "back": "No. It is a local concurrency teaching model."
+    },
+    {
+      "front": "What should a passing test claim?",
+      "back": "Only the property and scenario it actually exercised."
+    }
+  ],
+  "mentalModel": "A useful lab creates a controlled counterexample, repairs its boundary, and records exactly what the evidence establishes.",
+  "sources": [
+    {
+      "title": "Python 3.14 documentation: asyncio synchronization primitives",
+      "url": "https://docs.python.org/3/library/asyncio-sync.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python 3.14 documentation: Coroutines and tasks",
+      "url": "https://docs.python.org/3/library/asyncio-task.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

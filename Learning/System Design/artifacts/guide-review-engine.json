@@ -1,0 +1,422 @@
+{
+  "reviewRound": "illustrative-refinement",
+  "reviewer": "Independent curriculum agent",
+  "name": "Middle 24 guides: visual teaching refinement",
+  "reviewedAt": "2026-09-29T14:07:55.018Z",
+  "source": "Full prose, tables, diagrams, walkthrough state transitions, exercise and question keys read independently. Arithmetic and failure traces reasoned through explicitly.",
+  "limits": [
+    "AI editorial review, not human or learner-outcome validation.",
+    "No live distributed service was deployed for this textual review.",
+    "Final global Mermaid, browser and PDF checks are performed separately by the parent agent."
+  ],
+  "records": [
+    {
+      "id": "cache-freshness-and-cdns",
+      "sha256": "b75accf9da750bb482f3320f574b81d65feb46c090339ce46fd20f91a6aeed7c",
+      "beforeReviewSha256": "b75accf9da750bb482f3320f574b81d65feb46c090339ce46fd20f91a6aeed7c",
+      "notes": [
+        "Checked the 60-second table and distinct 30-second walkthrough: fill/source/edit times and returned versions are consistent.",
+        "Recomputed CDN example: 1,000 × 200 kB = 200 MB delivered; one eligible location fetch costs 200 kB under the stated simplified model.",
+        "No substantive correction: TTL is not presented as data recency, stale refill and metadata/image-reference freshness are separated, and public URLs are not authorization."
+      ],
+      "protectedAssessmentSha256": "b57ab12fce9be60bab0a6720ea70c5d9cfe28404ea371ad48efdfb4d74c169fc",
+      "changed": false
+    },
+    {
+      "id": "serialization-and-data-formats",
+      "sha256": "bd225fe479a060cc66a41b0c873e70d489932391f325ca4c61e3f07fdd81dd19",
+      "beforeReviewSha256": "3f4f6d0884a52599d1458ab54f7e03e4c638ffe80ebfbfb7b7fa1593d6860452",
+      "notes": [
+        "Read all stages and examples; UTF-8 counts and compression arithmetic are consistent.",
+        "Changed parse-stage annotation from valid shape to valid syntax so parsing does not imply schema validation.",
+        "Walkthrough correctly separates omitted field behavior, serialized representation, receiving validation and permission. Full assessment content preserved."
+      ],
+      "protectedAssessmentSha256": "cd2c60ed661e658ed3eef6156a383cda68ffe07d0d169a7f110281faf6b7c6ac",
+      "changed": true
+    },
+    {
+      "id": "background-jobs",
+      "sha256": "a6f15d165f290d2eca5d99174b4aa2fcc27d56e9615698453f85df6c1aedf580",
+      "beforeReviewSha256": "a6f15d165f290d2eca5d99174b4aa2fcc27d56e9615698453f85df6c1aedf580",
+      "notes": [
+        "Traced durable acceptance, protected claim, result publication and reconnect lookup without conflating receipt with completion.",
+        "Recomputed +20 backlog and 10-second drain in prose; 18 jobs and six-second drain in the separate exercise.",
+        "No substantive correction: job-table option is explicit, upload is outside the local transaction, and abandonment/repeated execution are acknowledged."
+      ],
+      "protectedAssessmentSha256": "bb302b45c555f2f1e5a289a1c0690d7a672302ed6c5ee69a1b647e0fd2adff83",
+      "changed": false
+    },
+    {
+      "id": "containers-and-deployment",
+      "sha256": "ea4c6973d8474a93a8abfd975f950210f123bc88e9123bba16206e6fb38cf0a4",
+      "beforeReviewSha256": "ea4c6973d8474a93a8abfd975f950210f123bc88e9123bba16206e6fb38cf0a4",
+      "notes": [
+        "Checked source/image/container/data table and D12 replacement walkthrough: immutable package does not include later saved data or process memory.",
+        "Reviewed Linux-kernel versus VM caveat, controlled secrets, private writable-state lifecycle, data compatibility and traffic/management separation.",
+        "No substantive correction: storage survival remains conditional on its own contract and rollout checks include business outcomes."
+      ],
+      "protectedAssessmentSha256": "8bed3e83fc2778850733c30c1978a56f5ca850c8a67e0837e414ccfe58f39492",
+      "changed": false
+    },
+    {
+      "id": "queues-and-retries",
+      "sha256": "d2001aef518ee4e94e811e206e9bccb886542edc40c8007b7b55ff2a569fbf28",
+      "beforeReviewSha256": "d2001aef518ee4e94e811e206e9bccb886542edc40c8007b7b55ff2a569fbf28",
+      "notes": [
+        "Read the effect/acknowledgement table, deterministic-output assumptions, local identity transaction and independent email limit.",
+        "Traced J18: two physical deliveries, one protected activity row. Marker and effect commit together; stale resumed workers remain explicitly addressed.",
+        "No substantive correction: backoff/jitter and 100 jobs × three possible attempts = 300 are consistent."
+      ],
+      "protectedAssessmentSha256": "aab54f39cdfa9cf4fd57a55a4437e0114e61ff6cdd53b33154ac5fcb081a0fb4",
+      "changed": false
+    },
+    {
+      "id": "queue-broker-fundamentals",
+      "sha256": "df3f08eccb90fcf474ada36e4ec2359d65e92a6ed5e263bb3ebc1144939d2602",
+      "beforeReviewSha256": "df3f08eccb90fcf474ada36e4ec2359d65e92a6ed5e263bb3ebc1144939d2602",
+      "notes": [
+        "Read every broker subsection and checked the new recipient-model table against its diagrams and separate-durable-queues walkthrough.",
+        "Traced E70 independently through summary and audit: one acknowledgement does not remove the other subscription’s work.",
+        "No substantive correction: publisher acceptance versus consumer completion, Kafka partition order, Redis Pub/Sub loss, SQS lease expiry and external paid effects retain their scoped caveats."
+      ],
+      "protectedAssessmentSha256": "93d82a89ac5e9729388409f93577823a8b8a80073ab15c45682891a64949e143",
+      "changed": false
+    },
+    {
+      "id": "job-lifecycle-and-backpressure",
+      "sha256": "6e88b610803c8a456d0a107fdfdae4c83daf18195394632952cf71d81c9683c4",
+      "beforeReviewSha256": "19fb18a6948b5dfaa1c6238759a4a798cab7f66ca7fa888c99b25bdfa4762662",
+      "notes": [
+        "Recomputed the 8−5 example and the distinct 7/4 then 2/4 walkthrough: backlog 9 at t3, 3 at t6, 0 at t7.5.",
+        "Added the completion-wins branch from cancellation-requested in the state diagram, matching the explicitly taught terminal-transition race policy.",
+        "Reviewed ownership, claim, publication and acknowledgement order; no protected answer changes."
+      ],
+      "protectedAssessmentSha256": "dd0da4b8bd680dc1c7a88144f30aeffc3c424e60031a2cbf4df3ba5e05fccf85",
+      "changed": true
+    },
+    {
+      "id": "first-design-url-shortener",
+      "sha256": "7f8d193db0d209b594fd10894e54bb56d141db3d5d9977dc72559f389f27e195",
+      "beforeReviewSha256": "3f1df9ff1ffeb454a3020b25ea4abb929afecba7d39d78c7a06a44ce16169df2",
+      "notes": [
+        "Read full guided design and manually traced code collision versus repeated creation intent; the protected exercise and answer keys remain correct.",
+        "Corrected walkthrough state from “No longer fetching page bytes” to “Does not fetch destination bytes in this path,” avoiding an implication that the shortener fetched them earlier.",
+        "The 302 trace correctly makes the browser issue the second request, and unavailable lookup remains distinct from absence."
+      ],
+      "protectedAssessmentSha256": "bf9c8ba1ee724131ad750dc49c3657145df06d2851e7bbea574f0f170bdb17b6",
+      "changed": true
+    },
+    {
+      "id": "copying-data",
+      "sha256": "a51a2d8ae6157ae40476b9554f73f74663eec4e35865e10bc711a07c7e8d1a00",
+      "beforeReviewSha256": "a51a2d8ae6157ae40476b9554f73f74663eec4e35865e10bc711a07c7e8d1a00",
+      "notes": [
+        "Checked received, persisted and applied distinctions against the replication table, acknowledgement diagram and minimum-position walkthrough.",
+        "Recomputed moved-read counts; replicated write history remains extra work rather than divided write ownership.",
+        "No substantive correction: failover eligibility, fencing, correlated failures, backup and immediate-read limits remain explicit."
+      ],
+      "protectedAssessmentSha256": "888bc08d5c0d8096f95a49ee500ead140f6c57b5a56529a8b7584a7729da3436",
+      "changed": false
+    },
+    {
+      "id": "split-data-into-shards",
+      "sha256": "25f64c10cd4612a6fc19635bbf41318f337582f03de868a17c28b7b28894af30",
+      "beforeReviewSha256": "cbea2834d7a0a53784387b69d8696c9bcc329f04e529e4291c079444edb99c9a",
+      "notes": [
+        "Checked all modulo examples and 8 × 20 scatter-gather arithmetic; key counts versus workload skew are clearly distinguished.",
+        "Strengthened walkthrough handoff: establish an enforced old-writer barrier, identify its final accepted position (P81 here), then catch up and validate through that position before enabling epoch 7. This closes the implied gap for writes arriving after a sampled catch-up position.",
+        "No assessment changes; the migration remains labeled a protocol outline, not a production implementation."
+      ],
+      "protectedAssessmentSha256": "85de5ae65f3ed96b8fc34a0b2691dca49d37f2203cb1965751995bedd898f130",
+      "changed": true
+    },
+    {
+      "id": "consistency-in-plain-language",
+      "sha256": "60294e67467aa398d9bc8df14f574b3ef1cc0268a4d3f36368e05367d814d238",
+      "beforeReviewSha256": "60294e67467aa398d9bc8df14f574b3ef1cc0268a4d3f36368e05367d814d238",
+      "notes": [
+        "Read every session and register history, including the blue/green overlap walkthrough. The old result occurs before completion, while the later-starting read must observe green under stated no-intervening-write assumptions.",
+        "No substantive correction: read-your-writes, monotonic reads, causal visibility, ACID consistency and atomic claim rules are distinguished without promising every replica is physically identical."
+      ],
+      "protectedAssessmentSha256": "fd8535d810467b00d6410eb55406d7d4f146146465a81db24e4919201ee75ff7",
+      "changed": false
+    },
+    {
+      "id": "partitions-and-quorums",
+      "sha256": "5abaa92b093f65f97ade1354b5f4dd13d040cd2d80084a500ab682a682150b12",
+      "beforeReviewSha256": "5abaa92b093f65f97ade1354b5f4dd13d040cd2d80084a500ab682a682150b12",
+      "notes": [
+        "Enumerated fixed-set W2/R2 overlaps and recomputed W3+R3−N5 = one minimum overlap.",
+        "Traced v4→v5 on A/B then read B/C: evidence exists in B, while candidate selection still explicitly depends on the protocol.",
+        "No substantive correction: unavailable responses are not treated as CAP successful availability, and partition choices stay scoped to operations and authority."
+      ],
+      "protectedAssessmentSha256": "fafa682528e95c2e1f5ea8291241d7f83d15ae440d9a848e59ecdf63431d4e36",
+      "changed": false
+    },
+    {
+      "id": "reliable-events",
+      "sha256": "f38cb3eea709a1f172ee3b7deefba290ade73247808d432516d4de492177f105",
+      "beforeReviewSha256": "f38cb3eea709a1f172ee3b7deefba290ade73247808d432516d4de492177f105",
+      "notes": [
+        "Traced both dual-write failure orders, n28/E28 atomic acceptance, relay crash after broker acceptance, and separate consumer effect transaction.",
+        "No substantive correction: event versus command, versioned full-state versus incremental-event ordering, durable obligation and external-effect limits remain clear."
+      ],
+      "protectedAssessmentSha256": "33b50086240cedfd5223e4257421b18932c263e9ab4be33dbd6a68cf73be844e",
+      "changed": false
+    },
+    {
+      "id": "streaming-and-replay",
+      "sha256": "babbb644998fac1c8061862e7285f8a4fbeb162a07c05d187f5ff0a266f3e232",
+      "beforeReviewSha256": "babbb644998fac1c8061862e7285f8a4fbeb162a07c05d187f5ff0a266f3e232",
+      "notes": [
+        "Checked next-offset convention in table and walkthrough: applying 102 while offset remains 102 repeats safely; saving 103 leaves record 103 unread.",
+        "Reviewed independent groups, per-partition ordering, retention, old schemas, deleted/private data, replay suppression and rebuilding beside a live view.",
+        "No substantive correction: bookmark progress is not conflated with atomic external effects, and 120−100 = 20/s drain capacity is correct."
+      ],
+      "protectedAssessmentSha256": "8afc1a3908275b11b085963223b52d745e688c418d5c8908faeb009b2391c08c",
+      "changed": false
+    },
+    {
+      "id": "identity-and-permissions",
+      "sha256": "d5440c0e77ae47c129daec87aee32ecd5a0de3f1d246102e88037a13985bec76",
+      "beforeReviewSha256": "d5440c0e77ae47c129daec87aee32ecd5a0de3f1d246102e88037a13985bec76",
+      "notes": [
+        "Read full cookie/session, per-action authorization, tenant/caching/job scope and revocation material against the new tables and walkthrough.",
+        "Traced Mina’s NorthCo candidate lookup and denied SouthCo claim; tenant strings and guessed IDs never become permission.",
+        "No substantive correction: raw cache candidates still require allowed action and object policy, and protected assessment keys cover secondary data paths and revocation."
+      ],
+      "protectedAssessmentSha256": "36ff05125874d68aa8ec76e1704da2fa58a578fd866009d31eb8a54a0b27065d",
+      "changed": false
+    },
+    {
+      "id": "rate-limits-and-abuse",
+      "sha256": "1a025a93a8cf6167bb2eee353c54209d3366b8eb6ec9651a56005cd512db850b",
+      "beforeReviewSha256": "1a025a93a8cf6167bb2eee353c54209d3366b8eb6ec9651a56005cd512db850b",
+      "notes": [
+        "Recomputed fixed-window boundary and both token-bucket examples, including denied requests preserving balances.",
+        "Checked local versus global budgets, positive-cost atomic debit, clock scope, overload policy and concurrency distinction against both diagrams.",
+        "No substantive correction: 10/s × 30s = approximately 300 in-flight under steady conditions, and the separate 6-token walkthrough is internally consistent."
+      ],
+      "protectedAssessmentSha256": "1aef6d135a5fd1754a4fc5495a463a9795bef706eefa4a112efe1a4948d914e1",
+      "changed": false
+    },
+    {
+      "id": "reliable-systems",
+      "sha256": "9f3f1313c7ee89d40257a2bcc6ca082fe088dbe6f2427d4087363c3ca3f30bf1",
+      "beforeReviewSha256": "de9069f6521ac9ba3ddbb836f68424b05854a6ae2d3e46ab37e7b78b0c18d81c",
+      "notes": [
+        "Recomputed request availability and both surviving-capacity examples; priorities preserve truthful saves and bounded excess demand.",
+        "Added an explicit equal-resource-cost assumption to the new 70/s walkthrough so request-count allocation is not presented as safe across arbitrary expensive/cheap mixtures.",
+        "Reviewed optional-tag independence, correlated failures, retry amplification and measured-outcome limits; protected assessments unchanged."
+      ],
+      "protectedAssessmentSha256": "983928d3cfd292ce871aa39580a8b880709dde8775b302a3ed608396fabe94af",
+      "changed": true
+    },
+    {
+      "id": "reliability-controls",
+      "sha256": "aba729400a2977913ded2211a335127173902240a62e71371a7fd20a38a25629",
+      "beforeReviewSha256": "1e32c49ce2dc41fbf468df6b64a834e1cd3f10a2f5ad3e1e354e834c5074e891",
+      "notes": [
+        "Recomputed the error-budget table, 27-attempt nested retry bound, original deadline exercise and separate 900 ms walkthrough.",
+        "Expanded SLI/SLO/SLA names and scoped the good-event fraction to this example instead of defining all indicators as fractions.",
+        "Corrected the deadline diagram to distinguish confirmed success from retry-policy classification: known transient errors can be retryable, while an unknown outcome is not automatic permission to retry.",
+        "Confirmed identity, remaining deadline, attempt budget and cancellation uncertainty remain independent protections."
+      ],
+      "protectedAssessmentSha256": "1d2ad273261d6a7ef96ea9f37841ea27048cca267c5f42dbc0944a405176a03f",
+      "changed": true
+    },
+    {
+      "id": "observe-and-debug",
+      "sha256": "795584f30988980643bbfb9f670d7ac3997dbe31746bf8ce7d1eab00230f8b66",
+      "beforeReviewSha256": "795584f30988980643bbfb9f670d7ac3997dbe31746bf8ce7d1eab00230f8b66",
+      "notes": [
+        "Recomputed nested and non-overlapping timing tables: 600+120+130 = 850; plus 150 = 1,000. New walkthrough changes 800 ms pool wait to 100 ms, producing 500 ms server and 800 ms browser totals.",
+        "No substantive correction: fictional measurements are labeled, overlap is not summed twice, and an example trace supports a hypothesis without proving population prevalence.",
+        "Reviewed metric-cardinality and privacy limits and all protected assessment answers."
+      ],
+      "protectedAssessmentSha256": "f15fb8a98b20618f55579de5bdb591885080d2628825f720a467b152787ce230",
+      "changed": false
+    },
+    {
+      "id": "kubernetes-building-blocks",
+      "sha256": "bf4e7d93b1917c07573b1e5b5ebdfb1b00769a7733e8dd450363be6f791b35ac",
+      "beforeReviewSha256": "aedc268cb57348ff387ceae48a0a95924cc47ad8e971d0dce25f0a9ad86e32f6",
+      "notes": [
+        "Traced desired/existing/ready state, scheduling limits and endpoint propagation in the replacement walkthrough.",
+        "Corrected the first Pod-section sentence: the image supplies the packaged environment; the container runs the process in it. This preserves the image-versus-running-instance distinction from the earlier chapter.",
+        "Reviewed Deployment→ReplicaSet→Pod management chain, Service data path, CPU arithmetic, configuration/secrets, probes and external-state limits.",
+        "Split the 104-word MCP paragraph between protocol definition and gateway deployment example for readability, without removing content."
+      ],
+      "protectedAssessmentSha256": "21bd1ef6b25f5b5234b34b5b577b3cad992b6ce3a076f065f2a8d3087a4cbb9f",
+      "changed": true
+    },
+    {
+      "id": "ship-and-recover",
+      "sha256": "cfdd0dec7c96cad9663761c216ce2c5a735cb541b355d31252af7904fa8bb36a",
+      "beforeReviewSha256": "81a9caed13cd424d0e8d90b493756911c5d52e6625785bed0a30ba1dbab99f3b",
+      "notes": [
+        "Read the full migration, rollback and isolated-restore sequence; traced n12 active=false to status=archived and the eventual loss of old-binary rollback.",
+        "Added a necessary writer-compatibility boundary: all write paths must preserve both representations before live backfill; original active-only writers cannot silently remain after status becomes readable. Backfill must use the currently accepted value under a protected rule.",
+        "Assessment keys and six-step exercise remain unchanged; the added clarification explains how to satisfy their compatible-writer requirement."
+      ],
+      "protectedAssessmentSha256": "2cacada412e53f759b80a0963169e5b39bc043dc16ccc71790afa716621b72e0",
+      "changed": true
+    },
+    {
+      "id": "kubernetes-networking",
+      "sha256": "265671dc18bd24aa8fae38bd2f2b41484849de8dd1da0396c078cd8e15267f30",
+      "beforeReviewSha256": "265671dc18bd24aa8fae38bd2f2b41484849de8dd1da0396c078cd8e15267f30",
+      "notes": [
+        "Traced Service/selector/port/targetPort table and separate 8080→7000 versus actual 7001 walkthrough; DNS success is not treated as backend success.",
+        "Checked control-plane versus data-plane arrows, direct-endpoint versus virtual-address proxy variants, configurable DNS domain and connection/endpoint propagation limits.",
+        "No substantive correction: NetworkPolicy direction/additive/implementation rules and per-user access remain distinct."
+      ],
+      "protectedAssessmentSha256": "fe14012218b1bc0300cef100f5501aeac333e46059623c56e24c146f252d18a5",
+      "changed": false
+    },
+    {
+      "id": "regions-and-disaster-recovery",
+      "sha256": "659d90b5d7abd72020b694de5757881d806938d2a041fc2a04550f0c096d56aa",
+      "beforeReviewSha256": "659d90b5d7abd72020b694de5757881d806938d2a041fc2a04550f0c096d56aa",
+      "notes": [
+        "Recomputed 14:00/13:57/14:24 example and 4+3+2+8+5+2 = 24 minutes. Distinct walkthrough correctly compares 1-minute gap and 16-minute recovery with 2/20-minute targets.",
+        "Read ownership/fencing, independent dependencies, retained history and failback requirements against diagrams.",
+        "No substantive correction: targets and fictional drill results are explicitly scoped; asynchronous copying and region count do not become universal guarantees."
+      ],
+      "protectedAssessmentSha256": "dad4feb516c5ebfc0e4b3e6520182235892fe9904a7dcf5f388d6cf5169f57b9",
+      "changed": false
+    },
+    {
+      "id": "kubernetes-operations",
+      "sha256": "5e4daf99b93c1e04e69e5d6b9b6b69e27c7336a72ce68d3b04efc6cf94708fcb",
+      "beforeReviewSha256": "5e4daf99b93c1e04e69e5d6b9b6b69e27c7336a72ce68d3b04efc6cf94708fcb",
+      "notes": [
+        "Checked decimal bytes in 256Mi = 268,435,456 and simplified HPA 3×80/60 = 4, with actual controller and scheduling caveats preserved.",
+        "Read probe table and walkthrough: startup gates checks, readiness failure does not restart, dependency recovery returns readiness while restart count remains unchanged.",
+        "No substantive correction: settings propagation, Secret encoding, voluntary-disruption limits, rollout compatibility and desired-versus-ready capacity are stated accurately."
+      ],
+      "protectedAssessmentSha256": "c1705dd20870529a5c943567a153adae1b348cc380cbcb15ac1ab923b8cbaa77",
+      "changed": false
+    }
+  ],
+  "previousReview": {
+    "reviewer": "root (separate from author engine)",
+    "reviewedAt": "2026-09-29T13:13:26.082Z",
+    "method": "Read all18 teaching bodies, vocabulary, exercises, solutions, question answers, and diagram sources. Inspected critical numerical and failure traces. Rendering and browser evidence are separate.",
+    "limitations": [
+      "This is an independent AI editorial review, not learner outcome validation or a human expert certification.",
+      "Sources were checked during authorship; reviewer independently rechecked the changed MCP transport contract rather than reopening every citation."
+    ],
+    "records": [
+      {
+        "id": "reliable-systems",
+        "result": "pass",
+        "sha256": "3a1e12ab3f5be7286a7b11def4262c30e3945728a46734375b57a972eed11cbc",
+        "findings": "Checked 99.9% arithmetic, 60 requests/s survivor deficit, shared failure domains, deadline/retry amplification and honest degraded saves."
+      },
+      {
+        "id": "observe-and-debug",
+        "result": "pass",
+        "sha256": "eb4ff172330ad16c5f41bc48c04c623fbeddde9ca62601b301a6442c4c93a9fa",
+        "findings": "Added an explicit connection-pool definition before the worked wait trace. Verified 850/1000 ms boundaries and 650/900 ms exercise; concurrent spans are not summed blindly."
+      },
+      {
+        "id": "ship-and-recover",
+        "result": "pass",
+        "sha256": "36bf47e252899bf4cf25fa161290328ccd293230ad7fd8395be4ef10249c91e2",
+        "findings": "Reviewed mixed-version migration order, rollback limitations, independent backups, repeatable backfill, and restore validation. Eight-batch answer matches inputs."
+      },
+      {
+        "id": "regions-and-disaster-recovery",
+        "result": "pass",
+        "sha256": "ace5739208d17765d056953f7088cb67e7c173e5cec2d3052c1f584950021882",
+        "findings": "Checked RTO/RPO clock examples, standby assumptions, old-writer fencing, and failback preservation. Objectives remain targets, not guarantees."
+      },
+      {
+        "id": "interview-game-plan",
+        "result": "pass",
+        "sha256": "c66dbfd0a6a72c42136ab4b04b05863c3af1185c294074b1b8668193977a1402",
+        "findings": "Reviewed scope, completed journeys, retry identity, freshness-bound caveat, and 45-minute budget. Practice scoring makes no outcome guarantee."
+      },
+      {
+        "id": "estimates-and-tradeoffs",
+        "result": "pass",
+        "sha256": "e8b9d5d8e97de731dc7b55e020989224a62b30c90fa08f3d33a8572dedaa84fc",
+        "findings": "Recomputed decimal byte/rate/retention examples and preview storage; batching is distinguished from reduced database work."
+      },
+      {
+        "id": "design-notifications",
+        "result": "pass",
+        "sha256": "78df5a8b794d3aae6997dbe9402d7a02b574c9fd705428e6be156800c595fb25",
+        "findings": "Checked local outbox boundary, recipient deduplication, preference recheck, and provider-acceptance uncertainty; external delivery is not claimed exactly once."
+      },
+      {
+        "id": "design-rate-limiter",
+        "result": "pass",
+        "sha256": "8900f268eb63f64c5831433841684adb7bd94e8c144c831649216a280a056219",
+        "findings": "Recomputed refill traces and regional budget multiplication; atomic decision, clock, fallback scope, and uncertain consumption are stated."
+      },
+      {
+        "id": "design-chat",
+        "result": "pass",
+        "sha256": "61c06fd0737305b24db66ce4f8ab1e7b632484c8124050644933bc1a294ff5c0",
+        "findings": "Checked accepted/delivered/read distinctions, room-scoped ordering, shared deduplication, membership checks, and durable history versus sockets."
+      },
+      {
+        "id": "chat-reconnect-and-scale",
+        "result": "pass",
+        "sha256": "bf9c4eb855c47e4c8067f6b8c9fcee902a763509b9ac405039e096685685ba9e",
+        "findings": "Traced subscribe/replay boundary, cursor 40/50/52, repair of missing51, legitimate sequence gaps, buffer growth180/s and overflow policy."
+      },
+      {
+        "id": "design-news-feed",
+        "result": "pass",
+        "sha256": "29d3f6b46ebb61fb3e9370b43f09c4c73945711bcee74c7c68d154c6d620d6ee",
+        "findings": "Checked source visibility authority, retry-safe fan-out, bounded hydration, deletion, and cursor stability assumptions."
+      },
+      {
+        "id": "feed-fanout-and-ranking",
+        "result": "pass",
+        "sha256": "e892b2e3aa278c32f5d72c879642ee3de55841cef4db1af0cdc604ca6554f873",
+        "findings": "Verified100,000 amplification ratio, transition overlap, rank-cursor contract, authorization on fallback, and95 ms sequential example."
+      },
+      {
+        "id": "processes-threads-and-concurrency",
+        "result": "pass",
+        "sha256": "53ca84ba9b8f6ad9b91c4c368f62afc07324675d64d844f8dc706609be20162a",
+        "findings": "Reviewed all sections including shared-thread memory, concurrency/parallelism, event-loop blocking and lost-update race. Recomputed105/115 versus210 ms timeline and50/s CPU bound."
+      },
+      {
+        "id": "connection-and-protocol-basics",
+        "result": "pass",
+        "sha256": "032d093694e49406dad385c6ec6c3351ee415666fb108f13e3f253d00619da5a",
+        "findings": "Checked transport/application separation, QUIC over UDP reliability, HTTP2 head-of-line explanation, TLS hop boundaries, and SSE/WebSocket replay limitations."
+      },
+      {
+        "id": "service-boundaries",
+        "result": "pass",
+        "sha256": "2cdbeebac484363408ba509eda7f4c00ebcfb667c3abd68aa84a787146b5195f",
+        "findings": "Reviewed modular monolith distinction, logical data ownership, shared versus separate transactions,150 ms sequential overhead, and justified bounded-worker extraction."
+      },
+      {
+        "id": "queue-broker-fundamentals",
+        "result": "pass",
+        "sha256": "d0971632f2609b9effe7ff38d54607f40178d5f71c926c772fbcd7b1d25f662f",
+        "findings": "Checked confirms versus processing acknowledgement, SQS visibility overlap, Redis Pub/Sub versus Streams, Kafka partition/replay scope, and paid-effect uncertainty."
+      },
+      {
+        "id": "mcp-platform-architecture",
+        "result": "pass",
+        "sha256": "ed2dcab7123eba694839ef7faabaff4e75d432fd35e2bade704f241521fb287d",
+        "findings": "Independently opened official2026-07-28 transport specification; verified per-request metadata and request-stream cancellation. Older SDK/session model is explicitly versioned and no automatic upgrade claimed."
+      },
+      {
+        "id": "model-serving-and-gpus",
+        "result": "pass",
+        "sha256": "3d2b2cfcced1e47cb3de926a2c0124774050a74118fcf70c10e65fd49bc669bb",
+        "findings": "Recomputed14 GB weight lower estimate,128 KiB/token and1 GiB at8192 tokens, continuous batching A/B/C trace, and memory versus latency boundary. Reviewed tensor versus serving replicas."
+      }
+    ]
+  },
+  "count": 24
+}

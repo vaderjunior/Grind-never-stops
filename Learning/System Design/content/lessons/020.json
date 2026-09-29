@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "020",
+  "objectives": [
+    "Present only candidate material during the attempt.",
+    "Use the saved interview state and evidence-based debrief."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate session",
+      "markdown": "Design the communication paths for a live build dashboard and a team chat used by 20,000 concurrently connected people. Select transports, explain authentication and reconnect behavior, and estimate one decision-relevant load. Keep the design limited to communication boundaries and recovery contracts."
+    },
+    {
+      "id": "workflow",
+      "title": "How to use this assessment",
+      "markdown": "Open this assessment in the interview center. Choose coaching or exam mode. Ask clarifying questions before designing. Record your actual reasoning, pause if interrupted, and submit before opening the reference debrief. The engine stores timing, hints, turns, and feedback separately from this definition."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "minutes": 45,
+    "prompt": "Design the communication paths for a live build dashboard and a team chat used by 20,000 concurrently connected people. Select transports, explain authentication and reconnect behavior, and estimate one decision-relevant load. Keep the design limited to communication boundaries and recovery contracts.",
+    "rubric": [
+      "Scope the problem.",
+      "Trace the relevant mechanism.",
+      "Defend failures and alternatives."
+    ],
+    "solution": "Use the interview debrief after submission."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "A score needs evidence from your submitted reasoning.",
+  "sources": []
+}

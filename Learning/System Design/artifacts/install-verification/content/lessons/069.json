@@ -1,0 +1,118 @@
+{
+  "id": "069",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Implement stable rendezvous partition assignment.",
+    "Measure which keys move when a node is added.",
+    "Distinguish key distribution from request-skew and real data migration."
+  ],
+  "retrieval": [
+    "L059: why does a cache change work rather than ownership?",
+    "L061–068: distinguish partition assignment, replica placement and moving authoritative state."
+  ],
+  "sections": [
+    {
+      "id": "goal",
+      "title": "A bounded implementation milestone",
+      "markdown": "Scheduled60 minutes: brief/prediction10, implementation25, tests15, evidence10. Setup is separate. Partitioning is not complete when a hash returns a node name. This milestone isolates the placement question so you can test it before discussing migration. The supplied function uses highest-score rendezvous hashing: compute a stable score for each key/node pair and choose the greatest. Adding a new node changes a key's owner only if the new node wins that key's comparison. Existing scores do not change."
+    },
+    {
+      "id": "mechanism",
+      "title": "Mechanism and correctness boundary",
+      "markdown": "Use hashlib.sha256 rather than Python's built-in hash, whose process-dependent behavior is unsuitable for stable cross-process placement. Evaluate 1,000 distinct keys on nodes a,b, then on a,b,c. Count moved keys and assert every moved key now belongs to c. The test also checks a broad movement interval to catch obvious implementation mistakes, but the structural invariant is more important than memorizing an exact percentage.\n\nThis simulation does not copy database rows, prevent an old owner from accepting writes, or route reads during movement. A real migration needs a versioned ownership map, copy/catch-up behavior, an authoritative switch boundary, and stale-owner protection. A source that still accepts writes after a naive copy can diverge from the target. Explain the missing mechanisms before presenting the placement demonstration as architecture evidence.\n\nUniform distinct keys also do not imply uniform requests. A viral code may receive most accesses and still map to one node. Caching, replication of reads, or a product-specific split can help, but adding a node does not split that single key in this model. P1.4 later measures this skew explicitly."
+    },
+    {
+      "id": "run",
+      "title": "Use the prepared learner skeleton",
+      "markdown": "Read projects/P1.md and projects/README.md. Edit projects/learner/shortener.py; the TODOs identify this milestone. Run the focused acceptance test from the repository root:\n\n~~~powershell\n$env:ACADEMY_LAB_IMPLEMENTATION = 'learner'\npy -3 -m unittest discover -s projects/tests -p test_projects.py -k P1_3 -v\nRemove-Item Env:ACADEMY_LAB_IMPLEMENTATION\n~~~\n\nThe default test implementation is the completed reference; setting the variable selects your learner code. A learner TODO failure is intentional, not missing teaching. If your launcher is python or python3, substitute it for py -3. The baseline uses only the Python standard library and temporary test databases. No app endpoint executes your code.\n\nHash distribution balances distinct keys, not accesses. Repeating a viral key still concentrates requests on one owner; adding nodes alone does not split that key.\n\nStop when the focused test passes and you have recorded the stated evidence. Do not spend the hour constructing a new server framework or extending unrelated features."
+    },
+    {
+      "id": "evidence",
+      "title": "Record what the test actually shows",
+      "markdown": "Show every moved key selects the new node; report moved fraction and distinguish the simulation from a storage migration.\n\nSave the exact command, expected result, actual result, fault injected and the final invariant in the Project workspace. Note any untested assumption. The reference implementation and test have been executed; your own implementation needs its own run evidence. Compare with the explicit reference only after attempting the bounded task.\n\nSingle-machine SQLite, immutable links, an in-process cache, and a teaching HTTP harness. No abuse classifier, cross-node replication, account service, or distributed migration is implemented.\n\nOptional additional practice belongs in a separate session: Add authenticated mutable destinations using versions and cache invalidation tests."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "milestone-flow",
+      "title": "Partition movement and hotspots",
+      "source": "flowchart LR\nK[Key] --> A[SHA256 key plus a]\nK --> B[SHA256 key plus b]\nK --> C[SHA256 key plus c]\nA --> M[Choose highest score]\nB --> M\nC --> M\nM --> O[Assigned owner only]\nO -.->|separate design required| D[Versioned data migration]",
+      "caption": "Implement stable rendezvous partition assignment. Measure which keys move when a node is added. Distinguish key distribution from request-skew and real data migration.",
+      "steps": [
+        "Implement highest-score rendezvous assignment using SHA-256 of key plus node. Compare 1,000 keys on two nodes versus three. Identify which assignments change and explain why actual migration needs ownership epochs and read/write handoff.",
+        "Hash distribution balances distinct keys, not accesses. Repeating a viral key still concentrates requests on one owner; adding nodes alone does not split that key.",
+        "Show every moved key selects the new node; report moved fraction and distinguish the simulation from a storage migration."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Implement highest-score rendezvous assignment using SHA-256 of key plus node. Compare 1,000 keys on two nodes versus three. Identify which assignments change and explain why actual migration needs ownership epochs and read/write handoff.",
+    "minutes": 25,
+    "rubric": [
+      "A code names exactly one immutable destination; successful create survives restart. Cache loss may add latency but cannot change a redirect.",
+      "Show every moved key selects the new node; report moved fraction and distinguish the simulation from a storage migration.",
+      "Reports the implemented guarantee and its limits."
+    ],
+    "solution": "Compute one stable SHA-256 digest for each key/node pair, choose the node with the maximum digest, and reject an empty node list. Preserve the same serialization of the key and node across all participants. For each of the 1,000 keys compare its old and new owner; a changed assignment must choose the newly added node c because the old a/b scores are unchanged. Record moved count and per-node assignment counts. Then state the boundary: this is a placement simulation, so no data was copied and no writes were fenced. A real migration must preserve authoritative state through copying and the ownership switch, and a hot key remains concentrated even when average key counts look balanced."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "open",
+      "prompt": "What invariant does your implementation enforce and at which authority?",
+      "answer": "A code names exactly one immutable destination; successful create survives restart. Cache loss may add latency but cannot change a redirect.",
+      "explanation": "Compute one stable SHA-256 digest for each key/node pair, choose the node with the maximum digest, and reject an empty node list. Preserve the same serialization of the key and node across all participants. For each of the 1,000 keys compare its old and new owner; a changed assignment must choose the newly added node c because the old a/b scores are unchanged. Record moved count and per-node assignment counts. Then state the boundary: this is a placement simulation, so no data was copied and no writes were fenced. A real migration must preserve authoritative state through copying and the ownership switch, and a hot key remains concentrated even when average key counts look balanced."
+    },
+    {
+      "id": "q2",
+      "type": "open",
+      "prompt": "Describe the injected fault and the exact acceptance evidence.",
+      "answer": "Hash distribution balances distinct keys, not accesses. Repeating a viral key still concentrates requests on one owner; adding nodes alone does not split that key. Show every moved key selects the new node; report moved fraction and distinguish the simulation from a storage migration.",
+      "explanation": "Use the saved test trace to show the guarantee under the named fault; a final green count alone is insufficient."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What production guarantee is outside this teaching implementation?",
+      "answer": "Single-machine SQLite, immutable links, an in-process cache, and a teaching HTTP harness. No abuse classifier, cross-node replication, account service, or distributed migration is implemented.",
+      "explanation": "Single-machine SQLite, immutable links, an in-process cache, and a teaching HTTP harness. No abuse classifier, cross-node replication, account service, or distributed migration is implemented."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Rendezvous decision?",
+      "back": "Choose the highest stable score among key/node pairs."
+    },
+    {
+      "front": "Adding one node moves keys where?",
+      "back": "Only keys for which the new node wins the score."
+    },
+    {
+      "front": "Python hash for persistent assignment?",
+      "back": "Avoid it; use an explicit stable algorithm and encoding."
+    },
+    {
+      "front": "Placement equals migration?",
+      "back": "No; copying, catch-up, authority change and stale-owner handling are separate."
+    },
+    {
+      "front": "Balanced keys imply balanced requests?",
+      "back": "No; request popularity can be highly skewed."
+    }
+  ],
+  "mentalModel": "A code names exactly one immutable destination; successful create survives restart. Cache loss may add latency but cannot change a redirect.",
+  "sources": [
+    {
+      "title": "Python sqlite3 documentation: transactions and backup",
+      "url": "https://docs.python.org/3/library/sqlite3.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python hashlib documentation: SHA-256 and stable hashing",
+      "url": "https://docs.python.org/3/library/hashlib.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

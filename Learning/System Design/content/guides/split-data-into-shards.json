@@ -1,0 +1,274 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 9,
+  "title": "Sharding: splitting a large dataset",
+  "level": "intermediate",
+  "minutes": 45,
+  "id": "split-data-into-shards",
+  "summary": "When one database is no longer enough, divide data by a meaningful key. Learn how that choice changes queries, hotspots, and growth.",
+  "objectives": [
+    "Explain sharding and choose a shard key from access patterns.",
+    "Trace routing for a single-owner query.",
+    "Identify hotspots and cross-shard work."
+  ],
+  "terms": [
+    {
+      "term": "Shard",
+      "definition": "One partition of a dataset placed on a database node or group of nodes."
+    },
+    {
+      "term": "Shard key",
+      "definition": "The field used to decide where a record belongs, such as owner_id."
+    },
+    {
+      "term": "Hotspot",
+      "definition": "A key or partition receiving disproportionately much work."
+    },
+    {
+      "term": "Routing",
+      "definition": "Finding which shard owns the requested data."
+    },
+    {
+      "term": "Rebalancing",
+      "definition": "Moving ownership/data as shard capacity or membership changes."
+    }
+  ],
+  "retrieval": [
+    "Why does replication not simply split all write work?",
+    "Which field lets Pocket Notes find one user’s notes?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "One very large notebook can be divided",
+      "markdown": "Pocket Notes has grown beyond the capacity of one well-tuned database. Queries are indexed and unnecessary work has been reduced. Now both data volume and sustained writes may justify dividing the dataset across databases.\n\nSharding is like splitting an archive across several rooms, with a rule telling you which room contains a file. Replication makes copies of the archive; sharding divides its contents. A real system often does both: several shards, each with replicas. Keep those two decisions separate in your drawing.\n\nDo not shard simply because a user count sounds large. The extra routing, migration, cross-shard operations, and recovery are costs. Show which measured storage or workload limit makes them worthwhile."
+    },
+    {
+      "id": "key",
+      "title": "Choose the key from the common question",
+      "markdown": "Start with the question the application asks most often: **“Give me this owner's newest notes.”** An owner_id shard key keeps those records together, so one lookup can find the owner’s shard.\n\n| Candidate key | Convenient operation | Cost or hotspot to investigate |\n| --- | --- | --- |\n| owner_id | List one owner's notes | One huge owner can overload its shard |\n| creation month | Archive an old month | Current-month writes concentrate together |\n| note_id | Look up one individual note | Owner lists may contact many shards |\n\nA router maps a key to its current shard. That route is not permission: the server must still verify that this caller may read the owner's notes.\n\n~~~text\nauthenticated request → validate owner scope → find current shard → query notes\n~~~\n\nTable partitioning inside one database is not automatically data spread across separate machines. State whether you are dividing tables locally or assigning ownership across database nodes. The same word can hide very different operational boundaries."
+    },
+    {
+      "id": "route",
+      "title": "A simple routing example—and its trap",
+      "markdown": "For intuition, compute hash(owner_id) mod 3. A deterministic hash gives the same numeric result for the same input under the same rule; mod means the remainder after division.\n\n| Example hash output | With 3 shards | With 4 shards |\n| --- | --- | --- |\n| 5 | 2 | 1 |\n| 8 | 2 | 0 |\n| 11 | 2 | 3 |\n\nChanging the divisor changes these routes **without moving any stored notes**. A reader using the new rule can arrive at an empty destination while its data remains in the old shard. These sample owners all happened to start on shard 2; they are chosen to expose the movement, not to demonstrate balanced distribution.\n\nProduction schemes may use an explicit ownership directory, ranges, or a more stable hash-ring/token layout. Consistent hashing can reduce changed placement under its model; it does not transfer data, stop two writers, or divide a hot key by itself.\n\nTreat a routing change as a migration: copy a consistent starting set, catch up changes, validate, and perform a protected ownership handoff. Readers and writers need an agreed mapping epoch, or version of the route. The walkthrough is an example protocol outline, not a complete production migration implementation."
+    },
+    {
+      "id": "skew",
+      "title": "Equal users does not mean equal work",
+      "markdown": "Suppose three shards each have one million ordinary users, but one contains a company account importing 500,000 notes per minute. The user counts look balanced while the work is not. That company is a hot key. Adding another shard does not automatically divide a single owner’s writes if all that owner’s data must remain together.\n\nPossible responses include a dedicated placement for the large tenant, splitting that tenant with a secondary key, batching work, or limiting imports. Each changes costs. Splitting by owner plus note bucket helps distribute one tenant but makes its newest-notes query gather results across buckets and merge them.\n\nAn illustrative query reading 20 candidate notes from each of 8 shards fetches 160 candidates before selecting the final 20. More importantly, it waits for several responses and needs rules for partial failure and stable pagination. A scatter-gather query is not free just because every shard has an index."
+    },
+    {
+      "id": "boundaries",
+      "title": "Some operations become harder",
+      "markdown": "Moving a note between owners on different shards now crosses databases. A transaction that was local may need a new workflow or supported distributed transaction. Unique values across all shards require a deliberate identity/constraint strategy. Global search commonly uses a derived index instead of asking every shard on every keystroke, with its own freshness and permission rules.\n\nRebalancing needs a migration protocol: copy a consistent starting set, follow ongoing changes, validate, switch ownership safely, and retain a rollback path. A directory update without synchronized data movement can lose access to records. A transfer must also avoid two writers independently owning the same range.\n\nCommon mistakes are choosing a key from convenience alone, ignoring one large tenant, and equating consistent hashing with a complete database. For interview practice, say the main query, choose the key, trace the query, then name one query or failure that becomes harder. That is stronger than drawing a row of database icons."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "shards",
+      "title": "Keep one owner’s notes together",
+      "source": "flowchart LR\nC[Request for owner 17] --> R[Router: find owner placement]\nR -->|Owner 17 belongs here| A[(Shard A: selected owners)]\nR -.->|Other owners| B[(Shard B: other owners)]\nR -.->|Other owners| D[(Shard C: other owners)]",
+      "caption": "The shards contain different subsets. Replicas are omitted. Dashed arrows indicate alternative routes for other keys.",
+      "steps": [
+        "Extract the shard key from the allowed request.",
+        "Use the current placement rule.",
+        "Query only the owning shard for this access pattern.",
+        "Handle cross-owner/global queries as a separate design problem."
+      ],
+      "sectionId": "key"
+    },
+    {
+      "id": "shards-and-copies",
+      "title": "Dividing data and copying data are different directions",
+      "sectionId": "problem",
+      "source": "flowchart TB\nR[Router using owner placement] --> A[Shard A owns owners 1 to 4]\nR --> B[Shard B owns owners 5 to 8]\nA -->|Replicate same shard data| AC[Replica of shard A]\nB -->|Replicate same shard data| BC[Replica of shard B]",
+      "caption": "The owner ranges are illustrative. Sharding divides ownership; replication copies each shard’s data under its own consistency and recovery protocol.",
+      "steps": [
+        "Choose a placement rule for different data.",
+        "Route one owner to its current authoritative shard.",
+        "Replicate that shard if another copy is required.",
+        "Plan failures and migrations for both ownership and copies."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Choose a shard key for private notes usually listed by owner. Then add a company account 100 times busier than an ordinary owner and a new global search feature. Explain which part of your original choice still helps and which new problems appear.",
+    "rubric": [
+      "Key follows the owner-list access pattern.",
+      "Hot owner is distinct from balanced key counts.",
+      "Global search needs explicit fan-out or a derived index."
+    ],
+    "solution": "owner_id keeps ordinary owner-list queries local and simple. A company with 100 times the work can overload one shard, so consider dedicated placement, bounded import admission, or a secondary partition key with a more complex merge query. Global search can fan out at small scale or use a derived search index when justified; define freshness and enforce permissions. Adding shards alone does not split the hot owner or build the search index."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Sharding primarily does what?",
+      "options": [
+        "Copies every row everywhere",
+        "Divides a dataset into subsets",
+        "Makes backups unnecessary"
+      ],
+      "answer": "Divides a dataset into subsets",
+      "explanation": "Each shard owns part of the data; replication can separately copy each shard."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which key naturally keeps one user’s notes together?",
+      "options": [
+        "owner_id",
+        "A fresh random value for each request",
+        "Current server CPU usage"
+      ],
+      "answer": "owner_id",
+      "explanation": "It aligns placement with the common query, though very large owners may become hotspots."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A query fetches 20 candidates from each of 8 shards. How many candidates arrive before merging?",
+      "answer": 160,
+      "unit": "records",
+      "explanation": "20×8=160. The final result can still contain only 20.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is changing hash(key) mod 3 to mod 4 not a complete migration?",
+      "answer": "Routing changes while stored data remains in old locations. Copying, change capture, validation, ownership cutover, and rollback must be coordinated.",
+      "explanation": "Routing changes while stored data remains in old locations. Copying, change capture, validation, ownership cutover, and rollback must be coordinated."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What might become harder after sharding by owner?",
+      "answer": "Cross-owner transfers, global uniqueness/search, global aggregation, and transactions spanning owners. The answer depends on the workload.",
+      "explanation": "Cross-owner transfers, global uniqueness/search, global aggregation, and transactions spanning owners. The answer depends on the workload."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Shard key should follow?",
+      "back": "Important access patterns and workload distribution."
+    },
+    {
+      "front": "Replication versus sharding?",
+      "back": "Copy the same data versus divide different data."
+    },
+    {
+      "front": "Hot key?",
+      "back": "One key causes disproportionate work on its owning partition."
+    },
+    {
+      "front": "Rebalancing includes?",
+      "back": "Data movement and safe ownership change, not just a new hash."
+    },
+    {
+      "front": "Good sharding explanation?",
+      "back": "Name the query, key, route, and a newly difficult operation."
+    }
+  ],
+  "mentalModel": "A shard key is a promise about which work stays together—and which work must cross boundaries.",
+  "sources": [
+    {
+      "title": "PostgreSQL18 — Table partitioning, contrasted with distributed placement",
+      "url": "https://www.postgresql.org/docs/18/ddl-partitioning.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Dynamo paper — Partitioning and replication design",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "move-owner",
+      "title": "Changing a route requires moving the data safely",
+      "sectionId": "route",
+      "intro": "Owner u17 moves from shard 2 to shard 3 using a directory. This is a bounded outline: the actual system must enforce capture and ownership handoff.",
+      "steps": [
+        {
+          "title": "Old route is authoritative",
+          "explanation": "All accepted writes for u17 go to shard 2 under route epoch 6.",
+          "state": [
+            {
+              "label": "Directory",
+              "value": "u17 → shard 2, epoch 6"
+            },
+            {
+              "label": "Shard2",
+              "value": "Through change P80"
+            },
+            {
+              "label": "Shard3",
+              "value": "No u17 copy"
+            }
+          ]
+        },
+        {
+          "title": "Copy while retaining changes",
+          "explanation": "Load a consistent copy through P80 into shard 3. The old owner remains authoritative and records later changes for catch-up.",
+          "state": [
+            {
+              "label": "Directory",
+              "value": "Still shard 2"
+            },
+            {
+              "label": "Shard2",
+              "value": "Now through P81"
+            },
+            {
+              "label": "Shard3",
+              "value": "Copy through P80"
+            }
+          ]
+        },
+        {
+          "title": "Catch up and establish handoff",
+          "explanation": "Establish an enforced write barrier at shard 2 and identify its final accepted position, P81 in this trace. Catch up shard 3 through that position, validate the copy, and establish epoch 7 before enabling the new owner. Writes cannot slip in after the declared final position.",
+          "state": [
+            {
+              "label": "Shard2",
+              "value": "Old writes fenced with final position P81"
+            },
+            {
+              "label": "Shard3",
+              "value": "Validated through P81"
+            },
+            {
+              "label": "NewEpoch",
+              "value": "7 established by protocol"
+            }
+          ]
+        },
+        {
+          "title": "Publish the new route",
+          "explanation": "Clients use epoch 7. Stale routes are rejected or redirected under the migration protocol, rather than accepting conflicting writes.",
+          "state": [
+            {
+              "label": "Directory",
+              "value": "u17 → shard 3, epoch 7"
+            },
+            {
+              "label": "WriteOwner",
+              "value": "Shard 3 only"
+            },
+            {
+              "label": "OldCopy",
+              "value": "Retained under rollback policy"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Placement math does not move records. Migration must connect the copied data, later writes, and one enforceable ownership decision."
+    }
+  ]
+}

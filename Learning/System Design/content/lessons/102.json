@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "102",
+  "objectives": [
+    "State ordering guarantees at partition and application boundaries.",
+    "Handle ownership changes without advancing past unfinished work.",
+    "Plan retention, replay, and schema evolution together."
+  ],
+  "retrieval": [
+    "L101: what does a committed checkpoint mean?",
+    "L027: what happens when a caller loses a response?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Ordered delivery can still produce unordered effects",
+      "markdown": "A partition delivers account updates version7 then8. The consumer starts two asynchronous calls. Version8 finishes first and version7 overwrites it later. The broker preserved append order; the application did not preserve the required effect order. Decide whether the operation needs ordered application, version-conditional writes, or a commutative aggregation before increasing concurrency.\n\nA key is a statement about related work. Keying by account keeps an account's records together under a stable partitioning scheme; keying every event with a random ID spreads load but abandons that locality. More partitions are not a free change when routing existing entities and checkpoints must remain coherent."
+    },
+    {
+      "id": "mechanism",
+      "title": "A rebalance is a transfer of responsibility",
+      "markdown": "When membership changes, partition ownership can move between group members. A previous owner may still have work running after its assignment is revoked. Stop admitting new work for revoked partitions, drain or cancel bounded in-flight work, and commit only completed contiguous positions under the client protocol. A new owner can replay records whose completion was not durably checkpointed.\n\nIf offsets20,21,22 are in flight and only20 and22 finish, committing23 skips21 after a crash. The safe completed prefix ends after20; checkpoint21 while recording enough application identity to tolerate replay of22. Alternatively process one record at a time per partition if the workload permits the simpler invariant.\n\nGroup membership does not automatically fence arbitrary external effects. A slow old worker might reach an external sink after a new owner begins. Use a sink-side version check, operation identity, or an ownership epoch enforced by the destination where required. A timeout in the consumer is not proof that an outstanding write cannot arrive."
+    },
+    {
+      "id": "worked",
+      "title": "Replay old events into a new reader",
+      "markdown": "A reader originally accepted {amount:12} meaning whole units. A writer changes amount to mean minor units while preserving the same field name and numeric shape. Schema parsing succeeds and business meaning fails. Define a new field or explicit version and an unambiguous conversion rule. Test a new reader against retained old records, not just new writer output.\n\nOur teaching pipeline supports v1 amount and v2 amount_minor_units with integer minor-unit semantics explicitly specified by the project. The version chooses the decoder; an unknown version is rejected rather than guessed as zero. Store an event ID, entity ID, event type/version, and relevant time with the payload. An envelope is not permission to include secrets or arbitrary sensitive fields.\n\nIllustrative recovery calculation: the group consumes5,000/s while new records arrive4,000/s. It can drain a backlog of3.6million in3,600 seconds if these rates remain stable: backlog /(service−arrival). A6-hour retention window leaves little safety if outages, rebalances, and retries consume the rest. Track oldest remaining age as well as count."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Compatibility is a test matrix",
+      "markdown": "Backward and forward compatibility refer to directions between writers and readers under a specific encoding's rules. A field default can let a decoder read an old payload but cannot manufacture a missing business fact. Enum additions, removed fields, renamed meanings, and unit changes deserve explicit examples. Keep versioned fixtures and run both replay and live-path tests.\n\nReplaying into a separate named projection allows comparison before switching readers. Rate-limit recovery so it does not starve live processing or overwhelm a downstream database. Side effects such as notifications should not be reissued simply because a projection rebuild rereads history; isolate deterministic transformation from external commands.\n\nCommon mistakes: checkpointing the largest completed offset rather than the contiguous prefix; treating a rebalance as a clean process stop; assuming a syntactically compatible schema preserves meaning; and making retention shorter than the supported recovery interval. Optional exercise: draft a partition-count migration with a versioned routing epoch and per-entity barrier. That migration is outside the core ten-minute task."
+    },
+    {
+      "id": "schedule",
+      "title": "Core practice and optional depth",
+      "markdown": "Core 55 minutes: retrieval5, mechanism18, worked trace8, bounded exercise10, scheduled Q1–Q3 ten minutes, comparison/cards4. Q4–Q5 are optional extra practice. Product commands below are documented patterns unless explicitly labeled as executed local code. The academy itself needs no broker cluster."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "prefix",
+      "title": "A gap prevents the checkpoint from moving past it",
+      "source": "flowchart LR\nA[Offset 20 done] --> B[Offset 21 unfinished]\nB --> C[Offset 22 done]\nA -.->|Safe next position| K[Checkpoint 21]\nC -.->|Do not commit 23 yet| W[Would skip 21]",
+      "caption": "The checkpoint represents the next record to process. Completion out of order requires tracking the contiguous prefix.",
+      "steps": [
+        "Finish20 and advance next position to21.",
+        "Allow22 to finish without pretending21 is complete.",
+        "Recover and replay from21 after a crash.",
+        "Make repeated22 safe at its destination."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Offsets50–53 were fetched;50,52,53 completed but51 timed out. The owner is revoked. State the safe checkpoint, what the new owner may repeat, and how a versioned projection prevents stale overwrites. Then propose a compatibility test for changing money from units to minor units.",
+    "rubric": [
+      "Use contiguous completed prefix.",
+      "Treat timeout as uncertain outcome.",
+      "Test semantic meaning with retained fixtures."
+    ],
+    "solution": "Checkpoint51, the next position after completed50. The new owner can replay51–53, including effects52/53 that already happened. A conditional version update rejects older entity versions, while durable event IDs prevent applying the same increment twice. Query/reconcile51 if its destination outcome is uncertain. Introduce explicit unit/version semantics and run old and new fixture events through the new decoder, comparing known totals; merely checking JSON parsing is insufficient."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Completed offsets10 and12 with11 unfinished permit which next-position checkpoint?",
+      "options": [
+        "11",
+        "12",
+        "13"
+      ],
+      "answer": "11",
+      "explanation": "The prefix ends at10; advancing beyond11 loses its processing on restart."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Partition append order guarantees external async writes finish in order?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with three replicas"
+      ],
+      "answer": "No",
+      "explanation": "Application concurrency and destination behavior can reorder effects."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Backlog600,000, arrival2,000/s, consumption2,500/s: drain time?",
+      "answer": 1200,
+      "unit": "seconds",
+      "explanation": "600,000 /(2,500−2,000)=1,200s assuming stable rates.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why separate a replay projection?",
+      "answer": "It preserves the live view while permitting full reconciliation, rollback, and a measured cutover instead of rebuilding live state in place.",
+      "explanation": "It preserves the live view while permitting full reconciliation, rollback, and a measured cutover instead of rebuilding live state in place."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What is semantic schema compatibility?",
+      "answer": "Old and new records retain their intended business meaning, including units, defaults, ordering and deletion rules. Parser acceptance alone does not establish it.",
+      "explanation": "Old and new records retain their intended business meaning, including units, defaults, ordering and deletion rules. Parser acceptance alone does not establish it."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Checkpoint after unordered completion?",
+      "back": "Advance only over a contiguous completed prefix."
+    },
+    {
+      "front": "Revoked assignment stops external writes?",
+      "back": "Not necessarily; sink-side identities/versions may still be required."
+    },
+    {
+      "front": "Catch-up drain rate?",
+      "back": "Sustainable consumption minus continuing arrival rate."
+    },
+    {
+      "front": "Replay side-effect risk?",
+      "back": "Reissuing commands such as emails or charges while rebuilding a view."
+    },
+    {
+      "front": "Compatibility must preserve?",
+      "back": "Meaning as well as encoded shape."
+    }
+  ],
+  "mentalModel": "Order, ownership, and replay are contracts that must survive the consumer boundary.",
+  "sources": [
+    {
+      "title": "Apache Kafka 4.1 — Design, partitions and delivery semantics",
+      "url": "https://kafka.apache.org/41/design/design/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Avro1.12 specification — schema resolution",
+      "url": "https://avro.apache.org/docs/1.12.0/specification/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

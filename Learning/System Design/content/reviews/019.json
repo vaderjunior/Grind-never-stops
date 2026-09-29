@@ -1,0 +1,12 @@
+{
+  "lessonId": "019",
+  "sha256": "5d992c559812de4bb86bde06272df18e1bc38e9f2411d21f680b907d377a7252",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: connection recovery requires retained history, cursor/snapshot coherence, and authorization; slow consumers have bounded policies.",
+    "Arithmetic checked: 4000 polls/s, 25.6 Mbit/s response bodies, 312.5 MiB illustrative buffers."
+  ]
+}

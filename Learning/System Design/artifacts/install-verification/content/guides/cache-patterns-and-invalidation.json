@@ -1,0 +1,315 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 6,
+  "title": "Cache patterns, stale data, and cache stampedes",
+  "level": "beginner",
+  "minutes": 60,
+  "id": "cache-patterns-and-invalidation",
+  "summary": "Trace cache-aside, writes, expiry, eviction, and a cache stampede with concrete values. Learn why a fast answer also needs the right freshness and permission rules.",
+  "objectives": [
+    "Walk through a cache hit, miss, update, and expiry.",
+    "Compare cache-aside, read-through, write-through, and write-behind responsibilities.",
+    "Explain an invalidation race and a stampede without claiming one TTL solves everything.",
+    "Choose a cache key and failure policy for a specific representation."
+  ],
+  "terms": [
+    {
+      "term": "Cache-aside",
+      "definition": "The application checks a cache and loads missing values from the store holding the accepted saved records."
+    },
+    {
+      "term": "Invalidation",
+      "definition": "Making a cached representation unusable because it may no longer be valid."
+    },
+    {
+      "term": "TTL",
+      "definition": "Time to live: an expiry interval for a cached entry under the cache policy."
+    },
+    {
+      "term": "Eviction",
+      "definition": "Removing an entry to manage cache capacity, even if its expiry time has not arrived."
+    },
+    {
+      "term": "Cache stampede",
+      "definition": "Many callers simultaneously perform the same expensive rebuild after a shared miss or expiry."
+    },
+    {
+      "term": "Source of truth",
+      "definition": "The store whose accepted state determines the correct business value for the operation."
+    }
+  ],
+  "retrieval": [
+    "What is the difference between a Redis server and an application variable?",
+    "Why might the database contain a newer value than a cached copy?"
+  ],
+  "sections": [
+    {
+      "id": "why",
+      "title": "First choose something safe and useful to reuse",
+      "markdown": "Pocket Notes shows a public author profile beside many notes. The profile changes occasionally, but readers request it repeatedly. Reusing a recently fetched profile can save database work. A private permission decision has different freshness and isolation requirements; copying the same policy from the public profile can be unsafe.\n\nWrite down what the cached value represents. Is it the raw profile row, a formatted public response, or a result customized for one viewer? Those values may need different keys and lifetimes. “Cache user 7” is ambiguous if one response includes a private email and another must not.\n\nA cache helps when the avoided work and reuse outweigh lookup, storage, coordination, and invalidation costs. If almost every key is requested once, the application may pay for a miss and a database read on every request. Introduce the cache to address a measured workload, not because every diagram needs Redis."
+    },
+    {
+      "id": "aside",
+      "title": "Trace cache-aside with a real value",
+      "markdown": "The database stores profile 7 at version 3 with display name Ajay. The cache is empty. Request A asks for the public profile. The application checks public-profile:7, misses, reads the database, puts version 3 into the cache with a chosen expiry, and returns it. Request B soon checks the same key and gets a hit.\n\nThe names tell you who loads a miss:\n\n| Pattern | Who coordinates the miss? | What still needs a contract? |\n| --- | --- | --- |\n| Cache-aside | Application checks cache, then reads and fills | Key scope, freshness, failures, concurrent fills |\n| Read-through | A cache-facing layer loads on behalf of the caller | The same rules plus the layer’s actual behavior |\n\nNeither name proves those rules are solved. Inspect the implementation rather than inferring guarantees from a pattern label.\n\nNeither a hit nor a miss is inherently an error. Empty caches occur after restart, eviction, expiration, or a new key. A healthy service needs a deliberate miss path. If losing the cache makes all requests fail because the database cannot handle the load, that operational dependency should be acknowledged and protected."
+    },
+    {
+      "id": "writes",
+      "title": "Follow an update instead of naming a strategy",
+      "markdown": "Ajay changes the display name and the database commits version 4. The old cached version 3 must stop serving according to the product's freshness policy. A common cache-aside update writes the database first and then invalidates the affected cached representation so a later miss reloads it.\n\nWhy that order? If we delete the cache first, a concurrent reader can miss, read the old database value before the write, and repopulate the cache with version 3. Writing the database first avoids that particular ordering gap, but does not eliminate every concurrent race.\n\nConsider a reader that fetched version 3 before the update and pauses before filling the cache. The writer commits version 4 and invalidates. The paused reader resumes and caches version 3. This stale refill is possible unless an explicit freshness mechanism prevents it.\n\nExamples to investigate include accepting only suitable versions, using a generation label that changes when data is updated, or coordinating the order of reads, fills, and writes. Each mechanism needs its own race analysis; a label alone does not prevent the old fill. A named caching pattern alone is not a proof of read-after-write consistency."
+    },
+    {
+      "id": "through",
+      "title": "Write-through and write-behind have different promises",
+      "markdown": "With a write-through arrangement, the write path updates the authoritative store through a caching layer or coordinated write path. Whether a successful response means both locations are current depends on that implementation's ordering, concurrency, failure, and acknowledgment rules. Do not simply conclude that two writes have become one atomic operation.\n\nWrite-behind, also called write-back in some contexts, can acknowledge a cached change before persisting it to the backing store later. This may reduce response latency or combine writes, but outstanding data can be lost if the buffer is not durably protected. Recovery, ordering, flush failures, and retries become central requirements.\n\nFor an ordinary beginner notes app, start with durable database writes and a derived read cache where appropriate. A write-behind design for irreplaceable notes requires much more than periodically flushing an in-memory map. Ask which data could disappear after the success response and whether the product accepts that risk."
+    },
+    {
+      "id": "ttl",
+      "title": "Expiry, freshness, and capacity are separate ideas",
+      "markdown": "A TTL of 60 seconds means an entry is eligible to expire according to that cache's expiry policy after its assigned lifetime. It does not establish a universal “never more than 60 seconds stale” guarantee. The value might already be old when loaded from a replica, a stale refill might insert it later, or the system might explicitly serve stale content during refresh.\n\nKeep three questions separate:\n\n| Question | Mechanism or measurement |\n| --- | --- |\n| When does this entry stop being usable? | Assigned expiry policy |\n| What leaves when space is needed? | Eviction policy |\n| How old is this value relative to the accepted data? | Freshness information and update ordering |\n\nA least-recently-used-style eviction policy favors recently accessed entries; exact details vary. Expiration and eviction can both produce misses, without proving a universal freshness limit.\n\nShort TTLs can improve typical freshness while increasing rebuild load. Long TTLs can improve reuse while retaining outdated values longer. Choose per representation, measure actual age when it matters, and handle updates intentionally. An immutable file named by a content hash can support a very different cache policy from an account's current access permissions."
+    },
+    {
+      "id": "stampede",
+      "title": "A thousand misses can repeat the same work",
+      "markdown": "Suppose a popular public profile expires and 1,000 requests arrive before the first database fetch finishes. If each request independently loads the same data, one expired key creates 1,000 database operations. This is a stampede: the cache's miss path amplifies work at the worst moment.\n\nWithin one application process, request coalescing can let one in-flight fetch serve several waiters. Across many processes, a shared coordination mechanism or carefully designed refresh ownership may be needed. Any coordination must have bounded waiting and recovery if the refresh worker fails. A lock name is not enough to prove the refresh is safe.\n\nOther techniques include refreshing before expiry, adding random variation to expiration times so many keys do not expire together, and temporarily serving a previously valid stale value when the product permits it. These techniques address different causes. They do not authorize stale private permissions or guarantee the database can survive unlimited cache failures.\n\n> **Pause and predict:** Ten application processes each coalesce locally. Can there still be ten database fetches for one cold key? Yes. Local sharing protects one process’s duplicates; it does not automatically coordinate every process."
+    },
+    {
+      "id": "failure",
+      "title": "Protect the fallback, not just the fast path",
+      "markdown": "Assume 1,000 reads per second and a 90% hit ratio. Under a simple one-database-read-per-miss model, the database normally receives about 100 reads per second. If the cache suddenly fails and every request falls back, demand becomes about 1,000 reads per second. The former database load is not proof that it can handle the tenfold jump.\n\nUse bounded concurrency, deadlines, and **admission control**: decide how much incoming work to accept so the fallback does not exceed its budget. Choose an appropriate degraded response policy, meaning a limited but explicitly acceptable result during trouble. Some public pages may use an older permitted representation; sensitive writes may need an explicit unavailable response. Unbounded retries can add even more load and prolong the failure.\n\nMonitor hit ratio together with miss latency, cache errors, database saturation, and the age of relevant values. A high hit ratio can coexist with terrible tail latency if the few misses are extremely slow. Counting hits alone does not describe the user experience."
+    },
+    {
+      "id": "keys",
+      "title": "A key is part of the correctness boundary",
+      "markdown": "A useful key includes everything that determines the reusable representation: resource identity, tenant when relevant, format/version, and any user-specific scope that must not be shared. A public-profile response and a private account response should not collide merely because both concern user 7.\n\nNegative caching stores a known absence or denial for a limited period. It can reduce repeated lookups of missing objects, but a newly created object may remain invisible until that negative entry expires or is invalidated. A cached denial also has different risks from a cached permission grant. Choose policies explicitly rather than treating all empty results alike.\n\nNever treat a cache hit as proof that the current caller is authorized. You may cache shared raw data while still checking access before returning a response. The permitted design depends on the sensitivity, representation, and revocation requirements."
+    },
+    {
+      "id": "platform",
+      "title": "Apply this to model metadata, then stop at the boundary",
+      "markdown": "An internal AI platform often reads model descriptions and routing configuration repeatedly. A public description can tolerate brief staleness. A decision to permit deployment of a newly revoked model version may need a current authoritative check. Both are “model metadata,” yet the operations have different consequences.\n\nVersioned routing snapshots can help processes identify which configuration they are using. A model cache key may need model version, parameters, tenant, and permission scope depending on what is reused. Do not confuse caching final answers with a model server's internal attention KV cache. That later-course mechanism reuses intermediate model-computation state, not a finished application response; its name does not imply Redis.\n\nTo finish, trace one read miss and one concurrent update aloud. Identify the authority, the cached representation, the invalidation event, and what users may observe during failure. That concrete explanation is much more useful than memorizing four strategy names."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "aside",
+      "title": "The application owns the cache-aside miss path",
+      "source": "sequenceDiagram\nparticipant A as Application\nparticipant C as Cache\nparticipant D as Database\nA->>C: Read public-profile:7\nC-->>A: Miss\nA->>D: Read profile 7\nD-->>A: Version 3\nA->>C: Store version 3 with expiry\nNote over A: Return allowed public representation",
+      "caption": "Cache-aside does not itself establish a global freshness guarantee.",
+      "steps": [
+        "Check the specific representation key.",
+        "Load a miss from the chosen authority.",
+        "Store it with an intentional policy.",
+        "Return the permitted response."
+      ],
+      "sectionId": "aside"
+    },
+    {
+      "id": "race",
+      "title": "A stale refill can outlive invalidation",
+      "source": "sequenceDiagram\nparticipant R as Reader\nparticipant D as Database\nparticipant W as Writer\nparticipant C as Cache\nR->>D: Read version 3\nD-->>R: Version 3, reader pauses\nW->>D: Commit version 4\nW->>C: Invalidate\nR->>C: Resume and fill version 3\nNote over R,C: A freshness mechanism is still needed",
+      "caption": "This original trace demonstrates why a strategy name is not a complete consistency proof.",
+      "steps": [
+        "Read before the update.",
+        "Pause before cache fill.",
+        "Commit and invalidate a newer value.",
+        "Observe the older fill race."
+      ],
+      "sectionId": "writes"
+    },
+    {
+      "id": "coalesced-miss",
+      "sectionId": "stampede",
+      "title": "Several local waiters share one in-flight fetch",
+      "source": "flowchart LR\nA[Request A misses] --> F[One in-flight fetch for this key]\nB[Request B misses] --> W[Join bounded local wait]\nC[Request C misses] --> W\nW --> F\nF --> D[(One database read)]\nD --> R[Fill cache and complete waiters]\nR --> A2[Response to A]\nR --> B2[Response to B]\nR --> C2[Response to C]",
+      "caption": "This is coordination within one application process. Other processes can still fetch independently; leader failure, deadlines, and bounded waiting need explicit handling.",
+      "steps": [
+        "One request starts a fetch associated with this exact key.",
+        "Later local misses wait on that in-flight work within a limit.",
+        "One result fills the cache and serves the eligible waiting requests."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Draw the stale-refill timeline in your own words. Then estimate database reads per second at 1,000 requests/s with 90% hits and with a failed cache. State a fallback protection and a situation where serving stale data is unacceptable.",
+    "rubric": [
+      "The paused old reader appears in the race.",
+      "Miss-load arithmetic is correct under stated assumptions.",
+      "Fallback capacity and freshness are explicit."
+    ],
+    "solution": "A reader obtains version 3 and pauses; a writer commits version 4 and deletes the cache entry; the reader resumes and fills version 3. Version-aware or coordinated freshness rules are required if that observation is forbidden. At 90% hits, 10% × 1,000 = 100 database reads/s in the simple model. A failed cache can cause 1,000 reads/s. Bound fallback concurrency/admission and use deadlines. Stale authorization or a revoked model deployment permission may violate the required safety rule."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Does database-update-then-invalidate prevent every stale-refill race?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if JSON is used"
+      ],
+      "answer": "No",
+      "explanation": "An earlier reader can resume and fill an old value after invalidation."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "At 1,000 reads/s and 90% hits, what is the simple miss rate?",
+      "answer": 100,
+      "unit": "reads/s",
+      "explanation": "(1−0.90) × 1,000 = 100.",
+      "tolerance": 0
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Eviction and TTL mean the same thing?",
+      "options": [
+        "Yes",
+        "No",
+        "Only in Redis"
+      ],
+      "answer": "No",
+      "explanation": "Eviction manages capacity; expiry manages entry lifetime."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does one shared cache key for public and private user responses create risk?",
+      "answer": "A representation meant for one access scope can be returned to another caller; key scope and authorization must match the actual response.",
+      "explanation": "A representation meant for one access scope can be returned to another caller; key scope and authorization must match the actual response."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can a cache outage overload a previously healthy database?",
+      "answer": "Requests normally absorbed by hits suddenly reach the fallback store; its load can multiply, and retries can amplify it further.",
+      "explanation": "Requests normally absorbed by hits suddenly reach the fallback store; its load can multiply, and retries can amplify it further."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Cache-aside responsibility?",
+      "back": "Application checks the cache and loads misses."
+    },
+    {
+      "front": "TTL proves bounded data age?",
+      "back": "Not without assumptions about source freshness, refill races, and stale-serving policy."
+    },
+    {
+      "front": "Stampede?",
+      "back": "Many callers rebuild the same missing value together."
+    },
+    {
+      "front": "Write-behind risk?",
+      "back": "Acknowledged changes may still await durable backing-store persistence."
+    },
+    {
+      "front": "Cache failure question?",
+      "back": "Can the fallback handle the displaced load under bounded admission?"
+    }
+  ],
+  "mentalModel": "A cached answer needs an identity, an authority, a freshness policy, and a safe miss path.",
+  "sources": [
+    {
+      "title": "Microsoft — Cache-aside pattern and limitations",
+      "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MDN — HTTP caching and representations",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "three-waiters-one-fetch",
+      "sectionId": "stampede",
+      "title": "Three local misses become one database read",
+      "intro": "One application process receives three requests for the same allowed public representation. The fetch finishes within every waiter’s deadline in this successful teaching trace.",
+      "steps": [
+        {
+          "title": "A becomes the fetch owner",
+          "explanation": "The cache misses. The process records one in-flight load for this exact key and starts the database read.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 ms"
+            },
+            {
+              "label": "In-flight key",
+              "value": "public-profile:7"
+            },
+            {
+              "label": "Database reads started",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "title": "B joins the existing work",
+          "explanation": "B misses at 5 ms but finds the local in-flight fetch. It waits within its own limit instead of starting a second read.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "5 ms"
+            },
+            {
+              "label": "Waiting requests",
+              "value": "A and B"
+            },
+            {
+              "label": "Database reads started",
+              "value": "Still 1"
+            }
+          ]
+        },
+        {
+          "title": "C joins too",
+          "explanation": "C also asks for the same representation. A different key or permission-dependent view would need separate handling.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "8 ms"
+            },
+            {
+              "label": "Waiting requests",
+              "value": "A, B, C"
+            },
+            {
+              "label": "Database reads started",
+              "value": "Still 1"
+            }
+          ]
+        },
+        {
+          "title": "Complete and clear the in-flight state",
+          "explanation": "The database returns a valid value at 40 ms. Fill the cache, respond to eligible waiters, and release the coordination record.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "40 ms"
+            },
+            {
+              "label": "Responses completed",
+              "value": "3 from this result"
+            },
+            {
+              "label": "Database reads",
+              "value": "1"
+            },
+            {
+              "label": "In-flight record",
+              "value": "Cleared"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Coalescing shares concurrent work for the same key. It needs bounded waiters and failure cleanup, and its scope must be stated."
+    }
+  ]
+}

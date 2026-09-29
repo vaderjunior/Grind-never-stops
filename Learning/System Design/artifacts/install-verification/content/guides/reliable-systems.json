@@ -1,0 +1,279 @@
+{
+  "id": "reliable-systems",
+  "title": "Availability, failure domains, and graceful degradation",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 13,
+  "level": "intermediate",
+  "minutes": 45,
+  "summary": "Keep the important user journey working when a component fails, then explain what your design still cannot survive.",
+  "objectives": [
+    "Define success from the user’s point of view.",
+    "Identify shared failure domains in a redundant drawing.",
+    "Choose a safe degraded response and a bounded retry policy."
+  ],
+  "terms": [
+    {
+      "term": "Availability",
+      "definition": "How often an operation can produce an acceptable response, under a stated measurement rule."
+    },
+    {
+      "term": "Failure domain",
+      "definition": "Components that can fail together because they share a dependency."
+    },
+    {
+      "term": "Graceful degradation",
+      "definition": "Continuing a reduced but useful service when an optional part is unavailable."
+    },
+    {
+      "term": "Deadline",
+      "definition": "The latest time by which a request must finish."
+    },
+    {
+      "term": "Circuit breaker",
+      "definition": "A policy that temporarily stops calls to a failing dependency and later probes recovery."
+    }
+  ],
+  "retrieval": [
+    "Why might two application servers still depend on one database?",
+    "What happens to a queue when arrivals exceed departures?"
+  ],
+  "sections": [
+    {
+      "id": "journey",
+      "title": "Start with the promise to a user",
+      "markdown": "Pocket Notes now lets a user save a note, read saved notes, and see suggested tags. During an incident, the team reports that every machine is running. A user still cannot save anything. Machine health is useful evidence, but it does not define whether this service is available. Start with an operation: a valid save should return a durable result within two seconds.\n\nFor this exercise, call a request successful only if it meets both the result and latency rules. If 99,900 of 100,000 eligible requests succeed, measured request availability is 99.9%. State the window and eligible requests. Deliberate abuse rejections and failures caused by the service need an explicit counting policy. A percentage without a denominator can hide user pain. Read availability and write availability may differ during the same incident."
+    },
+    {
+      "id": "domains",
+      "title": "Count independent failures, not rectangles",
+      "markdown": "Redundancy works against failures it actually separates. Draw the shared boundary, not just a second box.\n\n| Added copy | Failure it may survive | Failure it still shares |\n| --- | --- | --- |\n| Two processes on one host | One process exits | Host power or operating-system failure |\n| Two hosts on one shared dependency | One host fails | Shared database or network dependency outage |\n| Two database replicas | Some node/storage failures under their protocol | Bad deletion replicated to both |\n| Two regions | Some regional failures | Shared bad release, credential, or authority design |\n\nA **failure domain** is a group that can disappear or misbehave together. Circle application hosts, storage, entry routing, network, identity, and relevant configuration. Two regions can still use the same expired credential.\n\nDo not claim independence just because the labels differ. For each extra copy, complete two sentences: “This survives ___ because ___” and “This still fails when ___.” That turns a topology into an assessable reliability claim."
+    },
+    {
+      "id": "degrade",
+      "title": "Decide which work may disappear temporarily",
+      "markdown": "Suggested tags are optional; preserving the user's note is essential. If the save handler waits for tag suggestions before committing, a slow optional service blocks the core action.\n\n~~~text\nFragile: validate → wait for tags → save note → respond\nRevised: validate → save note → respond “Saved; tags pending”\n                                  ↘ separate bounded tag work\n~~~\n\n| Failure | Useful remaining behavior | Misleading behavior to avoid |\n| --- | --- | --- |\n| Tag service unavailable | Return the durably saved note without tags | Make every save wait for tags |\n| Database rejects the save | Show a truthful save failure or unresolved state | Display Saved anyway |\n| Public examples view lags | Serve permitted older data if the contract allows | Reuse that policy for private deletion confirmation |\n\nGraceful degradation preserves a useful declared promise. It may omit optional material, show a pending job, or return an allowed older view. The fallback must mean what the user thinks it means.\n\nKeep optional calls and queued work bounded so they cannot occupy all connections, memory, or workers needed by saves. A new asynchronous arrow is helpful only when the resource and recovery behavior supports the promised separation."
+    },
+    {
+      "id": "budgets",
+      "title": "Prevent one failure from consuming everything",
+      "markdown": "Suppose the user deadline is two seconds. Spending 1.8 seconds on an optional tag service leaves almost no time for storage and the response. Allocate time deliberately and carry a deadline through the call chain. A timeout stops waiting; it does not prove the remote operation did nothing. Retrying writes still requires an operation identity or another way to resolve uncertainty.\n\nRetries also create work. With 100 original requests each second, three attempts per request can send 300 attempts each second to a struggling dependency. Limit attempts, add randomized delay, and honor the remaining deadline. A circuit breaker can stop repeatedly calling a dependency known to be failing, but its recovery probes need care. Keep separate worker or connection budgets for optional and essential work so an optional backlog cannot occupy every resource."
+    },
+    {
+      "id": "capacity",
+      "title": "Ask whether the survivor has room",
+      "markdown": "Our two application servers normally handle 80 requests each second, so the service handles 160 in total. Each was measured as comfortable at 100. Losing one leaves only 100 of safe capacity, not the full 160. Unless demand drops or spare capacity arrives, the remaining server overloads. Redundancy without spare capacity may merely delay an outage.\n\nA reasonable teaching policy admits essential saves first, rejects excess low-priority work early, and preserves a bounded waiting room. Rejection is painful, but an unlimited queue can make all requests miss their deadline while consuming memory. Scaling also takes time, and a new server may need a warm cache. State the assumed recovery delay. Test the failure under the peak load you intend to survive instead of testing it only while idle."
+    },
+    {
+      "id": "test",
+      "title": "Run a small failure story",
+      "markdown": "Use a local drawing or a controlled lab rather than causing a real outage. Remove the suggestion box and trace a save: it should still persist and return without tags. Remove one application box and check the surviving capacity. Then remove the database and state honestly which operations fail. The goal is to discover the boundary of the design.\n\nFor each story, record a user symptom, the mechanism that contains it, and the evidence of recovery. “We have replication” is not evidence; “a confirmed note remained readable after the leader restarted in this test” is a bounded observation. Finish your explanation with the remaining shared dependencies and the cost of reducing them. Reliability grows through explicit promises and rehearsed recovery, not through adding every possible component to a diagram."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "degraded-save",
+      "sectionId": "degrade",
+      "title": "Save remains useful without suggested tags",
+      "source": "flowchart LR\nU[User saves note] --> A[Validate request]\nA --> D[(Persist note)]\nD --> R[Return saved note]\nR --> T[Request optional tags]\nT --> F[On failure keep saved note]",
+      "steps": [
+        "Persist the essential user data first.",
+        "Return a truthful save result.",
+        "Optional suggestions have their own failure path."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "survivor-budget",
+      "title": "A surviving server still has finite capacity",
+      "sectionId": "capacity",
+      "source": "flowchart LR\nD[Demand after one server fails] --> P[Classify essential and optional work]\nP --> E[Reserve bounded capacity for essential actions]\nP --> O[Admit optional work only within remaining budget]\nE --> S[Surviving service capacity]\nO --> S\nP --> R[Reject excess work early and clearly]",
+      "caption": "Priority is an explicit product policy, not an assertion that all demand fits. Test the safe measured capacity and the recovery delay under the required workload.",
+      "steps": [
+        "Measure how much capacity survives the chosen failure.",
+        "State which actions the product prioritizes.",
+        "Bound accepted work to actual remaining resources.",
+        "Reject or defer excess demand instead of hiding it in unlimited waiting."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Draw a two-server notes app with an optional tag service. Peak load is 160 requests/s; each server safely handles 100. Remove one server, then remove the tag service. Explain a safe response for each case and name one shared dependency your drawing cannot survive.",
+    "rubric": [
+      "Compute survivor capacity and excess demand.",
+      "Keep confirmed saves independent of optional tags.",
+      "State one bounded retry or waiting policy.",
+      "Name a remaining shared failure."
+    ],
+    "solution": "One surviving server has 100 requests/s of safe capacity, leaving 60 requests/s above that bound. Prioritize essential work, reject or defer eligible excess work, and add measured capacity with an explicit delay. Remove the tag dependency from the confirmed-save path; show the saved note without tags if suggestions fail. Bound retries and waiting time. The database, network, shared deployment, or power domain may remain a common failure; each requires its own mitigation."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Two servers on one physical host protect against which failure?",
+      "options": [
+        "One application process crashes",
+        "The host loses power",
+        "The shared disk disappears"
+      ],
+      "answer": "One application process crashes",
+      "explanation": "A host failure removes both processes."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "160 requests/s arrive; the sole survivor safely handles 100. How much demand exceeds capacity?",
+      "answer": 60,
+      "unit": "requests/s",
+      "tolerance": 0,
+      "explanation": "160 − 100 = 60 requests/s."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which fallback preserves an honest save contract?",
+      "options": [
+        "Show Saved even when storage failed",
+        "Save the note and omit failed optional tags",
+        "Retry forever before responding"
+      ],
+      "answer": "Save the note and omit failed optional tags",
+      "explanation": "The core durable result remains true while optional behavior is reduced."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When could a cached response be a harmful fallback?",
+      "answer": "A stale permission, deletion result, or financial state can violate the operation’s promise. State permitted staleness per operation and fail explicitly when no safe fallback exists.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Explain why two replicas do not make all failures independent.",
+      "answer": "They may share a power source, network, deployment bug, credentials, or replicated corruption. Name the failure domain and the independent recovery mechanism.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What is a failure domain?",
+      "back": "A group of components vulnerable to the same failure."
+    },
+    {
+      "front": "Does a timeout prove a write failed?",
+      "back": "No. The write may have committed before its response was lost."
+    },
+    {
+      "front": "What makes degradation graceful?",
+      "back": "The remaining result still meets a useful, truthful user contract."
+    },
+    {
+      "front": "Why reserve survivor capacity?",
+      "back": "A redundant instance must handle the load transferred after another fails."
+    },
+    {
+      "front": "What should a reliability claim include?",
+      "back": "An operation, success rule, measurement window, tested failure, and remaining limit."
+    }
+  ],
+  "mentalModel": "Protect a user promise, then remove one dependency at a time and explain what remains true.",
+  "sources": [
+    {
+      "title": "Google SRE — Handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Monitoring distributed systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "survive-one-instance",
+      "title": "Redundancy needs spare capacity to keep its promise",
+      "sectionId": "capacity",
+      "intro": "Two instances can each comfortably serve 70 requests/s in this illustrative workload. Current demand is 120/s: 60 essential saves and 60 optional requests. Assume equal resource cost per request for this arithmetic; real priority classes need separately measured capacity.",
+      "steps": [
+        {
+          "title": "Before failure",
+          "explanation": "Load is shared. The combined comfortable capacity exceeds current demand.",
+          "state": [
+            {
+              "label": "Instances",
+              "value": "2 ready"
+            },
+            {
+              "label": "SafeCapacity",
+              "value": "140 requests/s"
+            },
+            {
+              "label": "Demand",
+              "value": "120 requests/s"
+            }
+          ]
+        },
+        {
+          "title": "Lose one instance",
+          "explanation": "One survivor remains. The original demand now exceeds the measured safe capacity by fifty requests/s.",
+          "state": [
+            {
+              "label": "Instances",
+              "value": "1 ready"
+            },
+            {
+              "label": "SafeCapacity",
+              "value": "70 requests/s"
+            },
+            {
+              "label": "ExcessDemand",
+              "value": "50 requests/s"
+            }
+          ]
+        },
+        {
+          "title": "Apply a declared admission policy",
+          "explanation": "Reserve capacity for the 60 essential saves, admit 10 optional requests, and reject or defer the other 50 honestly.",
+          "state": [
+            {
+              "label": "EssentialAdmitted",
+              "value": "60/s"
+            },
+            {
+              "label": "OptionalAdmitted",
+              "value": "10/s"
+            },
+            {
+              "label": "OptionalNotAdmitted",
+              "value": "50/s"
+            }
+          ]
+        },
+        {
+          "title": "Observe and restore capacity",
+          "explanation": "A replacement must start and become ready before its capacity counts. Verify saves remain correct and timely while optional work recovers.",
+          "state": [
+            {
+              "label": "Replacement",
+              "value": "Starting, then ready after checks"
+            },
+            {
+              "label": "Evidence",
+              "value": "Save outcomes and latency"
+            },
+            {
+              "label": "Limit",
+              "value": "Shared database failure remains separate"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A second instance does not guarantee full peak service after one fails. State surviving capacity, priority policy, and the user-visible limit."
+    }
+  ]
+}

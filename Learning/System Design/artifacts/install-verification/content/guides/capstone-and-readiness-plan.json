@@ -1,0 +1,283 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 24,
+  "title": "Your capstone, evidence, and readiness plan",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "capstone-and-readiness-plan",
+  "summary": "Turn six months of study into a small portfolio of evidence. Choose what to practice next from your actual explanations and failure tests, not from how many chapters you opened.",
+  "objectives": [
+    "Build a capstone with clear scope and testable guarantees.",
+    "Review saved evidence without mistaking familiarity for independent skill.",
+    "Create a focused repeat-and-retest plan for the next two weeks."
+  ],
+  "terms": [
+    {
+      "term": "Capstone",
+      "definition": "A substantial final project that combines skills learned separately."
+    },
+    {
+      "term": "Acceptance criterion",
+      "definition": "An observable condition that tells you whether a requirement has been met."
+    },
+    {
+      "term": "Failure injection",
+      "definition": "Deliberately introducing a bounded failure to test recovery behavior."
+    },
+    {
+      "term": "Remediation",
+      "definition": "Focused practice aimed at a specific demonstrated gap."
+    },
+    {
+      "term": "Readiness evidence",
+      "definition": "Repeated successful reasoning on representative tasks, with limitations made explicit."
+    }
+  ],
+  "retrieval": [
+    "Which part of the mock could you explain without the example?",
+    "What did a failure test reveal that a normal happy-path test missed?"
+  ],
+  "sections": [
+    {
+      "id": "portfolio",
+      "title": "Collect a few complete stories",
+      "markdown": "After many lessons, it is tempting to measure progress by the number of familiar words. A stronger portfolio contains a few complete stories: what a user needed, which design you chose, how the request worked, what broke, and what the evidence showed.\n\nThink of learning to cook. Reading fifty recipes can teach vocabulary, but preparing a meal reveals timing, recovery, and judgment. Your system-design capstone is a controlled kitchen: small enough to finish, rich enough to test decisions. It does not need internet-scale infrastructure to demonstrate reasoning.\n\nChoose one product you can explain in a paragraph: a shared notes service, a recoverable file uploader, a small booking service, or a job-processing system. Use one of the academy's project workspaces if it fits, but write your own acceptance criteria. A scaffold is a starting point, not evidence that you implemented and tested its behavior."
+    },
+    {
+      "id": "scope",
+      "title": "Write a contract for a small finished system",
+      "markdown": "Name three user actions, one important invariant, and a bounded workload. For a job system, the actions might be submit, inspect status, and cancel. A useful invariant might be that one logical job identity produces at most one accepted stored result. State which failures are in scope and which remain unsupported.\n\nDefine what you will observe: a duplicate submission returns the same job identity, a worker crash leaves recoverable work, and a canceled job does not later overwrite a newer state. Choose tools you can operate locally. Add a queue or cache only when its role is explained and testable.\n\nKeep a concise architecture page with arrows labeled by messages, a normal request trace, and a recovery trace. Include one estimate with units and its assumptions. Record the limitation of a single-machine demonstration: a process restart is not a real region outage, and an in-memory simulation is not durable storage."
+    },
+    {
+      "id": "test",
+      "title": "Design a failure before celebrating success",
+      "markdown": "Run the normal journey first. Then inject one failure at a named boundary. Stop a worker after saving a result but before acknowledging the job. Repeat the delivery. Inspect whether the stored outcome duplicated or changed unexpectedly. The exact test depends on your product; the important habit is to predict the result before running it.\n\nWrite down setup, action, observed output, and interpretation. A screenshot of a green page is weaker than a repeatable command or scenario that demonstrates the guarantee. If the test fails, preserve the failing case, repair the mechanism, and run the same scenario again. Do not rewrite the expected result merely to make the report look successful.\n\nObserve the parts that explain user outcomes: request latency, errors, work age, duplicate handling, and recovery time where relevant. More metrics are not automatically more understanding. Pick signals that would tell you the central promise is failing and explain what you would investigate first."
+    },
+    {
+      "id": "review",
+      "title": "Review interview evidence without inflating it",
+      "markdown": "Read a saved mock transcript and your diagram. Point to evidence rather than rating how familiar the words feel.\n\n| Skill | Useful evidence | Insufficient evidence by itself |\n| --- | --- | --- |\n| Clarification | A question changed a requirement or assumption | A long list of questions with no consequence |\n| Estimation | Units, assumptions, and a resulting design decision | A large number written without a workload |\n| Correctness | A state transition survives the chosen failure trace | A database name or “use retries” |\n| Access control | The trace checks whether this actor may read or act | A login box alone |\n| Communication | A listener can follow one complete request | Many components with unlabeled arrows |\n\nMark a skill **not yet shown** when the attempt contains no evidence. This is a statement about the record, not a judgment that you cannot learn it.\n\nSeparate independent reasoning from answers produced after hints or while reading an example. Self-assessment should say it is self-assessment. AI feedback should cite actual statements and identify uncertainty rather than infer confidence from eloquent wording.\n\nLook for repeated weaknesses across different problems. Missing units once may be a slip; repeatedly treating a timeout as proof of failure is a reasoning pattern worth repairing. Several correct multiple-choice answers cannot cancel a critical gap in a design conversation."
+    },
+    {
+      "id": "plan",
+      "title": "Make the next two weeks specific",
+      "markdown": "Choose at most three gaps. Pair each with a bounded exercise and a way to inspect changed-problem evidence.\n\n| Observed gap | Short practice | Evidence to seek next |\n| --- | --- | --- |\n| Estimates omit units | Three five-minute workload calculations | Units and one design consequence stated aloud |\n| Explanations wander | A two-minute request trace with five boxes | A listener can reconstruct the named messages |\n| Permission checks are vague | Trace one allowed and one denied read | No protected content crosses the boundary before authorization |\n\nThen repeat a changed problem without consulting the earlier solution. Moving from public search to permission-sensitive retrieval should change the access story. Transfer, rather than remembering a familiar drawing, is the goal.\n\nSchedule two focused practice sessions, one full mock, and a review session each week at a sustainable pace. Keep room for work and rest. If the checkpoint remains unclear, extend the plan.\n\n**Common mistake:** marking a gap fixed immediately after reading a clear explanation. First collect a new attempt that shows you can apply the reasoning independently.\n\nSix months is a structure for study, not a guarantee of mastery on a particular date."
+    },
+    {
+      "id": "next",
+      "title": "Choose advanced depth deliberately",
+      "markdown": "General backend readiness starts with clear requirements, data flow, storage decisions, scale estimates, concurrency, reliability, and communication. Specialized roles may require deeper networking, database internals, streaming, security, or AI serving. Use the reference library for those branches after identifying why they matter to your target role.\n\nBefore an interview, practice explaining what you do not know and how you would test an assumption. A defensible limit is better than a precise-sounding invention. You cannot guarantee every unfamiliar question, but you can develop a reliable way to clarify, simplify, reason, test, and adapt.\n\nYour next milestone is not “finish all remaining pages.” It is a concrete piece of evidence: a complete capstone trace, a fixed failure test, or a new mock where an earlier weak skill is now demonstrated independently."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "evidence-loop",
+      "title": "A project turns a claim into observable evidence",
+      "source": "flowchart LR\nP[State a user promise] --> T[Predict a failure test]\nT --> R[Run the bounded scenario]\nR --> O[Record what happened]\nO --> F[Fix or explain the limit]\nF --> T",
+      "caption": "A passing result is useful only when the scenario actually tests the stated promise.",
+      "steps": [
+        "Write the guarantee before testing.",
+        "Predict the expected recovery behavior.",
+        "Inject a named bounded failure and observe it.",
+        "Repair a mismatch or document the remaining limit, then retest."
+      ],
+      "sectionId": "test"
+    },
+    {
+      "id": "practice-loop",
+      "title": "Use actual evidence to choose the next exercise",
+      "source": "flowchart LR\nM[Saved mock or project evidence] --> G[Choose one specific gap]\nG --> P[Targeted short practice]\nP --> N[Changed problem without the solution]\nN --> E[Compare new independent evidence]\nE --> G",
+      "caption": "The loop does not award readiness automatically. It makes your next practice choice more precise.",
+      "steps": [
+        "Review actual work.",
+        "Identify a specific missing behavior.",
+        "Practice that behavior in a bounded task.",
+        "Retest it in a changed problem and inspect the evidence."
+      ],
+      "sectionId": "plan"
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Write a one-page capstone contract: user actions, one invariant, workload assumptions, a normal trace, and one failure test. Then select three gaps from your saved work and schedule a two-week practice plan with a concrete retest for each.",
+    "rubric": [
+      "Scope is small enough to implement and explain.",
+      "Each guarantee has an observable test and explicit assumptions.",
+      "Each gap is tied to actual evidence or clearly marked not yet shown.",
+      "Retests change the context and require independent reasoning."
+    ],
+    "solution": "A useful example is a local durable job service with submit/status/cancel, stable job identity, and one accepted result per logical job. Test a crash after result persistence but before acknowledgment, then redeliver the same job and inspect the outcome. State that local process tests do not prove multi-region behavior. A practice plan might pair unit-bearing estimates with three short calculations, conditional-update reasoning with two-actor timelines, and concise communication with recorded two-minute traces. Finish each week with a changed mock and cite the new independent evidence. Another project and plan can be equally sound if their claims and tests match."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which is stronger evidence of recovery behavior?",
+      "options": [
+        "Opening the chapter",
+        "A repeatable failure test with predicted and observed results",
+        "Naming a cloud product"
+      ],
+      "answer": "A repeatable failure test with predicted and observed results",
+      "explanation": "It connects a stated guarantee to a concrete outcome under a named failure."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A correct answer read from the example is…",
+      "options": [
+        "The same as independent interview performance",
+        "Useful guided learning, but different evidence from independent reasoning",
+        "Proof all related topics are mastered"
+      ],
+      "answer": "Useful guided learning, but different evidence from independent reasoning",
+      "explanation": "Distinguishing the source of an answer makes the next practice decision more honest."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "The best next exercise targets…",
+      "options": [
+        "A specific gap shown in actual work",
+        "The largest possible architecture diagram",
+        "Only topics already easy"
+      ],
+      "answer": "A specific gap shown in actual work",
+      "explanation": "Focused practice followed by a changed retest checks whether the gap is improving."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Name a limitation your capstone test cannot establish.",
+      "answer": "State a real scope limit, such as a local process restart not proving region-loss durability or a toy workload not proving production capacity. Explain what additional test would be required.",
+      "explanation": "State a real scope limit, such as a local process restart not proving region-loss durability or a toy workload not proving production capacity. Explain what additional test would be required."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What would count as progress on one of your weak skills?",
+      "answer": "Identify an observable behavior you can demonstrate independently in a changed problem, such as naming the atomic boundary and correctly tracing two conflicting requests.",
+      "explanation": "Identify an observable behavior you can demonstrate independently in a changed problem, such as naming the atomic boundary and correctly tracing two conflicting requests."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Capstone purpose?",
+      "back": "Combine requirements, implementation, failure testing, and explanation in a bounded system."
+    },
+    {
+      "front": "Acceptance criterion?",
+      "back": "An observable condition that demonstrates a requirement."
+    },
+    {
+      "front": "Useful failure report includes?",
+      "back": "Setup, prediction, action, observed result, interpretation, and limits."
+    },
+    {
+      "front": "Not yet shown means?",
+      "back": "The recorded attempt lacks evidence; it is not proof of either mastery or inability."
+    },
+    {
+      "front": "After targeted practice?",
+      "back": "Retest independently in a changed context and compare evidence."
+    }
+  ],
+  "mentalModel": "Readiness grows from repeated, independent explanations and tests—not from the number of pages you have opened.",
+  "sources": [
+    {
+      "title": "Google SRE — Monitoring distributed systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18 — Transaction isolation as a source for concurrency experiments",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "one-gap-new-evidence",
+      "title": "Turn one vague claim into a targeted practice record",
+      "sectionId": "plan",
+      "intro": "The following learner record is fictional and illustrative. It shows how evidence can improve without claiming the user has completed any task.",
+      "steps": [
+        {
+          "title": "Find the missing behavior",
+          "explanation": "In a saved file-sharing mock, the explanation said “the cache makes reads fast” but never traced who may read the file.",
+          "state": [
+            {
+              "label": "Evidence",
+              "value": "cache statement, no permission trace"
+            },
+            {
+              "label": "Skill status",
+              "value": "not yet shown"
+            },
+            {
+              "label": "Chosen gap",
+              "value": "authorize before returning private data"
+            }
+          ]
+        },
+        {
+          "title": "Practice one bounded trace",
+          "explanation": "The learner draws allowed and denied reads with five boxes. The example is open, so this is labeled assisted practice.",
+          "state": [
+            {
+              "label": "Exercise",
+              "value": "two-minute allowed/denied read"
+            },
+            {
+              "label": "Help used",
+              "value": "reference example visible"
+            },
+            {
+              "label": "Evidence type",
+              "value": "assisted practice"
+            }
+          ]
+        },
+        {
+          "title": "Try a changed context independently",
+          "explanation": "With the reference closed, the learner explains private-title autocomplete and traces which suggestions the current actor is allowed to see.",
+          "state": [
+            {
+              "label": "Changed problem",
+              "value": "private-title suggestions"
+            },
+            {
+              "label": "Help used",
+              "value": "none during this attempt"
+            },
+            {
+              "label": "Evidence",
+              "value": "access scope checked before returning titles"
+            }
+          ]
+        },
+        {
+          "title": "Record what the new attempt establishes",
+          "explanation": "The saved explanation now supports a narrower claim: an independent permission trace was shown. Revocation freshness still needs a separate test.",
+          "state": [
+            {
+              "label": "New evidence",
+              "value": "independent allowed/denied trace"
+            },
+            {
+              "label": "Remaining gap",
+              "value": "permission-revocation freshness"
+            },
+            {
+              "label": "Next step",
+              "value": "one bounded revocation scenario"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A useful practice plan changes because of new evidence. It records the remaining limit instead of converting one improvement into automatic overall readiness."
+    }
+  ]
+}

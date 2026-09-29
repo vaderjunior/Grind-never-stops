@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "013",
+  "objectives": [
+    "Identify what TLS authenticates and what application authorization still must do.",
+    "Explain termination and re-encryption as separate trust boundaries.",
+    "Reason about handshake latency, certificate rotation, and replay-sensitive requests."
+  ],
+  "retrieval": [
+    "L011: why does a hostname matter after address resolution?",
+    "L012: why is a transport acknowledgment not a business acknowledgment?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A lock icon does not authorize a customer",
+      "markdown": "A client connects securely to an API and asks for another tenant's invoice. Encryption can protect the request from network observers while the request remains unauthorized. Transport security and business access control answer different questions. In this session, trace both the protected channel and the identity of each endpoint. Later security modules build on that boundary.\n\nAssume TLS 1.3 with server authentication and an HTTPS reverse proxy. We are not implementing cryptography. Production applications should use maintained TLS libraries and deployment defaults, with certificate and protocol policies managed through supported tooling."
+    },
+    {
+      "id": "mechanism",
+      "title": "Authentication, key agreement, and record protection",
+      "markdown": "The client and server negotiate cryptographic parameters and establish traffic keys. The server presents certificate evidence binding its public key to a name under a trust chain accepted by the client. The client verifies the intended identity, chain, validity, and applicable constraints. Proving possession of the corresponding private key is part of authenticating the handshake. A certificate file alone is not sufficient proof that the peer controls that key.\n\nAfter negotiation, authenticated encryption protects records from undetected modification and ordinary passive reading by parties without the traffic keys. TLS does not make the endpoint's own logs private from that endpoint, stop an authorized reverse proxy reading plaintext, or decide which invoice a user may access. The application must validate its user/session identity and enforce object-level authorization.\n\nWith a terminating proxy there are two connections: client-to-proxy and proxy-to-backend. If the second hop is plaintext, TLS protection ends at the proxy. If it is re-encrypted, the proxy is still a plaintext endpoint between two protected channels. Mutual TLS can authenticate both peers on a hop; it does not automatically map a service identity to permission for every requested action. Define that mapping explicitly."
+    },
+    {
+      "id": "trace",
+      "title": "Worked boundary review for a tenant API",
+      "markdown": "Draw browser → public edge → invoice service → database. The browser authenticates the edge for api.example.test. The edge terminates TLS, strips untrusted identity headers from outside, authenticates the incoming session under the chosen architecture, and forwards a deliberately constructed identity context. The service must trust that context only from an authenticated, authorized upstream path; otherwise a caller bypassing the edge could forge it.\n\nThe service checks that the requested invoice belongs to the authenticated tenant before reading or returning it. The database may enforce additional tenant constraints. A secret in a query string can leak to access logs even when every hop is encrypted. Choose credential placement, redaction, and retention deliberately.\n\nFor a simplified new connection with 30 ms RTT, TCP setup costs roughly one RTT and an ordinary TLS 1.3 handshake another RTT before application exchange. Reusing a connection avoids repeating that setup. Real timings depend on resumption, retries, implementation, and network conditions; measure them. Early data can reduce some startup delay but has replay considerations, so do not treat it as a free optimization for mutations."
+    },
+    {
+      "id": "failure",
+      "title": "Rotation and verification failures",
+      "markdown": "Certificate expiry can turn a healthy process into an unreachable service for correctly verifying clients. Monitor remaining validity and test rotation before expiry. Rotating a certificate requires deploying compatible key/certificate material and reloading it through supported mechanisms. Existing connections can behave differently from new handshakes, so probes should periodically create fresh connections.\n\nA hostname mismatch is not fixed safely by disabling verification. Correct the name, certificate coverage, trust configuration, or route. A private backend CA requires an intentional trust distribution strategy. Trusting every certificate removes the identity check the architecture relied on.\n\nDo not write a hand-rolled certificate verifier as this lesson's exercise. Learn to recognize where verification belongs, what information must be checked, and which boundary each certificate covers. Optional depth: compare server authentication with mutual TLS and describe how workload identities survive certificate rotation."
+    },
+    {
+      "id": "budget",
+      "title": "Core timing",
+      "markdown": "Retrieval 5 minutes; mechanism and diagram 18; boundary trace 8; exercise 10; Q1–Q3 10; solution and cards 4. Q4–Q5 are optional practice outside the 55-minute core."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "termination",
+      "title": "Who can read plaintext?",
+      "source": "flowchart LR\nB[Browser] -->|TLS A: authenticate public hostname| E[Edge: plaintext endpoint]\nE -->|TLS B: authenticate backend identity| S[Service: authorization]\nS -->|Scoped data query| D[(Authoritative invoices)]\nU[Untrusted caller] -.->|Forged tenant header rejected| E",
+      "caption": "TLS A and TLS B are separate channels. The edge can read plaintext; tenant authorization belongs in a trusted application path.",
+      "steps": [
+        "Authenticate the public edge.",
+        "Terminate TLS and discard caller-supplied identity headers.",
+        "Create a separately authenticated backend connection.",
+        "Authorize the invoice using the trusted principal and tenant."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "An edge receives HTTPS, forwards HTTP to a backend, and copies X-Tenant-ID from the browser. The backend trusts that header. Identify two independent problems and propose a safe boundary diagram. Explain why adding backend TLS alone is insufficient.",
+    "rubric": [
+      "Identify plaintext internal hop as a channel/trust decision.",
+      "Identify forged tenant identity independently.",
+      "Derive tenant identity from validated credentials and enforce object authorization."
+    ],
+    "solution": "Re-encrypting or using mutual TLS can protect/authenticate the internal channel, but the copied browser header remains attacker-controlled. Strip it at the boundary, derive tenant identity from validated credentials, bind backend trust to the authorized edge identity, and check requested object ownership. Alternatively authenticate credentials directly in the service. Document which components see plaintext and redact sensitive logging."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which property does server-authenticated TLS directly establish?",
+      "options": [
+        "The user can read any invoice",
+        "The client communicates with an authenticated server identity under its trust policy",
+        "The database is serializable"
+      ],
+      "answer": "The client communicates with an authenticated server identity under its trust policy",
+      "explanation": "Tenant permissions and database isolation belong to different layers."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A terminating proxy re-encrypts traffic. Can it read request plaintext?",
+      "options": [
+        "No, re-encryption makes it end-to-end opaque",
+        "Yes, it is an endpoint of both channels",
+        "Only when the certificate expires"
+      ],
+      "answer": "Yes, it is an endpoint of both channels",
+      "explanation": "The proxy decrypts one channel and encrypts another."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "In the simplified example, TCP plus an ordinary TLS handshake cost how much at 30 ms RTT?",
+      "answer": 60,
+      "unit": "ms",
+      "tolerance": 0.01,
+      "explanation": "One RTT for TCP plus one for ordinary TLS 1.3 gives 60 ms before application exchange."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can an ordinary health check miss an impending certificate problem?",
+      "answer": "It may reuse a connection, skip identity verification, probe a different hostname, or ignore remaining certificate validity. Probe new verified handshakes and monitor expiry.",
+      "explanation": "It may reuse a connection, skip identity verification, probe a different hostname, or ignore remaining certificate validity. Probe new verified handshakes and monitor expiry."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What must accompany mutual TLS for tenant-safe requests?",
+      "answer": "A policy mapping authenticated service identity to allowed actions and tenant scopes, validated end-user context where needed, and object-level authorization.",
+      "explanation": "A policy mapping authenticated service identity to allowed actions and tenant scopes, validated end-user context where needed, and object-level authorization."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "TLS termination?",
+      "back": "A component decrypts a channel and becomes a plaintext endpoint."
+    },
+    {
+      "front": "Re-encryption means opaque to the proxy?",
+      "back": "No. It creates a second encrypted hop."
+    },
+    {
+      "front": "TLS versus authorization?",
+      "back": "Protected authenticated channel versus permission to perform an application action."
+    },
+    {
+      "front": "Why preserve hostname verification?",
+      "back": "An encrypted connection to the wrong peer is still the wrong connection."
+    },
+    {
+      "front": "Early-data tradeoff?",
+      "back": "Potentially less startup latency with replay-sensitive application restrictions."
+    }
+  ],
+  "mentalModel": "Draw every cryptographic endpoint, then draw every authorization decision. Neither diagram replaces the other.",
+  "sources": [
+    {
+      "title": "RFC 8446 — TLS 1.3, handshake and early data",
+      "url": "https://www.rfc-editor.org/rfc/rfc8446.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 9110 — HTTPS identity verification",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "checked": "2026-09-29"
+    }
+  ]
+}

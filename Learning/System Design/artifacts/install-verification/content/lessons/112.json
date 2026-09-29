@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "112",
+  "objectives": [
+    "Distinguish event sourcing from ordinary event publication.",
+    "Reconstruct state with versioned events and snapshots.",
+    "Design corrections without blindly replaying external effects."
+  ],
+  "retrieval": [
+    "L103: can a database publish events without making them its source of truth?",
+    "L107: why can replay duplicate external effects?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Current state cannot answer every historical question",
+      "markdown": "A lending service stores available_count=7. That value does not explain which checkouts, returns, and corrections produced it. An audit table can help, but event sourcing makes the accepted event history itself the authoritative representation from which current state is derived. This is a stronger architectural choice than publishing an occasional notification after a normal row update.\n\nThe benefit is reconstructable decisions and alternative projections. The cost is long-lived event semantics, replay tooling, concurrency control, snapshot lifecycle, and data-retention complexity. Use it for a domain that benefits from those properties, not because an application already has a queue."
+    },
+    {
+      "id": "mechanism",
+      "title": "Append facts under an expected version",
+      "markdown": "A command loads an entity's current state, validates the requested transition, and appends the resulting event only if the stream remains at the expected version. Two commands both reading version 12 cannot independently assume they are the thirteenth transition. One append wins; the other reloads and re-evaluates or reports a conflict. Stable operation identities handle retries separately from stream versions.\n\nThe event should describe an accepted domain fact, such as CopyCheckedOut with a borrower reference and copy identity. Avoid a vague “state changed” blob if reconstructing meaning later requires undocumented application behavior. Conversely, avoid storing unnecessary secrets or personal text permanently just because events are append-oriented.\n\nA reducer folds events into state. It must interpret historical versions consistently. A snapshot stores derived state at a known stream position plus the schema/reducer version needed to read it. Recovery loads a compatible snapshot and applies the later tail. The snapshot is a speed optimization; whether old events can be discarded depends on the retention and reconstruction contract."
+    },
+    {
+      "id": "worked",
+      "title": "A correction is another explicit fact",
+      "markdown": "Toy stock stream: Received(+10), Reserved(3), Released(1). A reducer computes available=10−3+1=8 under the chosen model. If Received was recorded as 10 but should have been 9, do not silently rewrite a historical event that other projections already consumed. An explicit Adjustment(−1,reason,reference) can correct current state to 7 while preserving the explanation, if that matches the domain policy.\n\nChanging history is sometimes required by a data-removal policy, but it is a deliberate controlled operation with projection/snapshot/backup consequences, not an unnoticed JSON edit. Design sensitive-data references so historical business facts and removable personal attributes are not needlessly fused.\n\nSuppose a stream has 80,000 events and replay costs an illustrative 20 microseconds/event. Full fold costs about 1.6 seconds of reducer work before I/O. A snapshot at 79,000 leaves 1,000 events, about 20 ms in the same model. These estimates justify measuring snapshot frequency; they do not establish actual latency on a chosen database or language runtime."
+    },
+    {
+      "id": "failure",
+      "title": "Replay reads history; it should not resend yesterday’s commands",
+      "markdown": "Keep pure state reconstruction separate from external actions such as emails, webhooks, or deposits. Rebuilding a report should not execute every historical action again. New commands can use a transactional outbox or durable workflow, with their own identities and recovery rules.\n\nWhen code evolves, test old event fixtures and snapshots through the new reader. An upcaster translates a historical event representation into a supported interpretation without pretending the original record had facts it did not contain. Unknown versions should fail visibly or be quarantined under a documented policy, not default to a plausible but wrong state.\n\nCommon misconceptions: every application with a log is event sourced; a snapshot alone preserves audit history; and append-only storage removes write conflicts. The command append still needs an atomic expected-version check and the history still needs a retention/security policy. Optional depth: distinguish a retroactive correction's effective business time from the time the correction was recorded."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and optional practice",
+      "markdown": "Core 55 minutes: retrieval 5, explanation 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Numerical workloads and architectural examples are original teaching assumptions, not production measurements."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "fold",
+      "title": "A snapshot accelerates a deterministic fold",
+      "source": "flowchart LR\nH[(Events 1 through 79000)] --> S[(Snapshot at 79000)]\nS --> R[Version-aware reducer]\nT[(Events 79001 onward)] --> R\nR --> V[Current state]\nV -.->|Command checks expected version| A[Conditional append]",
+      "caption": "The snapshot is derived at a specific position. New appends must still protect concurrent command decisions.",
+      "steps": [
+        "Read a compatible snapshot.",
+        "Fold the retained tail in order.",
+        "Validate the requested command against current state.",
+        "Append only at the expected stream version."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A wallet-like teaching counter has events +20,−4,+6. A snapshot after the first two says16. Show tail replay, a correction of the first event by−2, and a concurrent append conflict. Explain why a replay should not call an external payment provider.",
+    "rubric": [
+      "Correct fold and snapshot position.",
+      "Explicit correction and expected-version conflict.",
+      "Separate reconstruction from external effects."
+    ],
+    "solution": "Apply the +6 tail to snapshot16 to obtain22. Append a domain-approved adjustment−2 to obtain20 while retaining the reason/reference. If two commands expect stream version3, only one conditional append can become version4; the other reloads before deciding. A replay reconstructs accepted historical facts and must not reissue payment commands; those external operations belong to a separate durable command/effect protocol with their own identities."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Event sourcing means what is authoritative?",
+      "options": [
+        "Only a cache",
+        "The accepted event history",
+        "A dashboard screenshot"
+      ],
+      "answer": "The accepted event history",
+      "explanation": "Current state is derived from that history under versioned semantics."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A snapshot needs what to resume correctly?",
+      "options": [
+        "Only a date label",
+        "A precise stream position and compatible representation",
+        "Only the newest event ID"
+      ],
+      "answer": "A precise stream position and compatible representation",
+      "explanation": "Recovery must know which tail to apply and how to interpret the snapshot."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "5,000 events ×20 microseconds each equals how many milliseconds?",
+      "answer": 100,
+      "unit": "ms",
+      "explanation": "100,000microseconds=100ms, before I/O and runtime overhead.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is an ordinary state table plus audit/outbox sufficient?",
+      "answer": "When current-state operations dominate and full event-authoritative reconstruction does not justify versioning/replay complexity.",
+      "explanation": "When current-state operations dominate and full event-authoritative reconstruction does not justify versioning/replay complexity."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why are mutable external lookups risky inside replay?",
+      "answer": "The lookup can return today’s value for yesterday’s event, changing reconstruction. Record the necessary historical fact/version or define a deliberate correction policy.",
+      "explanation": "The lookup can return today’s value for yesterday’s event, changing reconstruction. Record the necessary historical fact/version or define a deliberate correction policy."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Event publication versus sourcing?",
+      "back": "Publication can accompany a state store; sourcing makes events authoritative."
+    },
+    {
+      "front": "Concurrent append protection?",
+      "back": "Expected stream version checked atomically."
+    },
+    {
+      "front": "Snapshot role?",
+      "back": "Derived acceleration at a known event position."
+    },
+    {
+      "front": "Correction semantics?",
+      "back": "Explicit domain action with reason/reference, not silent reinterpretation."
+    },
+    {
+      "front": "Replay must avoid?",
+      "back": "Uncontrolled external side effects and mutable hidden inputs."
+    }
+  ],
+  "mentalModel": "The history is the model; replay, evolution, and correction are part of its public contract.",
+  "sources": [
+    {
+      "title": "Martin Fowler — Event Sourcing",
+      "url": "https://martinfowler.com/eaaDev/EventSourcing.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

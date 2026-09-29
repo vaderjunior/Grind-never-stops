@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "interview_006",
+  "lessonId": "030",
+  "title": "Design an inventory API and expose its race conditions",
+  "aliases": [
+    "L030",
+    "lesson_030",
+    "m03_partial_design"
+  ],
+  "modeType": "partial-design",
+  "minutes": 45,
+  "brief": "A small equipment store exposes available quantity and lets authenticated customers request a reservation. Design its initial API and local execution model, then demonstrate a race that could oversell the last unit. Explain timeout and retry behavior, permission checks, and what a single-process repair does and does not guarantee. You are expected to expose the requirements for M04’s persistent concurrency mechanisms, not invent a distributed transaction implementation.",
+  "clarifications": [
+    {
+      "question": "What are the core operations and scope?",
+      "answer": "List items, inspect item availability, reserve a positive quantity, inspect your reservation, and cancel your reservation. Payments, shipping, multi-region operation, and supplier integration are out of scope."
+    },
+    {
+      "question": "What is the important invariant?",
+      "answer": "Accepted active reservations may not exceed sellable stock. A customer may inspect or cancel only their own reservation unless an explicit staff policy permits it."
+    },
+    {
+      "question": "What workload and response contract?",
+      "answer": "Peak 80 reads/s and 10 reservations/s. Each normal request averages 100 ms under the supplied teaching baseline. Successful reservation means its accepted outcome is persistently stored; the actual storage implementation is deferred to M04."
+    },
+    {
+      "question": "What buggy algorithm is currently proposed?",
+      "answer": "Read available stock, check that it is at least the requested quantity, wait for an optional metadata call, then set available to old_available minus requested. Two requests can run concurrently."
+    },
+    {
+      "question": "What happens after a timeout?",
+      "answer": "The client does not know whether the reservation was accepted. The initial API has no stable operation identifier; you may propose the needed contract."
+    },
+    {
+      "question": "Can the service have more than one process?",
+      "answer": "The initial demo has one process, but the team may add a second. Explicitly identify which proposed repairs are only local."
+    },
+    {
+      "question": "May a reservation path be unavailable on ambiguity?",
+      "answer": "Yes. It must not falsely confirm stock. A documented pending operation is an acceptable alternative if its meaning is clear."
+    }
+  ],
+  "hints": [
+    "Use stock=1 and two requests for one unit to construct the interleaving.",
+    "A session tells you who the caller is; inspect the reservation owner before returning or canceling it.",
+    "Keep the same intent identifier on retries and ask which authoritative boundary records the outcome."
+  ],
+  "changes": [
+    "Two application processes now run behind a load balancer. Does your in-memory lock preserve stock across both?",
+    "The server stores a reservation and then its response is lost. The client retries with a new request identifier. Explain the danger.",
+    "An optional metadata dependency slows from 20 ms to two seconds. How should the deadline and admission policy behave?"
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "Define bounded request schemas and explicit reservation states, actor derived from credentials, object-level ownership checks, and documented conflict/invalid/overload outcomes. Use GET reads and a create contract for reservations; do not equate a successful HTTP transport with accepted stock. With stock=1, A reads 1, B reads 1, A accepts one and writes 0, B accepts one and writes 0: two reservations exist despite apparent zero stock. A local lock covering the full check-and-update can repair the one-process teaching state but does not coordinate another process or persist outcomes. State that the database authority needs an atomic invariant-preserving operation and transaction behavior, to be implemented in M04. Total peak arrival is 90/s; at stable mean 0.1s the modeled concurrency is 9, not a worker-count mandate. Optional metadata should not unnecessarily hold the stock critical section; if required for acceptance, bound its time and revalidate the state at the authoritative decision. Keep one end-to-end deadline, bounded active/waiting work, and explicit overload behavior. A timeout leaves an uncertain reservation outcome; propose stable operation identity, payload consistency, and authoritative outcome retrieval rather than blind new intent. The design can remain one application with modules; service extraction is not justified by these rates alone.",
+  "debrief": "The most important evidence is the unsafe interleaving and the candidate’s explanation of the local repair’s scope. Score API and permission reasoning using concrete proposed inputs and checks. Preserve alternative designs that meet the same requirements. After a correctness failure, retry with changed stock and two processes before proceeding to database implementation.",
+  "remediation": [
+    "022",
+    "023",
+    "026",
+    "027",
+    "028"
+  ]
+}

@@ -1,0 +1,310 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 1,
+  "title": "Computers, servers, and the resources an application uses",
+  "level": "beginner",
+  "minutes": 60,
+  "id": "computer-and-server-basics",
+  "summary": "Before drawing boxes called servers, understand what runs inside one: programs, CPU, memory, storage, and a network connection.",
+  "objectives": [
+    "Explain hardware, an operating system, a program, and a running process.",
+    "Trace which resources a simple request consumes.",
+    "Distinguish the role of a server from a particular physical machine.",
+    "Use bytes, rates, and waiting time without mixing their units."
+  ],
+  "terms": [
+    {
+      "term": "CPU",
+      "definition": "The processor that executes instructions, such as comparing values or calculating a result."
+    },
+    {
+      "term": "RAM",
+      "definition": "Working memory used by running programs; ordinary RAM does not retain its contents after power loss."
+    },
+    {
+      "term": "Persistent storage",
+      "definition": "Storage intended to retain data beyond a running process or power cycle, subject to the device and write guarantees."
+    },
+    {
+      "term": "Operating system",
+      "definition": "Software that manages processes, memory, devices, files, and other machine resources."
+    },
+    {
+      "term": "Process",
+      "definition": "A running instance of a program, with memory and operating-system-managed resources."
+    },
+    {
+      "term": "Server",
+      "definition": "A program or machine serving requests from clients; context determines which meaning is intended."
+    }
+  ],
+  "retrieval": [
+    "In the first notes example, which component asked for data and which answered?"
+  ],
+  "sections": [
+    {
+      "id": "machine",
+      "title": "A server is still a computer",
+      "markdown": "Your laptop can run a browser, a text editor, and this learning application. A machine in a data center runs programs too. It may have different hardware, networking, and operating practices, but it is not a fundamentally magical kind of computer. It receives input, executes instructions, stores or retrieves data, and produces output.\n\nThe word server has two common meanings. “The server has 32 GB of RAM” probably refers to a machine or virtual machine. “The server returned an error” probably refers to a program serving requests. One machine can run several server programs; one logical application can also use many machines. Say which level you mean when a diagram becomes ambiguous.\n\nFor Pocket Notes, begin with one server program on one computer. It accepts requests to save and read notes. You can understand the entire basic path without a cloud account, a cluster, or a collection of specialized products."
+    },
+    {
+      "id": "layers",
+      "title": "Hardware, operating system, program, process",
+      "markdown": "Hardware supplies resources: processors, memory, storage devices, and network interfaces. The operating system manages access to those resources. A program is stored instructions and related files. Starting that program creates a process, which is the running instance.\n\nImagine a recipe, a kitchen manager, and an active cooking task. The recipe resembles a program; the active task resembles a process; the manager coordinates shared equipment. This analogy helps separate stored instructions from running work, but operating systems have precise isolation and scheduling mechanisms rather than human judgment.\n\nStopping a process does not normally delete its program file. Starting two copies can create two processes from the same program. They do not automatically share every in-memory variable. If both must see the same saved note, they need an explicit shared storage or communication mechanism. We will return to that distinction when adding application replicas."
+    },
+    {
+      "id": "cpu",
+      "title": "CPU: doing the computation",
+      "markdown": "The CPU executes instructions. Parsing a request, validating a title, checking permissions, compressing an image, and calculating an average all need computation. Some tasks are cheap; others require many more instructions. “One request” is therefore not a standard amount of CPU work.\n\nA core is an execution resource within a processor. Several cores can help software perform independent computation at the same time, but only if the program and workload can use them. A strictly sequential calculation does not become four times faster merely because four cores exist.\n\nUse a small CPU budget instead of treating every request as equal:\n\n| Teaching assumption | Value |\n| --- | --- |\n| Work for one image | 0.2 CPU-seconds |\n| Work one fully available core supplies per second | 1 CPU-second |\n| Ideal maximum images in that second | 1 ÷ 0.2 = 5 |\n\nOther work, coordination, or limits reduce real throughput. This is a budget calculation, not a performance promise for real images."
+    },
+    {
+      "id": "memory",
+      "title": "RAM: the working area",
+      "markdown": "A running process keeps working values in RAM: the note being edited, a parsed request, intermediate results, and perhaps recently read information. RAM capacity limits how much can be actively held. Holding every uploaded file in memory can exhaust that capacity even when the CPU is mostly idle.\n\nSuppose each active upload buffers 8 MB. Ten uploads hold about 80 MB; 100 uploads hold about 800 MB. These are decimal units and count only payload buffers.\n\n**Memory budget = upload buffers + runtime + metadata + connections + other work.** A machine with 1 GB is not necessarily comfortable just because 800 is less than 1,000.\n\nLosing a process usually loses that process's ordinary in-memory values. Other components may still have copies, but do not assume they do. RAM is useful because it is a working area; durable saving is a separate responsibility. A cache and a database can both use RAM while offering very different persistence contracts."
+    },
+    {
+      "id": "storage",
+      "title": "Storage: keeping information for later",
+      "markdown": "Persistent storage might be an SSD or another managed storage service. Files contain bytes that programs can read and write. A database adds organization and rules on top of storage: queries, indexes, transactions, and recovery mechanisms, depending on the product.\n\n“Write completed” can mean different things at different layers. Your code may have handed bytes to an operating-system buffer without those bytes yet reaching durable media. Databases define commit behavior and durability options to make this boundary explicit. Later chapters explain the mechanisms; for now ask what failure a successful save promises to survive.\n\nStorage is finite and can fail. Running out of space can make new writes fail even though reads still work. Having a second copy helps some failures, while backups help recover earlier states. Neither phrase removes the need to test recovery. A useful first design states where the accepted saved notes live."
+    },
+    {
+      "id": "network",
+      "title": "Network: moving information between computers",
+      "markdown": "The network lets a client and server exchange bytes. Sending a request takes time, and delivering a response takes time. A remote database call can therefore spend time waiting for communication even when its query requires little CPU computation.\n\nTwo useful terms are bandwidth and latency. Bandwidth describes a transfer rate, such as megabits per second. Latency describes delay, such as milliseconds until an operation or response. A large delivery truck can carry many boxes yet still take an hour to reach you; capacity and delay are different ideas.\n\nUse explicit units. Eight bits make one byte. At an ideal 80 megabits per second, transferring 10 megabytes needs about one second for payload transfer alone: 10 MB × 8 ÷ 80 Mb/s. Setup, distance, protocol overhead, congestion, and other traffic can increase observed time. Do not confuse an advertised link rate with an end-to-end application guarantee."
+    },
+    {
+      "id": "trace",
+      "title": "Trace one save through the resources",
+      "markdown": "You type a note and press Save. The browser forms a request. Network communication carries it to the server program. The program uses CPU to parse and validate it and RAM to hold the request's temporary values. It asks the database to save the note; the database uses its own CPU, memory, and storage rules. A response travels back.\n\nThe visible waiting time includes all relevant work and waiting along that path. If the database is slow, adding CPU to the application server may have little effect. If the upload is huge, transfer time can dominate even with a fast database.\n\nThis is why we start with a trace rather than a shopping list of technologies. Name the action, the resource it consumes, and what evidence would show that resource is limiting progress. At this stage you only need to distinguish computation, working memory, stored data, and communication."
+    },
+    {
+      "id": "roles",
+      "title": "Frontend, backend, and database are responsibilities",
+      "markdown": "The frontend is the part that interacts with the user, often running in a browser. The backend handles trusted application logic and access to shared data. The database manages saved records. These are responsibilities, not a requirement for exactly three physical machines.\n\nDuring local development all three may run on one laptop. In production the browser runs on the user's device while backend and database processes run elsewhere. A database can itself be a network server. Consequently, the backend can be a server to the browser and a client to the database in the same request.\n\nA later diagram may replace one backend box with multiple instances. The role stays similar even when deployment changes. Learning the responsibility first makes product names easier: PostgreSQL supplies database capabilities; an application framework helps implement backend behavior; neither removes the need to decide what the product should do."
+    },
+    {
+      "id": "platform",
+      "title": "Connect this to an AI platform",
+      "markdown": "Consider a service that accepts a document and creates a summary. The API program validates the request. Storage keeps the document. A model process performs inference, which means using the model to produce an output. That process may use a GPU, a processor designed to handle highly parallel numerical work efficiently for suitable workloads.\n\nGPU memory is a separate limited resource, often called VRAM. A large model and its active request state must fit within the serving arrangement's memory budget. Adding more web-server processes does not create more GPU memory. We will study model serving much later, after requests, queues, and capacity are familiar.\n\nFor now label the demands: document bytes consume transfer and storage; parsing consumes CPU and RAM; model computation consumes accelerator resources; waiting requests consume their own resources too. The same basic resource vocabulary helps explain an ordinary notes app and an AI service."
+    },
+    {
+      "id": "mistakes",
+      "title": "What to understand before moving on",
+      "markdown": "Avoid three early shortcuts. First, “the server is slow” does not identify whether the delay is computation, memory pressure, storage, communication, or waiting on another component. Second, a bigger machine cannot automatically remove a software ordering constraint or a slow external dependency. Third, a running process is not the same thing as durable saved state.\n\nYou are ready for the next chapter when you can point to each resource in a save request and explain why it is involved. You do not need to know processor instruction sets, kernel internals, or a cloud provider's instance names.\n\nUse the small exercise to build that explanation. If a term feels unclear, describe the observable action first: “the bytes must still exist after restarting,” or “the program is waiting for another computer.” Precise everyday language is a stronger foundation than memorized jargon.\n\n> **Interview phrasing:** “I would first separate CPU work from time spent waiting. More CPU helps only if computation is the limiting resource; I would check a request trace and resource measurements before buying a larger machine.”"
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "layers",
+      "title": "Stored instructions become a running process",
+      "source": "flowchart TB\nP[Program files on storage] -->|Start| R[Running process]\nR --> O[Operating system manages resources]\nO --> C[CPU]\nO --> M[RAM]\nO --> S[Persistent storage]\nO --> N[Network interface]",
+      "caption": "The drawing separates roles; it is not a detailed operating-system implementation.",
+      "steps": [
+        "Store the program.",
+        "Start a running instance.",
+        "Use managed machine resources.",
+        "Keep durable data through an explicit storage operation."
+      ],
+      "sectionId": "layers"
+    },
+    {
+      "id": "save",
+      "title": "A save request uses several resources",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant A as Application process\nparticipant D as Database\nB->>A: Save note request over network\nNote over A: CPU parses and checks<br/>RAM holds working values\nA->>D: Persist note\nD-->>A: Commit result under configured guarantee\nA-->>B: Save response",
+      "caption": "A successful response should reflect the promised storage outcome.",
+      "steps": [
+        "Send the request.",
+        "Validate temporary input.",
+        "Persist according to the database contract.",
+        "Return the result."
+      ],
+      "sectionId": "trace"
+    },
+    {
+      "id": "resource-choice",
+      "sectionId": "mistakes",
+      "title": "The same slow result can have different causes",
+      "source": "flowchart TB\nS[Save feels slow] --> C[CPU busy parsing or transforming]\nS --> M[Memory crowded by active work]\nS --> N[Waiting for network delivery]\nS --> D[Waiting for database or disk]\nC --> E[Measure the relevant work and waiting]\nM --> E\nN --> E\nD --> E",
+      "caption": "These are hypotheses to investigate, not diagnoses made from the word slow. More than one can apply.",
+      "steps": [
+        "Observe the slow user operation.",
+        "Separate possible computation, memory, communication, and storage costs.",
+        "Measure the suspected resource before selecting a change."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "A note saves slowly when it contains a large attachment. List where CPU, RAM, storage, and the network are involved. Then calculate ideal payload transfer time for 20 MB over an 80 Mb/s link and name two reasons the user might wait longer.",
+    "rubric": [
+      "Each resource has a concrete role.",
+      "Bits and bytes are converted correctly.",
+      "Payload-only estimate is separated from observed response time."
+    ],
+    "solution": "CPU parses/checks or transforms data; RAM holds active buffers; storage persists the attachment and metadata; the network transfers bytes between components. Decimal payload-only time is 20 MB × 8 bits/byte ÷ 80 Mb/s = 2 seconds. Connection setup, protocol overhead, congestion, server waiting, validation, or database work can add time. The estimate does not prove that buying a faster CPU fixes the delay."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What is a process?",
+      "options": [
+        "A running instance of a program",
+        "Only a physical CPU",
+        "A saved note"
+      ],
+      "answer": "A running instance of a program",
+      "explanation": "Stored program instructions and the running instance are different things."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A backend can be a server to a browser and a client to a database?",
+      "options": [
+        "Yes",
+        "No",
+        "Only on a GPU"
+      ],
+      "answer": "Yes",
+      "explanation": "Client and server describe the roles in a particular interaction."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Ideal transfer seconds for 20 MB at 80 Mb/s, ignoring overhead?",
+      "answer": 2,
+      "unit": "seconds",
+      "explanation": "20 × 8 ÷ 80 = 2 seconds, using decimal units.",
+      "tolerance": 0
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might more application CPU not fix a slow save?",
+      "answer": "The time may be spent transferring bytes, waiting for storage or a database, or waiting on another dependency rather than computing.",
+      "explanation": "The time may be spent transferring bytes, waiting for storage or a database, or waiting on another dependency rather than computing."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why should a note not exist only in process RAM?",
+      "answer": "Ordinary working memory is lost when the process or machine fails; saved notes need an explicit durable storage contract.",
+      "explanation": "Ordinary working memory is lost when the process or machine fails; saved notes need an explicit durable storage contract."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Program versus process?",
+      "back": "Stored instructions versus a running instance."
+    },
+    {
+      "front": "CPU versus RAM?",
+      "back": "Execution of instructions versus working memory."
+    },
+    {
+      "front": "Server means?",
+      "back": "A serving program or its host machine, depending on context."
+    },
+    {
+      "front": "Bandwidth versus latency?",
+      "back": "Transfer rate versus delay; use explicit units."
+    },
+    {
+      "front": "First step for a slow request?",
+      "back": "Trace work and waiting across the actual resources and dependencies."
+    }
+  ],
+  "mentalModel": "A request is a journey through finite resources. Learn what each resource does before choosing a larger machine.",
+  "sources": [
+    {
+      "title": "MDN — Client-server overview",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Client-Server_overview",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "upload-memory-budget",
+      "sectionId": "memory",
+      "title": "Follow the memory held by active uploads",
+      "intro": "Assume each active upload buffers 8 MB and releases that buffer when its processing finishes. The rest of the process needs memory too.",
+      "steps": [
+        {
+          "title": "Ten uploads are active",
+          "explanation": "Multiply active work by the per-upload buffer. This is a subtotal, not total process memory.",
+          "state": [
+            {
+              "label": "Active uploads",
+              "value": "10"
+            },
+            {
+              "label": "Payload buffers",
+              "value": "80 MB"
+            },
+            {
+              "label": "Other memory",
+              "value": "Not counted here"
+            }
+          ]
+        },
+        {
+          "title": "Ninety more arrive",
+          "explanation": "Waiting or active requests can hold memory even when CPU use looks modest.",
+          "state": [
+            {
+              "label": "Active uploads",
+              "value": "100"
+            },
+            {
+              "label": "Payload buffers",
+              "value": "800 MB"
+            },
+            {
+              "label": "Machine RAM",
+              "value": "1,000 MB"
+            }
+          ]
+        },
+        {
+          "title": "Reserve room for other work",
+          "explanation": "If this example runtime and other work need 250 MB, the requested memory already exceeds the machine budget.",
+          "state": [
+            {
+              "label": "Payload buffers",
+              "value": "800 MB"
+            },
+            {
+              "label": "Other work",
+              "value": "250 MB"
+            },
+            {
+              "label": "Total requested",
+              "value": "1,050 MB"
+            }
+          ]
+        },
+        {
+          "title": "Bound simultaneous work",
+          "explanation": "A hypothetical limit of 50 buffered uploads reduces this subtotal. Additional requests need a defined wait or rejection policy.",
+          "state": [
+            {
+              "label": "Buffered uploads",
+              "value": "50"
+            },
+            {
+              "label": "Payload buffers",
+              "value": "400 MB"
+            },
+            {
+              "label": "With other work",
+              "value": "650 MB"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Count all active state and define what happens when new work cannot fit. Low CPU use does not prove spare memory."
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "053",
+  "objectives": [
+    "Choose a balancing signal that approximates resource demand.",
+    "Explain connection and request skew under common algorithms.",
+    "Design a measured overload and drain response."
+  ],
+  "retrieval": [
+    "L017: what is the assignment unit at L4?",
+    "L051: why does request mix matter more than a bare RPS count?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Equal counts can conceal unequal work",
+      "markdown": "One endpoint reads a cached profile in 2 ms. Another generates a report in 500 ms. Round robin sends alternating requests to two identical servers, yet a burst pattern can place most expensive reports on one server. Counting assignments is easy; distributing actual service demand is harder. Identify what the balancing layer knows and how stale its observations are.\n\nBalancing is not admission control. If total offered demand exceeds every server's combined sustainable capacity, an excellent distribution algorithm still needs bounded queues, rejection, or degradation. Otherwise it merely spreads overload."
+    },
+    {
+      "id": "mechanism",
+      "title": "Algorithms encode assumptions",
+      "markdown": "Round robin cycles through eligible destinations. It is simple and can work well with similar request costs and enough mixing. Weighted round robin adjusts shares for unequal measured capacities. Neither necessarily sees in-flight work or the cost of the next request.\n\nLeast-connections counts active connections. It can suit some workloads but a connection may carry one idle stream or hundreds of active requests. Least-outstanding-request policies use a closer measure of current request occupancy when available. Latency-aware policies incorporate observed responsiveness, but stale measurements and feedback loops can overreact; routing away from a node also reduces the observations that would show its recovery.\n\nRandom selection reduces coordination needs. Sampling a small number of candidates and choosing the less loaded one can improve distribution with limited state, but the usefulness depends on the load metric and update timing. Consistent/key-based placement can preserve cache locality or affinity while concentrating hot keys. No policy removes a single unpartitionable hot-key workload by magic."
+    },
+    {
+      "id": "worked",
+      "title": "Service demand reveals a misleading request split",
+      "markdown": "Suppose server A receives 80 cheap requests/s at 2 ms CPU each and 20 expensive requests/s at 20 ms CPU each. Its CPU demand is 0.16 + 0.40 = 0.56 CPU-seconds per second. Server B receives 100 cheap requests/s, only 0.20 CPU-seconds per second. Both serve 100 RPS, but A uses 2.8 times the modeled CPU. Network and dependency waits would add other resource dimensions.\n\nFor a capacity-weighted policy, assume instance A sustains 300 RPS and B sustains 100 under the same tested mix and latency objective. A 3:1 share is a reasonable initial allocation below saturation. It remains conditional: a workload shift can change relative capacity, and one dependency might be shared by both.\n\nNow drain A. Mark it ineligible for new assignments, observe in-flight work, and wait up to the chosen bound. Long-lived connections may require explicit reconnect. A health-check interval of five seconds means some requests can still be sent after a fault before the next check notices it. Client/request failure handling must cover that window."
+    },
+    {
+      "id": "failure",
+      "title": "Affinity and feedback have operating costs",
+      "markdown": "Sticky sessions can avoid repeated session fetches but create uneven load and a recovery dependency on one server. Key affinity can improve cache hit rates but requires monitoring key popularity and supporting redistribution. When a server rejoins with a cold cache, immediately giving it a full share may overload storage. Gradual warm-up may be warranted, but its policy must not hide permanent undercapacity.\n\nHealth signals can flap during transient overload. Removing and reinserting nodes rapidly moves pressure between peers. Use deliberate thresholds, recovery probes, and bounded retries. A retry to another backend after an ambiguous response still needs a repeat-safe operation contract.\n\nMisconceptions: least connections means least CPU; round robin divides work evenly for every workload; and unhealthy means dead. Define each metric precisely. Optional practice: construct a two-tenant workload where key affinity helps cache locality but hurts fairness, then propose a bounded per-tenant admission rule."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and additional practice",
+      "markdown": "Core 55 minutes: retrieve prior concepts for 5, study explanation and diagrams for 18, work the trace for 8, exercise for 10, attempt Q1–Q3 for 10, compare reasoning and review cards for 4. Q4–Q5 are an optional practice bank. Estimates are illustrative; do not treat model output as a production benchmark."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "demand",
+      "title": "Same RPS, different CPU demand",
+      "source": "flowchart LR\nM[Mixed request stream] -->|100 requests per second| A[A: 80 cheap plus 20 expensive]\nM -->|100 requests per second| B[B: 100 cheap]\nA -->|Modeled CPU demand| CA[0.56 CPU-seconds per second]\nB -->|Modeled CPU demand| CB[0.20 CPU-seconds per second]",
+      "caption": "Assumptions: cheap=2 ms CPU, expensive=20 ms CPU. This is arithmetic, not a measured server benchmark.",
+      "steps": [
+        "Count each operation class.",
+        "Multiply class rate by its resource cost.",
+        "Compare total demand, not only request counts.",
+        "Choose a balancing and admission signal that matches the bottleneck."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A service has HTTP/2 connections, reports and cheap lookups, plus sticky login sessions. Compare round robin per connection, least connections, and request-aware balancing. Choose a first experiment and identify the state change needed before arbitrary per-request routing.",
+    "rubric": [
+      "Distinguish requests from connections and costs.",
+      "Measure queue/CPU/dependency demand by operation.",
+      "Move or explicitly share login continuity before changing affinity."
+    ],
+    "solution": "Connection-level policies cannot see request-rate/cost differences inside multiplexed connections. Request-aware balancing can respond to outstanding work but still needs cost/resource evidence. Run a representative mixed workload and compare per-instance active requests, class rates, CPU, and dependency waits. Before routing every request freely, externalize or otherwise redesign session continuity; otherwise improved load distribution creates authentication failures. Keep overload rejection and draining explicit."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Least connections directly measures which quantity?",
+      "options": [
+        "CPU demand",
+        "Active connections under the balancer’s definition",
+        "Durable transaction cost"
+      ],
+      "answer": "Active connections under the balancer’s definition",
+      "explanation": "Connections can carry unequal work."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "What modeled CPU-seconds/s does server A consume in the example?",
+      "answer": 0.56,
+      "unit": "CPU-seconds/s",
+      "tolerance": 0.01,
+      "explanation": "80×0.002 + 20×0.020 = 0.56."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Can perfect load distribution absorb demand beyond total safe capacity indefinitely?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with weighted round robin"
+      ],
+      "answer": "No",
+      "explanation": "Admission, bounded waiting, or degradation is still required."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is key affinity valuable and risky?",
+      "answer": "It can improve locality and preserve required placement but concentrates hot keys and complicates failure/rebalance. Measure skew and define recovery.",
+      "explanation": "It can improve locality and preserve required placement but concentrates hot keys and complicates failure/rebalance. Measure skew and define recovery."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why gradually reintroduce a cold node?",
+      "answer": "Immediate full traffic can create cache misses and dependency load; controlled warm-up lets observations establish safe capacity.",
+      "explanation": "Immediate full traffic can create cache misses and dependency load; controlled warm-up lets observations establish safe capacity."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Round robin assumption?",
+      "back": "Assignment counts approximate work well enough for the workload."
+    },
+    {
+      "front": "Least connections limitation?",
+      "back": "A connection may contain very different amounts of active work."
+    },
+    {
+      "front": "Key affinity benefit?",
+      "back": "Locality or required ownership continuity."
+    },
+    {
+      "front": "Key affinity cost?",
+      "back": "Skew and harder redistribution/failure behavior."
+    },
+    {
+      "front": "Balancing versus admission?",
+      "back": "Placement of accepted work versus deciding how much work to accept."
+    }
+  ],
+  "mentalModel": "Balance the resource that is constrained, at a granularity the router can actually observe.",
+  "sources": [
+    {
+      "title": "Google SRE — Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Load Balancing in the Datacenter",
+      "url": "https://sre.google/sre-book/load-balancing-datacenter/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

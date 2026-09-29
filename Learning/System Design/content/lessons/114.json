@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "114",
+  "objectives": [
+    "Explain map, shuffle, and reduce using a concrete aggregation.",
+    "Design retry-safe batch outputs and orchestration dependencies.",
+    "Validate data quality before publishing a partition."
+  ],
+  "retrieval": [
+    "L101: how do keys divide work?",
+    "L107: why should a retried task not repeat an external effect?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A daily report must be reproducible",
+      "markdown": "A shop needs yesterday's sales by category from a large set of immutable input files. One laptop can demonstrate the algorithm, but larger data requires dividing work and recovering failed tasks. The important design question is how workers can retry without publishing partial or double-counted results.\n\nBatch processing operates over a defined finite input boundary. Name the files, table snapshot, or ingestion cutoff. “Yesterday” is ambiguous when late events arrive today. Define the business time interval and the correction policy separately from the processing schedule."
+    },
+    {
+      "id": "mechanism",
+      "title": "Group related partial work before combining it",
+      "markdown": "Map reads input records and emits key/value pairs, such as(category,amount_minor_units). Shuffle groups values by key, moving data so all contributions needed for a reduction can be combined. Reduce computes the desired aggregate, such as the sum per category. A combiner may reduce local intermediate volume only when the operation's algebra makes it safe; an average cannot be combined by averaging unweighted partial averages.\n\nTasks can fail or run twice. Write output to attempt-specific temporary locations and publish a validated complete result through a controlled commit/manifest step. A downstream task should read only the published manifest, not every file that happens to exist in a directory. A deterministic task identity includes the input boundary and transformation version.\n\nAn orchestrator manages dependencies, retries, deadlines, and backfills. A green task exit code says the process completed; data checks decide whether its result is fit to publish. Keep those checks and their thresholds versioned with the pipeline."
+    },
+    {
+      "id": "worked",
+      "title": "Average the correct sufficient statistics",
+      "markdown": "Partition A contains amounts2 and4; partition B contains100. The average of partition averages is(3+100)/2=51.5, which is wrong. Emit(sum,count): A=(6,2), B=(100,1). Combine to(106,3), then average106/3≈35.33. The pair is the sufficient state for this aggregation; it survives different task partitioning.\n\nFor a daily sales report, use integer minor units and preserve currency grouping. Before publication compare input record count, rejected-record count, total amount by currency, and expected key coverage. A zero-row input might be valid on a closed day or a broken ingestion job; the business calendar and freshness evidence decide.\n\nSuppose1TB decimal of input is read at an aggregate effective500MB/s. The optimistic read-only lower bound is2,000seconds. Shuffle, skew, decompression, remote I/O, and stragglers add cost. A popular category receiving most records can bottleneck one reducer; partial aggregation can help when the operation supports it."
+    },
+    {
+      "id": "failure",
+      "title": "Publish only a result you can identify and reproduce",
+      "markdown": "If a worker crashes after writing half its output, the final manifest must not reference that partial attempt. Retrying should either replace the attempt safely or produce a new complete candidate. Garbage collection of abandoned temporary files is separate from publication correctness.\n\nBackfills can run many historical intervals and overwhelm shared resources. Cap concurrency, prioritize live freshness where required, and track the oldest missing interval. Reprocessing an interval with a new code version should create a distinguishable output version rather than silently mixing old and new files.\n\nCommon misconceptions: more workers always reduce duration, a successful scheduler means correct data, and rerunning a script is harmless because the inputs are files. Test duplicate execution, partial output, malformed records, a hot key, missing input, and restart between validation and publication. Optional depth: compare a transactional table format's commit protocol with a simple immutable manifest used in this teaching model."
+    },
+    {
+      "id": "schedule",
+      "title": "Core and optional practice",
+      "markdown": "Core 55 minutes: retrieval 5, explanation 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Numerical workloads and architectural examples are original teaching assumptions, not production measurements."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "batch",
+      "title": "Attempt outputs become visible through one publication point",
+      "source": "flowchart LR\nI[(Declared input snapshot)] --> M[Map attempts]\nM --> S[Shuffle by key]\nS --> R[Reduce attempts]\nR --> T[(Temporary versioned output)]\nT --> Q[Quality and completeness checks]\nQ --> P[(Published manifest)]\nP --> D[Downstream readers]",
+      "caption": "Temporary files are not published data. The manifest identifies a complete version and its input/code lineage.",
+      "steps": [
+        "Fix the input boundary.",
+        "Partition and aggregate with retry-safe tasks.",
+        "Validate counts, totals, and completeness.",
+        "Publish one identifiable output version."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Design a daily average-latency batch job with two input partitions: A has100requests at mean20ms; B has900requests at mean80ms. Calculate the combined mean and specify attempt output, quality checks, and publication behavior after a worker crash.",
+    "rubric": [
+      "Weighted sufficient statistics.",
+      "Attempt-isolated output and final manifest.",
+      "Data-quality evidence before publish."
+    ],
+    "solution": "Combine sum/count: A2,000ms/100, B72,000ms/900, total74,000ms/1,000=74ms. Averaging20 and80 gives50ms and is wrong. Each attempt writes separate temporary output tied to input/code version. Validate total1,000 records, supported units, malformed/rejected counts, and expected input completeness. Publish a manifest only after all required outputs pass; an incomplete crashed attempt remains unreferenced and can be cleaned later."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does shuffle group?",
+      "options": [
+        "Values needed for the same key reduction",
+        "Only process logs",
+        "All records in random order"
+      ],
+      "answer": "Values needed for the same key reduction",
+      "explanation": "Grouping places related contributions at the reduction boundary."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Can unweighted averages of unequal groups be averaged safely?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with more workers"
+      ],
+      "answer": "No",
+      "explanation": "Carry sum and count so contributions retain their correct weight."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A100items averaging10 and B300items averaging30 have combined mean?",
+      "answer": 25,
+      "unit": "units",
+      "explanation": "(100×10+300×30)/400=25.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why use a manifest instead of listing an output directory?",
+      "answer": "A manifest identifies a complete validated version and excludes partial or duplicate attempt files.",
+      "explanation": "A manifest identifies a complete validated version and excludes partial or duplicate attempt files."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What makes a historical backfill reproducible?",
+      "answer": "A fixed input boundary, transformation/schema versions, deterministic identities, recorded quality checks, and separately versioned published outputs.",
+      "explanation": "A fixed input boundary, transformation/schema versions, deterministic identities, recorded quality checks, and separately versioned published outputs."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Map?",
+      "back": "Transform records into key/value contributions."
+    },
+    {
+      "front": "Shuffle?",
+      "back": "Group contributions by reduction key."
+    },
+    {
+      "front": "Combining averages?",
+      "back": "Combine sums and counts, then divide."
+    },
+    {
+      "front": "Task success versus data success?",
+      "back": "Exit status is insufficient; validate output meaning and completeness."
+    },
+    {
+      "front": "Publication boundary?",
+      "back": "A controlled commit/manifest exposing a complete validated version."
+    }
+  ],
+  "mentalModel": "Divide computation freely; make input identity, aggregation meaning, and publication atomicity explicit.",
+  "sources": [
+    {
+      "title": "Dean and Ghemawat — MapReduce",
+      "url": "https://research.google/pubs/mapreduce-simplified-data-processing-on-large-clusters/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

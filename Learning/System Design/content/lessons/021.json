@@ -1,0 +1,156 @@
+{
+  "id": "021",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish process isolation, threads, and cooperative tasks.",
+    "Identify whether a request is waiting for I/O or consuming CPU.",
+    "Explain why blocking work stalls an event loop.",
+    "Choose a bounded execution model without promising unmeasured speedups."
+  ],
+  "retrieval": [
+    "From L007, what happens to in-flight work when latency rises at fixed request rate?",
+    "From M02, name a point where a network request waits without computing."
+  ],
+  "sections": [
+    {
+      "id": "models",
+      "title": "Where does one request execute?",
+      "markdown": "Core: retrieval 5, mechanism and diagrams 18, worked trace 8, exercise 10, questions 10, review 4 minutes. Imagine an endpoint that retrieves a weather reading, converts its units, and returns a response. It waits much longer for a network reply than it spends converting a number. The execution model decides what the server can do while it waits.\n\nA process has its own address space and resources. Separate processes can isolate a crash and execute independently, but exchanging data requires a communication mechanism. Threads run within a process and share memory. That makes access convenient and introduces coordination obligations. An asynchronous task is a unit of work scheduled by an event loop; it cooperatively yields at suitable await points instead of requiring one thread per unfinished request.\n\nConcurrency means several operations make progress during overlapping lifetimes. Parallelism means execution actually occurs at the same instant on different execution resources. Two network requests may overlap while one event-loop thread alternates their short compute steps. Calling this concurrent does not claim simultaneous execution of Python code.\n\nFor the usual GIL-enabled CPython build, CPU-bound Python threads do not generally execute Python bytecode in parallel. Extensions may release the GIL, and free-threaded builds change relevant behavior; record the interpreter build rather than making a claim about all Python implementations. Threads can still be useful for I/O. CPU-heavy work often needs a process pool or another appropriately measured execution path."
+    },
+    {
+      "id": "trace",
+      "title": "What an event loop can and cannot schedule",
+      "markdown": "Trace request A: read input, initiate an asynchronous network operation, and await its result. While A is suspended, request B can validate its input and initiate another operation. When A's I/O becomes ready, its task resumes and converts the result. The operating system and networking library signal readiness; the task does not need to spin in a loop checking constantly.\n\nNow replace the asynchronous operation with a synchronous call that blocks the event-loop thread for two seconds. B cannot run on that loop during those two seconds, even if B only wants a trivial response. Writing async def around a blocking call does not make the call cooperative. Similarly, a long pure-Python computation with no yield blocks progress on that loop.\n\nA bounded thread executor can bridge a blocking I/O library, but it introduces queueing and cancellation limitations. Canceling the await does not reliably stop a function already running in a thread. A process executor can run CPU work separately, but arguments and results must cross the process boundary, and startup/serialization costs can dominate tiny tasks. Choose a mechanism by occupied resources and failure needs, then measure it."
+    },
+    {
+      "id": "example",
+      "title": "An observable scheduling example",
+      "markdown": "The following is an executable standard-library simulation for Python 3.11+. Each sleep models I/O readiness, not a real external service. It checks completion and shows interleaving; wall-clock timing is intentionally not asserted because machines and schedulers vary.\n\n~~~python\nimport asyncio\n\nasync def fetch(label: str) -> str:\n    print(label, \"start\")\n    await asyncio.sleep(0.01)\n    print(label, \"ready\")\n    return label\n\nasync def main() -> None:\n    results = await asyncio.gather(fetch(\"A\"), fetch(\"B\"))\n    assert results == [\"A\", \"B\"]\n    print(\"both complete\")\n\nasyncio.run(main())\n~~~\n\nExpected shape: both start messages appear before ready messages, followed by “both complete.” The returned list follows argument order; that is not proof that real requests complete in the same order. In the L029 harness, blocking versus cooperative execution is tested through controlled progress events rather than a fragile benchmark.\n\nIf incoming demand is 100/s and each operation remains in flight for 0.5 s, average concurrency is about 50 under L007's stable assumptions. That does not require 50 CPU cores. It does require enough sockets, memory, and downstream capacity. Creating unbounded tasks merely moves the bottleneck to those resources."
+    },
+    {
+      "id": "choice",
+      "title": "A runtime is not an overload policy",
+      "markdown": "Use async I/O when your libraries cooperate and many requests wait. Use a limited thread pool for blocking I/O that cannot be replaced immediately. Consider processes for substantial CPU work when the overhead and state-sharing model are acceptable. A synchronous small service may be entirely adequate for a modest workload; complexity should follow evidence.\n\nFailure scenarios: a blocking DNS or SDK call freezes an event loop; an unbounded executor queue consumes memory; a worker process dies while holding an unfinished task; a shared thread mutation races with another request. None is repaired solely by renaming the endpoint asynchronous. Attach ownership, limits, deadlines, and error propagation to the execution choice.\n\nCommon misconceptions are “async makes CPU work faster,” “threads cannot help Python,” “one process means no concurrency,” and “await always gives another task a useful chance to run.” Some awaits complete immediately; cooperative behavior depends on what is awaited. Optional depth: compare the same I/O workload with threads and async using a real local test server, clearly labeling all measurements."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "event-loop",
+      "title": "Overlap waiting, not arbitrary computation",
+      "source": "sequenceDiagram\nparticipant L as Event loop\nparticipant A as Task A\nparticipant B as Task B\nparticipant N as I/O readiness\nL->>A: Run short computation\nA->>N: Begin operation and await\nL->>B: Run while A waits\nB->>N: Begin operation and await\nN-->>A: Ready to resume\nL->>A: Continue to result",
+      "caption": "A and B share one loop thread in this model. The diagram does not show CPU parallelism or guarantee completion order.",
+      "steps": [
+        "A runs until it suspends on I/O.",
+        "The loop can run B during that wait.",
+        "Readiness makes A eligible again.",
+        "A long blocking function would prevent the scheduling step."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "An async endpoint downloads a file using a blocking SDK, then compresses it using CPU-heavy Python, then returns. Identify two separate causes of event-loop blockage and propose bounded execution choices. State what cancellation of a thread await does not guarantee.",
+    "minutes": 10,
+    "rubric": [
+      "Distinguishes blocking I/O from CPU computation.",
+      "Proposes cooperative library or bounded I/O executor.",
+      "Proposes measured CPU execution outside the loop when needed.",
+      "Does not promise that thread cancellation stops running work."
+    ],
+    "solution": "The synchronous SDK blocks the loop while waiting; replace it with cooperative I/O or use a bounded thread executor with its own timeout. Compression consumes CPU on the loop; consider a process pool or a suitable native implementation, measuring serialization and work size. Limit admission to either path. Canceling the caller waiting for a thread result may abandon the result while the underlying function keeps running, so the SDK needs its own bounded timeout and cleanup plan."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Two requests overlap network waits on one event-loop thread. This demonstrates:",
+      "options": [
+        "Concurrency",
+        "Guaranteed CPU parallelism",
+        "No resource use while waiting"
+      ],
+      "answer": "Concurrency",
+      "explanation": "Lifetimes overlap; waiting still retains sockets and memory, and does not imply simultaneous CPU execution."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What makes a blocking SDK cooperative?",
+      "options": [
+        "Putting it inside async def",
+        "Using an actual asynchronous API or moving the blocking call to a suitable bounded executor",
+        "Renaming it fetch_async"
+      ],
+      "answer": "Using an actual asynchronous API or moving the blocking call to a suitable bounded executor",
+      "explanation": "Syntax alone does not change how the underlying function waits."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "When might separate processes be appropriate?",
+      "answer": "For substantial CPU work or isolation requirements when communication, startup, and state costs are justified.",
+      "explanation": "Mention evidence and overhead rather than claiming processes always speed work."
+    },
+    {
+      "id": "q4",
+      "type": "numeric",
+      "prompt": "At 60 requests/s and mean 0.5 s in flight, what is average concurrency?",
+      "answer": 30,
+      "unit": "requests",
+      "tolerance": 0.01,
+      "explanation": "60 × 0.5 = 30 under compatible stable assumptions."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can async still run out of resources?",
+      "answer": "Each unfinished task may retain memory, sockets, buffers, and downstream slots; unbounded admission can exhaust them despite efficient waiting.",
+      "explanation": "Execution efficiency does not replace an overload policy."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Concurrency?",
+      "back": "Overlapping progress or lifetimes of operations."
+    },
+    {
+      "front": "Parallelism?",
+      "back": "Simultaneous execution on multiple execution resources."
+    },
+    {
+      "front": "Process versus thread?",
+      "back": "Separate address space versus shared memory within a process."
+    },
+    {
+      "front": "Event-loop blockage?",
+      "back": "A synchronous wait or long computation prevents other tasks on that loop from running."
+    },
+    {
+      "front": "Does async def make a library nonblocking?",
+      "back": "No; the underlying operation must cooperate or run outside the loop."
+    },
+    {
+      "front": "Canceling an executor await guarantees what?",
+      "back": "The caller may stop waiting; a running thread function may continue."
+    }
+  ],
+  "mentalModel": "Choose where work computes, where it waits, and which resources remain occupied during both phases.",
+  "sources": [
+    {
+      "title": "Python 3.14 documentation: threading",
+      "url": "https://docs.python.org/3/library/threading.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python 3.14 documentation: Developing with asyncio",
+      "url": "https://docs.python.org/3/library/asyncio-dev.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python 3.14 documentation: concurrent.futures",
+      "url": "https://docs.python.org/3/library/concurrent.futures.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

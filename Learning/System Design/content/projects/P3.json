@@ -1,0 +1,107 @@
+{
+  "id": "P3",
+  "title": "Job processing",
+  "milestones": [
+    {
+      "lessonId": "099",
+      "number": 1,
+      "title": "[P3.1] Job system: implement claiming, execution, and recovery tests",
+      "focus": "Claims, execution and recovery",
+      "task": "Implement enqueue, claim and complete. Freeze time, claim a job, advance beyond its lease, and claim again. The second worker receives a different token. Reject completion from the first worker even though it once legitimately owned the job.",
+      "failureInjection": "Worker A pauses beyond expiry while B reclaims. A resumes and attempts a stale commit. Checking only job ID would allow it; validate token, state and current lease within the commit transaction.",
+      "evidence": "Demonstrate stale-worker rejection, current-worker success, and one durable local effect.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P3_1 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "129",
+      "number": 2,
+      "title": "[P3.2] Job system: retries, dead letters, metrics, and failure injection",
+      "focus": "Retries, dead letters and telemetry",
+      "task": "Add exponential retry delays capped at sixty seconds and an explicit maximum attempt count. Preserve a bounded error description. Use the fake clock to show a failed job cannot be reclaimed before its available time.",
+      "failureInjection": "A poison job must not circulate indefinitely or hide behind a growing backlog. Dead-letter after the configured attempt budget, and distinguish queued/running/dead counts.",
+      "evidence": "Capture first failure → delayed retry → final dead letter and a state-count report. Explain retryability classification for real failures.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P3_2 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "148",
+      "number": 3,
+      "title": "[P3.3] Job system: deployment, graceful shutdown, and bounded scaling",
+      "focus": "Graceful stop and bounded workers",
+      "task": "Add admission capacity and a worker drain loop with a stop event and maximum job count. A stop request prevents new claims while current work may finish. Define a termination grace period at least as long as bounded handler cleanup.",
+      "failureInjection": "An unbounded queue moves overload into memory/storage and increases recovery time. A second enqueue into a full queue must fail explicitly without losing the accepted job.",
+      "evidence": "Run a full-queue test and a stopped-worker test; then drain one unit and show the capacity becomes available.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P3_3 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "149",
+      "number": 4,
+      "title": "[P3.4] Job system: chaos checks, restore drill, and operational handover",
+      "focus": "Chaos and restore handover",
+      "task": "Exercise duplicate enqueue, conflicting payload reuse, expired claims and backup restore. Use SQLite backup rather than copying an open WAL database. Open the backup independently and check jobs and effects as one consistent state.",
+      "failureInjection": "A backup file existing does not prove recoverability. Restore to a separate database and inspect a completed job and exactly one local effect before calling the drill successful.",
+      "evidence": "Write a runbook with queue-depth thresholds, dead-letter triage, safe retry procedure, shutdown order and measured recovery evidence.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P3_4 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    }
+  ],
+  "baselineArtifact": "Durable job states, worker recovery, deployment, runbook",
+  "acceptanceEvidence": [
+    "Worker crash",
+    "duplicate delivery",
+    "retry limits",
+    "bounded queues",
+    "recovery drill"
+  ],
+  "source": "catalog",
+  "version": 1,
+  "status": "reference-tested",
+  "authorship": "original prepared teaching implementation; curriculum names and milestone IDs source-derived",
+  "invariant": "Only the current unexpired claim token may commit a result. The local effect ledger and done state commit atomically; external side effects need their own idempotency boundary.",
+  "requirements": [
+    "Persist bounded queued/running/done/dead states and unique job identities.",
+    "Recover crashed workers through leases with fresh claim tokens, bounded retry backoff, and dead letters.",
+    "Stop claiming during graceful shutdown, back up with SQLite backup API, and verify restored state."
+  ],
+  "architecture": "enqueue → durable queue → lease claim with token → handler → transactional local result + done; failures → delayed retry → dead letter at limit.",
+  "limitations": "Local workers share one SQLite database. The effect ledger proves only effects stored in the same transaction. An email or payment API outside this database is not exactly-once by this mechanism.",
+  "extensions": [
+    "Add an outbox and idempotent HTTP receiver to demonstrate cross-boundary effect handling.",
+    "Add lease renewal plus stale-token tests at the exact renewal boundary."
+  ],
+  "learnerFile": "projects/learner/jobs.py",
+  "referenceFile": "projects/reference/jobs.py",
+  "instructionsFile": "projects/P3.md",
+  "testFile": "projects/tests/test_projects.py",
+  "referenceReveal": "Explicit reveal in the academy; reference source also remains inspectable on disk. Educational spoiler control, not secure examination."
+}

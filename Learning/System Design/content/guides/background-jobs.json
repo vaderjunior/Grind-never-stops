@@ -1,0 +1,272 @@
+{
+  "id": "background-jobs",
+  "title": "Background work: do not make the user wait",
+  "version": 2,
+  "week": 7,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Move photo-thumbnail work behind a saved job record so the user can continue while the app reports honest progress.",
+  "objectives": [
+    "Distinguish an accepted job from completed work.",
+    "Trace a job through pending, running, and finished states.",
+    "Explain how a queue absorbs a bounded burst without adding worker capacity.",
+    "Identify the saved information needed to recover after a worker stops."
+  ],
+  "terms": [
+    {
+      "term": "Background job",
+      "definition": "Work performed outside the immediate user request, with its own tracked outcome."
+    },
+    {
+      "term": "Queue",
+      "definition": "A collection of work waiting to be taken by workers."
+    },
+    {
+      "term": "Worker",
+      "definition": "A process or component that takes and performs jobs."
+    },
+    {
+      "term": "Acknowledgment",
+      "definition": "A message or recorded decision that confirms a specified stage, such as task completion."
+    },
+    {
+      "term": "Backlog",
+      "definition": "Work accepted but not yet finished."
+    }
+  ],
+  "retrieval": [
+    "Why do we fetch thumbnails instead of every original photo on a list page?",
+    "What can happen when saving succeeds but the browser never receives its response?"
+  ],
+  "sections": [
+    {
+      "id": "waiting",
+      "title": "Saving a note need not wait for every optional result",
+      "markdown": "Maya uploads a photo. The app stores the original and must make a smaller preview image. Suppose resizing takes several seconds. If the browser waits for resizing before receiving any useful response, Maya may think the upload failed and submit it again. We can separate the accepted upload from the later preview, provided the product clearly explains that the preview is still being prepared.\n\nA background job is work tracked outside the immediate request. The user receives an accepted state and a job identifier after the app has stored the information needed to perform the work. A worker later creates the preview. Until then, the note page can display a “preview processing” placeholder. This changes the response contract: accepted means recorded for processing, not already completed.\n\nThink of leaving a repair ticket at a workshop. The receipt confirms the workshop recorded your request, not that the repair is done. The analogy also exposes a limit: if tickets are lost or nobody returns to work, the receipt alone does not complete anything. Our software needs persistent job information and a visible outcome."
+    },
+    {
+      "id": "flow",
+      "title": "Keep the small queue in a saved job table first",
+      "markdown": "Begin with a saved jobs table; a separate messaging product is optional at this stage. Job 81 belongs to photo 41 and asks for preview version small1.\n\n| Stored field | Initial example | Reason to retain it |\n| --- | --- | --- |\n| job_id | 81 | Find the same work after reconnecting |\n| photo_id and source version | 41, original2 | Read the intended input |\n| requested operation | small1 preview | Know which transformation is owed |\n| status | pending | Tell worker and user what has happened |\n| result location | empty until published | Point to the verified output |\n\nIf note creation and its job row belong to one product action in the same database, accept both in one transaction. This does not include the earlier upload to a separate object store; that upload still has its own state and cleanup rules.\n\nA worker claims pending work with a protected state change, records running, creates the preview, then publishes succeeded and its result. Begin with one worker, but make the ownership assumption explicit. Adding workers without an atomic claim can let two choose the same row.\n\n**The receipt is a job ID, not a finished image.** The browser asks for status and displays pending, running, succeeded, or a useful failure. Recovery may still repeat execution after a crash; next week's retry chapter explains that boundary."
+    },
+    {
+      "id": "capacity",
+      "title": "A waiting line buys time, not processing power",
+      "markdown": "A waiting line buys time; it creates no processing power. Ten previews handled serially at two seconds each take about twenty seconds for the last completion. A quick receipt improves responsiveness without shortening the work itself.\n\nFor a smooth-rate teaching model, track the **difference** between arrivals and completions:\n\n| Phase | Arrivals | Completions | Change in waiting jobs |\n| --- | --- | --- | --- |\n| Ten-second burst | 6/s | 4/s | +2/s, therefore +20 jobs |\n| Recovery after burst | 2/s | 4/s | −2/s, therefore 10 s to drain those 20 |\n\nDividing by 4 would ignore new work arriving during recovery. Real tasks vary in cost, so measure oldest-job age and completion rates as well as counts.\n\nSet an admission limit and give a truthful busy or pending response when the promise cannot be met. A worker on the same machine can still compete with note reads for CPU and memory. Moving work out of the request changes scheduling; it does not automatically isolate resources.\n\n**Pause and predict:** if arrival and completion rates are equal, does an existing backlog shrink? It stays until spare capacity or reduced demand creates a positive drain rate."
+    },
+    {
+      "id": "recover",
+      "title": "Remember enough to restart the work safely",
+      "markdown": "If a worker stops after taking a job, a permanently running status would strand it. The system needs a way to recognize abandoned work and decide whether another attempt is allowed. A production queue or carefully designed job table provides a recovery policy; the implementation must state its timeout, ownership, and retry behavior. We do not need to implement that whole protocol before understanding the problem.\n\nStore the durable input reference, the requested operation, its version, and the outcome. Do not rely on the stopped worker’s memory to remember which photo it was processing. Record errors so a permanently invalid image can be handled differently from a temporary unavailable dependency. Repeatedly retrying a malformed file forever wastes capacity and hides the reason it cannot succeed.\n\nA preview is a useful first background task because it can often be regenerated from a saved original. An email or payment has different repeat-effect consequences. We will not claim all background jobs are interchangeable just because they use a queue.\n\nYour checkpoint is to trace one job from user receipt to a finished preview and then stop the worker at one point. Explain which durable record remains, what the user sees, and what decision recovery must make. That prepares you for retries and duplicate work without requiring a messaging-product comparison chart."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "job",
+      "title": "An accepted upload and a finished preview are separate outcomes",
+      "source": "sequenceDiagram\nparticipant U as Browser\nparticipant A as Notes application\nparticipant D as Saved notes and jobs\nparticipant W as Preview worker\nU->>A: Original uploaded, create note\nA->>D: Save note and pending preview job together\nD-->>A: Accepted records\nA-->>U: Job 81 pending\nW->>D: Take pending job 81\nW->>W: Generate preview from saved original\nW->>D: Record succeeded and result location\nU->>A: Ask job 81 status\nA->>D: Read job outcome\nD-->>A: Succeeded\nA-->>U: Preview is ready",
+      "caption": "The diagram begins after original content upload. It does not pretend the database transaction also controls a separate upload service.",
+      "steps": [
+        "Accept a recoverable job record before issuing its receipt.",
+        "Return pending status so the user can continue.",
+        "Let the worker perform the expensive step.",
+        "Expose completion only after its result is recorded."
+      ],
+      "sectionId": "flow"
+    },
+    {
+      "id": "job-lifecycle",
+      "title": "A status value must correspond to recoverable work",
+      "sectionId": "recover",
+      "source": "flowchart LR\nP[Pending job with durable input] --> C[Protected claim]\nC --> R[Running attempt]\nR --> S[Verified result and succeeded state]\nR --> F[Failure classified]\nF -->|Retry allowed| P\nF -->|Cannot recover automatically| E[Visible failed state]",
+      "caption": "This is the application lifecycle, not a guarantee that workers execute exactly once. Claim ownership, abandoned attempts, and safe publication need explicit rules.",
+      "steps": [
+        "Store the input and intended transformation before issuing a receipt.",
+        "Protect the transition from pending to a current running attempt.",
+        "Publish success only after a valid result exists.",
+        "Classify a stopped or failed attempt before retrying or reporting failure."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A burst adds 8 jobs/s while workers finish 5 jobs/s for 6 seconds. How much extra backlog forms? Arrivals then drop to 2 jobs/s; estimate its drain time. State what the browser should display before its preview job finishes.",
+    "minutes": 8,
+    "rubric": [
+      "Computes 18 extra jobs.",
+      "Uses spare rate 3/s for a six-second drain.",
+      "Shows pending/running rather than completed."
+    ],
+    "solution": "Extra backlog is (8 − 5) × 6 = 18 jobs. With continuing arrivals of 2 jobs/s, the spare rate is 5 − 2 = 3 jobs/s, so the extra backlog drains in 18 ÷ 3 = 6 seconds under this simple model. The browser displays a processing state linked to the job ID until the succeeded outcome and preview are recorded."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A job ID returned after durable acceptance means:",
+      "options": [
+        "The job is recorded for processing",
+        "All processing already finished",
+        "No later error is possible"
+      ],
+      "answer": "The job is recorded for processing",
+      "explanation": "Accepted and completed are distinct states."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Adding a queue automatically adds processing capacity:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It stores waiting work; workers still need capacity to finish it."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which job data must survive a worker restart?",
+      "options": [
+        "Input reference, requested work, and tracked status/outcome",
+        "Only the worker’s temporary local variable",
+        "Only the browser’s animation"
+      ],
+      "answer": "Input reference, requested work, and tracked status/outcome",
+      "explanation": "Recovery needs durable information about what remains to be done."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can a background worker still slow foreground note reads?",
+      "answer": "It may compete for the same processor, memory, storage, or database resources.",
+      "explanation": "Separate scheduling does not by itself create resource isolation."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why not retry a permanently malformed photo forever?",
+      "answer": "No number of identical attempts repairs invalid input; endless attempts waste capacity and conceal a needed user-facing failure.",
+      "explanation": "Separate retryable temporary conditions from permanent failure categories."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Background job?",
+      "back": "Tracked work performed outside the immediate user request."
+    },
+    {
+      "front": "Queue?",
+      "back": "Saved or managed work waiting for workers."
+    },
+    {
+      "front": "Accepted versus completed?",
+      "back": "Recorded for processing versus the result actually produced and recorded."
+    },
+    {
+      "front": "Backlog drain uses?",
+      "back": "Spare completion rate after ongoing arrivals."
+    },
+    {
+      "front": "Worker recovery needs?",
+      "back": "Durable input, operation identity/version, status, and an explicit recovery policy."
+    }
+  ],
+  "mentalModel": "A job receipt promises remembered work; completion needs a worker, capacity, and a recorded result.",
+  "sources": [
+    {
+      "title": "RabbitMQ: work queues and acknowledgments",
+      "url": "https://www.rabbitmq.com/tutorials/tutorial-two-python",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE: handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "preview-receipt",
+      "title": "A receipt arrives before a preview",
+      "sectionId": "waiting",
+      "intro": "Follow a new preview job J90 for photo 52. Its original object has already been uploaded and verified.",
+      "steps": [
+        {
+          "title": "Accept the obligation",
+          "explanation": "The database accepts the note and pending preview job together. The app can now give the browser a recoverable identity.",
+          "state": [
+            {
+              "label": "Note",
+              "value": "Photo 52 exists"
+            },
+            {
+              "label": "Job",
+              "value": "J90 pending"
+            },
+            {
+              "label": "Browser",
+              "value": "Preview processing"
+            }
+          ]
+        },
+        {
+          "title": "Perform the slow part",
+          "explanation": "A worker claims the job and reads the recorded input. The user can leave this page without erasing the job.",
+          "state": [
+            {
+              "label": "Job",
+              "value": "J90 running"
+            },
+            {
+              "label": "Input",
+              "value": "photo52/original3"
+            },
+            {
+              "label": "Result",
+              "value": "Not yet published"
+            }
+          ]
+        },
+        {
+          "title": "Publish useful completion",
+          "explanation": "The worker verifies the preview and records its location with success under the current job ownership.",
+          "state": [
+            {
+              "label": "Job",
+              "value": "J90 succeeded"
+            },
+            {
+              "label": "Result",
+              "value": "photo52/original3/small1"
+            },
+            {
+              "label": "Browser",
+              "value": "Can retrieve finished preview"
+            }
+          ]
+        },
+        {
+          "title": "Return after reconnecting",
+          "explanation": "The browser asks about the existing identity instead of submitting another preview request.",
+          "state": [
+            {
+              "label": "Request",
+              "value": "Status of J90"
+            },
+            {
+              "label": "DurableState",
+              "value": "Succeeded"
+            },
+            {
+              "label": "VisibleOutcome",
+              "value": "Same completed preview"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Return early only after recording the promised work, and show success only after recording the promised result."
+    }
+  ]
+}

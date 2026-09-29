@@ -1,0 +1,302 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 24,
+  "title": "A full mock interview with a changing requirement",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "full-mock-interview",
+  "summary": "Work through an unfamiliar garden-allocation service, then respond to a changed requirement. The example design stays hidden until you choose to compare your own reasoning.",
+  "objectives": [
+    "Turn an unfamiliar product request into explicit requirements.",
+    "Explain a complete normal journey and a meaningful failure.",
+    "Adapt a design when a requirement changes without replacing reasoning with memorized boxes."
+  ],
+  "terms": [
+    {
+      "term": "Clarification",
+      "definition": "A question that resolves an ambiguity affecting the design."
+    },
+    {
+      "term": "Scope",
+      "definition": "What this design includes and deliberately leaves for another iteration."
+    },
+    {
+      "term": "Invariant",
+      "definition": "A rule the system must preserve even when requests overlap or fail."
+    },
+    {
+      "term": "Tradeoff",
+      "definition": "A benefit chosen together with the cost or limitation it brings."
+    },
+    {
+      "term": "Evidence",
+      "definition": "Your actual explanation, calculation, diagram, or failure trace—not an inferred skill from simply reading a lesson."
+    }
+  ],
+  "retrieval": [
+    "Name one occasion when a timeout left an outcome unknown.",
+    "What does an authoritative state transition provide that a cached observation cannot?"
+  ],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "The candidate brief",
+      "markdown": "Design PlotShare, a service that helps a city allocate community-garden plots. Residents join a waiting list for a garden. When a plot becomes available, the city offers it to an eligible resident, who has a limited time to accept.\n\nResidents can view their current applications and offers. City staff can release a plot, correct an eligibility decision, and inspect why an allocation happened.\n\n| Initial fact | Assumption supplied for this exercise |\n| --- | --- |\n| Coverage | 200 gardens and 20,000 plots |\n| Residents | 80,000 |\n| Seasonal opening | 5,000 requests per minute; most days are quieter |\n| Payments | Outside the initial scope |\n| Notifications | Email may announce an offer; its status must be inspectable in the application |\n| Allocation rule | One plot must not be accepted by two residents for the same allocation period |\n\nThese are original interview assumptions, not measured traffic from a real service. Ask what other policy is required before interpreting “eligible,” “waiting list,” or “limited time.” A technical queue does not automatically implement a fair civic policy."
+    },
+    {
+      "id": "setup",
+      "title": "Set up a real attempt",
+      "markdown": "Reserve 45 minutes and use a blank page or the exercise area. If working with a peer or a connected AI, ask it to present one question at a time and record what you actually say. The academy does not automatically launch an external interviewer. If working alone, state each assumption explicitly and use a visible timer.\n\nKeep the example answer closed until you have written your design. During the attempt, avoid copying an earlier booking diagram. The point is to see whether you can derive responsibilities from this product. You can reuse a familiar mechanism once you explain which requirement it protects.\n\nYour artifact should include requirements, a rough estimate with units, a small component drawing, important stored records, an API sketch in ordinary language, one normal journey, one failure trace, and at least one tradeoff. Code is unnecessary. A clear sequence of state changes is often more valuable than implementation syntax."
+    },
+    {
+      "id": "clarify",
+      "title": "Begin by reducing uncertainty",
+      "markdown": "Spend roughly the first five minutes asking questions that could change the design. For example, what determines list order, can one resident apply to several gardens, who may alter eligibility, and how quickly must residents see an accepted offer? These are questions to investigate, not instructions to select an architecture.\n\nFor a solo attempt, choose reasonable rules and write them down. Distinguish a product rule from an implementation assumption. “Only authorized city staff may correct eligibility” is a policy; “requests are always delivered once” is an unsafe convenience. Explain which rules need stronger enforcement and which views may lag.\n\nUse the next ten minutes to propose the smallest complete design. Walk one resident through joining, receiving an offer, and accepting. Give each box a responsibility and each arrow a named request or fact.\n\nEstimate seasonal requests per second and discuss burst headroom rather than presenting an average as a guarantee. Keep your own notes visible and the worked answer closed."
+    },
+    {
+      "id": "deepen",
+      "title": "Choose the failure that tests your claim",
+      "markdown": "Use the middle of the interview to examine overlapping or interrupted work. Choose a case that could break one of your own stated rules. Show the order of events, what each participant knows, and the response the resident sees. Merely listing “use retries” does not explain whether repeating the operation is safe.\n\nAsk your interviewer to challenge one choice. If working alone, ask: what must still be true if a process stops at this arrow? If a message arrives twice? If a status view is old? If city staff correct a record while a resident is acting? Choose a bounded case and finish the explanation before adding more components.\n\nAlso distinguish operational evidence from policy evidence. A low error rate can show a service is reachable without proving allocations follow the city's rules. Identify what you would record to investigate a resident's complaint, without putting unnecessary personal information into every log."
+    },
+    {
+      "id": "change",
+      "title": "At minute 25: change the requirement",
+      "markdown": "The city now allows one resident to receive offers from several gardens but accept only one plot across the city for the allocation period. Some gardens must keep browsing available during a temporary network interruption between regions.\n\nExplain which part of your original design changes. What can remain available, what may need to wait, and how will the user understand the result? Do not claim two incompatible guarantees by hiding the difficult action inside a vague “sync” box. You may negotiate a narrower availability promise, provided you explain the consequence.\n\nUse minutes 25–35 to adapt the design. Spend minutes 35–40 stress-testing the revised explanation. Use the final five minutes to summarize the design and one remaining risk. Leave a clear boundary around work that would require a deeper follow-up.",
+      "kind": "timed-change"
+    },
+    {
+      "id": "finish",
+      "title": "Finish before reading the example",
+      "markdown": "Save your actual attempt before reading the reference. Mark statements you are confident in and places where you guessed.\n\n| Evidence line | Fill it using your own attempt |\n| --- | --- |\n| Central guarantee | What must remain true? |\n| Enforcing mechanism | Where did your explanation show the decision? |\n| Remaining challenge | Which failure or uncertainty still needs work? |\n\nOnly afterward reveal the example and compare decisions, not vocabulary. A different design can be sound under explicit assumptions.\n\nIf you missed a guarantee, replay that exact failure with your revised design. Label reasoning produced after reading the answer as assisted practice. The next chapter turns these observations into a targeted plan; one completed mock does not prove readiness for every interview."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mock-process",
+      "title": "The interview is a sequence of explanations",
+      "source": "flowchart LR\nC[Clarify the product] --> D[Draw a small complete design]\nD --> T[Trace a normal request]\nT --> F[Test a meaningful failure]\nF --> A[Adapt to a changed requirement]\nA --> R[Record evidence and reflect]",
+      "caption": "This is a process guide, not a solution to PlotShare. Keep the worked architecture closed during your attempt.",
+      "steps": [
+        "Ask questions that change the design.",
+        "Explain a complete normal journey.",
+        "Use a failure trace to test the central guarantee.",
+        "Adapt and record what you actually demonstrated."
+      ],
+      "sectionId": "setup"
+    },
+    {
+      "id": "mock-evidence-loop",
+      "sectionId": "finish",
+      "title": "Keep attempt evidence separate from later learning",
+      "source": "flowchart LR\nA[Save your own explanation] --> B[Identify claims and gaps]\nB --> C[Explicitly reveal the reference]\nC --> D[Compare decisions under assumptions]\nD --> E[Retest one gap on a changed problem]",
+      "caption": "A process diagram only: it supplies no PlotShare components, records, or solution. Later assisted work should not be relabeled as the original attempt.",
+      "steps": [
+        "Save the explanation before reading reference material.",
+        "Point to the actual claim, trace, or missing evidence.",
+        "Reveal the example only after the attempt and compare reasoning.",
+        "Use a changed problem to collect new independent evidence."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 45,
+    "prompt": "Run the PlotShare mock from the candidate brief. Record your clarifications, assumptions, diagram in words or Mermaid, estimate, normal journey, failure trace, and response to the minute 25 change. Save your work before opening the example. The final reference is one possible design, not the required answer.",
+    "rubric": [
+      "Requirements and unresolved policy questions are explicit.",
+      "One coherent normal journey and one overlapping/failing journey are explained.",
+      "The changed cross-garden rule is enforced at an identifiable authority.",
+      "Alternatives, observable evidence, and availability limits are discussed."
+    ],
+    "solution": "One possible design starts with one application service and a transactional relational authority for residents, applications, plots, offers, and accepted allocations. This workload does not by itself require sharding. The seasonal estimate is 5,000/60 ≈ 83.3 requests per second on average during the stated minute, with burst headroom and load tests needed. Browse traffic can use cached read views, while actions that grant a plot return authoritative results.\n\nClarify city policy first: ordering can depend on application time plus documented eligibility/priority rules, not whichever queue consumer happens to run fastest. Preserve the facts and policy version used to issue an offer. Limit staff actions by role and record audit events. Treat personal information as sensitive and give operational logs only the fields they need.\n\nA plot-period record has one current allocation lifecycle. An offer has a unique identity, resident, plot, policy/version, deadline, and state. Accepting checks the same current offer, its allowed owner, deadline policy, and whether the plot is still available under that offer. Perform the check and mutation at one atomic boundary. Repeated requests use a stable action identity and return the existing result. An old accepted-looking browser view cannot grant another claim.\n\nEmail is a notification, not the authority for offer state. Save an outbox entry together with the offer transition, then send it through a retryable worker with duplicate-tolerant behavior. A resident who never receives email can inspect the current offer in the app. An expired email link still reaches the authoritative acceptance checks. A worker crash after sending may cause a repeated notification, which should not create a second allocation.\n\nAfter the changed requirement, enforce at most one accepted allocation per resident and period as well as per plot and period. If the relevant records remain within one database transaction, an appropriately constrained allocation record can enforce both uniqueness conditions alongside the offer transition. Define how existing offers are withdrawn after acceptance; their display may lag, but a second acceptance must fail at authority. If data is partitioned across independent authorities, explain a real coordination/ownership protocol or keep this operation centralized. A local per-garden lock does not enforce a citywide rule.\n\nDuring an inter-region interruption, allow explicitly stale browsing if the product accepts it. Do not allow both disconnected sides to grant conflicting citywide acceptances. Route to or wait for the authority capable of enforcing the invariant, and show a pending/unavailable result with a retryable identity when needed. This is a narrower availability promise for acceptance than for browsing.\n\nTest two simultaneous acceptances by one resident for different gardens, two residents for the same plot, an expired offer, a duplicate acceptance after a lost reply, and an eligibility correction that races acceptance. Decide whether a correction can revoke an accepted allocation and how staff resolve that business exception. Monitor rejection reasons, unresolved-action age, notification lag, and invariant/audit checks. Keep restore tests and recovery procedures for the authority. An audit trail helps explain policy application; it does not automatically make the policy fair.\n\nOther architectures can work. Evaluate whether they protect both uniqueness scopes and preserve a recoverable user journey. The useful follow-up is a precise test or tradeoff, not adding distributed components without a requirement."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "During an unfamiliar design, a useful clarification…",
+      "options": [
+        "Can change a requirement or architectural decision",
+        "Only asks which cloud logo to draw",
+        "Must have no effect on the design"
+      ],
+      "answer": "Can change a requirement or architectural decision",
+      "explanation": "Resolve uncertainty that matters to the user guarantee."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What is strongest evidence for an invariant?",
+      "options": [
+        "A component name",
+        "A concrete protected operation and a failure trace",
+        "A long list of services"
+      ],
+      "answer": "A concrete protected operation and a failure trace",
+      "explanation": "The explanation must show how overlapping or failed work preserves the rule."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "After a changed requirement, you should…",
+      "options": [
+        "Ignore it to finish the original diagram",
+        "Identify affected assumptions and defend the revised tradeoff",
+        "Replace every component immediately"
+      ],
+      "answer": "Identify affected assumptions and defend the revised tradeoff",
+      "explanation": "A focused revision preserves the parts that still solve the problem."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What did you actually demonstrate in this mock?",
+      "answer": "Cite a specific explanation, diagram transition, calculation, or failure trace from your saved attempt. Reading the worked answer is not evidence that you produced it independently.",
+      "explanation": "Cite a specific explanation, diagram transition, calculation, or failure trace from your saved attempt. Reading the worked answer is not evidence that you produced it independently."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What is the best next exercise after finding a gap?",
+      "answer": "Choose a small task that tests the missing skill directly, then repeat a changed scenario without reading the example first.",
+      "explanation": "Choose a small task that tests the missing skill directly, then repeat a changed scenario without reading the example first."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Useful clarification?",
+      "back": "A question whose answer changes scope, guarantees, workload, or design."
+    },
+    {
+      "front": "Normal journey purpose?",
+      "back": "Show how the components collectively fulfill one user action."
+    },
+    {
+      "front": "Failure trace purpose?",
+      "back": "Test whether the design still preserves its stated guarantee."
+    },
+    {
+      "front": "Requirement change response?",
+      "back": "Identify affected assumptions and revise the relevant mechanism and tradeoff."
+    },
+    {
+      "front": "Mock completion proves readiness?",
+      "back": "No. Use actual evidence across varied attempts to identify remaining gaps."
+    }
+  ],
+  "mentalModel": "Start from the promise to the user, derive a mechanism, and test the promise with a concrete failure.",
+  "sources": [
+    {
+      "title": "PostgreSQL18 — Transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Monitoring distributed systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "mock-working-record",
+      "title": "Follow a practice record without opening the solution",
+      "sectionId": "setup",
+      "intro": "This is an illustrative time-and-evidence record, not an architecture. Use it to organize your own 45-minute attempt; the later requirement remains in its separate reveal control.",
+      "steps": [
+        {
+          "title": "Start with a blank working page",
+          "explanation": "Begin the timer and keep the reference closed. Record the candidate brief in your own words.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 minutes"
+            },
+            {
+              "label": "Working artifact",
+              "value": "blank page plus brief"
+            },
+            {
+              "label": "Reference",
+              "value": "closed"
+            }
+          ]
+        },
+        {
+          "title": "Record clarifications",
+          "explanation": "Write the questions you asked and the assumptions you selected. Do not quietly treat guesses as given requirements.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "about 5 minutes"
+            },
+            {
+              "label": "Working artifact",
+              "value": "questions and explicit assumptions"
+            },
+            {
+              "label": "Reference",
+              "value": "closed"
+            }
+          ]
+        },
+        {
+          "title": "Capture your own normal journey",
+          "explanation": "Save the explanation you developed, including named responsibilities and arrows. The walkthrough does not supply those choices.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "about 15 minutes"
+            },
+            {
+              "label": "Working artifact",
+              "value": "your diagram and request trace"
+            },
+            {
+              "label": "Reference",
+              "value": "closed"
+            }
+          ]
+        },
+        {
+          "title": "Summarize after examining failures and the change",
+          "explanation": "Use the remaining time to state your guarantee, reasoning, and unresolved risk. Keep the actual words you used.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "about 40 minutes"
+            },
+            {
+              "label": "Working artifact",
+              "value": "attempt evidence and remaining risk"
+            },
+            {
+              "label": "Reference",
+              "value": "closed"
+            }
+          ]
+        },
+        {
+          "title": "Finish before comparing",
+          "explanation": "Save the completed attempt. You may now choose to reveal the example; that remains an explicit action.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "45 minutes"
+            },
+            {
+              "label": "Working artifact",
+              "value": "saved original attempt"
+            },
+            {
+              "label": "Reference",
+              "value": "still closed until requested"
+            }
+          ]
+        }
+      ],
+      "takeaway": "The purpose of the record is to preserve what you demonstrated independently. It neither grades the design nor supplies the timed requirement."
+    }
+  ]
+}

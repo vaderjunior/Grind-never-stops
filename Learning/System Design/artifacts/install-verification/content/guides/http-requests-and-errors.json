@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "level": "beginner",
+  "id": "http-requests-and-errors",
+  "week": 2,
+  "title": "HTTP requests, responses, and errors you can read",
+  "minutes": 45,
+  "summary": "Inspect a real-looking conversation between an app and its server. Learn to read methods, paths, headers, bodies, status codes, and a lost reply.",
+  "objectives": [
+    "Identify the parts of a request and response.",
+    "Distinguish successful creation, accepted work, rejection, and unavailable service.",
+    "Explain why a timeout does not prove an operation failed."
+  ],
+  "terms": [
+    {
+      "term": "HTTP method",
+      "definition": "A request word such as GET or POST that communicates the intended kind of operation."
+    },
+    {
+      "term": "Header",
+      "definition": "A named field carrying message metadata, such as its content format."
+    },
+    {
+      "term": "Body",
+      "definition": "The content carried by a message, such as a JSON note."
+    },
+    {
+      "term": "Status code",
+      "definition": "A three-digit response code indicating the HTTP outcome."
+    },
+    {
+      "term": "Timeout",
+      "definition": "The caller stops waiting after a chosen time; this alone does not cancel all remote work."
+    }
+  ],
+  "retrieval": [
+    "An API describes operations and their rules. What should the notes API do when asked to save an empty note?"
+  ],
+  "sections": [
+    {
+      "id": "request",
+      "title": "Open one envelope",
+      "markdown": "An HTTP request is a message with several parts. Think of an envelope with an instruction, an address, a few handling notes, and possibly a document inside.\n\nHere is a **simplified readable HTTP/1.1-style sketch**, not a complete wire message or a command to run:\n\n```http\nPOST /notes HTTP/1.1\nHost: notes.example\nContent-Type: application/json\n\n{\"text\":\"Buy coffee\"}\n```\n\n| Part | Meaning in this example |\n| --- | --- |\n| POST | Submit data for the operation the API defines |\n| /notes | The target collection |\n| Host | Which host the request addresses |\n| Content-Type | The body uses JSON |\n| Body | The actual note text |\n\nThe API still has to define what POST /notes does. HTTP is the conversation framework; your application contract gives this operation its business meaning. HTTP/2 and HTTP/3 encode messages differently while retaining these concepts."
+    },
+    {
+      "id": "response",
+      "title": "Read the reply before celebrating",
+      "markdown": "After creating the note, our server returns another simplified sketch:\n\n```http\nHTTP/1.1 201 Created\nContent-Type: application/json\nLocation: /notes/42\n\n{\"id\":42,\"text\":\"Buy coffee\"}\n```\n\nThe status reports creation. The Location field identifies the created resource in this example. The body gives the client its useful result.\n\nCompare two user-interface states:\n\n| What happened | Honest display |\n| --- | --- |\n| User pressed Save | Saving… |\n| Server confirmed the defined save operation | Saved |\n| Caller stopped waiting | Could not confirm; check status |\n\nA success code does not, by itself, specify replication, backups, or survival of every storage failure. Those are parts of the service's durability contract. Ask what the server promises before translating “success” into a stronger claim."
+    },
+    {
+      "id": "status",
+      "title": "Use a small set of outcomes well",
+      "markdown": "You do not need to memorize every status code. Learn the decisions the common ones help the client make.\n\n| Code | Typical meaning here | A useful next step |\n| --- | --- | --- |\n| 200 | Retrieval succeeded | Show the returned result |\n| 201 | A resource was created | Keep its returned identity |\n| 202 | Work was accepted, not necessarily finished | Follow the documented job/status interface |\n| 400 | The request is invalid | Correct the input |\n| 401 | Valid authentication credentials are needed | Follow the authentication flow |\n| 403 | The server refuses this operation | Check permission; repeating unchanged is not a remedy |\n| 404 | No current representation, or existence is not disclosed | Check the identifier and visibility rules |\n| 429 | This caller is being limited | Respect the documented retry policy |\n| 503 | The service cannot currently handle the request | Apply a bounded recovery policy |\n\nThese are examples, not a complete retry algorithm. Some services use 404 to avoid revealing that a private resource exists. A 403 does not promise that every earlier identity check succeeded. Read the API contract as well as the code."
+    },
+    {
+      "id": "methods",
+      "title": "The verb and the operation must agree",
+      "markdown": "GET asks for a representation, such as reading note 42. It should not be used as the public API operation for “charge this card.” A browser or intermediary can revisit a GET for reasons unrelated to a deliberate business action.\n\nPUT has idempotent HTTP semantics: repeating the same intended replacement should not add another independent replacement effect. This does not mean every response has identical bytes or that the implementation cannot log each request.\n\nPOST is not inherently safe to retry as a new business operation. An API can add a stable operation identity and duplicate handling. We will build that mechanism later.\n\n> **Pause and predict:** if “create job” receives 202, should the UI show “job finished”? No. In our API, it should show the job identity and check its documented status. Accepted work and completed work are separate facts."
+    },
+    {
+      "id": "lost-reply",
+      "title": "What if the operation finishes but its reply is lost?",
+      "markdown": "The step-through example follows a note creation whose response does not arrive. Watch the database state and the browser's knowledge separately.\n\nThe risky shortcut is “I timed out, so I will create another note.” The first operation may already exist. The right recovery depends on the API: perhaps query a known operation identity, or retry using a documented duplicate-safe request key.\n\nTimeouts still matter. Waiting forever consumes client and server resources. The lesson is to bound the wait **and** define how an uncertain result is recovered.\n\n**Interview phrasing:** “I will distinguish an explicit input rejection from an unknown result after a timeout. For operations that must not duplicate, the API needs a stable request identity and a way to recover the original outcome.” You have now connected a small HTTP detail to a system-level correctness rule."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "http-exchange",
+      "sectionId": "response",
+      "title": "Read both halves of the conversation",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant S as Notes API\nparticipant D as Saved notes\nC->>S: POST notes with text\nS->>D: Create note 42\nD-->>S: Stored\nS-->>C: 201 and note 42",
+      "caption": "This example responds after the defined durable save. Actual durability depends on the service storage contract.",
+      "steps": [
+        "Read the request method and target.",
+        "The API performs its promised save.",
+        "The client reads both status and returned identity."
+      ]
+    },
+    {
+      "id": "result-branches",
+      "sectionId": "status",
+      "title": "A reply and no reply are different branches",
+      "source": "flowchart TD\nR[Request sent] --> H{Reply received?}\nH -->|Yes| C[Read status and contract]\nH -->|No before deadline| U[Outcome may be unknown]\nC --> S[Success: show documented result]\nC --> E[Error response: inspect reason]\nU --> P[Use documented recovery policy]",
+      "caption": "This teaching map groups outcomes; not every rejection or temporary error should be retried.",
+      "steps": [
+        "First distinguish a response from a missing response.",
+        "Interpret a returned status using the operation contract.",
+        "Recover unknown results without blindly duplicating effects."
+      ]
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "lost-create-reply",
+      "sectionId": "lost-reply",
+      "title": "Saved on the server, uncertain in the browser",
+      "intro": "A fictional API accepts one creation request and supports recovery by a caller-supplied operation key. The client keeps op-17 before sending; the response is lost after storage finishes.",
+      "steps": [
+        {
+          "title": "The client submits",
+          "explanation": "The client submits with the supported operation key op-17 and retains it. The note has not yet been confirmed, so the UI shows uncertainty.",
+          "state": [
+            {
+              "label": "Client",
+              "value": "Saving…"
+            },
+            {
+              "label": "Database",
+              "value": "No new note"
+            },
+            {
+              "label": "Retained operation key",
+              "value": "op-17"
+            }
+          ]
+        },
+        {
+          "title": "The server saves",
+          "explanation": "The saved fact now exists even though the caller has not seen its reply.",
+          "state": [
+            {
+              "label": "Client",
+              "value": "Still waiting"
+            },
+            {
+              "label": "Database",
+              "value": "Note 42 stored"
+            },
+            {
+              "label": "Response",
+              "value": "201 on the return path"
+            }
+          ]
+        },
+        {
+          "title": "The deadline expires",
+          "explanation": "The caller stops waiting. That timer does not undo note 42.",
+          "state": [
+            {
+              "label": "Client",
+              "value": "Outcome unconfirmed"
+            },
+            {
+              "label": "Database",
+              "value": "Note 42 still stored"
+            },
+            {
+              "label": "Recovery",
+              "value": "Look up op-17 under this API contract"
+            }
+          ]
+        }
+      ],
+      "takeaway": "The client timing out and the database rolling back are different events."
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Your image API accepts an upload request and starts a thumbnail job. Choose a response meaning, a useful returned identifier, and an honest UI message. Explain what the client should avoid if the response is lost.",
+    "rubric": [
+      "Accepted work is distinguished from completion.",
+      "A job or operation identity supports later lookup.",
+      "No blind duplicate creation after a timeout."
+    ],
+    "solution": "A documented 202 response can mean the thumbnail job was accepted. Return a durable job identity and a status location so the client can display Processing and check progress. Do not display Thumbnail ready merely because the job entered the system. If the response is lost, follow a recovery contract such as retrying with the same supported operation key or querying a known operation identity. Creating a new unrelated job on every retry can duplicate expensive work. The API must define retention and identity rules rather than relying on a status code alone."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does Content-Type describe?",
+      "options": [
+        "The body format",
+        "How many servers exist",
+        "Whether backups passed"
+      ],
+      "answer": "The body format",
+      "explanation": "It tells a receiver how the message content is represented."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Our thumbnail API returns 202. What is established?",
+      "options": [
+        "The thumbnail is finished",
+        "The work was accepted under the API contract",
+        "The browser may ignore the job ID"
+      ],
+      "answer": "The work was accepted under the API contract",
+      "explanation": "Accepted does not mean completed."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A request times out after the server saved its data. What remains possible?",
+      "options": [
+        "The saved data still exists",
+        "The timer automatically deleted it",
+        "The server never received anything"
+      ],
+      "answer": "The saved data still exists",
+      "explanation": "A caller timer does not automatically reverse remote work."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is a retry policy more than a list of status codes?",
+      "answer": "The policy also depends on the operation, whether its outcome is known, duplicate handling, deadlines, and server guidance.",
+      "explanation": "The policy also depends on the operation, whether its outcome is known, duplicate handling, deadlines, and server guidance."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is GET a poor public contract for charging a card?",
+      "answer": "GET is intended as a safe retrieval method; clients and intermediaries may repeat retrievals without intending a new business action.",
+      "explanation": "GET is intended as a safe retrieval method; clients and intermediaries may repeat retrievals without intending a new business action."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "201 versus 202?",
+      "back": "201 reports creation; 202 reports acceptance without promising completion."
+    },
+    {
+      "front": "Request body?",
+      "back": "The content carried by the message, such as a JSON note."
+    },
+    {
+      "front": "Timeout proves rollback?",
+      "back": "No; the remote operation may already have completed."
+    },
+    {
+      "front": "Where does business meaning live?",
+      "back": "In the API operation contract, alongside HTTP semantics."
+    },
+    {
+      "front": "Why return a stable identity?",
+      "back": "It lets the client refer to the same saved resource or operation later."
+    }
+  ],
+  "mentalModel": "Read the envelope, inspect the outcome, and separate remote facts from what the caller knows.",
+  "sources": [
+    {
+      "title": "HTTP semantics: RFC 9110",
+      "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MDN: HTTP response status codes",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status",
+      "checked": "2026-09-29"
+    }
+  ]
+}

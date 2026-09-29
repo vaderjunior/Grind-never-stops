@@ -1,0 +1,286 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 1,
+  "title": "What happens when you open a website?",
+  "level": "beginner",
+  "minutes": 45,
+  "id": "request-journey",
+  "summary": "Follow a browser request from a website name to the returned page, then see how that page asks for your saved notes.",
+  "objectives": [
+    "Explain DNS and HTTPS at a useful beginner level.",
+    "Separate downloading a page from fetching its data.",
+    "Locate a failure along one request journey."
+  ],
+  "terms": [
+    {
+      "term": "URL",
+      "definition": "An address such as https://notes.example/notes/42. It includes how to connect, a website name, and a path."
+    },
+    {
+      "term": "DNS",
+      "definition": "The system that helps turn a website name into a network address."
+    },
+    {
+      "term": "HTTP",
+      "definition": "The agreed format and meaning of web requests and responses."
+    },
+    {
+      "term": "HTTPS",
+      "definition": "HTTP over a protected connection that keeps messages private in transit and helps the browser verify the expected service."
+    },
+    {
+      "term": "Network",
+      "definition": "The links and devices that carry messages between computers."
+    }
+  ],
+  "retrieval": [
+    "What jobs did the browser, server, and database have in Pocket Notes?",
+    "What does the server send back after receiving a request?"
+  ],
+  "sections": [
+    {
+      "id": "start",
+      "title": "The address bar begins a conversation",
+      "markdown": "You enter https://notes.example in a browser. The name is readable to you, but messages need a network destination. A useful first model has three steps before useful content appears: find an address, establish a connection, and ask for something.\n\nThe .example address here is a teaching placeholder, not a real service to visit. Also, a browser may already remember information or reuse a connection. We will first trace a fresh visit so each job is visible, then add those shortcuts."
+    },
+    {
+      "id": "dns",
+      "title": "Finding the destination: DNS",
+      "markdown": "DNS stands for Domain Name System. Think of looking up a contact’s number before making a call. The browser and operating system can use DNS to discover an address associated with notes.example. In a real system, caches and several DNS servers may participate; the result can include multiple addresses.\n\nThe contact-list analogy has a limit: names and addresses can change, answers can expire, and different users may receive different suitable addresses. DNS also does not deliver the note itself. Its job in this story is helping find where to send the request.\n\nIf name lookup fails, the request may never reach the application server. Restarting the database would not fix that particular problem. This is our first debugging habit: find which step failed before changing unrelated parts."
+    },
+    {
+      "id": "connect",
+      "title": "Connecting securely: enough detail for now",
+      "markdown": "After finding a destination, the browser establishes or reuses a connection: a way for the two programs to exchange messages. With HTTPS, the browser also checks evidence that it reached the expected service and protects messages while they travel. Someone observing the network should not be able to read the note text just by watching that traffic.\n\nAt this stage, keep two questions separate: can the messages reach the destination, and is the browser communicating securely with the expected service? A valid secure connection does not prove the user may read every note. User permissions are a later application decision.\n\nConnections can often carry more than one request. Opening each image on a page does not necessarily mean repeating every setup step from the beginning. Reuse saves work, while the browser’s protocol and the server’s configuration determine the details."
+    },
+    {
+      "id": "request",
+      "title": "Ask for a page, then ask for its data",
+      "markdown": "The browser sends an HTTP request. Read these parts as a small message:\n\n| Part | Example | Meaning |\n| --- | --- | --- |\n| Method | GET | Ask to read |\n| Path | /notes/42 | Identify what is requested |\n| Header | Accept: application/json | Say which response format the client can accept |\n| Body | None in this example | Extra submitted data when the operation needs it |\n\nThe server returns a status and content. GET / asks for the home page; GET /notes/42 asks the app for one note.\n\nThe page may contain HTML for structure, CSS for appearance, and JavaScript for behavior. These are different from your saved notes. After loading, the app may send another request such as GET /notes/42. The server checks that the request is allowed, asks the database for note 42, and returns data that the browser displays.\n\nSome websites generate the filled page on the server instead. Both approaches fit our basic picture. The lesson is that “load the website” can involve several requests with different jobs, not that every app must follow one frontend architecture."
+    },
+    {
+      "id": "trace",
+      "title": "Follow a single note with a timeline",
+      "markdown": "Our fresh visit has a small sequence of jobs:\n\n**Find address → connect securely → request page → receive page → request note → receive and display note.**\n\nPoint to each participant in the diagram. The walkthrough uses illustrative times to show where page loading ends and note loading begins.\n\nSuppose the page loads but the note area displays an error. That is evidence that at least some requests succeeded. The next investigation concerns the note-data request: was it sent, what response came back, and could the server read storage? It does not prove the entire internet or DNS is broken.\n\nSuppose a response takes 120 milliseconds from the browser’s point of view. That elapsed time is latency. It can include network travel, waiting, and server work. We will estimate those parts later; today, recognize that a slow result can have more than one cause."
+    },
+    {
+      "id": "shortcut",
+      "title": "Shortcuts do not change the responsibilities",
+      "markdown": "The browser may reuse a DNS answer, a secure connection, or a previously downloaded image. These shortcuts are forms of reuse. A cache is a stored copy used to avoid repeating some work; we will study caches carefully later because copies can become old.\n\nDo not memorize this timeline as an unbreakable rule that every request repeats. Use it as a checklist of jobs that someone must handle. Existing connections, a content delivery network, or a server-generated page can change which steps happen for a particular visit.\n\nBefore moving on, explain the journey in one minute using ordinary language: find the service, connect, ask, process, respond, display. Then name DNS, HTTPS, HTTP, and the database where they belong. The ordinary-language story should come first.\n\n> **Pause and predict:** You open a second note over an existing connection. Which job changes? The requested path and application work change; a fresh DNS lookup and connection setup may be unnecessary. Reuse avoids repeated setup, not permission checks."
+    },
+    {
+      "id": "protocol-depth",
+      "title": "Optional depth: names beneath the connection",
+      "markdown": "You can skip this section and complete every check in this chapter.\n\nTCP is one set of rules for delivering a sequence of bytes in order; bytes are small units of computer data. TLS adds protection against reading or changing messages in transit and helps verify the expected service. Many HTTPS connections combine these mechanisms.\n\nHTTP/3 uses another transport called QUIC, which integrates TLS security. These names describe how the connection works underneath our request story; they do not change the server’s responsibility to decide which notes a user may read."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "journey",
+      "title": "A fresh visit, followed by a note-data request",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant N as DNS lookup\nparticipant S as Notes server\nparticipant D as Database\nB->>N: Where can I reach notes.example?\nN-->>B: Network address\nNote over B,S: Establish or reuse secure connection\nB->>S: GET page\nS-->>B: Page content\nB->>S: GET note 42\nS->>D: Find permitted note 42\nD-->>S: Note text\nS-->>B: Note data",
+      "caption": "A simplified HTTPS request story. Cached lookups, transport details, and extra page assets are omitted.",
+      "steps": [
+        "Find an address for the website name.",
+        "Connect securely to the expected service.",
+        "Retrieve the page.",
+        "Fetch and display the saved note through the application server."
+      ],
+      "sectionId": "trace"
+    },
+    {
+      "id": "reused-connection",
+      "sectionId": "shortcut",
+      "title": "A second request can reuse earlier work",
+      "source": "flowchart LR\nF[First visit] --> D[Find address]\nD --> C[Establish secure connection]\nC --> P[Request page]\nP --> N[Request note 42]\nN --> R[Request note 43]\nC -.->|Connection reused when available| R",
+      "caption": "This is a logical reuse example. Connection lifetime, protocol, and browser/server configuration determine which work can actually be reused.",
+      "steps": [
+        "Establish a usable secure connection for the first request.",
+        "Use it for the page and note requests when supported.",
+        "Requesting another note changes the resource while preserving application checks."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw the journey for opening Pocket Notes on a fresh device. Then place these failures on the drawing: the name cannot be resolved; the page loads but note data fails; the note response succeeds but the page displays it incorrectly.",
+    "rubric": [
+      "DNS is separate from content retrieval.",
+      "Page and data requests can differ.",
+      "Client display problems differ from server/storage failures."
+    ],
+    "solution": "Name-resolution failure belongs before normal application requests. A successful page followed by failed note data points toward that later request, its permission checks, server work, or storage path; inspect the actual response before deciding. A successful note response with wrong display can be a client rendering/state bug. The diagram narrows possible causes but does not prove the root cause without observations."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does DNS help find in this lesson?",
+      "options": [
+        "The note’s text",
+        "A network address for the website name",
+        "The user’s permission level"
+      ],
+      "answer": "A network address for the website name",
+      "explanation": "DNS helps locate the destination; the application retrieves and authorizes note data."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "The page loads but note data fails. What is the best next step?",
+      "options": [
+        "Assume every network component failed",
+        "Inspect the note-data request and response",
+        "Delete the database"
+      ],
+      "answer": "Inspect the note-data request and response",
+      "explanation": "Use the successful page request as evidence and investigate the failing step."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Does every request require a brand-new DNS lookup and connection?",
+      "options": [
+        "Yes",
+        "No, results and connections may be reused",
+        "Only images do"
+      ],
+      "answer": "No, results and connections may be reused",
+      "explanation": "The responsibilities remain, but earlier work can be reused under the relevant rules."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What does HTTPS not decide for the notes app?",
+      "answer": "It does not decide which private notes a user may access. The server still needs authentication and authorization.",
+      "explanation": "It does not decide which private notes a user may access. The server still needs authentication and authorization."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Explain this request path without acronyms.",
+      "answer": "Find where the service is, connect securely, ask for the page or data, let the server do the work, and display its response.",
+      "explanation": "Find where the service is, connect securely, ask for the page or data, let the server do the work, and display its response."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "DNS in one phrase?",
+      "back": "Find a network destination from a name."
+    },
+    {
+      "front": "HTTP?",
+      "back": "The rules and meaning of web requests and responses."
+    },
+    {
+      "front": "HTTPS?",
+      "back": "HTTP over a protected connection."
+    },
+    {
+      "front": "Page versus data?",
+      "back": "The interface can load separately from the saved information it displays."
+    },
+    {
+      "front": "First debugging habit?",
+      "back": "Find the failing step before changing unrelated components."
+    }
+  ],
+  "mentalModel": "Find → connect → request → process → respond. Reused work can shorten the journey.",
+  "sources": [
+    {
+      "title": "MDN — How the web works",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MDN — Overview of HTTP",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "page-then-data",
+      "sectionId": "trace",
+      "title": "The page arrives before its note data",
+      "intro": "These made-up elapsed times describe one fresh visit, not measured performance or a universal request order.",
+      "steps": [
+        {
+          "title": "Find and connect",
+          "explanation": "The browser has an address and a secure conversation with the expected service.",
+          "state": [
+            {
+              "label": "Elapsed",
+              "value": "40 ms"
+            },
+            {
+              "label": "Page",
+              "value": "Not requested yet"
+            },
+            {
+              "label": "Note data",
+              "value": "Not requested yet"
+            }
+          ]
+        },
+        {
+          "title": "Receive the page",
+          "explanation": "The page includes an empty note area and the behavior needed to request data.",
+          "state": [
+            {
+              "label": "Elapsed",
+              "value": "70 ms"
+            },
+            {
+              "label": "Page",
+              "value": "Received"
+            },
+            {
+              "label": "Note data",
+              "value": "Still needed"
+            }
+          ]
+        },
+        {
+          "title": "Ask for note 42",
+          "explanation": "The server checks access and reads saved data. The visible shell can already be on screen.",
+          "state": [
+            {
+              "label": "Elapsed",
+              "value": "75 ms"
+            },
+            {
+              "label": "Request",
+              "value": "GET /notes/42"
+            },
+            {
+              "label": "Note area",
+              "value": "Loading…"
+            }
+          ]
+        },
+        {
+          "title": "Display the returned note",
+          "explanation": "The browser turns the permitted data into visible text.",
+          "state": [
+            {
+              "label": "Elapsed",
+              "value": "120 ms"
+            },
+            {
+              "label": "Note data",
+              "value": "Buy coffee"
+            },
+            {
+              "label": "Note area",
+              "value": "Rendered"
+            }
+          ]
+        }
+      ],
+      "takeaway": "One visible page can involve several requests. Identify which request and which timing boundary you are discussing."
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "id": "048",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish relationship traversal from exact-key and spatial search.",
+    "Bound graph exploration and identify high-degree expansion.",
+    "Use a spatial prefilter followed by the correct exact distance predicate."
+  ],
+  "retrieval": [
+    "L031: what query does an index or model need to serve?",
+    "L034: why can a selective starting point change a query plan?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "“Near” can mean connected or geographically close",
+      "markdown": "A platform engineer asks which services depend on a failing database within two dependency hops. A dispatcher asks which couriers are within two kilometers of a restaurant. Both questions use “near,” but the first concerns relationships and the second concerns geometry. A hash lookup alone does not express either relation.\n\nA property graph models entities as nodes and typed relationships as edges, with properties on both. A traversal follows selected edges under bounds. A relational adjacency table and recursive query can also answer graph-shaped questions; the presence of relationships does not force a new database. Choose a specialized graph engine when its access model, workload, and operating tradeoffs earn the extra system."
+    },
+    {
+      "id": "mechanism",
+      "title": "A traversal needs a starting set, direction, and stopping rule",
+      "markdown": "For the dependency question, represent service → depends_on → dependency. Starting at a failed database and finding impacted services requires following incoming dependency edges, not blindly following the stored direction. Limit hop depth, track visited nodes where appropriate, and decide whether repeated paths or distinct reachable nodes are wanted. Cycles such as A→B→A otherwise cause infinite traversal or duplicate work in a naive algorithm.\n\nIf the average branching factor were 30 and there were no overlaps, three expansions could examine roughly 30+900+27,000=27,930 neighbor appearances. Real graphs have skew, cycles, and repeated vertices, so this is a warning model rather than an exact forecast. A high-degree hub can dominate even a small graph. Restrict relationship type, tenant, time/version, and depth before expanding whenever those predicates are semantically valid.\n\nSpatial search commonly uses an index to prune by bounding regions, followed by an exact geometric predicate. A rectangular bounding box around a circle includes points outside the radius. Latitude/longitude degrees are not meters; the correct type, coordinate reference system, units, and distance model matter. PostGIS documents index-aware predicates such as ST_DWithin. Whether a query uses an index should be checked in its plan, not assumed from the presence of spatial columns."
+    },
+    {
+      "id": "worked",
+      "title": "A bounded reverse-dependency traversal",
+      "markdown": "The following Python example returns distinct affected nodes up to a hop bound, excluding the failed starting node. It uses an explicitly prepared reverse adjacency list and visits a vertex once. It is a single-process graph model, not a distributed service registry.\n\n```python\nfrom collections import deque\n\ndependents = {\"db\": [\"api\", \"worker\"], \"api\": [\"web\"],\n              \"worker\": [\"api\"], \"web\": [\"api\"]}\n\ndef affected(start: str, max_hops: int) -> set[str]:\n    seen = {start}\n    queue = deque([(start, 0)])\n    while queue:\n        node, depth = queue.popleft()\n        if depth == max_hops:\n            continue\n        for dependent in dependents.get(node, []):\n            if dependent not in seen:\n                seen.add(dependent)\n                queue.append((dependent, depth + 1))\n    return seen - {start}\n\nassert affected(\"db\", 1) == {\"api\", \"worker\"}\nassert affected(\"db\", 2) == {\"api\", \"worker\", \"web\"}\nassert affected(\"db\", 8) == {\"api\", \"worker\", \"web\"}\nprint(sorted(affected(\"db\", 2)))\n\n```\n\nExpected output is ['api', 'web', 'worker']. The visited set prevents the api/web cycle from expanding indefinitely. This query answers reachability, not whether each service actually fails: retries, redundancy, cached state, and optional dependencies affect real impact. The topology's freshness is another explicit assumption."
+    },
+    {
+      "id": "spatial",
+      "title": "The candidate box is not the final answer",
+      "markdown": "In an illustrative flat plane measured in kilometers, the search center is (0,0) with radius 2. The box −2≤x≤2 and −2≤y≤2 includes point (1.9,1.9), but its Euclidean distance is about 2.69 km, so the exact radius test rejects it. The box reduces work; it does not establish the final predicate. On Earth, use an appropriate geospatial library and type instead of treating this planar arithmetic as universally correct.\n\nA PostGIS-oriented query sketch can use a geography column and ST_DWithin(location, query_point, 2000), where the selected geography semantics interpret distance in meters. Its table setup, extension, index, and query plan must be checked in a real database; the snippet is conceptual until those dependencies exist.\n\nFailure scenarios include reversed relationship direction, an unbounded fan-out, a stale graph snapshot, degree-versus-meter confusion, and disclosing cross-tenant locations during candidate gathering. Authorization should constrain exposed results and intermediate data appropriately. Common misconceptions are that graph databases make every graph query cheap and that an index result is always exact. Indexes remove impossible work; the requested semantics still determine the answer."
+    },
+    {
+      "id": "session-budget",
+      "title": "Core time and optional practice",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation/diagrams, 8 worked example, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and extension questions are optional. The examples use explicitly bounded data and do not establish vendor throughput, durability, or scaling claims."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "graph-spatial",
+      "title": "Different notions of neighborhood require different predicates",
+      "source": "flowchart LR\nD[(Failed database)] -->|Reverse dependency| A[API]\nD -->|Reverse dependency| W[Worker]\nA -->|Second hop| U[Web UI]\nW -->|Repeated node| A\nQ[Location query] --> B[Bounding-region candidate filter]\nB --> E[Exact distance predicate]\nE --> R[Authorized within-radius results]",
+      "caption": "The graph arrows show reverse dependency traversal for impact analysis. The spatial pipeline is a separate access pattern, not an edge relationship between services and couriers.",
+      "steps": [
+        "Start graph traversal from a selective known node and the correct edge direction.",
+        "Bound hops and prevent repeated expansion of cycles.",
+        "For locations, let a spatial region prefilter reduce candidates.",
+        "Apply the exact coordinate-aware predicate before returning results."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A dependency graph has A→B and B→A, where arrows mean depends on. Explain how to find unique dependents of B within two hops without looping. Separately, decide whether (1.9,1.9) lies within radius 2 of (0,0) in a flat kilometer coordinate system, despite passing the bounding box.",
+    "rubric": [
+      "Traverse incoming dependencies with a visited set and depth limit.",
+      "Distinguish unique vertices from all paths.",
+      "Compute distance √7.22≈2.687 and reject the spatial false positive."
+    ],
+    "solution": "Use reverse edges from dependency to dependent, start with B visited, and expand only while depth is below two. A is reached and B is not re-expanded when the cycle returns. Return distinct vertices excluding the starting failure; a paths query would have different output semantics. For the location, x²+y²=1.9²+1.9²=7.22, greater than radius²=4, so it is outside. A rectangular index prefilter can include it safely only if the final exact predicate rejects it. The planar example does not define Earth-distance semantics."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What prevents an unbounded naive traversal around a cycle?",
+      "options": [
+        "More RAM alone",
+        "A visited policy and a stopping bound appropriate to the query",
+        "Alphabetical node names"
+      ],
+      "answer": "A visited policy and a stopping bound appropriate to the query",
+      "explanation": "The traversal must state whether it counts paths or unique vertices and when to stop."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Does a rectangular bounding-box match prove within-circle distance?",
+      "options": [
+        "Yes",
+        "No, corner candidates may be outside the radius",
+        "Only with an SQL database"
+      ],
+      "answer": "No, corner candidates may be outside the radius",
+      "explanation": "The box is a useful superset used for pruning, followed by the exact predicate."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A no-overlap branching model of 30 per hop across three hops visits how many neighbor appearances?",
+      "answer": 27930,
+      "unit": "neighbor appearances",
+      "tolerance": 0,
+      "explanation": "30+30²+30³ = 27,930, excluding the start node."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can a two-hop query still be expensive?",
+      "answer": "A high-degree starting node or intermediate hub can produce a huge candidate set.",
+      "explanation": "Depth bounds do not bound degree; query-selective predicates and cardinality estimates still matter."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why does reachable dependency not prove actual user-visible outage?",
+      "answer": "Redundancy, optional calls, caches, and runtime state can change impact; graph topology is only one input.",
+      "explanation": "A structural model must not be presented as a complete operational failure measurement."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Traversal contract?",
+      "back": "Starting set, edge direction/type, stopping rule, and path-versus-vertex semantics."
+    },
+    {
+      "front": "High-degree graph risk?",
+      "back": "Even a few hops can expand an enormous neighborhood."
+    },
+    {
+      "front": "Spatial box role?",
+      "back": "Reject impossible candidates cheaply; exact geometry decides the final answer."
+    },
+    {
+      "front": "Latitude/longitude units?",
+      "back": "Angular degrees, not automatically meters."
+    },
+    {
+      "front": "Graph database necessary for every relationship?",
+      "back": "No. Relational adjacency models may be an adequate simpler baseline."
+    }
+  ],
+  "mentalModel": "A neighborhood is a predicate with direction, units, bounds, and freshness—not merely a picture of connected things.",
+  "sources": [
+    {
+      "title": "Neo4j — Graph database concepts",
+      "url": "https://neo4j.com/docs/getting-started/appendix/graphdb-concepts/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostGIS — Spatial indexes",
+      "url": "https://postgis.net/documentation/faq/spatial-indexes/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostGIS — ST_DWithin semantics",
+      "url": "https://postgis.net/docs/ST_DWithin.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

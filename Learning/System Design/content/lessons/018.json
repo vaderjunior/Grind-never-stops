@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "018",
+  "objectives": [
+    "Compare resource and procedure-oriented contracts.",
+    "Explain serialization, schema evolution, deadlines, and streaming.",
+    "Choose a communication style from clients and coupling constraints."
+  ],
+  "retrieval": [
+    "L014: what makes retries safe?",
+    "L017: which intermediary features require protocol awareness?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A network call is not a local function call",
+      "markdown": "Your Python service can call reserve_inventory(sku, quantity) in another process. Generated client code may make it look like a local function, but latency, cancellation, version skew, authentication, and uncertain outcomes remain distributed concerns. The interface style should make contracts understandable without disguising those failure modes.\n\nFor this lesson compare a resource-oriented HTTP API using JSON with a typed gRPC service using Protocol Buffers. REST is an architectural style rather than a synonym for every JSON endpoint. RPC describes invoking an operation on a remote service; it can use several transports and encodings."
+    },
+    {
+      "id": "mechanism",
+      "title": "What schemas and generated clients buy",
+      "markdown": "A resource-oriented API models nouns such as reservations, with HTTP methods and representations. POST /reservations can return an identity that clients query later. An RPC service might expose ReserveInventory and GetReservation. Either can be designed well or poorly. A verb in a method name does not determine correctness, and a noun in a path does not supply atomicity.\n\ngRPC defines service methods and message contracts and commonly generates typed client/server bindings from Protocol Buffers. It supports unary calls and several streaming patterns. Binary encoding can reduce some payload and parsing costs, but the end-to-end benefit depends on message shape, CPU, network, and workload. Do not claim a universal speed multiplier.\n\nSchema evolution requires compatible reader/writer behavior. In Protocol Buffers, field numbers are part of the wire contract; do not reuse retired numbers for unrelated meanings. JSON's flexibility does not remove compatibility work: required fields, changed types, enumerations, and semantics can still break consumers. Test old clients against new servers and vice versa when rolling upgrades permit both combinations.\n\nDeadlines and cancellation are contract elements. When the caller's deadline expires, its local wait ends; remote work may already have committed or may continue unless cancellation is propagated and honored. A streaming RPC additionally needs bounds on buffered messages and behavior when either side is slow."
+    },
+    {
+      "id": "trace",
+      "title": "One reservation contract expressed two ways",
+      "markdown": "Requirements: reserve one item for ten minutes; repeated submissions with the same operation identity must not create additional reservations; expose pending/confirmed/expired outcomes. HTTP can use POST /reservations with a client operation ID, then GET /reservations/{id}. RPC can use ReserveInventory(request) returning reservation_id and state, then GetReservation. Both require the same authoritative state transition and idempotency boundary.\n\nIllustrative interface sketch, not executable code:\n\n```text\nReserveRequest: operation_id, tenant_id, sku, quantity\nReservation: reservation_id, state, expires_at, revision\nReserveInventory(request, deadline) -> Reservation\nGetReservation(id, caller_identity) -> Reservation\n```\n\nDo not trust tenant_id merely because it is typed. Compare it with the authenticated caller's scope. If the response is lost, retry using the same operation identity or query the stored result. If inventory is exhausted, return a documented domain outcome rather than retrying indiscriminately. Serialization, business validation, and transaction semantics are separate stages."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "Choose for the ecosystem you actually have",
+      "markdown": "For external browser/mobile/public integrations, familiar HTTP semantics, accessible debugging, and broad intermediary support may matter more than generated bindings. For controlled internal services with strongly typed contracts and streaming workloads, gRPC may reduce repetitive glue and improve contract consistency. Browser deployment can require a compatible web-facing bridge; verify the chosen client/toolchain rather than assuming a native HTTP/2 gRPC client runs everywhere.\n\nFailure scenarios include a new enum value crashing an old consumer, a client default deadline that is too short for a legitimate operation, unbounded streaming buffers, and retries multiplying load. Observability should carry a correlation identifier and record dependency duration/status without logging sensitive messages wholesale.\n\nA common misconception is that generated code makes distributed calls type-safe enough to ignore failures. It validates part of the shape contract. It does not enforce authorization, business invariants, bounded resource use, or exactly-once effects. Optional practice: write a compatibility matrix before changing a shared message field."
+    },
+    {
+      "id": "budget",
+      "title": "Practice boundary",
+      "markdown": "Core 55 minutes: retrieval 5, explanation and diagrams 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Stop after the stated artifact rather than expanding the task into a full implementation."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "contract",
+      "title": "Two interfaces, one invariant owner",
+      "source": "flowchart LR\nW[Browser client] -->|HTTP JSON reservation request| H[HTTP adapter]\nI[Internal client] -->|gRPC typed reservation request| G[gRPC adapter]\nH -->|Validated command and identity| C[Reservation command handler]\nG -->|Validated command and identity| C\nC -->|Atomic invariant check and write| D[(Authoritative reservation state)]",
+      "caption": "Original exercise architecture. Two adapters share business rules instead of implementing competing reservation semantics.",
+      "steps": [
+        "Decode the selected representation.",
+        "Validate fields and caller scope.",
+        "Apply one authoritative state transition.",
+        "Encode a durable operation result through either interface."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Choose contracts for a public mobile catalog and an internal bidirectional telemetry stream. Name two reasons for each choice, one evolution test, and one shared invariant that the protocol does not enforce.",
+    "rubric": [
+      "Tie interface choice to client/streaming needs.",
+      "Test old/new message compatibility.",
+      "Keep authorization and durable effects separate from encoding."
+    ],
+    "solution": "HTTP/JSON is a defensible catalog choice for broad tooling and cache-aware resource retrieval. gRPC is a defensible controlled telemetry choice for generated contracts and streaming, provided client/runtime support is established. Test old clients ignoring new optional fields and new clients handling absent old-server fields; preserve field meanings/numbers. Both must enforce tenant access and bound work. Either choice can be valid with different constraints; explain those constraints rather than ranking protocols universally."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Generated RPC bindings eliminate which work?",
+      "options": [
+        "All distributed failure handling",
+        "Some repetitive encoding and typed interface glue",
+        "Business authorization"
+      ],
+      "answer": "Some repetitive encoding and typed interface glue",
+      "explanation": "Deadlines, uncertain outcomes, authorization, and invariants still need design."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A caller deadline expires. What is guaranteed?",
+      "options": [
+        "The remote mutation rolled back",
+        "The caller stops waiting under its deadline behavior",
+        "The request never arrived"
+      ],
+      "answer": "The caller stops waiting under its deadline behavior",
+      "explanation": "Remote processing/commit depends on timing and cancellation handling."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "What is unsafe when evolving a protobuf contract?",
+      "options": [
+        "Adding compatible optional data",
+        "Reusing a removed field number for a different meaning",
+        "Testing old clients"
+      ],
+      "answer": "Reusing a removed field number for a different meaning",
+      "explanation": "The number carries wire identity; old/new readers can interpret incompatible meanings."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is JSON preferable despite larger payloads?",
+      "answer": "When broad client support, inspectability, existing infrastructure, or integration cost outweigh measured encoding cost. Establish workload rather than assuming size dominates.",
+      "explanation": "When broad client support, inspectability, existing infrastructure, or integration cost outweigh measured encoding cost. Establish workload rather than assuming size dominates."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "How can HTTP and RPC share correctness?",
+      "answer": "Both adapters validate inputs and identities then call the same invariant-owning domain operation and durable result store.",
+      "explanation": "Both adapters validate inputs and identities then call the same invariant-owning domain operation and durable result store."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "RPC illusion to resist?",
+      "back": "A remote function has network failure, latency, and version boundaries."
+    },
+    {
+      "front": "Typed schema proves authorization?",
+      "back": "No. It constrains message shape, not caller permission."
+    },
+    {
+      "front": "Protocol Buffers field numbers?",
+      "back": "Stable wire identifiers; do not recycle removed numbers."
+    },
+    {
+      "front": "Deadline means rollback?",
+      "back": "No. The caller can time out after a remote effect commits."
+    },
+    {
+      "front": "Interface selection criterion?",
+      "back": "Client ecosystem, contract lifecycle, streaming needs, measured costs, and operational support."
+    }
+  ],
+  "mentalModel": "Choose the interface for its consumers; keep the invariant behind the interface.",
+  "sources": [
+    {
+      "title": "gRPC core concepts and lifecycle",
+      "url": "https://grpc.io/docs/what-is-grpc/core-concepts/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Protocol Buffers language guide",
+      "url": "https://protobuf.dev/programming-guides/proto3/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 9110 — resource-oriented HTTP semantics",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "checked": "2026-09-29"
+    }
+  ]
+}

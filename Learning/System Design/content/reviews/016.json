@@ -1,0 +1,12 @@
+{
+  "lessonId": "016",
+  "sha256": "261feb51c59b021c557bd92b8a374700d782488a415c29afada4ba584dc8d313",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: HTTP/2 versus HTTP/3 head-of-line behavior is scoped by layer and shared congestion/metadata constraints.",
+    "Ten 100 ms slots = idealized 100 operations/s; the exercise controls confounding variables."
+  ]
+}

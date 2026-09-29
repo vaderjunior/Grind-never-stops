@@ -1,0 +1,141 @@
+{
+  "id": "094",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Allocate attempts and waiting within an end-to-end deadline.",
+    "Compute retry amplification across service layers.",
+    "Use capped backoff, jitter and a retry budget without retrying unsafe operations."
+  ],
+  "retrieval": [
+    "L027: distinguish timeout from known failure.",
+    "L093: which identity must a retry preserve?"
+  ],
+  "sections": [
+    {
+      "id": "deadline",
+      "title": "The caller’s deadline is a finite resource",
+      "markdown": "Core55 minutes: retrieval5, mechanism18, worked flow8, exercise10, questions10, review4. A browser allows1 second for a result. Its API calls a catalog service, which calls a database. If each layer independently uses a1-second timeout and three retries, the user’s deadline can expire while several layers continue expensive work. Passing a remaining deadline gives downstream calls a shared budget rather than starting a new full timer at every hop.\n\nBudget connection establishment, request transmission, server work and response handling according to the client library’s actual timeout semantics. Some APIs distinguish connect/read deadlines; others include different stages. Do not assume one option covers DNS, TLS and every read without checking its contract. Reserve a small amount of time to return a useful error or fallback instead of spending the entire user deadline on the last attempt.\n\nCancel work that is no longer useful when the dependency supports cancellation, while remembering that cancellation does not necessarily undo a committed effect. A business operation may still require reconciliation after the caller stops waiting."
+    },
+    {
+      "id": "amplification",
+      "title": "Retries multiply across ownership boundaries",
+      "markdown": "Suppose three nested layers each permit up to four attempts, including the original. In the worst case one user request can trigger4×4×4=64 attempts at the deepest dependency. Even if many attempts fail quickly, this traffic arrives precisely when the dependency may already be unhealthy. Four retries plus the original would mean five attempts, so state your counting convention explicitly.\n\nPrefer one clearly owned retry boundary for a dependency call where practical, and propagate evidence so outer layers do not blindly multiply retries. A retry budget limits additional work relative to original traffic or a fixed resource allowance. A token bucket can cap retry traffic independently of new requests. This is a load policy, separate from idempotency: a perfectly idempotent request can still overload a server when retried too aggressively.\n\nClassify outcomes. Transient connection failures or explicit retryable overload responses may justify retry if the operation is safe and enough deadline remains. Validation failures, authorization denials and permanent not-found conditions generally need a changed request rather than repetition. Follow a provider’s documented retry guidance; do not universally retry every non-success status."
+    },
+    {
+      "id": "schedule",
+      "title": "Backoff with jitter spreads attempts, then the deadline still wins",
+      "markdown": "A capped exponential schedule can choose an upper bound min(cap, base×2^retry_index). Full jitter samples a delay between zero and that bound. Different clients then tend not to retry at exactly the same times after a synchronized outage. Randomness helps distribution; it does not make unlimited retries safe or guarantee every group of clients separates perfectly.\n\nFor a worked budget, allow four attempts of200 ms each and delays100,200,400 ms before the later attempts. The worst-case total is800+700=1,500 ms before other overhead, so it cannot fit a1,000 ms deadline. Reduce attempts, shorten only justified per-attempt limits, or stop early when insufficient time remains. A jittered average below the deadline is not enough if the client promises a hard upper bound.\n\nThis executable Python arithmetic checks the worst-case schedule; it does not call a dependency:\n\n~~~python\nattempts_ms = [200, 200, 200, 200]\nbackoff_caps_ms = [100, 200, 400]\nassert sum(attempts_ms) + sum(backoff_caps_ms) == 1500\n~~~\n\nBefore sleeping, compare the remaining deadline with the proposed delay and minimum useful next-attempt budget. A retry that cannot finish in time may consume capacity without helping the user."
+    },
+    {
+      "id": "observe",
+      "title": "Recovery traffic needs its own evidence",
+      "markdown": "Track original request rate, attempt rate, retries per logical request, deadline-exhausted failures and success-after-retry. A rising success rate can hide excessive attempt volume if every request now takes three tries. Correlate retries with backend saturation and client-side queues. Respect overload retry-after hints when they fit the overall policy, but avoid trusting arbitrary unbounded delay from an unvalidated source.\n\nLoad-test a failure and recovery transition. A synchronized cohort can overwhelm a newly healthy backend if all clients reset together; retain jitter and admission controls through recovery. Avoid retrying a partial user-visible stream as if it were a fresh invisible request, because duplicate output may break the user contract.\n\nThe useful interview defense combines semantic safety, bounded attempt count, bounded aggregate load and a deadline. “Exponential backoff” alone says only how waits might grow."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "One deadline bounds attempts and waiting",
+      "source": "flowchart LR\nD[Remaining deadline] --> B{Enough budget?}\nB -->|yes| A[Bounded attempt]\nA -->|success| S[Return]\nA -->|retryable and safe| J[Capped jittered wait]\nJ --> B\nB -->|no| F[Stop and report uncertainty]",
+      "caption": "A retry is conditional on both semantic safety and remaining useful time. Retry traffic also needs an aggregate load budget.",
+      "steps": [
+        "Start with the user deadline.",
+        "Make one bounded attempt.",
+        "Classify the failure and preserve identity.",
+        "Wait only if another attempt can still be useful."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A1,000 ms deadline allows three250 ms attempts with backoff caps100 and200 ms. Determine whether the worst-case plan fits. Then calculate deepest attempts when two layers each make three attempts, and propose a bounded policy.",
+    "rubric": [
+      "Adds attempt and wait time.",
+      "Distinguishes attempts from retries.",
+      "Controls one retry boundary and aggregate load."
+    ],
+    "solution": "The planned bound is3×250+100+200=1,050 ms before connection/serialization overhead, so it does not fit1,000 ms. Stop before the third attempt when the remaining budget is insufficient, or select a smaller justified plan such as two attempts with one bounded wait. Two independent three-attempt layers can cause3×3=9 deepest attempts. Assign retry ownership at one boundary where possible, preserve the logical idempotency key, classify permanent versus transient outcomes, and cap aggregate retry traffic so recovery does not create a storm."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Three nested layers with four attempts each can produce how many deepest attempts?",
+      "answer": 64,
+      "unit": "attempts",
+      "tolerance": 0,
+      "explanation": "4×4×4 =64; this counts originals within each four."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Idempotency alone makes unlimited retries operationally safe:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Repeated safe effects can still consume enough resources to cause overload."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Full jitter is intended primarily to:",
+      "options": [
+        "Guarantee no two retries ever overlap",
+        "Spread synchronized retry timing"
+      ],
+      "answer": "Spread synchronized retry timing",
+      "explanation": "Random timing reduces synchronization without guaranteeing separation."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why propagate an end-to-end deadline?",
+      "answer": "It prevents each nested call from spending an independent full timeout after the user’s result is already useless.",
+      "explanation": "It prevents each nested call from spending an independent full timeout after the user’s result is already useless."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Attempt versus retry?",
+      "back": "Attempts include the original; retries are additional attempts."
+    },
+    {
+      "front": "Amplification?",
+      "back": "Nested retry counts can multiply at the deepest dependency."
+    },
+    {
+      "front": "Full jitter?",
+      "back": "Choose a random delay from zero to a capped backoff bound."
+    },
+    {
+      "front": "Retry budget?",
+      "back": "Limits additional attempts as a resource/load policy."
+    },
+    {
+      "front": "Deadline exhaustion?",
+      "back": "Stop when no useful attempt can fit; an earlier effect may remain uncertain."
+    }
+  ],
+  "mentalModel": "Spend retries from a semantic, time and load budget, not from optimism.",
+  "sources": [
+    {
+      "title": "Amazon Builders’ Library: making retries safe with idempotent APIs",
+      "url": "https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RabbitMQ documentation: consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE book: handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

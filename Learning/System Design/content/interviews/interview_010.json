@@ -1,0 +1,125 @@
+{
+  "id": "interview_010",
+  "lessonId": "050",
+  "title": "Database-selection clinic across six concrete workloads",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "aliases": [
+    "L050",
+    "lesson_050"
+  ],
+  "minutes": 45,
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "modeType": "partial-design",
+  "brief": "Run a six-workload storage-selection clinic for a small engineering organization. The workloads are: seat reservations; expiring API response acceleration; device time-window history; ranked support-document search; dependency impact exploration; and uploaded media with a monthly analytical report. For each, identify the authoritative fact, query shape, consistency/freshness requirement, and a defensible starting storage model. Deepen one risky boundary after the interviewer changes a requirement.",
+  "clarifications": [
+    {
+      "question": "What reservation invariant is required?",
+      "answer": "For each event seat, at most one accepted active reservation exists. A confirmed reservation must survive a process restart. Conflicting requests may receive a conflict response."
+    },
+    {
+      "question": "What cache loss and memory assumptions are acceptable?",
+      "answer": "Cached API responses can be regenerated and may be at most 30 seconds old. There are five million potential entries averaging 800 payload bytes. The origin has finite capacity and outage behavior must be explained."
+    },
+    {
+      "question": "What are the device-history queries?",
+      "answer": "Read one device over a six-hour interval, append observations with device ID/time/event ID, and retain 30 days. A few devices can be much hotter than average."
+    },
+    {
+      "question": "What search capabilities and visibility rules matter?",
+      "answer": "Search ranks document bodies and titles; phrases matter. New public documents may take several seconds to appear, but revoked private access must not reveal content."
+    },
+    {
+      "question": "How is dependency impact queried?",
+      "answer": "Find distinct services within two reverse-dependency hops of an identified failed resource. Cycles and a few high-degree shared resources exist."
+    },
+    {
+      "question": "What media and reporting workload should be assumed?",
+      "answer": "Store immutable uploads averaging 2 MB; metadata and access control remain mutable. Monthly reports scan a few metadata fields and can be stale by one day."
+    }
+  ],
+  "hints": [
+    "Say which store owns truth before adding an accelerating or analytical copy.",
+    "A key-addressed history query and a fleet-wide scan do not require the same bytes.",
+    "Check the changed requirement against the original atomicity or visibility boundary."
+  ],
+  "changes": [
+    "The cache is proposed as the only record of accepted reservations to save database load. Defend or reject the change with a failure trace.",
+    "Document access revocation must take effect immediately even when indexing lags. Where must the design change?",
+    "The small team can reliably operate only two storage technologies this quarter. Simplify the proposal while preserving critical guarantees."
+  ],
+  "referenceSolution": "1. Seat reservations: protect “at most one accepted reservation for a seat” with an authoritative transactional record and a uniqueness/conditional-write mechanism, not a cache read followed by an unguarded insert. PostgreSQL or MySQL/InnoDB are concrete candidates, subject to their configured isolation/durability and failure tests. A document store can be defensible when the aggregate and operation truly protect the invariant; the name alone is not sufficient.\n\n2. Response acceleration: a bounded derived cache can tolerate loss if the authoritative source and fallback capacity can handle it. Redis is a candidate, but choose TTL, eviction, key scoping, and failure behavior from requirements. Persistence policies alter restart loss windows; a no-persistence cache is different from an authoritative store of accepted reservations. At 5 million entries averaging 800 bytes, raw payload is 4 GB decimal before key/object/index/allocator overhead. A memory budget must account for those extras and working-set locality.\n\n3. Device history: a query by device and bounded time window suggests an indexed relational baseline or a query-driven device/day partition with time and stable event ID ordering. DynamoDB and Cassandra are candidates for explicitly keyed access patterns; verify their transaction, query, and consistency contracts. A time-series system may add useful retention/aggregation behavior. The clinic's fixed query shape matters more than the category. If fleet-wide scans grow, a columnar analytical projection such as ClickHouse can be evaluated separately, with freshness and reconciliation obligations.\n\n4. Support search: analyzed terms, relevance, phrases, and facets may justify Elasticsearch/OpenSearch or a sufficiently capable existing database full-text index. The source document/version remains explicitly owned. Search freshness and authorization are distinct: a revoked document must not leak through an old snippet. A rebuildable index must actually have a source and a reconciliation path.\n\n5. Dependencies: select nodes by identity, traverse the correct edge direction/type, bound depth, and handle cycles/high-degree hubs. Neo4j is a candidate when traversal requirements warrant it; a relational adjacency table may be simpler for a small bounded graph. A graph model gives structural reachability, not a complete runtime outage verdict. For geographic-nearby queries, use a spatial predicate with correct coordinates and units instead of pretending relationship hops express distance.\n\n6. Media and analytics: large immutable bytes can live in object storage, while a transactional catalog owns permission, readiness, content identity/version, and metadata. Publish ready only after verified stable content exists; reconcile orphans and define deletion. Monthly narrow-column analytics can initially use a measured relational query or later a columnar projection. Files and block volumes remain valid alternatives for workloads requiring their semantics. Object-like APIs do not promise a shared atomic transaction with metadata.\n\nThe best global simplification may be one relational authority plus local/object content storage, adding other derived services only after measurements demand them. The organization must budget backups, migrations, monitoring, incident recovery, and every additional consistency boundary. This is a set of defensible candidates, not a one-brand-per-workload answer key.",
+  "debrief": "Score the demonstrated reasoning across the supplied rubric using exact saved evidence. Strong answers can select fewer systems than the reference candidates. Look for authority, access paths, correctness boundaries, recovery, and operational tradeoffs; do not give points merely for listing six brands. Record one alternative that becomes valid under changed constraints and assign a short targeted retry.",
+  "remediation": [
+    "032",
+    "037",
+    "043",
+    "044",
+    "046",
+    "047",
+    "048",
+    "049"
+  ]
+}

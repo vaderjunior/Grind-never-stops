@@ -1,0 +1,152 @@
+{
+  "id": "042",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Trace a write through a memtable, immutable sorted files, and compaction.",
+    "Explain why immutable files need versions and tombstones.",
+    "Calculate read, write, and space amplification from stated byte counts."
+  ],
+  "retrieval": [
+    "L041: which data must survive before a write can be acknowledged?",
+    "L033: why does sorted order make a range scan useful?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Make writes sequential, then pay the reorganization bill",
+      "markdown": "A device can accept large sequential writes efficiently, while updating many distant keys in place creates scattered I/O. A log-structured merge design collects writes in memory, sorts them, and writes immutable sorted tables. Newer values do not overwrite old bytes immediately; reads and maintenance reconcile the versions.\n\nThis is an exchange of work, not free throughput. A write-friendly foreground path creates future flush and compaction work. If incoming demand exceeds that sustainable maintenance capacity, old files accumulate, reads inspect more candidates, and writes can stall. Choose a storage engine using sustained behavior, including its maintenance phase, rather than a short burst that ends before the bill arrives."
+    },
+    {
+      "id": "mechanism",
+      "title": "The value exists in more than one place",
+      "markdown": "In a simplified WAL-enabled engine, a write is logged according to its durability policy and inserted into an ordered memtable. When that table reaches a bound, it becomes immutable and a new mutable table accepts writes. A flush emits a sorted-string table, or SSTable. A file index identifies relevant blocks; filters can avoid files that cannot contain the key. L043 examines those filters.\n\nA point read checks the relevant in-memory state and candidate file versions, returning the newest visible value. A range scan merges multiple sorted streams rather than performing one lookup per key. A deletion is represented by a tombstone so a newer “absent” decision masks an older value still present in another file. Dropping the marker while an older visible copy remains can resurrect deleted data.\n\nCompaction merges selected files, reconciles versions, and produces replacement files. The new file set must become authoritative through crash-safe metadata before old files are retired. Long-lived snapshots or concurrent readers can keep older versions alive. The exact topology—leveled, tiered, universal, or another policy—changes amplification. RocksDB is an embedded storage-engine library; it is not, by itself, a distributed server or a complete replication protocol."
+    },
+    {
+      "id": "worked",
+      "title": "Follow one key and count the physical work",
+      "markdown": "At time 1, file F1 contains (invoice-7, amount=20, version=1). At time 2, a newer in-memory version changes the amount to 25. A read must return 25 even before a new SSTable is written. After flush, both physical records can exist. At time 3, a tombstone version 3 is flushed; it must suppress both earlier values. Only a compaction with sufficient coverage and no needed snapshot can discard all three.\n\nUse explicit denominators. If the application changes 100 MB of logical data, the log writes 110 MB, flushes write 100 MB, and compactions write 690 MB, this experiment writes 900 MB in total: write amplification 9× under that accounting. Some reports exclude WAL; that report would say 7.9×. Neither is comparable without the definition. If 300 MB of physical files remain for 100 MB of live logical data, space amplification is 3×. Temporary compaction output can increase peak space beyond this steady snapshot.\n\nRead amplification can mean files, blocks, or bytes read per logical read. Record the unit. Checking ten in-memory filters and reading one disk block is not equivalent to ten random disk reads. Cache state and negative lookups matter."
+    },
+    {
+      "id": "model",
+      "title": "Executable latest-version merge",
+      "markdown": "This model merges all records and has no active snapshots. Under those assumptions it can omit keys whose newest version is a tombstone. A partial production compaction cannot assume that it has seen every old value.\n\n```python\ndef compact_all(records: list[tuple[str, int, str | None]]) -> dict[str, str]:\n    newest: dict[str, tuple[int, str | None]] = {}\n    for key, version, value in records:\n        if key not in newest or version > newest[key][0]:\n            newest[key] = (version, value)\n    return {key: value for key, (_, value) in sorted(newest.items())\n            if value is not None}\n\nrecords = [(\"a\", 1, \"old\"), (\"b\", 1, \"keep\"),\n           (\"a\", 2, \"new\"), (\"a\", 3, None)]\nassert compact_all(records) == {\"b\": \"keep\"}\nassert compact_all(records[:3]) == {\"a\": \"new\", \"b\": \"keep\"}\nprint(\"latest version wins; tombstone masks older data\")\n```\n\nExpected output is the printed sentence; Python 3 standard library only. It proves the selected version rule for these inputs, not file durability, concurrent-reader safety, or a compaction scheduler.\n\nA practical failure scenario is nearly full storage during compaction: input files cannot be removed before safe replacement, so the engine needs temporary free space. Another is a read-heavy workload with many overlapping runs; reducing foreground write cost increased lookup work. Do not say all B-trees are slow at writes or all LSM engines are fast at reads. Compare measured access patterns, memory, write budget, and recovery behavior."
+    },
+    {
+      "id": "session-budget",
+      "title": "How to use this session",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation and diagrams, 8 worked trace or arithmetic, 10 bounded exercise, 10 scheduled Q1–Q3, and 4 solution comparison/cards. Q4–Q5 and extension prompts are optional extra practice. Python blocks labeled executable are self-contained standard-library models; they do not implement a production storage engine."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "lsm",
+      "title": "A cheap foreground write creates background work",
+      "source": "flowchart TD\nW[Put or delete with version] -->|Durability policy| L[(Append log)]\nW -->|Ordered memory update| M[Mutable memtable]\nM -->|Freeze at memory bound| I[Immutable memtable]\nI -->|Sorted flush| F[New SSTable]\nF -->|Merge candidate versions| C[Compaction]\nO[Older SSTables] --> C\nC -->|Install replacement metadata| N[Replacement SSTables]\nN -->|Retire only when safe| G[Old files reclaimed]",
+      "caption": "Foreground writes, log durability, and background maintenance have distinct responsibilities. Compaction is not an extra copy that can be omitted indefinitely.",
+      "steps": [
+        "Accept a version under the chosen log durability contract.",
+        "Bound memory by flushing an immutable sorted table.",
+        "Read and merge versions across files, retaining required tombstones.",
+        "Install replacement state safely before reclaiming old files."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "An old file contains user-9=enabled at version 4; a new file contains a tombstone at version 5. A proposed compactor processes only the new file and drops its tombstones to save space. Show the incorrect read. Then calculate write amplification for 2 GB logical updates, 2.2 GB WAL, 2 GB flushes, and 11.8 GB compaction writes.",
+    "rubric": [
+      "Explain resurrection from unprocessed old state.",
+      "Retain tombstone until old versions/snapshots no longer need it.",
+      "Report 8× including WAL and state the convention."
+    ],
+    "solution": "After dropping the only marker, the reader reaches the old enabled value and incorrectly resurrects user-9. The compactor must preserve the tombstone until it can establish that no older relevant value or snapshot requires it; processing just the new file does not establish that. Total physical writes are 2.2 + 2 + 11.8 = 16 GB, divided by 2 GB logical writes = 8× including WAL. Excluding WAL produces 6.9×; explicitly name the convention. Peak temporary space and maintenance capacity need separate budgets."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why keep a deletion marker in a newer sorted file?",
+      "options": [
+        "To mask older copies that may still exist",
+        "To encrypt the key",
+        "To eliminate the log"
+      ],
+      "answer": "To mask older copies that may still exist",
+      "explanation": "A physical old value can otherwise become visible again when the newer absence is forgotten."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "900 MB total physical writes for 100 MB logical updates gives which amplification?",
+      "answer": 9,
+      "unit": "times",
+      "tolerance": 0,
+      "explanation": "900 / 100 = 9× under the stated inclusive accounting."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "What does a sustained compaction deficit eventually cause?",
+      "options": [
+        "Unlimited free writes",
+        "Accumulated maintenance debt and possible stalls",
+        "Automatic reduction of user data size"
+      ],
+      "answer": "Accumulated maintenance debt and possible stalls",
+      "explanation": "Bounded memory and storage cannot absorb an indefinitely growing backlog of unmerged runs."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might a range scan be more complicated than one B-tree traversal?",
+      "answer": "It merges ordered candidate streams and resolves versions across runs.",
+      "explanation": "A sorted file is helpful, but the complete visible order can span multiple files and memtables."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does using RocksDB automatically provide a replicated database service?",
+      "answer": "No. It is an embedded engine; replication, routing, and service semantics require additional machinery.",
+      "explanation": "A storage-engine interface and a distributed service have different responsibility boundaries."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Memtable?",
+      "back": "Ordered in-memory write state that can later flush into a sorted file."
+    },
+    {
+      "front": "SSTable?",
+      "back": "An immutable sorted collection of key/value records with supporting indexes."
+    },
+    {
+      "front": "Tombstone?",
+      "back": "A versioned absence marker that suppresses older values."
+    },
+    {
+      "front": "Write amplification?",
+      "back": "Physical bytes written divided by logical update bytes under a declared accounting convention."
+    },
+    {
+      "front": "Compaction tradeoff?",
+      "back": "Rewrite data now to control read work, obsolete versions, and space later."
+    }
+  ],
+  "mentalModel": "LSM storage moves work from scattered foreground updates into version resolution and bounded background reorganization.",
+  "sources": [
+    {
+      "title": "RocksDB — Overview",
+      "url": "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview",
+      "scope": "Memtables, sorted files, compaction and storage-engine boundaries; no version-specific performance promises.",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL 18 — Write-Ahead Logging",
+      "url": "https://www.postgresql.org/docs/18/wal-intro.html",
+      "scope": "Log-before-data ordering, redo, group commit; source current resolved to PostgreSQL 18.",
+      "checked": "2026-09-29"
+    }
+  ]
+}

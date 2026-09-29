@@ -1,0 +1,149 @@
+{
+  "id": "071",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish failed requests from failed processes using concrete observations.",
+    "Explain why a timeout creates suspicion and an uncertain operation outcome.",
+    "Separate safety from progress when selecting failover behavior.",
+    "Design a diagnostic trace for asymmetric communication."
+  ],
+  "retrieval": [
+    "L027: why does cancellation not necessarily undo downstream work?",
+    "L037: what makes retrying an uncertain write dangerous?",
+    "L067: what can a replica know while replication messages are delayed?"
+  ],
+  "sections": [
+    {
+      "id": "boundary",
+      "title": "A distributed request has several independent failure boundaries",
+      "markdown": "A field service allocates the last portable generator. The mobile client sends reserve(generator-7), the API asks a storage node to commit, and a response travels back. These are separate events. The API can be healthy while its storage connection stalls. Storage can commit while the response is lost. One worker may pause while another continues. Partial failure means some parts still act while others cannot communicate or progress; it is not equivalent to a clean process-wide exception.\n\nBudget this 55-minute session as 5 minutes retrieval, 20 reading and tracing, 10 diagram walkthrough, 10 exercise, and 10 questions/cards. Begin by recording observable events, not diagnoses. “No response in 800 ms” is an observation. “The storage process died before commit” is one possible explanation that needs evidence."
+    },
+    {
+      "id": "histories",
+      "title": "Three executions look identical to the caller",
+      "markdown": "At time 0 the client sends reservation R. At 800 ms its deadline expires. In history A, the request never reaches the server. In history B, it reaches the server and waits behind an overloaded queue. In history C, the server commits at 300 ms, but its response is lost. Until some later authoritative observation, the caller sees the same timeout in all three histories.\n\nRetrying a new reservation is harmless in A but may reserve twice in C. Reporting definite failure is also wrong in C. Keep stable intent identity across retries and reconcile through an authoritative outcome query or equivalent protocol. An operation may remain pending or uncertain. A local timeout measures the caller’s willingness to wait; it does not revoke a committed effect or prove the request was absent.\n\nTimeout settings affect user latency, retained work, and false suspicion. Reducing 800 ms to 100 ms detects some genuine failures earlier and misclassifies more healthy slow work. Increasing it holds scarce resources longer. Measure tail latency, queue age, dependency latency, and rejected work before choosing values. A timeout is a policy decision under uncertainty, not a universal fact about the remote process."
+    },
+    {
+      "id": "detection",
+      "title": "Failure detectors produce usable suspicion",
+      "markdown": "In an asynchronous model with no known upper bound on processing or message delay, silence cannot distinguish an arbitrarily slow participant from a crashed one. Failure-detector theory makes assumptions and properties explicit: completeness concerns eventually suspecting failures; accuracy concerns avoiding incorrect suspicions. Practical heartbeat systems turn timing observations into suspicion with operational tradeoffs.\n\nSuppose heartbeat interval is one second and suspicion begins after three missed expected arrivals. A pause, packet loss, CPU saturation, or a one-way route failure can trigger the same suspicion. The detector should record last successful communication, elapsed time, observer identity, and current suspicion state. Do not turn “three misses” into a proof that an old writer can no longer write.\n\nAn asymmetric failure is especially instructive: A can send to B, but acknowledgments from B to A are dropped. B may have performed every operation that A believes timed out. A third observer may reach both. A global “node healthy” Boolean discards which path, operation, and observer produced the result. Health checking a lightweight endpoint can also succeed while the business request is blocked on a different dependency."
+    },
+    {
+      "id": "authority",
+      "title": "Detection and safe failover are different mechanisms",
+      "markdown": "Assume writer A pauses and its monitor promotes B. A then resumes with an old request still in memory. If both can mutate the resource, the monitor has created competing writers. A safety boundary must reject stale authority, or the ownership protocol must otherwise ensure old and new owners cannot both commit. Later consensus and fencing lessons implement this; here identify the requirement without pretending heartbeat timing solves it.\n\nSafety says something bad never happens, such as two accepted owners of the same exclusive allocation. Liveness says useful work eventually progresses under stated conditions. A design may preserve safety by refusing allocations while authority is uncertain, at the cost of progress. A design may keep accepting provisional intents, provided it does not label them final allocations. The response contract makes this distinction visible to users.\n\nThe process being alive is insufficient evidence that its state is current. After restart it may need recovery or synchronization before serving authoritative decisions. Conversely, an unreachable replica does not necessarily mean all replicas are unavailable. Scope the failure to the component and dependency edge, then ask which operations require it."
+    },
+    {
+      "id": "diagnose",
+      "title": "A useful incident record separates observation and inference",
+      "markdown": "For the generator incident, collect client request/intent ID, send/deadline events from one local monotonic clock, server acceptance and commit records, the storage operation ID, and response-send evidence. Correlate identities across logs without assuming wall clocks agree exactly. Check whether “server sent response” means an application write to a socket or proven delivery to the client; those are different boundaries.\n\nNext reproduce one failure boundary at a time in a controlled environment: drop a response after commit, delay a worker before commit, pause a writer across promotion, or block one communication direction. Predict the allowed user outcomes first. The smallest test that falsifies the claim is more useful than randomly killing components and merely observing that the service eventually returns.\n\nThe interview mistake to avoid is jumping from “timeout” straight to “retry and fail over.” State what is unknown, how the design resolves intent, and where stale authority is rejected. That is a complete reasoning chain even before selecting a specific coordination implementation."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "lost-response",
+      "title": "A timed-out reservation may already exist",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant A as API\nparticipant D as Authority\nC->>A: Reserve intent R\nA->>D: Commit R\nD-->>A: R accepted\nA--xC: Response lost\nNote over C: Deadline expires<br/>outcome uncertain\nC->>A: Query or retry same intent R\nA->>D: Retrieve recorded outcome R\nD-->>A: Accepted reservation\nA-->>C: Existing outcome",
+      "caption": "The client-visible timeout is compatible with a committed reservation. The sketch assumes an authoritative intent record exists; an arbitrary request ID alone is insufficient.",
+      "steps": [
+        "Trace the committed effect separately from response delivery.",
+        "Observe that the deadline is local to the caller.",
+        "Keep identity R when resolving the ambiguity.",
+        "Retrieve an existing outcome instead of inventing a second intent."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A heartbeat monitor suspects writer A after three missed heartbeats, promotes B, and later A resumes. Write a six-event counterexample to the claim “the timeout guarantees one writer.” Then give the required enforcement boundary and a client outcome for an allocation whose response was lost.",
+    "minutes": 10,
+    "rubric": [
+      "Includes A being paused rather than permanently dead.",
+      "Shows both writers reaching the same resource after promotion.",
+      "Places stale-authority rejection at the mutation boundary.",
+      "Keeps the lost-response intent uncertain until reconciled."
+    ],
+    "solution": "A obtains authority, A pauses, monitor times out, B is promoted and writes, A resumes and sends an old mutation, resource accepts A because it does not verify current authority. Two writers have acted. Require a protocol/enforcement boundary that prevents stale A from committing after authority moves, such as a properly issued monotonically ordered ownership token verified by the protected resource. Do not assume merely attaching an unverified token solves it. The client reports pending/uncertain, retains the same intent ID, and retrieves the authoritative outcome."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does a request timeout prove?",
+      "options": [
+        "The server did not commit",
+        "The caller did not receive the expected completion before its deadline",
+        "The remote process is permanently dead"
+      ],
+      "answer": "The caller did not receive the expected completion before its deadline",
+      "explanation": "Request loss, slow execution, and lost completion remain possible."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Can a healthy heartbeat endpoint establish that all business operations work?",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "The business path may depend on a blocked queue, storage, or permission boundary absent from health checks."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why can lowering a timeout increase failovers without increasing actual crashes?",
+      "answer": "More healthy slow executions cross the suspicion threshold, so observers falsely suspect them.",
+      "explanation": "Suspicion is based on timing evidence, not direct knowledge of process death."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Which property does refusing an uncertain exclusive allocation protect?",
+      "answer": "The safety invariant that no two final owners are accepted, while progress may be reduced.",
+      "explanation": "Safety and liveness are different axes."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why record the observer and path for a failed heartbeat?",
+      "answer": "Reachability can be asymmetric and observer-specific; another node may still communicate and accept operations.",
+      "explanation": "A single global healthy flag loses the failure boundary."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Partial failure?",
+      "back": "Some components or communication paths fail while others continue acting."
+    },
+    {
+      "front": "Timeout means?",
+      "back": "Completion was not observed before the caller’s deadline."
+    },
+    {
+      "front": "Failure suspicion versus safe ownership?",
+      "back": "Detection suggests recovery; a separate authority protocol must prevent stale mutations."
+    },
+    {
+      "front": "Safety versus liveness?",
+      "back": "Bad outcomes never occur versus useful work eventually progresses under assumptions."
+    },
+    {
+      "front": "Lost response retry identity?",
+      "back": "Retain the same business intent while resolving its authoritative outcome."
+    },
+    {
+      "front": "Asymmetric failure?",
+      "back": "Communication succeeds in one direction or from one observer while another path fails."
+    }
+  ],
+  "mentalModel": "Silence is evidence about an observation path; it is not proof of remote death or of an absent effect.",
+  "sources": [
+    {
+      "title": "Chandra and Toueg — Unreliable Failure Detectors for Reliable Distributed Systems (authors’ research page)",
+      "url": "https://www.cs.cornell.edu/info/people/sam/FDpapers.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

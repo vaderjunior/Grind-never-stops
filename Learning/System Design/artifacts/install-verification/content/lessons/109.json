@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "109",
+  "objectives": [
+    "Implement stable partitioned ingestion in the prepared P5 scaffold.",
+    "Distinguish event identity from offset position.",
+    "Record repeat/conflict/restart evidence."
+  ],
+  "retrieval": [
+    "L101: why is an offset partition-scoped?",
+    "L102: why is changing the partition count a migration?"
+  ],
+  "sections": [
+    {
+      "id": "scope",
+      "title": "The prepared artifact and the one-hour boundary",
+      "markdown": "Open projects/learner/events.py and projects/P5.md. P5 uses one SQLite database to model a partitioned immutable log; it is not a replicated broker. In this first milestone implement table/config setup and ingest. Projection consumption, windowing, and production deployment are outside this hour.\n\nBudget:10minutes read/predict,25 implementation,15 focused tests,10 evidence. Keep the accepted event's stable ID, account, payload/version, event_time, partition, and offset. The invariant is that an accepted event ID always names the same immutable payload and position."
+    },
+    {
+      "id": "implement",
+      "title": "A transaction assigns identity and position",
+      "markdown": "Hash the account deterministically with SHA-256 and reduce into the configured partition count. Do not use Python's process-randomized built-in hash for durable routing. Persist partition count and reject opening existing data with a different count. Inside a bounded write transaction, check an existing event ID; identical payload returns the previous position, conflicting payload is an error. For a new event allocate the next offset in its partition and insert it atomically.\n\nTwo concurrent writers must not both read MAX(offset)+1 and insert outside a protected transaction. A unique(partition,offset) constraint catches collisions, but the transaction/retry strategy must produce a useful result rather than silently losing the event. SQLite serializes writers in this teaching implementation; explain that boundary rather than claiming distributed consensus."
+    },
+    {
+      "id": "verify",
+      "title": "Test your implementation, then compare the reference",
+      "markdown": "Run from the repository root with Python3.11+. These are explicit terminal commands; the website does not execute submitted code.\n\n~~~powershell\n$env:ACADEMY_LAB_IMPLEMENTATION = 'learner'\npy -3 -m unittest discover -s projects/tests -p test_projects.py -k P5_1 -v\nRemove-Item Env:ACADEMY_LAB_IMPLEMENTATION\n~~~\n\nThe default test target is the separate reference. Setting learner is necessary to evaluate your work. The supplied reference milestone check has passed; this does not mean your TODO implementation passed. Expected focused behavior: identical duplicate returns the original tuple, same-account events keep partition affinity, and offsets increase. Add a conflicting-payload assertion and reopen the database before claiming restart behavior."
+    },
+    {
+      "id": "evidence",
+      "title": "Trace a routing migration failure",
+      "markdown": "Record event e1 for account a under four partitions. Predict what happens if a later process silently switches to five. The same account may now map elsewhere, its old checkpoint has a different meaning, and entity ordering across the old/new partition histories is undefined. Reject the configuration mismatch and propose a future versioned migration with a barrier instead.\n\nYour evidence note should contain the command and real output, two event identities/positions, a duplicate replay result, and a limitation. Stop when the focused test and explanation are complete. Optional extension: model skew with one hot account and measure which partition receives it; do not label the simulated distribution a broker throughput benchmark."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "ingest",
+      "title": "A durable identity and partition-local position",
+      "source": "flowchart LR\nE[Event ID plus immutable payload] --> V[Validate and stable account hash]\nV --> T[Bounded SQL transaction]\nT -->|New ID| A[(Append partition offset)]\nT -->|Same ID same payload| R[Return original position]\nT -->|Same ID changed payload| X[Reject conflict]",
+      "caption": "Single SQLite authority. The hash assigns placement; the transaction protects durable identity and offset allocation.",
+      "steps": [
+        "Validate the supported schema.",
+        "Choose a stable partition.",
+        "Resolve duplicate identity in the transaction.",
+        "Append once or return the original position."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 25,
+    "prompt": "Implement P5.1 ingest in the learner scaffold and record the focused P5_1 test output, a payload-conflict case, and a restart/routing-configuration observation.",
+    "rubric": [
+      "Stable account hashing.",
+      "Atomic immutable event identity and offset.",
+      "Honest actual test evidence and limits."
+    ],
+    "solution": "The reference uses deterministic SHA-256 routing with persisted partition count and a serialized SQL write transaction. It compares normalized event payloads for duplicate IDs and returns their existing positions, otherwise appends a unique partition/offset. Inspect projects/reference/events.py after the attempt. The passing reference proves the fixture behavior in one SQLite authority; it does not establish multi-broker replication, unbounded throughput, or your own learner implementation."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why not use Python hash(account) for durable routing?",
+      "options": [
+        "It is too readable",
+        "It can vary across processes",
+        "It always returns zero"
+      ],
+      "answer": "It can vary across processes",
+      "explanation": "Use a deterministic algorithm and stable encoding/configuration."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Same event ID with a changed amount should do what?",
+      "options": [
+        "Silently overwrite history",
+        "Reject under immutable-event semantics",
+        "Create a second offset automatically"
+      ],
+      "answer": "Reject under immutable-event semantics",
+      "explanation": "One stable event identity cannot quietly change its meaning."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What does this lab not prove?",
+      "answer": "Distributed replication, broker availability, production throughput, or external exactly-once effects. Its atomic boundary is one SQLite database.",
+      "explanation": "Distributed replication, broker availability, production throughput, or external exactly-once effects. Its atomic boundary is one SQLite database."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Event ID versus offset?",
+      "back": "Event ID names a logical immutable event; offset names its partition position."
+    },
+    {
+      "front": "Partition-count change?",
+      "back": "A routing/history migration, not a harmless runtime toggle."
+    },
+    {
+      "front": "Learner test selection?",
+      "back": "Set ACADEMY_LAB_IMPLEMENTATION=learner explicitly."
+    },
+    {
+      "front": "Reference pass proves learner success?",
+      "back": "No; they are separate implementations."
+    },
+    {
+      "front": "Atomic ingestion protects?",
+      "back": "Identity, immutable payload, and unique partition-local offset together."
+    }
+  ],
+  "mentalModel": "Keep logical identity stable while making physical position explicit and recoverable.",
+  "sources": [
+    {
+      "title": "Prepared P5 project specification",
+      "url": "https://www.sqlite.org/lang_transaction.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

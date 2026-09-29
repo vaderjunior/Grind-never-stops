@@ -1,0 +1,131 @@
+{
+  "id": "096",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Calculate backlog growth, buffer memory and approximate waiting time.",
+    "Place admission control before scarce resources are exhausted.",
+    "Separate global bounds from per-tenant fairness."
+  ],
+  "retrieval": [
+    "L007: interpret Little’s law only under appropriate stability assumptions.",
+    "L094: how can retries increase offered demand during an outage?"
+  ],
+  "sections": [
+    {
+      "id": "buffer",
+      "title": "Unbounded waiting is a deferred failure",
+      "markdown": "Core55 minutes: retrieval5, mechanism18, worked flow8, exercise10, questions10, review4. A document-render service can finish80 jobs/s while a burst arrives at120/s. Waiting work accumulates at40/s. If each queued job retains32 KiB of metadata and buffers,2,000 queued jobs occupy about62.5 MiB before container, index and runtime overhead. More importantly, a job at the back of that queue may wait roughly25 seconds at80 completions/s under a simplified steady-service model.\n\nIf the user’s useful deadline is3 seconds, accepting a25-second queue is misleading even if memory remains available. Choose admission from the service target and workload, not from the amount of RAM left after a load test. A bounded buffer makes overload explicit; it does not increase service capacity.\n\nBackpressure communicates limited downstream capacity to an upstream producer so the producer slows or stops. It works only when the upstream can honor that signal. Public clients, scheduled retry storms or an external event source may not slow sufficiently. Admission control and load shedding remain necessary at the authority that owns the scarce resource."
+    },
+    {
+      "id": "where",
+      "title": "Bound every place work can accumulate",
+      "markdown": "Look beyond the named message queue. HTTP accept queues, thread pools, async task lists, database connection waiters, broker prefetch and response buffers can all hold work. A service with a bounded broker queue but unbounded in-memory executor submission is still vulnerable to overload. Define maximum in-flight work and pending work at each relevant boundary.\n\nReject or defer before spending the expensive resource. For example, acquire a render slot before downloading a giant input and allocating its decoded image. Validate cheap syntax and authorization first where required, but avoid performing most of the expensive operation merely to discover that capacity is exhausted. A synchronous caller can receive an explicit retryable capacity response; an asynchronous workflow may receive accepted only if durable bounded backlog admission succeeded.\n\nDeadline-aware queues can discard or cancel work that can no longer produce a useful result, subject to the operation’s side-effect semantics. Dropping an unstarted preview is different from abandoning a partially committed payment. State whether an accepted job can expire and how the client observes that terminal state."
+    },
+    {
+      "id": "fairness",
+      "title": "One FIFO can let a noisy tenant occupy everyone’s wait",
+      "markdown": "Suppose tenant A submits10,000 batch jobs while tenant B submits one interactive job. A single FIFO can preserve arrival order while violating the intended tenant experience. Separate admission quotas, per-tenant queues and a weighted scheduling policy can bound A’s resource share and give B a chance to run. Priority alone can starve low-priority work unless aging or reserved capacity is considered.\n\nFairness should be defined in relevant cost units. One request that renders a1-page PDF and one that renders a1,000-page PDF do not consume equal CPU or memory. Fixed per-request tokens are a useful first approximation only under stated workload assumptions; weighted costs, time slicing or separate workload classes may be necessary.\n\nWorked bound: if80 jobs/s is the completion rate and the queue-wait budget is2 seconds,160 queued jobs is an illustrative upper bound from Q≈μW. Real tail-service variation and concurrent workers require measurement and additional headroom, so do not present160 as a universal safe setting. The key is tying queue size to a time target rather than choosing an arbitrary large integer."
+    },
+    {
+      "id": "failure",
+      "title": "Overload changes the failure mode you should test",
+      "markdown": "Inject a slow dependency, not just more clients. Service time rises, in-flight occupancy grows, and resource pools can saturate even with unchanged arrival rate. Test that accepted work remains bounded and rejected work fails promptly, with useful metrics and no retry multiplication. Compare queue age and deadline misses with completed throughput; a high acceptance rate is not a success if most accepted work finishes too late.\n\nTrack per-tenant admission/denial, queue age percentiles, in-flight work, resource saturation and cancelled/expired jobs. Consider degraded responses for optional functionality, but keep authorization and correctness checks intact. A cached recommendation can be stale; an authorization decision may need a fail-safe policy.\n\nThe common misconception is “make the queue bigger to fix overload.” A larger queue can conceal the symptom for a while and amplify recovery time. Bound work, communicate capacity, and decide deliberately which work is worth completing."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Admission and scheduling protect a bounded worker pool",
+      "source": "flowchart LR\nA[Tenant A] --> Q[Per-tenant admission]\nB[Tenant B] --> Q\nQ -->|accepted within bounds| S[Fair bounded queues]\nQ -->|over limit| R[Explicit reject or defer]\nS --> W[Bounded worker slots]\nW --> D[Dependency with deadline]",
+      "caption": "Limits exist both before queues and at execution slots. Fair scheduling is a separate policy from a global memory bound.",
+      "steps": [
+        "Validate and identify workload scope.",
+        "Admit only within useful capacity limits.",
+        "Schedule across tenants without unlimited hoarding.",
+        "Execute with bounded downstream resources."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A service finishes100 jobs/s. Each queued job uses16 KiB and your approximate wait budget is1.5 seconds. Estimate a queue bound and its metadata footprint, then name two reasons the estimate needs validation.",
+    "rubric": [
+      "Uses Q≈μW with assumptions.",
+      "Computes consistent memory units.",
+      "Recognizes heavy tails and hidden queues."
+    ],
+    "solution": "The illustrative bound is100×1.5=150 queued jobs. At16KiB each, that is2,400KiB or about2.344MiB of retained payload/metadata before runtime overhead. This approximation assumes a stable effective completion rate and relatively regular work; heavy-tailed service times or a slow dependency can raise waits. Hidden connection/task queues can add waiting outside the counted queue. Load/fault tests must validate tail latency and total in-flight memory, and per-tenant fairness remains a separate policy."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Arrival120/s minus completion80/s yields backlog growth?",
+      "answer": 40,
+      "unit": "jobs/s",
+      "tolerance": 0,
+      "explanation": "The excess offered rate is40/s."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A bounded broker queue guarantees all application queues are bounded:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Executors, sockets and connection waiters can accumulate work independently."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "FIFO alone guarantees tenant fairness:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "A noisy tenant can occupy most of the queue; fairness needs a separate scheduling/admission contract."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why reject before expensive resource acquisition?",
+      "answer": "It avoids consuming most of the scarce capacity on work that cannot be admitted or finish within its useful deadline.",
+      "explanation": "It avoids consuming most of the scarce capacity on work that cannot be admitted or finish within its useful deadline."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Backpressure?",
+      "back": "A signal that downstream capacity is limited and upstream should slow."
+    },
+    {
+      "front": "Admission control?",
+      "back": "Decide which new work may consume bounded capacity."
+    },
+    {
+      "front": "Queue age versus depth?",
+      "back": "Age exposes user-visible waiting even when item count is modest."
+    },
+    {
+      "front": "Approximate wait?",
+      "back": "Queued work divided by completion rate under a simplified service model."
+    },
+    {
+      "front": "Fairness?",
+      "back": "An explicit allocation policy, often per tenant and cost class."
+    }
+  ],
+  "mentalModel": "A queue stores waiting obligations; bound those obligations by useful time and scarce resources.",
+  "sources": [
+    {
+      "title": "Google SRE book: handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

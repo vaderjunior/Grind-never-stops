@@ -1,0 +1,108 @@
+{
+  "id": "interview_011",
+  "lessonId": "055",
+  "title": "[B] Explain why adding API servers made the system slower",
+  "version": 1,
+  "status": "drafted",
+  "aliases": [
+    "L055",
+    "lesson_055"
+  ],
+  "modeType": "B",
+  "minutes": 45,
+  "sessionMinutes": 60,
+  "brief": "An API became slower after increasing replicas from4 to20. Explain how you would investigate, which measurements you need, and what safe change you would test first. Do not assume the database is the culprit before asking for evidence.",
+  "clarifications": [
+    {
+      "question": "What changed besides replicas?",
+      "answer": "Each replica retains a50-connection database pool. Request mix and database hardware did not change."
+    },
+    {
+      "question": "What do measurements show?",
+      "answer": "API CPU fell from70% to20%. Database lock wait and active connections rose sharply. Successful throughput plateaued; p99 and timeouts increased."
+    },
+    {
+      "question": "What is the workload?",
+      "answer": "Several requests update the same small set of account rows. Some transactions make a remote call before committing."
+    }
+  ],
+  "hints": [
+    "Count aggregate dependency concurrency.",
+    "Distinguish waiting in the pool from waiting inside transactions.",
+    "A transaction held across a remote call can retain locks."
+  ],
+  "changes": [
+    "A rollback must retain enough API capacity for current demand. Explain how to limit dependency work without abruptly losing all API replicas."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "The observations support a database-concurrency/lock-contention hypothesis: configured pools grew from200 to1,000 while the hot-row workload and transaction behavior remained. Confirm lock-wait and transaction-age traces, query mix, connection count, and pool acquisition time. Bound per-instance or shared dependency concurrency and remove remote waiting from transactions where correctness permits. Roll out a smaller pool/admission policy gradually and compare completed throughput, p99, timeouts, and lock duration under the same load. Do not simply raise max_connections or add cache to transactional writes. Preserve overload rejection and caller retry budgets. A safe rollback changes one meaningful variable and monitors the user-visible objective.",
+  "debrief": "Evidence matters more than guessing the right component. Review whether you asked for dependency wait before prescribing a solution, included deployment-surge connection counts, and explained why less concurrency can increase useful throughput. Retry with high API CPU and low database wait.",
+  "remediation": [
+    "037",
+    "051",
+    "052",
+    "053",
+    "054"
+  ]
+}

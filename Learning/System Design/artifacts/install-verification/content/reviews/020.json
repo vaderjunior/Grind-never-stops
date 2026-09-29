@@ -1,0 +1,14 @@
+{
+  "lessonId": "020",
+  "sha256": "b84fd49595224c1cb2693615d2992e8215a9e65afa7dd4bf52554e165aa083b4",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent assessment review: multiple justified transport choices are accepted and storage internals beyond the taught scope are not required.",
+    "Reference reasoning distinguishes durable messages from ephemeral typing state and tests reconnect gaps and bounded buffering."
+  ],
+  "assessmentId": "interview_004",
+  "assessmentSha256": "177894b0b8512ce5c8d3f3b151920c7765b50402729f4758064aec15e2d844ac"
+}

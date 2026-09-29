@@ -1,0 +1,318 @@
+{
+  "id": "model-serving-and-gpus",
+  "title": "Model serving: GPUs, memory, batching, and scheduling",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 23,
+  "level": "advanced",
+  "minutes": 60,
+  "summary": "Connect model requests to CPU work, GPU memory, token generation and a serving scheduler, then reason about capacity without guessing from GPU count.",
+  "objectives": [
+    "Separate model weights, runtime memory and KV cache.",
+    "Explain prefill, decode and continuous batching through a small request timeline.",
+    "Choose admission, scaling and measurement policies that protect latency and memory."
+  ],
+  "terms": [
+    {
+      "term": "Inference",
+      "definition": "Running an already trained model to produce outputs from inputs."
+    },
+    {
+      "term": "GPU",
+      "definition": "A processor designed for large amounts of parallel numerical work; suitability depends on the workload and software."
+    },
+    {
+      "term": "VRAM",
+      "definition": "Memory attached to a GPU, with a finite capacity used by model data and active computation."
+    },
+    {
+      "term": "Weights",
+      "definition": "The learned numerical parameters stored by a model."
+    },
+    {
+      "term": "KV cache",
+      "definition": "Stored attention keys and values from processed tokens, reused during supported autoregressive generation."
+    },
+    {
+      "term": "Prefill",
+      "definition": "Processing the input context before generating subsequent output tokens."
+    },
+    {
+      "term": "Decode",
+      "definition": "Generating additional tokens step by step using the current context."
+    },
+    {
+      "term": "Continuous batching",
+      "definition": "Updating the set of active sequences at scheduling steps as requests finish and new work enters."
+    }
+  ],
+  "retrieval": [
+    "Why does starting more concurrent work not create more CPU capacity?",
+    "Why do request count and payload size describe different resource demands?"
+  ],
+  "sections": [
+    {
+      "id": "inference",
+      "title": "A model endpoint is a program around a large numerical computation",
+      "markdown": "A learner asks the portal to summarize a document. Before the model runs, the service authenticates the caller, checks document access, limits input size, formats the model input, and converts text to tokens. Tokens are the units used by the model’s tokenizer; a word is not a universal fixed number of tokens. After generation, the service formats or streams the result and records the operation’s outcome.\n\nInference runs a trained model; it is different from training that changes model parameters. The serving system includes much more than the weights: API handling, tokenization, scheduling, memory management, numerical execution, streaming and observability. CPU resources still matter in a GPU deployment because many surrounding tasks run there.\n\nA GPU can be idle while requests wait for slow input processing or a saturated CPU. Trace the whole request before deciding that another accelerator will solve a delay."
+    },
+    {
+      "id": "hardware",
+      "title": "Why a GPU helps, and what it does not promise",
+      "markdown": "Many neural-network operations involve large matrix or tensor calculations with substantial parallel work. Suitable GPUs and optimized libraries can execute those operations efficiently. This does not mean every operation runs faster on a GPU, or that all models require the same device. Small workloads, unsupported operations, transfer overhead and memory limitations can change the result. Some models can run on CPUs when their size and latency needs permit it.\n\nData must be available where computation uses it. Loading weights from storage, moving tensors, and coordinating several devices can consume time and bandwidth. A faster arithmetic unit cannot avoid every memory-transfer bottleneck. Choose hardware from measured model behavior, acceptable latency and deployment constraints rather than from a brand name alone.\n\nFor this lesson we use hypothetical numbers to reason about resources; we are not claiming a benchmark for a particular accelerator or asking you to provision a paid machine."
+    },
+    {
+      "id": "weights",
+      "title": "Budget memory for more than the model file",
+      "markdown": "A model download is not the whole serving-memory budget.\n\n| Memory use | What it holds | What changes it? |\n| --- | --- | --- |\n| Weights | Learned parameters | Model architecture and representation |\n| Runtime buffers | Temporary computation and framework allocations | Runtime, kernels, and batch shape |\n| KV state | Active attention history | Context lengths, active sequences, and implementation |\n| Headroom | Space for variation and operating needs | Chosen safe workload envelope |\n\nFor a rough weight estimate, seven billion parameters at two bytes each is fourteen billion bytes: 14 decimal GB. That alone does not show that a nominal 16 GB device can serve the intended workload.\n\nQuantization can use fewer bits for some values, but scales, format overhead, hardware support, and output quality still matter. A compressed download size is not the complete resident footprint.\n\nKeep decimal GB separate from binary GiB. Record model, precision, architecture, runtime, and context limits beside measurements so comparisons remain meaningful.\n\n**Pause and predict:** weights fit, but a burst of long contexts fails. Which additional budget in the table should be inspected?"
+    },
+    {
+      "id": "kv",
+      "title": "The KV cache grows with active context",
+      "markdown": "In many transformer decoders, attention reuses keys and values computed for earlier tokens. Keeping them avoids recomputing that history at every step, but uses memory for the active sequences. This KV cache is not the same as a Redis cache of finished responses. Evicting or recomputing it affects an ongoing generation, while a response cache answers a different application-level reuse question.\n\nFor a deliberately simplified full-attention model, estimate bytes per token as layers × KV heads × head dimension × two for K and V × bytes per element. With 32 layers, 8 KV heads, dimension 128 and 2-byte elements, the result is 131,072 bytes: 128 KiB per token.\n\nAt 8,192 tokens, that is 1 GiB per sequence. Architecture, sliding attention, sharing, quantization and implementation details can change this estimate; use the actual model configuration and runtime measurements before treating it as an allocation rule."
+    },
+    {
+      "id": "phases",
+      "title": "First-token delay and ongoing speed are different",
+      "markdown": "Prefill processes the input context and establishes state needed for generation. Decode then generates additional tokens autoregressively: each step depends on the current sequence. A long document can make prefill substantial even if the requested output is short. A short prompt asking for a long answer may instead occupy decode capacity for a long period. Counting both simply as “one request” hides the difference.\n\nMeasure queue time, time to first token, inter-token latency and total duration separately. A system can begin quickly but emit later tokens slowly, or wait before beginning and then emit smoothly. Output tokens per second also needs a scope: per request, per replica, or across the fleet.\n\nAn aggregate throughput improvement may worsen interactive latency. Choose a user-visible target such as a first useful response within a stated bound, then observe the stages that contribute to that target."
+    },
+    {
+      "id": "batching",
+      "title": "Let completed requests release their place",
+      "markdown": "Batching combines sequences to use numerical execution more effectively. The question is when a finished sequence frees capacity for another.\n\n| Scheduling approach | Conceptual behavior | Cost to examine |\n| --- | --- | --- |\n| Simple fixed group | Admit a group and keep it together until completion | Short requests can leave unused capacity while long ones remain |\n| Continuous active set | Change admitted sequences at supported iteration boundaries | Scheduling, prefill, memory, and latency interact |\n\nThe existing diagram follows A needing four decode steps and B needing two. C needs three and enters after B finishes. The active set changes while A is still running.\n\nThis is an iteration trace, not a wall-clock benchmark. Prefill, kernel shape, active memory, and request lengths change how long an iteration takes. More aggregate throughput does not guarantee lower latency for each user.\n\nvLLM is one serving engine with batching and KV-memory management. Check its installed release before applying defaults or tuning parameters.\n\n**Interview phrase:** “I would compare throughput and per-request latency under the real length distribution, not merely maximize batch size.”"
+    },
+    {
+      "id": "admission",
+      "title": "Bound tokens and memory before the scheduler is overwhelmed",
+      "markdown": "Suppose a measured configuration has 8 GiB available for KV data and the simplified request estimate is 1 GiB at its maximum context. Eight such sequences are only an arithmetic upper bound before allocator effects, safety margin and other runtime behavior. It is not proof that eight requests meet a latency target. A mixture of shorter and longer contexts changes the budget, and generated tokens can grow a sequence beyond its initial prompt.\n\nEnforce input and output limits, cap admitted in-flight work, and bound queue age. Use tenant budgets appropriate to the workload, including token demand or compute cost when simple requests-per-minute is misleading. A very long prefill can interfere with ongoing decoding; chunked prefill and scheduler policies can help, but they require workload measurement.\n\nUnder memory pressure, a runtime may preempt and recompute work, increasing latency. Rejection with a useful retry policy is often better than accepting unbounded work until every response misses its deadline."
+    },
+    {
+      "id": "scaling",
+      "title": "Distinguish a larger model replica from more replicas",
+      "markdown": "Tensor parallelism divides portions of model computation across devices; pipeline parallelism divides stages or layers. These can help a model fit or use multiple devices, but require communication and scheduling coordination. Several devices jointly serving one model replica are not automatically several independent replicas. If that group loses a required device, the whole replica may need recovery.\n\nData-parallel serving replicas each process separate request batches using their own model copy or device group. This can increase throughput and provide deployment redundancy when there is enough capacity, but repeats weight memory and startup cost. Start from whether one suitable device can hold the model and required active state, then measure throughput before distributing further.\n\nAdding ordinary API pods does not automatically add usable GPU model capacity; the model processes must receive appropriate devices, load successfully and become ready under the actual serving platform."
+    },
+    {
+      "id": "operate",
+      "title": "Follow one request through a measured serving deployment",
+      "markdown": "The portal gateway authenticates the request and applies size and tenant limits. An admission layer chooses an appropriate ready model replica and bounds waiting. CPU-side preparation creates tokens; the serving scheduler allocates request state, schedules prefill and decode, and streams results. On cancellation, release resources as soon as practical and record whether any durable application effect or external charge already occurred.\n\nA lost connection does not justify silently billing or executing the same logical job again without a defined policy.\n\nObserve active and waiting requests, prompt/output token rates, first-token and inter-token latency, KV usage, preemption, errors and CPU/GPU resource use. Test a realistic size distribution and burst pattern rather than one repeated short prompt. Readiness should represent a usable loaded model, not merely an open port.\n\nCold starts, model loading and rollout drains need explicit budgets. Save the model/runtime configuration with results so a later comparison describes a reproducible workload, not a vague claim that “the GPU was fast.”"
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "serving-path",
+      "sectionId": "operate",
+      "title": "The GPU is one stage in the serving path",
+      "source": "flowchart LR\nU[Authorized request] --> A[Admission and bounded queue]\nA --> C[CPU tokenization and preparation]\nC --> S[Serving scheduler]\nS --> P[GPU prefill]\nP --> D[GPU decode iterations]\nD --> O[Stream output]\nS --> K[(KV memory budget)]",
+      "steps": [
+        "Validate and admit a bounded workload.",
+        "Prepare model tokens on the appropriate resources.",
+        "Schedule computation within active-memory limits.",
+        "Measure and stream results while honoring cancellation."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "continuous-batch",
+      "sectionId": "batching",
+      "title": "A completed sequence makes room for another",
+      "source": "flowchart LR\nS1[Step 1: A and B] --> S2[Step 2: A and B]\nS2 -->|B finishes| S3[Step 3: A and C]\nS3 --> S4[Step 4: A and C]\nS4 -->|A finishes| S5[Step 5: C finishes]",
+      "steps": [
+        "A and B start together.",
+        "B releases its active slot after two decode steps.",
+        "C joins while A continues.",
+        "The active set changes at scheduling boundaries."
+      ],
+      "caption": "Conceptual decode schedule with capacity for two sequences; real prefill, memory and step durations are workload-dependent."
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Use the simplified KV formula for 32 layers, 8 KV heads, head dimension 128 and 2-byte elements. Calculate bytes/token and memory for 8,192 tokens. If only 8 GiB is available for KV, explain why eight such requests is not a latency guarantee. Sketch A(4 steps), B(2), then C(3) entering when B ends.",
+    "rubric": [
+      "Include both K and V in the formula.",
+      "Use binary units consistently for the KV example.",
+      "Separate arithmetic memory bound from safe measured capacity.",
+      "Show C entering before A finishes.",
+      "Name input/output and waiting limits."
+    ],
+    "solution": "32 × 8 × 128 × 2 × 2 = 131,072 bytes/token = 128 KiB/token. Multiplying by 8,192 gives 1,073,741,824 bytes = 1 GiB per sequence under the stated simplification. Eight GiB divided by one GiB gives eight only as an upper arithmetic count; allocator overhead, variation, growth, runtime needs and latency can require fewer. Decode sets can be [A,B], [A,B], [A,C], [A,C], [C]. Limit context, output, active sequences and waiting, and measure realistic traffic."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Under the stated simplified formula, 128 KiB/token × 8,192 tokens equals how many GiB?",
+      "answer": 1,
+      "unit": "GiB",
+      "tolerance": 0,
+      "explanation": "128 × 8,192 KiB = 1,048,576 KiB = 1 GiB."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which statement about continuous batching is accurate?",
+      "options": [
+        "New sequences can enter at scheduling boundaries as others finish",
+        "Every request must produce the same output length",
+        "Batching guarantees lower latency at every load"
+      ],
+      "answer": "New sequences can enter at scheduling boundaries as others finish",
+      "explanation": "The active set can change; actual performance still depends on workload and resource budgets."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Why is a 14 GB rough weight estimate insufficient for a 16 GB serving-memory decision?",
+      "options": [
+        "Runtime buffers, KV state and headroom also consume memory",
+        "Weights are never stored in memory",
+        "All GPUs provide unlimited hidden memory"
+      ],
+      "answer": "Runtime buffers, KV state and headroom also consume memory",
+      "explanation": "The serving footprint exceeds the simple parameter-byte multiplication."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Compare tensor parallelism with additional serving replicas.",
+      "answer": "Tensor parallelism divides one model computation across devices and incurs communication; additional replicas handle different request batches with duplicated model capacity. They solve different size, throughput and availability problems.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Which observations would help diagnose a slow first token?",
+      "answer": "Separate queue time, CPU preparation, prefill and transport delay; inspect waiting work, prompt lengths, resource usage and scheduler pressure. GPU utilization alone cannot locate the cause.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Weights versus KV cache?",
+      "back": "Weights are model parameters; KV is active attention state that grows with the processed sequence."
+    },
+    {
+      "front": "Prefill versus decode?",
+      "back": "Process input context, then generate additional dependent tokens step by step."
+    },
+    {
+      "front": "Continuous batching purpose?",
+      "back": "Use freed active capacity as sequences finish, within scheduler and memory limits."
+    },
+    {
+      "front": "More API pods imply more model capacity?",
+      "back": "No. Ready model replicas need appropriate compute, memory and loaded weights."
+    },
+    {
+      "front": "What makes a serving benchmark useful?",
+      "back": "Named model/runtime/hardware, realistic input-output distribution, load pattern, and latency plus throughput measurements."
+    }
+  ],
+  "mentalModel": "A model request spends CPU preparation, GPU computation, and growing memory over time; schedule all three instead of counting requests alone.",
+  "sources": [
+    {
+      "title": "vLLM — Parallelism and scaling",
+      "url": "https://docs.vllm.ai/en/latest/serving/parallelism_scaling/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "vLLM — Optimization, preemption and chunked prefill",
+      "url": "https://docs.vllm.ai/en/latest/configuration/optimization/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "vLLM — Metrics design",
+      "url": "https://docs.vllm.ai/en/latest/design/metrics/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Hugging Face Transformers — KV cache strategies",
+      "url": "https://huggingface.co/docs/transformers/en/kv_cache",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "scheduler-active-set",
+      "title": "Watch a finished sequence make room",
+      "sectionId": "batching",
+      "intro": "A separate conceptual decode schedule has room for two sequences. R1 needs 2 steps, R2 needs 4, and waiting R3 needs 1. Prefill and wall-time variation are deliberately abstracted.",
+      "steps": [
+        {
+          "title": "Run the first iteration",
+          "explanation": "R1 and R2 each make one decode step. R3 waits because both active slots are in use.",
+          "state": [
+            {
+              "label": "Active",
+              "value": "R1, R2"
+            },
+            {
+              "label": "Remaining afterward",
+              "value": "R1: 1; R2: 3"
+            },
+            {
+              "label": "Waiting",
+              "value": "R3: 1"
+            }
+          ]
+        },
+        {
+          "title": "A sequence finishes",
+          "explanation": "The second iteration completes R1. Its active state can be released under the scheduler’s rules.",
+          "state": [
+            {
+              "label": "Active during step",
+              "value": "R1, R2"
+            },
+            {
+              "label": "Remaining afterward",
+              "value": "R1: 0; R2: 2"
+            },
+            {
+              "label": "Freed capacity",
+              "value": "one sequence slot"
+            }
+          ]
+        },
+        {
+          "title": "Admit the waiting sequence",
+          "explanation": "R3 joins R2 at the next supported boundary. After this step R3 is complete while R2 still has one step.",
+          "state": [
+            {
+              "label": "Active during step",
+              "value": "R2, R3"
+            },
+            {
+              "label": "Remaining afterward",
+              "value": "R2: 1; R3: 0"
+            },
+            {
+              "label": "Waiting",
+              "value": "none"
+            }
+          ]
+        },
+        {
+          "title": "Finish the longer sequence",
+          "explanation": "R2 completes its final step. This does not imply equal real duration for the four iterations.",
+          "state": [
+            {
+              "label": "Active during step",
+              "value": "R2"
+            },
+            {
+              "label": "Remaining afterward",
+              "value": "0"
+            },
+            {
+              "label": "Claim demonstrated",
+              "value": "changing active set, not a speed benchmark"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Continuous batching can reuse capacity before the longest request ends. Admission must still fit memory and latency constraints."
+    }
+  ]
+}

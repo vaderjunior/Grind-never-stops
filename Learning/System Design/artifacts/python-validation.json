@@ -1,0 +1,37 @@
+{
+  "python": "Python 3.12.14",
+  "results": [
+    {
+      "lessonId": "004",
+      "sectionId": "worked",
+      "ok": true,
+      "stdout": "average=16.2/s peak=129.6/s\r\n",
+      "stderr": "",
+      "exitCode": 0
+    },
+    {
+      "lessonId": "006",
+      "sectionId": "bandwidth",
+      "ok": true,
+      "stdout": "photo ingress: 640 Mbit/s; minimum restore: 27.8 h\r\n",
+      "stderr": "",
+      "exitCode": 0
+    },
+    {
+      "lessonId": "007",
+      "sectionId": "worked",
+      "ok": true,
+      "stdout": "peak backlog=200; drained after 10 seconds\r\n",
+      "stderr": "",
+      "exitCode": 0
+    },
+    {
+      "lessonId": "008",
+      "sectionId": "sensitivity",
+      "ok": true,
+      "stdout": "A: 3 instances; B: 2 instances\r\n",
+      "stderr": "",
+      "exitCode": 0
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "id": "064",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain clockwise ring ownership and why adding a node moves a subset of keys.",
+    "Distinguish virtual-node balance from hot-key traffic balance.",
+    "Compare ring placement, modulo hashing, and rendezvous placement without claiming migration safety."
+  ],
+  "retrieval": [
+    "L063: why can hash(key)%N cause trouble when N changes?",
+    "L007: why do average arrival rates hide skew?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Changing membership should not invalidate every address",
+      "markdown": "A distributed cache uses hash(key)%3 to choose one of three nodes. Adding a fourth node changes the divisor for every key; many keys now map elsewhere. For a disposable cache, this causes a cold-miss surge. For authoritative data, changing the formula without moving and protecting data causes missing or misplaced writes.\n\nConsistent hashing separates positions in a fixed hash space from the current membership count. Nodes occupy stable positions, and each key belongs to the next eligible position around the ring. Adding a position splits a neighboring ownership interval instead of changing the meaning of every hash. The placement rule reduces movement; it does not copy data, resolve concurrent writes, or prove safe failover."
+    },
+    {
+      "id": "mechanism",
+      "title": "Walk clockwise, wrapping at the end",
+      "markdown": "Hash each key into a fixed ordered space. Hash one or more node tokens into that same space. The first token at or clockwise after the key owns it; if no token is greater, wrap to the first. With tokens A=10, B=50, C=90 on a0–99 ring, keys11–50 belong to B,51–90 to C, and91–99 plus0–10 to A.\n\nAdd D=30. Keys11–30 move from B to D; the other intervals stay the same. Remove B instead and only B's former interval changes owner under this simple one-copy model. Exact moved fractions depend on token positions and the key distribution. With many roughly uniform tokens, expected movement approaches a balanced share, but a small sample or skew can differ substantially.\n\nVirtual nodes give each physical node multiple token positions. They can smooth uneven intervals and let capacity be weighted by token count. The metadata and movement planning become more complex, and one physical failure affects all its virtual positions. Virtual nodes distribute many keys; they do not split the traffic to one viral key. Replication/failure-domain placement is an additional policy that must avoid treating multiple tokens on one machine as independent replicas."
+    },
+    {
+      "id": "worked",
+      "title": "Executable ring membership change",
+      "markdown": "The tiny ring below has chosen positions, not a cryptographic hash. It makes the interval movement inspectable. Production placement requires a stable shared hash/encoding, deterministic token identities, collision handling, and versioned membership.\n\n```python\nfrom bisect import bisect_left\n\ndef owner(point: int, tokens: dict[int, str]) -> str:\n    positions = sorted(tokens)\n    index = bisect_left(positions, point) % len(positions)\n    return tokens[positions[index]]\n\nbefore = {10: \"A\", 50: \"B\", 90: \"C\"}\nafter = {**before, 30: \"D\"}\nmoved = [p for p in range(100) if owner(p, before) != owner(p, after)]\nassert moved == list(range(11, 31))\nassert all(owner(p, after) == \"D\" for p in moved)\nassert owner(99, after) == \"A\"\nprint(len(moved))\n```\n\nExpected output is20. Exactly20 of the100 integer positions move in this chosen example; it is not a universal25% guarantee when adding a fourth node. Open the academy's Mechanism lab to compare its fixed200-key virtual-node sample with modulo routing; the model declares its hash and node count.\n\nRendezvous hashing is a related alternative: score each (key,node) pair deterministically and choose the highest. Adding a node changes only keys for which the new node wins. It avoids explicit ring intervals but has a straightforward O(number of nodes) scoring cost unless optimized. P1's membership simulation uses that alternative; do not confuse a placement comparison with a real online resharding protocol."
+    },
+    {
+      "id": "failure",
+      "title": "Placement agreement and data movement are separate",
+      "markdown": "If two routers use different membership versions, they can disagree on the owner even with the same hash function. An authoritative shard should verify whether the request's ownership epoch is still acceptable; sending to a different address is not proof that the data is ready there. L067 studies copy, catch-up, handoff, and retirement.\n\nA cache can often tolerate some placement churn, but a simultaneous cold set can overload its origin. Warm the new owner or bound fallback traffic according to the consistency contract. Do not solve this by silently reading random stale authoritative copies. Node weights should reflect capacity and failure-domain constraints, not just convenient names.\n\nCommon misconceptions: “consistent” means linearizable data, consistent hashing balances request frequency, virtual nodes are independent machines, and only1/N keys always move. The term concerns placement stability under membership changes. Correctness and availability still depend on the storage protocol and workload."
+    },
+    {
+      "id": "time-budget",
+      "title": "Core and optional depth",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 mechanism and diagrams, 8 worked trace, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and deeper variations are optional. Examples are deterministic teaching models, not production replication or routing implementations."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "ring-split",
+      "title": "A new token splits only its predecessor interval",
+      "source": "flowchart LR\nK[Keys 11 through 30] -->|Before D exists| B[Token B at 50]\nK -->|After D at 30 added| D[Token D at 30]\nL[Keys 31 through 50] -->|Unchanged owner| B\nM[Keys 51 through 90] -->|Unchanged owner| C[Token C at 90]\nN[Keys 91 through 10 wrapping] -->|Unchanged owner| A[Token A at 10]",
+      "caption": "This is an interval ownership view of the0–99 ring, not a claim that the data moves automatically when the new token is published.",
+      "steps": [
+        "Before the join, B owns keys just after A through50.",
+        "D takes only the interval just after A through30.",
+        "The rest of B’s interval and the other owners stay unchanged.",
+        "A separate protocol must move protected data before authoritative routing changes."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "With ring tokens10=A,50=B,90=C, assign keys5,20,40,70,99. Add token30=D and identify exactly which listed keys change. Explain one failure caused by publishing new ownership before copying authoritative data.",
+    "rubric": [
+      "Use clockwise successor with wrap.",
+      "Only key20 in the provided set moves to D.",
+      "Separate stable placement from copy/ownership correctness."
+    ],
+    "solution": "Before:5→A,20→B,40→B,70→C,99→A. After adding D at30, only20 changes, now toD. Across all integer positions0–99,11–30 move. If routing changes first, a read for key20 may reach D before its value exists, or a write may reach D while B still accepts competing old-route writes. The ring reduced the set requiring a migration; it did not implement one. Use versioned placement and a handoff protocol with a verified ready target."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "“Consistent” in consistent hashing primarily refers to…",
+      "options": [
+        "Stable placement under membership changes",
+        "Automatic linearizable reads",
+        "Identical traffic for every key"
+      ],
+      "answer": "Stable placement under membership changes",
+      "explanation": "The hash-placement property says nothing by itself about database consistency."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "In the0–99 ring example, adding D at30 moves how many integer key positions?",
+      "answer": 20,
+      "unit": "positions",
+      "tolerance": 0,
+      "explanation": "Positions11 through30 inclusive total20."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Do virtual nodes split requests for one identical hot key across many owners automatically?",
+      "options": [
+        "Yes",
+        "No",
+        "Only during a read"
+      ],
+      "answer": "No",
+      "explanation": "They spread token ranges/many keys; the same deterministic key still has its selected owner policy."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might a new cache node harm the origin temporarily?",
+      "answer": "Remapped keys become cold, increasing misses and simultaneous origin work.",
+      "explanation": "Placement stability reduces movement but does not remove the cold-cache transition cost."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What does rendezvous hashing choose?",
+      "answer": "The node with the highest deterministic score for the key-node pair.",
+      "explanation": "It is a placement alternative; its scoring and membership policy still need stable shared definitions."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Ring owner?",
+      "back": "First eligible clockwise token, wrapping at the end."
+    },
+    {
+      "front": "Adding one token changes?",
+      "back": "The ownership interval that the new token takes from its successor."
+    },
+    {
+      "front": "Virtual nodes help?",
+      "back": "Spread many key ranges and express capacity weights."
+    },
+    {
+      "front": "Consistent hashing guarantees linearizability?",
+      "back": "No. Placement stability and data-consistency protocols are different."
+    },
+    {
+      "front": "Membership change safety?",
+      "back": "Requires versioned routing and data handoff beyond the placement function."
+    }
+  ],
+  "mentalModel": "Keep the address space stable, move only affected ownership, and prove data handoff separately.",
+  "sources": [
+    {
+      "title": "Amazon Dynamo — Original SOSP 2007 paper",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MongoDB — Shard keys",
+      "url": "https://www.mongodb.com/docs/manual/core/sharding-shard-key/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

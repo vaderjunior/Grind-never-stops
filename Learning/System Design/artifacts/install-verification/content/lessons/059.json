@@ -1,0 +1,118 @@
+{
+  "id": "059",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Add a disposable cache without changing redirect correctness.",
+    "Measure database reads and cache hits under a fixed workload.",
+    "Test absolute expiry at the exact boundary and cache outage fallback."
+  ],
+  "retrieval": [
+    "L039: where is the authoritative mapping stored?",
+    "L051–058: what workload and consistency assumptions justify a cache?"
+  ],
+  "sections": [
+    {
+      "id": "goal",
+      "title": "A bounded implementation milestone",
+      "markdown": "Scheduled60 minutes: brief/prediction10, implementation25, tests15, evidence10. Setup is separate. A cache is useful only if it reduces work without quietly changing the redirect contract. In this prepared lab, the SQLite links table remains authoritative and destinations are immutable. The cached value contains both URL and absolute expiry. That second field matters: caching an expiring link is not permission to serve it forever. Start with the persistent create/resolve path from P1.1 and add the smallest cache-aside branch."
+    },
+    {
+      "id": "mechanism",
+      "title": "Mechanism and correctness boundary",
+      "markdown": "On resolve, try the cache. A cached mapping can avoid the SQL lookup, but expiry must still be checked against the injected clock. On cache miss or a cache connection failure, read SQLite. A found mapping may be placed in cache; failure of that optional cache write must not convert a valid authoritative lookup into a failed redirect. Unknown mappings raise a not-found condition rather than fabricating a destination.\n\nThe reference counts database_reads, cache_hits and cache_failures. These are operation counts, not automatically latency improvements. With a fast in-process SQLite database, extra Python cache code may dominate tiny timing differences. Measure a stated workload and report the metric you actually observed. The deterministic acceptance check expects one SQL read for two warm resolutions, a SQL fallback when the cache is unavailable, and rejection exactly at expiry."
+    },
+    {
+      "id": "run",
+      "title": "Use the prepared learner skeleton",
+      "markdown": "Read projects/P1.md and projects/README.md. Edit projects/learner/shortener.py; the TODOs identify this milestone. Run the focused acceptance test from the repository root:\n\n~~~powershell\n$env:ACADEMY_LAB_IMPLEMENTATION = 'learner'\npy -3 -m unittest discover -s projects/tests -p test_projects.py -k P1_2 -v\nRemove-Item Env:ACADEMY_LAB_IMPLEMENTATION\n~~~\n\nThe default test implementation is the completed reference; setting the variable selects your learner code. A learner TODO failure is intentional, not missing teaching. If your launcher is python or python3, substitute it for py -3. The baseline uses only the Python standard library and temporary test databases. No app endpoint executes your code.\n\nA TTL checked only at cache insertion can serve expired links. Keep absolute expiry with the cached value and evaluate on every read.\n\nStop when the focused test passes and you have recorded the stated evidence. Do not spend the hour constructing a new server framework or extending unrelated features."
+    },
+    {
+      "id": "evidence",
+      "title": "Record what the test actually shows",
+      "markdown": "Record one DB read for two warm reads, a DB fallback during cache failure, and a not-found result at expiry.\n\nSave the exact command, expected result, actual result, fault injected and the final invariant in the Project workspace. Note any untested assumption. The reference implementation and test have been executed; your own implementation needs its own run evidence. Compare with the explicit reference only after attempting the bounded task.\n\nSingle-machine SQLite, immutable links, an in-process cache, and a teaching HTTP harness. No abuse classifier, cross-node replication, account service, or distributed migration is implemented.\n\nOptional additional practice belongs in a separate session: Add authenticated mutable destinations using versions and cache invalidation tests."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "milestone-flow",
+      "title": "Cache behavior and measurement",
+      "source": "flowchart LR\nR[Resolve code] --> C{Cache available and hit?}\nC -->|yes| E[Check absolute expiry]\nC -->|no or failure| D[Read authoritative SQLite]\nD -.->|best-effort populate| K[Disposable cache]\nD --> E\nE -->|valid| O[Redirect URL]\nE -->|expired or absent| N[Not found]",
+      "caption": "Add a disposable cache without changing redirect correctness. Measure database reads and cache hits under a fixed workload. Test absolute expiry at the exact boundary and cache outage fallback.",
+      "steps": [
+        "Add cache-aside reads with metrics for DB reads, cache hits, and cache failures. Run the same redirect twice, disable the cache, then advance the fake clock exactly to expiration. Compare query counts under identical workloads before interpreting latency.",
+        "A TTL checked only at cache insertion can serve expired links. Keep absolute expiry with the cached value and evaluate on every read.",
+        "Record one DB read for two warm reads, a DB fallback during cache failure, and a not-found result at expiry."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Add cache-aside reads with metrics for DB reads, cache hits, and cache failures. Run the same redirect twice, disable the cache, then advance the fake clock exactly to expiration. Compare query counts under identical workloads before interpreting latency.",
+    "minutes": 25,
+    "rubric": [
+      "A code names exactly one immutable destination; successful create survives restart. Cache loss may add latency but cannot change a redirect.",
+      "Record one DB read for two warm reads, a DB fallback during cache failure, and a not-found result at expiry.",
+      "Reports the implemented guarantee and its limits."
+    ],
+    "solution": "Read the requested code from cache inside a narrow cache-error boundary. If it is missing or the cache is unavailable, increment the database-read counter and read the immutable authoritative row. Cache the found URL together with its expires timestamp on a best-effort basis. Independently of the source of the row, reject if expires is not null and now >= expires. Return the destination only after that check. The two warm reads should produce one database read; a simulated outage must still resolve through SQLite. Advance the fake clock to the exact expiration time and verify that a warm cached row no longer redirects. Explain that mutable URLs or revocation would require an additional invalidation/version contract absent from this milestone."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "open",
+      "prompt": "What invariant does your implementation enforce and at which authority?",
+      "answer": "A code names exactly one immutable destination; successful create survives restart. Cache loss may add latency but cannot change a redirect.",
+      "explanation": "Read the requested code from cache inside a narrow cache-error boundary. If it is missing or the cache is unavailable, increment the database-read counter and read the immutable authoritative row. Cache the found URL together with its expires timestamp on a best-effort basis. Independently of the source of the row, reject if expires is not null and now >= expires. Return the destination only after that check. The two warm reads should produce one database read; a simulated outage must still resolve through SQLite. Advance the fake clock to the exact expiration time and verify that a warm cached row no longer redirects. Explain that mutable URLs or revocation would require an additional invalidation/version contract absent from this milestone."
+    },
+    {
+      "id": "q2",
+      "type": "open",
+      "prompt": "Describe the injected fault and the exact acceptance evidence.",
+      "answer": "A TTL checked only at cache insertion can serve expired links. Keep absolute expiry with the cached value and evaluate on every read. Record one DB read for two warm reads, a DB fallback during cache failure, and a not-found result at expiry.",
+      "explanation": "Use the saved test trace to show the guarantee under the named fault; a final green count alone is insufficient."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What production guarantee is outside this teaching implementation?",
+      "answer": "Single-machine SQLite, immutable links, an in-process cache, and a teaching HTTP harness. No abuse classifier, cross-node replication, account service, or distributed migration is implemented.",
+      "explanation": "Single-machine SQLite, immutable links, an in-process cache, and a teaching HTTP harness. No abuse classifier, cross-node replication, account service, or distributed migration is implemented."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Cache authority?",
+      "back": "SQLite owns the immutable mapping; cache is derived."
+    },
+    {
+      "front": "Expiry in a cache hit?",
+      "back": "Still checked against the absolute stored deadline."
+    },
+    {
+      "front": "Cache outage behavior?",
+      "back": "Fallback to authoritative storage under the declared load policy."
+    },
+    {
+      "front": "Measured metric in the deterministic test?",
+      "back": "Database operations and cache hits, not production latency."
+    },
+    {
+      "front": "Mutable-link extension?",
+      "back": "Requires an explicit invalidation/version strategy."
+    }
+  ],
+  "mentalModel": "A code names exactly one immutable destination; successful create survives restart. Cache loss may add latency but cannot change a redirect.",
+  "sources": [
+    {
+      "title": "Python sqlite3 documentation: transactions and backup",
+      "url": "https://docs.python.org/3/library/sqlite3.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python hashlib documentation: SHA-256 and stable hashing",
+      "url": "https://docs.python.org/3/library/hashlib.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

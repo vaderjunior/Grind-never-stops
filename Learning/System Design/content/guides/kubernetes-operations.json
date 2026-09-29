@@ -1,0 +1,333 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 14,
+  "title": "Kubernetes configuration, probes, resources, and autoscaling",
+  "level": "intermediate",
+  "minutes": 55,
+  "id": "kubernetes-operations",
+  "summary": "Keep a deployed application ready, bounded, and recoverable. Connect configuration, resource requests, health checks, autoscaling, and rollout to the user experience they are meant to protect.",
+  "objectives": [
+    "Separate ordinary configuration from protected credentials.",
+    "Explain resource requests and limits without treating them as guaranteed application performance.",
+    "Choose probes, autoscaling signals, and rollout checks that test the right condition."
+  ],
+  "terms": [
+    {
+      "term": "ConfigMap",
+      "definition": "A Kubernetes object for non-secret configuration data."
+    },
+    {
+      "term": "Secret",
+      "definition": "A Kubernetes object intended to hold sensitive configuration; effective protection depends on access and storage controls."
+    },
+    {
+      "term": "Resource request",
+      "definition": "A declared resource amount used for scheduling and related resource accounting."
+    },
+    {
+      "term": "Resource limit",
+      "definition": "A configured bound enforced according to the resource type and runtime behavior."
+    },
+    {
+      "term": "Probe",
+      "definition": "A configured check used to judge startup, readiness, or whether a container should be restarted."
+    },
+    {
+      "term": "HPA",
+      "definition": "Horizontal Pod Autoscaler: a controller that adjusts desired replica count using configured metrics and policy."
+    },
+    {
+      "term": "Rolling update",
+      "definition": "Replacing application instances in controlled stages while old and new versions overlap."
+    }
+  ],
+  "retrieval": [
+    "Why does Running not necessarily mean ready to serve a user?",
+    "How can an application rollout break despite successfully starting a new image?"
+  ],
+  "sections": [
+    {
+      "id": "purpose",
+      "title": "Operations should protect a user outcome",
+      "markdown": "The notes app has three Pods and a stable Service. That is a starting arrangement, not a complete operational plan. What happens if a Pod starts without its database setting? What if one request consumes too much memory? What if a new release responds to health checks but cannot save notes?\n\nThink of operating a small workshop. You need instructions, controlled access to keys, enough workspace, checks that a station is ready, and a way to replace equipment without stopping every worker. The purpose is to complete customer work reliably, not merely count how many machines are switched on.\n\nWe will connect Kubernetes controls to those specific needs. Each control answers a limited question. A scheduler places workloads; it does not prove their business correctness. An autoscaler requests more replicas; it does not guarantee spare machines exist. A successful rollout status should be combined with evidence that representative users can still complete their actions."
+    },
+    {
+      "id": "config",
+      "title": "Give each environment the right settings",
+      "markdown": "Use ordinary configuration for values such as a feature flag, a non-sensitive service hostname, or a logging level. A ConfigMap can supply this data to Pods as environment variables or files. Keep it separate from the application image so a tested artifact can run with appropriate environment settings.\n\nDatabase passwords and access tokens belong in a controlled secret path. Kubernetes Secret objects are a mechanism, not a complete security guarantee. Base64 is encoding, not encryption. Enforce who can read the Secret through cluster permissions, protect storage and backups appropriately, and avoid exposing values in logs or broadly readable configuration. External secret-management integrations may help, but they also need an explicit access policy.\n\nConfiguration changes have a lifecycle. Updating a source object does not mean every running process immediately uses the new value. Environment variables are set for a process when it starts; mounted-data propagation and application reload behavior have their own rules. Plan and verify how a credential rotation or feature change reaches the actual application before retiring the previous value."
+    },
+    {
+      "id": "resources",
+      "title": "Requests place work; limits bound selected consumption",
+      "markdown": "Requests help Kubernetes account for placement; limits bound consumption according to the resource type. Neither guarantees a particular application latency.\n\n| Example setting | Plain meaning | Important limit |\n| --- | --- | --- |\n| CPU request 500m | Account for half a CPU unit | Not a promise of a particular requests/s rate |\n| Memory request 256Mi | Account for 256 mebibytes | Not a hard maximum of actual use |\n| CPU limit | Restrict allowed CPU consumption | Work can be throttled despite spare CPU elsewhere |\n| Memory limit | Bound memory under runtime enforcement | Exceeding the effective allowance can lead to termination |\n\nIn a manifest, 256Mi is one quantity string. A mebibyte is 1,048,576 bytes, so this request represents 268,435,456 bytes. Actual working memory depends on the program, concurrency, libraries, and input.\n\nSuppose note reads are cheap but export compression needs CPU. A very low CPU limit can make exports slow. A low memory allowance can restart the process on ordinary large inputs; starting it again does not restore private memory.\n\nMeasure representative startup and peak behavior, leave appropriate headroom, and inspect termination/throttling evidence. Increasing every resource field blindly may hide the bottleneck or make Pods unschedulable."
+    },
+    {
+      "id": "probes",
+      "title": "Ask three different health questions",
+      "markdown": "A probe is useful only when its failure causes the right action.\n\n| Check | Question | Intended consequence of failure |\n| --- | --- | --- |\n| Startup | Has initialization completed? | Repeated failure at the threshold kills the container subject to restart policy |\n| Readiness | Is it suitable for intended new traffic? | Remove ordinary ready-endpoint eligibility; does not itself request restart |\n| Liveness | Is it stuck in a way restart should repair? | Threshold failure can trigger container restart |\n\nWhile a configured startup probe has not succeeded, it gates liveness and readiness checks. That allowance is finite, not permission to remain stuck forever.\n\nUse a process deadlock as a possible liveness case. A brief shared-database outage is different: restarting every dependent application can add load without fixing the database. Choose bounded degradation/readiness behavior for the actual service contract.\n\nKeep checks inexpensive and specific. Endpoint changes propagate, so readiness is not an instant recall of in-flight traffic. A healthy probe also does not prove the correct note reaches the correct user. Test a representative user journey alongside health state."
+    },
+    {
+      "id": "scaling",
+      "title": "Autoscaling is a feedback loop with delays",
+      "markdown": "HPA means Horizontal Pod Autoscaler. It uses configured metrics and policy to adjust desired replicas; the controller does not instantly create ready application capacity.\n\n| Simplified CPU example | Value |\n| --- | --- |\n| Current eligible Pods | 3 |\n| Average use relative to CPU requests | 80% |\n| Target | 60% |\n| Proportional suggestion | 3 × 80 / 60 = 4 Pods |\n\nReal HPA behavior also includes bounds, tolerance, missing metrics, readiness, and stabilization rules. The arithmetic is an illustration, not an exact forecast of the next control decision.\n\n~~~text\nmetric observed → desired count changed → Pod scheduled → image starts → ready\n                    this number alone is not added serving capacity\n~~~\n\nIf suitable node capacity is absent, desired replicas can rise while useful capacity stays flat. Node scaling is related but separate. CPU can also be a poor signal for workers waiting on a slow dependency while job age grows.\n\nChoose metrics that reflect the bottleneck and install the required metrics infrastructure. Keep admission bounded and check shared dependencies: more workers can overload one database instead of helping users."
+    },
+    {
+      "id": "rollout",
+      "title": "Keep enough working capacity while replacing a version",
+      "markdown": "A Deployment rolling update controls overlap between old and new Pods. Two useful settings express how many extra Pods may be created and how many desired Pods may be unavailable during replacement. With three desired replicas, allowing one extra and no planned unavailability can require capacity for a fourth Pod while a new version proves ready.\n\nThat policy does not guarantee zero failed requests. Existing connections, readiness propagation, abrupt failures, and application shutdown behavior still matter. Stop new traffic to a retiring instance, handle in-flight work within a bounded grace period, and ensure repeated work cannot corrupt results. Queue workers should not acknowledge uncompleted jobs just because termination has begun.\n\nBefore releasing a schema change, verify that overlapping versions can both operate correctly. Retaining an old image is insufficient if new data is incompatible with it. Observe a small representative save-and-read path, errors, latency, and resource pressure while the rollout progresses. A deployment controller cannot automatically judge whether a changed note belongs to the correct user."
+    },
+    {
+      "id": "failure",
+      "title": "Distinguish disruption controls from recovery guarantees",
+      "markdown": "Suppose a node is deliberately drained for maintenance. A PodDisruptionBudget can help constrain supported voluntary disruptions so too many replicas are not intentionally removed at once. It does not prevent a machine from failing unexpectedly or guarantee that another node has capacity to run replacements. Spread replicas across meaningful failure domains when the availability requirement calls for it.\n\nSuppose instead that a bad credential rotation breaks every new Pod. Adding replicas only adds more broken instances. Inspect configuration references, permissions, application startup errors, readiness, and the timing of the change. Restore or repair access through the established secret workflow; never paste credentials into a public incident log to make troubleshooting easier.\n\nFor an out-of-memory restart, check termination reason and memory growth under a representative workload. For CPU-related latency, inspect throttling and workload concurrency. For a scaling failure, compare desired versus ready replicas and scheduling events. The useful diagnosis connects the observed symptom to the specific control that could explain it."
+    },
+    {
+      "id": "practice",
+      "title": "Make a small operational review before a big diagram",
+      "markdown": "For the notes app, write a seven-line operational plan: configuration source, credential source, measured resource baseline, startup condition, readiness condition, liveness-restart condition, and rollout/rollback checks. Then add the autoscaling signal only if there is a workload reason. This is more valuable than copying a long manifest with unexplained numbers.\n\nUse a safe local or isolated test environment to rehearse one failure at a time. A missing configuration should produce a visible startup failure. A slow startup should not be mistaken for a dead process. A readiness failure should stop ordinary new traffic as the endpoint update propagates. A worker termination should leave uncompleted work recoverable. Record observed results and the limits of the environment.\n\nIn an interview, explain what each control measures, what action follows, and what it cannot prove. You are ready for more platform detail when you can connect these controls back to user-visible behavior. Managed Kubernetes and application platforms can automate setup, but they do not remove the need to understand resource demand, authority, compatibility, and recovery."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "probe-actions",
+      "title": "Three checks lead to different operational decisions",
+      "source": "flowchart LR\nS[Startup check] -->|Startup succeeds| R[Begin normal readiness and liveness checks]\nS -->|Failure threshold reached| K[Kill container and apply restart policy]\nR --> P[Readiness check]\nR --> L[Liveness check]\nP -->|Not ready| E[Remove ordinary traffic eligibility]\nL -->|Failure threshold reached| X[Restart container]\nP -->|Ready| T[Eligible for intended traffic]",
+      "caption": "Simplified probe responsibilities. Exact timing and thresholds are configured, and endpoint changes propagate asynchronously.",
+      "steps": [
+        "Allow a slow application to establish its startup condition.",
+        "Use readiness to decide traffic eligibility.",
+        "Use liveness only for a condition where restart is the intended response.",
+        "Validate the actual user path separately."
+      ],
+      "sectionId": "probes"
+    },
+    {
+      "id": "hpa-loop",
+      "title": "A desired replica can be blocked before it serves traffic",
+      "sectionId": "scaling",
+      "source": "flowchart LR\nM[Observe configured metric] --> H[HPA chooses desired count within policy]\nH --> S{Suitable node capacity?}\nS -->|No| P[Pod remains Pending and capacity unchanged]\nS -->|Yes| I[Fetch image and start workload]\nI --> R{Readiness passes?}\nR -->|No| W[Not ordinary ready traffic capacity]\nR -->|Yes| C[Observe useful serving capacity]\nC --> M",
+      "caption": "This shows stages and possible delays, not exact controller internals. Scaling is useful only when workload and downstream limits allow the extra Pods to help.",
+      "steps": [
+        "Measure the intended workload signal.",
+        "Adjust desired replicas under the configured policy.",
+        "Check scheduling and readiness before counting capacity.",
+        "Verify user outcomes and shared dependencies after scale-out."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Three Pods average 80% CPU-request utilization with a 60% target. Calculate the simplified desired count, then name two reasons four ready Pods may not appear immediately. Separately, explain why a brief database outage should not automatically make every liveness probe restart its application.",
+    "rubric": [
+      "Compute 3×80/60=4 before additional controller behavior.",
+      "Name capacity/scheduling, metric delay, image pull, startup, or readiness delays.",
+      "A restart must be tied to a condition it can usefully fix; shared dependency outages can cause restart storms."
+    ],
+    "solution": "The simplified proportional calculation gives 4 replicas. Metrics/control-loop delay, unavailable node resources, image fetching, startup, and readiness all delay actual capacity. HPA policy may also stabilize or bound changes. A database outage is not necessarily a dead application process; restarting every dependent process can discard useful state and increase load without restoring the database. Use bounded readiness/degradation behavior and liveness criteria that justify restart, while monitoring the actual failure."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Base64-encoded Secret data is…",
+      "options": [
+        "Automatically encrypted and fully protected",
+        "Encoded; access and storage protection still matter",
+        "Impossible to log accidentally"
+      ],
+      "answer": "Encoded; access and storage protection still matter",
+      "explanation": "Encoding changes representation; it does not provide confidentiality."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A readiness failure normally means…",
+      "options": [
+        "The container must always restart immediately",
+        "The endpoint should not receive ordinary new traffic while not ready",
+        "The database has been backed up"
+      ],
+      "answer": "The endpoint should not receive ordinary new traffic while not ready",
+      "explanation": "Readiness and liveness have different intended actions."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "HPA increasing desired replicas proves capacity increased.",
+      "options": [
+        "True",
+        "False",
+        "Only for four replicas"
+      ],
+      "answer": "False",
+      "explanation": "Scheduling, resources, startup, and readiness determine whether replicas become useful capacity."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can a low CPU limit cause latency even when a node seems underused?",
+      "answer": "The workload can be throttled at its configured container CPU limit despite capacity elsewhere. Inspect actual throttling and representative demand rather than assuming node averages describe each container.",
+      "explanation": "The workload can be throttled at its configured container CPU limit despite capacity elsewhere. Inspect actual throttling and representative demand rather than assuming node averages describe each container."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What must be checked before rolling back a new image?",
+      "answer": "Whether old code remains compatible with newly written data/configuration and whether the old path can still operate safely, not just whether the old image is available.",
+      "explanation": "Whether old code remains compatible with newly written data/configuration and whether the old path can still operate safely, not just whether the old image is available."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "ConfigMap versus Secret?",
+      "back": "Ordinary settings versus intended sensitive settings; effective protection still needs policy."
+    },
+    {
+      "front": "Requests versus limits?",
+      "back": "Requests guide scheduling/accounting; limits bound consumption according to resource behavior."
+    },
+    {
+      "front": "Readiness versus liveness?",
+      "back": "Traffic eligibility versus whether a restart is warranted."
+    },
+    {
+      "front": "Autoscaling delay sources?",
+      "back": "Metrics, controller action, available nodes, scheduling, image/startup time, and readiness."
+    },
+    {
+      "front": "Rollout evidence?",
+      "back": "Ready capacity plus correct representative user outcomes and compatible recovery."
+    }
+  ],
+  "mentalModel": "For every operational control, name the condition it observes, the action it takes, and the user guarantee it still cannot prove.",
+  "sources": [
+    {
+      "title": "Kubernetes — ConfigMaps",
+      "url": "https://kubernetes.io/docs/concepts/configuration/configmap/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Secrets",
+      "url": "https://kubernetes.io/docs/concepts/configuration/secret/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Resource management",
+      "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Startup, readiness, and liveness probes",
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/probes/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Horizontal Pod Autoscaling",
+      "url": "https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Deployment updates",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Voluntary and involuntary disruptions",
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/disruptions/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "pod-health-lifecycle",
+      "title": "Running, ready, and restart-worthy are different observations",
+      "sectionId": "probes",
+      "intro": "A notes Pod loads configuration at startup. Its readiness check depends on a required service; its liveness check tests a local condition a restart can repair.",
+      "steps": [
+        {
+          "title": "Initialize within the startup allowance",
+          "explanation": "The container is running but still loading configuration. Startup has not succeeded, so normal readiness/liveness checks remain gated.",
+          "state": [
+            {
+              "label": "Process",
+              "value": "Running"
+            },
+            {
+              "label": "Startup",
+              "value": "Not yet successful"
+            },
+            {
+              "label": "TrafficEligibility",
+              "value": "Not ready"
+            }
+          ]
+        },
+        {
+          "title": "Become ready",
+          "explanation": "Initialization succeeds. The app passes readiness and can join ordinary traffic as endpoint state propagates.",
+          "state": [
+            {
+              "label": "Startup",
+              "value": "Succeeded"
+            },
+            {
+              "label": "Readiness",
+              "value": "Pass"
+            },
+            {
+              "label": "Liveness",
+              "value": "Pass"
+            },
+            {
+              "label": "TrafficEligibility",
+              "value": "Eligible after propagation"
+            }
+          ]
+        },
+        {
+          "title": "Lose a required dependency briefly",
+          "explanation": "Readiness fails under this chosen contract. The local process remains healthy, so the liveness check does not demand restart.",
+          "state": [
+            {
+              "label": "Readiness",
+              "value": "Fail"
+            },
+            {
+              "label": "Liveness",
+              "value": "Pass"
+            },
+            {
+              "label": "Action",
+              "value": "Remove ordinary new-traffic eligibility"
+            },
+            {
+              "label": "InFlightWork",
+              "value": "Still needs bounded handling"
+            }
+          ]
+        },
+        {
+          "title": "Recover and verify",
+          "explanation": "The dependency recovers, readiness passes, and the normal path is verified before treating the incident as resolved.",
+          "state": [
+            {
+              "label": "Readiness",
+              "value": "Pass"
+            },
+            {
+              "label": "RestartCount",
+              "value": "Unchanged in this scenario"
+            },
+            {
+              "label": "Evidence",
+              "value": "Permitted save and read work again"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Health checks decide specific actions. Keep restart, traffic eligibility, desired replica count, and correct user behavior as separate observations."
+    }
+  ]
+}

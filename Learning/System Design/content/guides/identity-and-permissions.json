@@ -1,0 +1,277 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 12,
+  "title": "Authentication, authorization, and tenant boundaries",
+  "level": "intermediate",
+  "minutes": 45,
+  "id": "identity-and-permissions",
+  "summary": "Follow a private-note request through identity and permission checks, then extend the same reasoning to shared workspaces.",
+  "objectives": [
+    "Separate proving identity from deciding permissions.",
+    "Locate object-level authorization on the server.",
+    "Explain session handling and tenant boundaries in a design."
+  ],
+  "terms": [
+    {
+      "term": "Authentication",
+      "definition": "Establishing who or what is making a request, using a supported identity mechanism."
+    },
+    {
+      "term": "Authorization",
+      "definition": "Deciding whether that identity may perform this action on this resource now."
+    },
+    {
+      "term": "Session",
+      "definition": "A way to associate later requests with a previously established login or identity context."
+    },
+    {
+      "term": "Tenant",
+      "definition": "A customer or organizational boundary whose data and permissions must be isolated from others."
+    },
+    {
+      "term": "Least privilege",
+      "definition": "Granting only the access needed for the intended task."
+    }
+  ],
+  "retrieval": [
+    "Which parts of an API request come from an untrusted client?",
+    "Why can an application cache return a different result than the database?"
+  ],
+  "sections": [
+    {
+      "id": "story",
+      "title": "Knowing your name is not permission to read everything",
+      "markdown": "Pocket Notes stores private notes. Alice signs in and opens her note. Bob also has a legitimate account. Both are authenticated users, but that does not mean Bob may read Alice's content. Authentication answers who is requesting; authorization answers whether this request is allowed.\n\nImagine a library desk. Showing a membership card establishes an identity or membership status. It does not let you enter the staff room or inspect another member's borrowing history. The analogy is useful for separating the questions, but software must enforce the decision on every relevant server operation rather than trusting politeness.\n\nIn an interview, begin with the assets and actions: read a private note, edit a shared note, invite a teammate, export a workspace. Then identify who may perform each action and which boundaries must hold. Adding the word “authentication” to a box does not specify those policies."
+    },
+    {
+      "id": "session",
+      "title": "A login establishes context for later requests",
+      "markdown": "A common web approach establishes a server-side session after a supported login flow and gives the browser a session identifier in a cookie. Later requests present that identifier so the server can find the identity context. The identifier is sensitive: possession may allow another party to use the session.\n\nUse established identity/session libraries or providers rather than inventing cryptography. A production design needs secure transport, appropriate Secure and HttpOnly cookie flags, an intentional SameSite policy, session expiration, and invalidation after logout or relevant security changes. HttpOnly limits access from browser scripts; it does not make a stolen session harmless or prevent every browser attack.\n\nCookie-authenticated state-changing requests also need an intentional cross-site request forgery defense. SameSite behavior, origin checks, and anti-CSRF tokens can be part of that design. The correct combination depends on the application's flows. For this lesson, understand that the browser can attach cookies automatically, so “a cookie was present” is not sufficient evidence that the user intended every action."
+    },
+    {
+      "id": "check",
+      "title": "Check the action and object on the server",
+      "markdown": "A logged-in Bob requests GET /notes/42. The server must evaluate **this actor, this action, and this object** under current policy.\n\n| Request context | Policy fact | Decision |\n| --- | --- | --- |\n| Alice reads her private note | Alice owns it | Allow the read |\n| Bob reads Alice's private note | No sharing grant | Deny |\n| Workspace viewer requests an update | Viewer has read permission only | Deny the update |\n| Workspace editor requests an update | Current edit grant applies | Allow within that grant |\n\nThe backend can load the object and check permission, or query directly within an authorized scope. Either way, changing the identifier in the URL must not bypass the decision. Random IDs reduce easy guessing; they do not create authorization.\n\nHiding an Edit button only changes the interface. A caller can construct the API request. Check workers, downloads, exports, and secondary APIs too.\n\nWhen a required permission is absent or cannot be established, do not invent a grant. The product can return an appropriate forbidden or unavailable result without exposing another user's private object details."
+    },
+    {
+      "id": "tenant",
+      "title": "Carry the boundary through queries, caches, and jobs",
+      "markdown": "NorthCo and SouthCo may each have a note numbered 42. The database and cache must not confuse those namespaces.\n\n~~~text\nUnsafe shared key:  note:42\nScoped identity:    tenant:north / note:42\nDifferent object:  tenant:south / note:42\n~~~\n\nAdding a tenant string to a key prevents a naming collision only if the tenant context is trustworthy. Validate membership against the authenticated identity; do not accept an arbitrary browser-supplied tenantId as permission.\n\n| Boundary | Context to preserve |\n| --- | --- |\n| Database query | Authorized tenant and object scope |\n| Cache lookup | Tenant plus relevant representation/permission scope |\n| Background export | Trusted job origin, tenant, allowed action, and resource scope |\n| Audit event | Actor, action, resource reference, outcome, correlation identity |\n\nAn export that says “tenant 8” still needs a legitimate origin and suitable service authority. The number is data, not a capability by itself.\n\nLogs are another data store. Retain enough context to investigate a decision while excluding credentials and unnecessary note bodies. Apply access and retention controls to the audit trail itself."
+    },
+    {
+      "id": "changes",
+      "title": "Permissions change while systems keep running",
+      "markdown": "Alice removes Bob from a workspace. If a permission cache lasts an hour without invalidation, Bob might keep access longer than the product allows. Decide the revocation requirement and choose cache expiry, invalidation, or an authoritative check accordingly. “We cached permissions” is a performance choice with security consequences.\n\nA practical test matrix includes Alice reading her note, Bob being denied, an editor updating a shared note, a viewer being denied an update, a removed member being denied, and one tenant trying another tenant's identifier. Test APIs directly as well as screens. Authorization tests should target forbidden transitions and data boundaries, not just successful logins.\n\nYou do not need to design a complete identity provider in a general system-design interview. State which established component handles login, show where identity is verified, and explain the server-side policy for each sensitive operation. Security belongs on the normal request path, not as an unexplained box added after the architecture is finished."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "private-read",
+      "title": "Identity and permission are separate decisions",
+      "source": "flowchart LR\nB[Browser requests note 42] --> S[Resolve trusted session]\nS --> P[Check read permission for actor and note]\nP -->|Allowed| Q[Query authorized data]\nP -->|Denied| D[Return safe denial]\nQ --> R[Return private note]",
+      "caption": "The client-supplied note identifier selects a resource; it does not prove access to that resource.",
+      "steps": [
+        "Establish the requester identity.",
+        "Resolve the resource and tenant context.",
+        "Evaluate permission for this specific action.",
+        "Return data only after a valid authorization decision."
+      ],
+      "sectionId": "check"
+    },
+    {
+      "id": "tenant-boundary",
+      "title": "Carry verified scope through every data access path",
+      "sectionId": "tenant",
+      "source": "flowchart LR\nR[Request with claimed tenant and note] --> I[Verify caller identity]\nI --> P[Validate tenant membership and action]\nP --> Q[Scoped database lookup]\nP --> C[Scoped cache lookup]\nP --> J[Authorized job reference]\nQ --> O[Return only permitted content]\nC --> O\nJ --> W[Worker rechecks required trusted scope]",
+      "caption": "Scope must come from validated policy, not a caller-controlled string. Caches and jobs retain permission obligations rather than replacing them.",
+      "steps": [
+        "Establish the caller identity.",
+        "Validate the requested tenant and action.",
+        "Use that verified scope in database, cache, and job paths.",
+        "Protect secondary reads and recorded results under the same policy."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Design the checks for PATCH /workspaces/8/notes/42. Include a logged-in viewer, an editor, a removed member, and a member of another workspace. Explain how a stale permission cache could undermine the policy.",
+    "rubric": [
+      "Identity and action-specific authorization are distinct.",
+      "Workspace and note ownership/membership are checked together.",
+      "Revocation and caching assumptions are stated."
+    ],
+    "solution": "Resolve the trusted session, validate the workspace context against current membership, verify that note 42 belongs to workspace 8, and require a role permitting the update. A viewer, removed member, or unrelated workspace member must be denied even if they know the URL. An editor may proceed subject to normal input/version checks. A stale permission cache can continue granting removed access; use a revocation/invalidation or short-lived authoritative-check policy that meets the product requirement. Client button visibility is not the security boundary."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A logged-in user may automatically read every private note?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if note IDs are random"
+      ],
+      "answer": "No",
+      "explanation": "Authentication establishes identity; authorization determines access to the specific object and action."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Where must the edit permission be enforced?",
+      "options": [
+        "Only by hiding the Edit button",
+        "On the server handling the operation",
+        "Only in CSS"
+      ],
+      "answer": "On the server handling the operation",
+      "explanation": "Clients can construct direct requests without using the intended interface."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A browser-provided tenantId proves membership?",
+      "options": [
+        "Yes",
+        "No",
+        "Only when sent as JSON"
+      ],
+      "answer": "No",
+      "explanation": "Tenant context must be derived or validated against trusted identity and policy."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might caching permissions delay revocation?",
+      "answer": "A cached allow decision can outlive the membership or role that justified it; define invalidation and acceptable revocation timing.",
+      "explanation": "A cached allow decision can outlive the membership or role that justified it; define invalidation and acceptable revocation timing."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Name two ways a correct main-screen check can still leak private data.",
+      "answer": "An export or background-job endpoint may omit authorization, or a cache key may mix tenant/private representations; every relevant data path needs its boundary enforced.",
+      "explanation": "An export or background-job endpoint may omit authorization, or a cache key may mix tenant/private representations; every relevant data path needs its boundary enforced."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Authentication?",
+      "back": "Establish the requester identity."
+    },
+    {
+      "front": "Authorization?",
+      "back": "Decide whether this actor may do this action on this resource now."
+    },
+    {
+      "front": "Random object IDs replace permission checks?",
+      "back": "No; hard-to-guess names are not an authorization policy."
+    },
+    {
+      "front": "Tenant context from the client?",
+      "back": "Validate it against trusted identity and membership."
+    },
+    {
+      "front": "Permission cache risk?",
+      "back": "Stale allow decisions can outlive revoked access."
+    }
+  ],
+  "mentalModel": "For every sensitive operation ask: who, which action, which object, which tenant, and why allowed now?",
+  "sources": [
+    {
+      "title": "OWASP — Authorization Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "OWASP — Session Management Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "same-number-two-tenants",
+      "title": "The same note number can name different private objects",
+      "sectionId": "tenant",
+      "intro": "Mina belongs to NorthCo only. Both organizations have a local note 42; the server derives the permitted organization from verified membership.",
+      "steps": [
+        {
+          "title": "Establish the caller context",
+          "explanation": "The authenticated session identifies Mina. Membership allows NorthCo, not SouthCo.",
+          "state": [
+            {
+              "label": "Actor",
+              "value": "Mina"
+            },
+            {
+              "label": "AllowedTenant",
+              "value": "NorthCo"
+            },
+            {
+              "label": "RequestedObject",
+              "value": "note 42"
+            }
+          ]
+        },
+        {
+          "title": "Build a scoped lookup",
+          "explanation": "The application looks up the NorthCo note and cache representation. The number 42 alone is insufficient.",
+          "state": [
+            {
+              "label": "DatabaseScope",
+              "value": "tenant = NorthCo, note = 42"
+            },
+            {
+              "label": "CacheKey",
+              "value": "tenant:north:note:42"
+            },
+            {
+              "label": "Candidate",
+              "value": "NorthCo note"
+            }
+          ]
+        },
+        {
+          "title": "Challenge a changed tenant field",
+          "explanation": "A request now claims SouthCo with the same note number. The server re-evaluates membership before accessing private data.",
+          "state": [
+            {
+              "label": "ClaimedTenant",
+              "value": "SouthCo"
+            },
+            {
+              "label": "VerifiedMembership",
+              "value": "NorthCo only"
+            },
+            {
+              "label": "Decision",
+              "value": "No SouthCo access"
+            }
+          ]
+        },
+        {
+          "title": "Keep the denial bounded",
+          "explanation": "The response does not return SouthCo’s note or sensitive existence details. An audit event records the attempted boundary crossing.",
+          "state": [
+            {
+              "label": "ReturnedContent",
+              "value": "No private SouthCo note"
+            },
+            {
+              "label": "Audit",
+              "value": "Actor, action, scoped reference, denial"
+            },
+            {
+              "label": "Authority",
+              "value": "Server-side policy"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Authentication identifies the caller. Authorization binds that caller to an action and scoped resource across every path that can return data."
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+{
+  "id": "036",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Separate atomicity, consistency, isolation, and durability.",
+    "Place related state changes in one transaction boundary.",
+    "Explain why an atomic transaction can still admit a concurrency anomaly.",
+    "Distinguish database commit from external side effects and client observation."
+  ],
+  "retrieval": [
+    "From L032: why must all writers face the invariant?",
+    "From L027: can a lost response prove that a database write failed?"
+  ],
+  "sections": [
+    {
+      "id": "atomicity",
+      "title": "A reservation is more than one statement",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, worked transaction 8, exercise 10, questions 10, review 4. Creating a reservation may decrement available stock and insert a reservation row. If the first statement persists and the process stops before the second, the store loses stock without a record of who owns it. If the insertion succeeds alone, a reservation exists without consuming stock. The business operation needs an all-or-nothing boundary for these related changes.\n\nAtomicity means the transaction's database effects commit together or do not remain as a partial committed result. Consistency in ACID concerns preserving the rules the database and application actually enforce; the database cannot infer a missing business invariant. Isolation governs interactions among concurrent transactions. Durability concerns committed data surviving the failures covered by the system's persistence contract and configuration.\n\nThese are separate properties. A perfectly atomic operation can make the wrong decision from a concurrent history. A transaction can be isolated while its storage configuration does not meet a desired power-loss guarantee. Saying “the database is ACID” is a starting point for questions, not a complete correctness argument."
+    },
+    {
+      "id": "pattern",
+      "title": "Make the conditional change part of the transaction",
+      "markdown": "A PostgreSQL-oriented reservation pattern begins with a conditional stock update, then records the reservation only if one row was changed:\n\n~~~sql\nBEGIN;\nUPDATE inventory\nSET available = available - :requested\nWHERE tenant_id = :tenant AND sku = :sku\n  AND available >= :requested;\n-- Application checks exactly one affected row; otherwise ROLLBACK.\nINSERT INTO reservations(tenant_id, reservation_id, sku, quantity, owner_id)\nVALUES (:tenant, :reservation_id, :sku, :requested, :owner);\nCOMMIT;\n~~~\n\nThe requested quantity must be a validated positive value, and constraints provide a further defense. The actor and tenant derive from authorized context. Treat a zero-row update as no reservation, not as permission to continue inserting. The comment is a required application branch, so this snippet is a pattern sketch rather than a copy-and-run transaction script.\n\nIf the insert fails, rollback restores the stock decrement. If commit succeeds but the response is lost, the operation may already exist. Retrying the entire create blindly is a separate problem requiring the operation identity from L027 and the later persistent idempotency design. Atomicity does not make uncertain client observation disappear."
+    },
+    {
+      "id": "isolation",
+      "title": "Two individually reasonable transactions can disagree",
+      "markdown": "Consider a lab that must keep at least one trained supervisor on duty. Alice and Bob are both on duty. Transaction A counts two supervisors and marks Alice off duty. Concurrent transaction B sees the same original count and marks Bob off duty. Each transaction can commit all of its own changes atomically while the final state has no supervisor.\n\nThe problem is the relationship between the reads and writes across transactions, not a partially committed transaction. An isolation level or explicit coordination strategy must exclude that unsafe history. Updating different rows does not remove the conflict in business meaning. L038 analyzes this write-skew example using snapshots and serializable execution.\n\nDo not confuse “no dirty reads” with “all invariants hold.” A read of committed data may already be insufficient when another transaction makes a related decision concurrently. Write the invariant and a two-transaction history before selecting the required isolation behavior."
+    },
+    {
+      "id": "effects",
+      "title": "A database transaction is not a universal undo button",
+      "markdown": "Suppose a transaction sends an email through a remote provider and then rolls back. The email does not return to the sender's outbox merely because database state reverted. Conversely, committing a reservation and then crashing before sending the email leaves an accepted reservation without notification. The two effects cross separate authorities. Later outbox and workflow lessons handle this gap; do not claim that wrapping an HTTP call in BEGIN/COMMIT makes it atomic with the database.\n\nKeep transactions short and focused on the required invariant. Waiting for a person, sleeping for a retry delay, or making a slow optional network request while holding database locks retains resources and extends conflict windows. Do necessary preparation outside, then revalidate authoritative state inside the protected decision where required.\n\nDurability also has scope. A local committed write may survive process restart while still being vulnerable to losing the disk. A backup may lose the most recent interval. Synchronous replication, flush settings, hardware, and recovery tests determine stronger claims. Avoid asserting those guarantees from the SQL word COMMIT alone.\n\nCommon misconceptions: atomicity equals isolation; ACID consistency automatically understands the business; rollback reverses remote emails; a transaction makes every retry safe; long transactions are safer because they include more code. Optional practice: inject an exception between the stock update and reservation insert in the local relational lab and verify both tables, not only one."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "transaction",
+      "title": "The commit boundary joins two local effects",
+      "source": "sequenceDiagram\nparticipant A as Reservation application\nparticipant D as Database transaction\nA->>D: Begin\nA->>D: Conditional stock decrement\nD-->>A: One affected row\nA->>D: Insert reservation record\nalt All steps valid\nA->>D: Commit\nD-->>A: Committed\nelse Insert fails\nA->>D: Rollback\nD-->>A: No partial committed decrement\nend",
+      "caption": "The transaction covers these database writes. It does not cover an external email, and a lost commit response can leave the caller uncertain.",
+      "steps": [
+        "Make the stock condition part of the authoritative write.",
+        "Check whether the required row was changed.",
+        "Record the accepted reservation in the same transaction.",
+        "Commit together or rollback the local effects."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A checkout transaction decrements stock, calls an email provider, inserts an order, and commits. Identify an atomicity failure outside the database, an isolation question, and a resource-lifetime problem. Redraw the minimal local transaction and list the remaining external-effect requirement.",
+    "minutes": 10,
+    "rubric": [
+      "Recognizes email is not rolled back with database state.",
+      "Asks how competing stock decisions are protected.",
+      "Avoids slow remote calls while holding transaction resources.",
+      "Names the later durable delivery gap without pretending it is solved."
+    ],
+    "solution": "Email may be sent even if the order insert rolls back. Competing stock reservations need a conditional or otherwise protected decision. Waiting on the provider extends locks and transaction lifetime. Keep the authoritative stock decrement and order record together, checking acceptance. Separately require durable notification intent, duplicate handling, and recovery across commit/send failure windows; later outbox work supplies that mechanism."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Two transactions commit completely but jointly violate an invariant. Which property needs scrutiny?",
+      "options": [
+        "Only atomicity",
+        "Isolation and invariant enforcement",
+        "JSON encoding"
+      ],
+      "answer": "Isolation and invariant enforcement",
+      "explanation": "All-or-nothing local writes do not rule out unsafe concurrent decisions."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Database rollback automatically reverses an email already sent:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The provider is another authority outside the local transaction."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why must the affected-row count be checked?",
+      "answer": "A conditional update may change zero rows because the acceptance predicate failed; inserting a reservation anyway would bypass the condition.",
+      "explanation": "A successful SQL call is not necessarily a successful business transition."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What does a lost commit response imply?",
+      "answer": "The caller may not know whether commit succeeded; inspect the authoritative operation outcome or use a defined retry-safe identity.",
+      "explanation": "Do not infer rollback solely from transport failure."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why minimize transaction duration?",
+      "answer": "To reduce retained locks, connections, snapshot/resource pressure, and conflict windows while still covering the required invariant.",
+      "explanation": "Short does not mean splitting an invariant into unprotected pieces."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Atomicity?",
+      "back": "Related transaction effects commit together rather than partially."
+    },
+    {
+      "front": "Isolation?",
+      "back": "Rules governing interactions among concurrent transactions."
+    },
+    {
+      "front": "ACID consistency supplies business rules automatically?",
+      "back": "No; the rules must be encoded correctly."
+    },
+    {
+      "front": "Rollback covers remote effects?",
+      "back": "Not without a separate cross-authority protocol."
+    },
+    {
+      "front": "Zero affected rows can mean?",
+      "back": "The conditional business transition was not accepted."
+    },
+    {
+      "front": "COMMIT and caller knowledge?",
+      "back": "A commit may succeed even if its response is lost."
+    }
+  ],
+  "mentalModel": "A transaction joins local state changes; isolation protects their interaction, and external effects remain separate authorities.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Transactions",
+      "url": "https://www.postgresql.org/docs/18/tutorial-transactions.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

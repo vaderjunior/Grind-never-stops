@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "015",
+  "objectives": [
+    "Present only candidate material during the attempt.",
+    "Use the saved interview state and evidence-based debrief."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate session",
+      "markdown": "A customer reports that the new version of a notes website works on one laptop but fails on another. Both can browse other websites. Trace the request from name resolution to backend processing and ask for the observations needed to locate the fault. Defend one safe corrective action."
+    },
+    {
+      "id": "workflow",
+      "title": "How to use this assessment",
+      "markdown": "Open this assessment in the interview center. Choose coaching or exam mode. Ask clarifying questions before designing. Record your actual reasoning, pause if interrupted, and submit before opening the reference debrief. The engine stores timing, hints, turns, and feedback separately from this definition."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "minutes": 45,
+    "prompt": "A customer reports that the new version of a notes website works on one laptop but fails on another. Both can browse other websites. Trace the request from name resolution to backend processing and ask for the observations needed to locate the fault. Defend one safe corrective action.",
+    "rubric": [
+      "Scope the problem.",
+      "Trace the relevant mechanism.",
+      "Defend failures and alternatives."
+    ],
+    "solution": "Use the interview debrief after submission."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "A score needs evidence from your submitted reasoning.",
+  "sources": []
+}

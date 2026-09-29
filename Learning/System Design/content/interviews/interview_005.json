@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "interview_005",
+  "lessonId": "025",
+  "title": "Repair an API with blocking calls and unstable pagination",
+  "aliases": [
+    "L025",
+    "lesson_025",
+    "m03_debug"
+  ],
+  "modeType": "debugging",
+  "minutes": 45,
+  "brief": "An activity API declares an async handler, calls a synchronous reporting SDK inside it, and returns list pages ordered by created_at DESC using OFFSET. During a report request, unrelated lightweight requests stall. Users also see duplicated or missing entries while new activity arrives. Investigate both symptoms, show concrete traces, and propose a bounded repair using L021–024. You may ask for observations before deciding.",
+  "clarifications": [
+    {
+      "question": "What does the reporting SDK do?",
+      "answer": "It performs blocking network I/O for roughly two seconds on the handler’s event-loop thread. Its call has a configurable timeout but no asynchronous interface."
+    },
+    {
+      "question": "What runtime and load are involved?",
+      "answer": "One GIL-enabled CPython process runs one event loop for handlers. The lightweight endpoint uses cooperative I/O. CPU usage is low during the stall; there are no other service instances in this scenario."
+    },
+    {
+      "question": "What is the activity ordering and page size?",
+      "answer": "created_at descending, page size two for the example. Several events may have the same timestamp. First page IDs are E,D from order E,D,C,B,A."
+    },
+    {
+      "question": "What changed between pages?",
+      "answer": "A new F was inserted before E. The next request still uses OFFSET 2. No snapshot is promised."
+    },
+    {
+      "question": "Which guarantees should the revised pagination provide?",
+      "answer": "Continue older immutable-created-time activity without shifting from newly inserted earlier rows. Exact snapshots under editing are out of scope; every item has a unique immutable ID."
+    },
+    {
+      "question": "What bounds may the SDK path use?",
+      "answer": "At most four SDK calls may be active. The product accepts a clear overload response when that path is full; do not retain unbounded waiting requests."
+    }
+  ],
+  "hints": [
+    "An async function can still execute a synchronous blocking call. Trace which thread is occupied.",
+    "Write the new ordered list after inserting F, then count exactly two skipped positions.",
+    "A cursor needs every ordering field and a unique tie-breaker; a semaphore needs an admission policy around its waiters."
+  ],
+  "changes": [
+    "The team proposes launching a task per request and putting a four-slot semaphore inside each task. What remains unbounded?",
+    "A user cancels while the SDK function runs in a thread. Can you promise that the function stops immediately?",
+    "The product changes ordering to a mutable popularity score. Which pagination promise must be revisited?"
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "The synchronous SDK blocks the only event-loop thread, so unrelated handlers cannot progress despite low CPU. Use an appropriate async SDK if available; here use a bounded thread execution path with an SDK timeout and explicit admission/rejection, while acknowledging that cancellation of the await does not stop an already running thread function. Do not call CPU parallelism a necessary explanation. Original list E,D,C,B,A returns E,D. After insertion F,E,D,C,B,A, OFFSET 2 returns D,C, duplicating D. Add a deterministic total order (created_at DESC,id DESC) and a cursor from the last returned pair; continue with created_at < last_time OR equal time and id < last_id, same filter and order, validated bounded page size. Opaque tokens remain untrusted and do not authorize objects. Newer inserts no longer shift the cursor, but mutable scores can move items across the boundary; a snapshot or weaker contract is needed. Test with controlled blocking/progress evidence, full admission slots, injected exceptions, tied timestamps, insertion, and deleted anchor. No database query-plan expertise beyond upcoming M04 is required.",
+  "debrief": "Separate diagnosis evidence for the two symptoms. A strong answer does not blame CPU merely because requests stall and does not call cursors a snapshot guarantee. Record the candidate’s exact trace and its changed-requirement response. Evaluate full rubric dimensions at this early debugging scope; do not demand unrelated replicas or broker mechanisms.",
+  "remediation": [
+    "021",
+    "022",
+    "023",
+    "024"
+  ]
+}

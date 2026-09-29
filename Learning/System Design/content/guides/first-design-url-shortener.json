@@ -1,0 +1,273 @@
+{
+  "id": "first-design-url-shortener",
+  "title": "A guided walkthrough: how familiar blocks fit together",
+  "version": 2,
+  "week": 8,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Combine requests, saved rows, uniqueness, caching, and safe retries into one small short-link service for public photo notes.",
+  "objectives": [
+    "Clarify a small product before drawing components.",
+    "Define create and redirect requests with stored data.",
+    "Trace a collision and a repeated create without overwriting accepted links.",
+    "Explain one optional cache and its failure boundary."
+  ],
+  "terms": [
+    {
+      "term": "Short code",
+      "definition": "The compact identifier included in a shortened link."
+    },
+    {
+      "term": "Redirect",
+      "definition": "An HTTP response telling the browser to request another address."
+    },
+    {
+      "term": "Collision",
+      "definition": "Two attempts choose the same short code for different mappings."
+    },
+    {
+      "term": "Unique constraint",
+      "definition": "A database rule rejecting duplicate values for a selected key."
+    },
+    {
+      "term": "Operation ID",
+      "definition": "A stable identifier for one intended create action across retries."
+    }
+  ],
+  "retrieval": [
+    "How does an index help retrieve one record by key?",
+    "Why does a new operation ID on every retry make duplicate recognition difficult?"
+  ],
+  "sections": [
+    {
+      "id": "scope",
+      "title": "Start with the small product you can finish explaining",
+      "markdown": "Maya wants a short link for a public photo note so she can share it on a printed poster. The original address is long. Our service should accept a valid web destination, create a short code, and send later visitors to the saved destination. This is a gentle, optional guided walkthrough using the blocks from the previous weeks. It is not a timed interview: follow the example with the diagram open, pause at each step, and use the explanations whenever you need them.\n\nClarify the first version: destinations are public HTTP or HTTPS addresses; mappings do not change after creation; custom names, expiry, private sharing, detailed analytics, and global deployment are outside this exercise. Knowing the short code is not authorization to view a private destination. The destination service still controls its own access.\n\nThink of a coat-check ticket whose number leads to a stored location. The ticket number is useful because a record connects it to the right thing. The analogy ends at security: a short code is not inherently a secret, and redirecting a browser is not the same as transferring ownership of a physical item.\n\nAssume 100 creates and 10,000 redirects each day for this teaching version. Redirects dominate the count. These small illustrative rates do not force several machines; we still measure real operation cost and consider outages. Start with one application and one persistent database so the complete behavior is easy to trace."
+    },
+    {
+      "id": "data",
+      "title": "Describe the requests and the stored promise",
+      "markdown": "Our starting contract has two requests and one persistent mapping.\n\n| Request | Input | Accepted result |\n| --- | --- | --- |\n| POST /links | Public HTTP(S) destination and client-scoped operation ID | Stored unique code and short address |\n| GET /k7p2 | The code in the path | Redirect to its saved destination, or an honest lookup error |\n\nThe links table retains code, destination_url, and creation identity. A unique code cannot silently change to a different destination. Duplicate creation identities must match their original input and resolve through a protected acceptance path.\n\nFor example:\n\n~~~text\ncode:          k7p2\ndestination:   https://photos.example/public/garden\ncreateIntent:  client7/request19\n~~~\n\nVisiting the short code yields HTTP 302 with a Location header containing the saved destination. The browser makes a **second request** to that address. The shortener need not fetch the page itself just to redirect.\n\nIf an authoritative lookup succeeds and finds no code, report not found. If the database cannot be reached, report unavailable or an appropriate error: inability to look up the mapping is not evidence that it is absent. Validate allowed destination schemes at creation, and remember that the destination still enforces access to its own content."
+    },
+    {
+      "id": "paths",
+      "title": "Follow the two things that can repeat",
+      "markdown": "There are two different repeats to handle. Keep their identities separate.\n\n| Situation | Same or different intention? | Protected decision |\n| --- | --- | --- |\n| Two creates choose code k7p2 | Different mappings want one public key | Unique code constraint; generate a new candidate for the loser |\n| The caller repeats one create after a lost reply | Several attempts at one intended mapping | Resolve the same operation ID and compatible input |\n| An old operation ID arrives with a different destination | Ambiguous or conflicting reuse | Reject or apply an explicit conflict contract |\n\nThe unique constraint prevents replacing an existing link during a collision. Retrying candidate generation is bounded; a rare conflict should be handled, not hidden by overwriting someone else's destination.\n\nFor client retries, duplicate detection and the accepted mapping belong in one protected database workflow. If the first attempt committed, return its existing code. A new random code for every network attempt would create several mappings for one intent.\n\n**Interview phrasing:** “The code identifies the public mapping; the operation ID identifies the creation intent. I enforce both meanings separately.”\n\nTest both conditions deliberately. Force the generator to propose an occupied code, then an unused code. Separately repeat one creation identity with matching input and inspect the returned mapping. These are proposed learner checks, not a claim that an unimplemented shortener has passed them."
+    },
+    {
+      "id": "growth",
+      "title": "Add a cache only when it solves measured work",
+      "markdown": "If redirects become a measured database burden, cache code-to-destination mappings. A hit can return a permitted immutable mapping; a miss queries the database and fills the copy. The database remains the saved source of truth. A cold or failed cache increases database work, so measure that path too.\n\nOur no-edit, no-expiry scope makes cached successful mappings easier to reason about. If a later requirement adds deletion, abuse takedown, or expiry, revisit freshness before continuing to serve old cached redirects. Requirements change what a previously acceptable optimization may promise.\n\nDo not put a queue between a visitor and every redirect merely because we learned queues. The visitor needs the destination now. Optional analytics could become background work later, but it is not necessary for this first release. Likewise, load balancing can be added when capacity or availability needs justify multiple app copies, without changing the key mapping contract.\n\nFinish by explaining the whole design in order: one user need, two operations, one table, create acceptance, redirect lookup, and two failure examples. Name the one-server outage limit and the uncertain-response retry behavior. You now have a coherent small system that can be challenged and improved, rather than a collection of memorized boxes."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "redirect",
+      "title": "One stored mapping turns a short request into a new browser request",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant S as Short-link app\nparticipant D as Links database\nparticipant P as Public destination\nB->>S: GET /k7p2\nS->>D: Find code k7p2\nD-->>S: Saved destination URL\nS-->>B: 302 with Location header\nB->>P: Separate request to saved destination\nP-->>B: Public photo page",
+      "caption": "The browser follows the redirect. The shortener looks up a mapping and does not fetch the destination page as part of this path.",
+      "steps": [
+        "Look up the exact short code.",
+        "Use the accepted stored destination.",
+        "Return a redirect instruction to the browser.",
+        "Let the browser start the separate destination request."
+      ],
+      "sectionId": "data"
+    },
+    {
+      "id": "create-intent",
+      "title": "A lost creation reply does not require a new mapping",
+      "sectionId": "paths",
+      "source": "sequenceDiagram\nparticipant C as Caller\nparticipant A as Shortener\nparticipant D as Mapping database\nC->>A: Create with operation Q8 and destination\nA->>D: Protect operation identity and unique code\nD-->>A: Accepted code m4dq\nA--xC: Reply lost\nC->>A: Retry Q8 with same destination\nA->>D: Resolve accepted Q8\nD-->>A: Existing code m4dq\nA-->>C: Same short link",
+      "caption": "The database workflow must enforce the identity and input match atomically. Random code generation alone does not make retries safe.",
+      "steps": [
+        "Submit one creation intent with a stable identifier.",
+        "Accept a unique mapping under that identity.",
+        "Treat a lost reply as uncertain knowledge.",
+        "Resolve the same intent on retry instead of inventing a new one."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Sketch one app and one database. Store code a1 for URL A. A new create for URL B first generates a1, then b2. Show the accepted records. Next the client retries B’s create with the same operation ID after a lost response. State the result and explain what changes if that ID arrives with URL C.",
+    "minutes": 10,
+    "rubric": [
+      "Preserves a1→A.",
+      "Accepts b2→B after the candidate conflict.",
+      "Returns the existing B result for the same intent/input.",
+      "Rejects conflicting reuse of the same operation identity."
+    ],
+    "solution": "The accepted mappings are a1→A and b2→B. The unique-key conflict rejects the new a1 candidate without altering A. Retrying B with the same operation identity and input resolves to its existing b2 result. Reusing that identity for C is a payload conflict under this contract, so do not redirect b2 to C or pretend C was the original request."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What should a generated-code collision do?",
+      "options": [
+        "Replace the old destination",
+        "Reject that candidate and try another within a bound",
+        "Delete both links"
+      ],
+      "answer": "Reject that candidate and try another within a bound",
+      "explanation": "An accepted old link must keep its destination."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Who requests the final destination after a 302 response here?",
+      "options": [
+        "The browser",
+        "The database",
+        "The code generator"
+      ],
+      "answer": "The browser",
+      "explanation": "The redirect response tells the browser where to make another request."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A database timeout proves an unknown short code does not exist:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "An unavailable lookup is different from a successful lookup that found no row."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why are code uniqueness and operation identity both needed?",
+      "answer": "Uniqueness protects different mappings from sharing one code, while operation identity recognizes repeated attempts at the same intended create.",
+      "explanation": "They address distinct kinds of repetition."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Which new requirement would make the immutable-map cache policy need review?",
+      "answer": "Deletion, expiry, changed destinations, or takedown requirements, because old cached mappings could violate the new behavior.",
+      "explanation": "An optimization’s validity depends on the current product contract."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Shortener’s core stored record?",
+      "back": "Short code mapped to a destination URL."
+    },
+    {
+      "front": "Redirect does what?",
+      "back": "Tells the browser to request another address."
+    },
+    {
+      "front": "Code collision rule?",
+      "back": "Preserve the accepted mapping and try a new candidate within a bound."
+    },
+    {
+      "front": "Same create retry?",
+      "back": "Retain the same operation identity and compatible input."
+    },
+    {
+      "front": "Database unavailable versus missing code?",
+      "back": "Unknown lookup outcome versus an actual not-found result."
+    }
+  ],
+  "mentalModel": "A short link is a saved promise from one code to one destination; every retry, cache, and error must preserve that promise.",
+  "sources": [
+    {
+      "title": "HTTP semantics: redirects and methods",
+      "url": "https://httpwg.org/specs/rfc9110.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18: constraints",
+      "url": "https://www.postgresql.org/docs/18/ddl-constraints.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "redirect-two-requests",
+      "title": "One short link causes two browser requests",
+      "sectionId": "data",
+      "intro": "Use code m4dq for a public workshop page. The database already contains this accepted immutable mapping.",
+      "steps": [
+        {
+          "title": "Ask the shortener",
+          "explanation": "The browser contacts the shortener with a code. It has not requested the workshop site yet.",
+          "state": [
+            {
+              "label": "Request",
+              "value": "GET /m4dq"
+            },
+            {
+              "label": "DestinationKnownToBrowser",
+              "value": "Not yet"
+            },
+            {
+              "label": "Mapping",
+              "value": "m4dq → https://events.example/workshop"
+            }
+          ]
+        },
+        {
+          "title": "Return routing information",
+          "explanation": "The app finds the saved mapping and returns a redirect response rather than the workshop HTML.",
+          "state": [
+            {
+              "label": "Status",
+              "value": "302"
+            },
+            {
+              "label": "Location",
+              "value": "https://events.example/workshop"
+            },
+            {
+              "label": "BodyResponsibility",
+              "value": "Shortener response only"
+            }
+          ]
+        },
+        {
+          "title": "Follow the address",
+          "explanation": "The browser sends another request, now to the destination service. That service has its own availability and access rules.",
+          "state": [
+            {
+              "label": "Request",
+              "value": "GET https://events.example/workshop"
+            },
+            {
+              "label": "Receiver",
+              "value": "Workshop site"
+            },
+            {
+              "label": "Shortener",
+              "value": "Does not fetch destination bytes in this path"
+            }
+          ]
+        },
+        {
+          "title": "Render the destination response",
+          "explanation": "The workshop site responds under its own contract. A valid redirect does not guarantee that destination will always exist.",
+          "state": [
+            {
+              "label": "VisiblePage",
+              "value": "Workshop response"
+            },
+            {
+              "label": "SavedMapping",
+              "value": "Unchanged"
+            },
+            {
+              "label": "Limit",
+              "value": "Destination can later fail or require login"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A redirect tells the browser where to ask next. The saved mapping, creation retries, and destination behavior are three separate responsibilities."
+    }
+  ]
+}

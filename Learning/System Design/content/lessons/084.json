@@ -1,0 +1,131 @@
+{
+  "id": "084",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain the state represented by a log snapshot.",
+    "Reason about quorum overlap during membership changes.",
+    "Trace lagging recovery without losing retry identities."
+  ],
+  "retrieval": [
+    "L083: which prefix can a state machine safely apply?",
+    "L082: why must election and log evidence refer to the same voter configuration?"
+  ],
+  "sections": [
+    {
+      "id": "growth",
+      "title": "Compaction replaces a proven prefix",
+      "markdown": "Optional advanced extension, 55 scheduled minutes. Retrieval 5, mechanisms 20, history 10, exercise 10, questions/review 10. A log that records every command forever eventually makes restarts and storage growth impractical. A snapshot is a compact representation of state after a specific applied committed prefix. It is not simply “copy the current dictionary” while concurrent updates continue.\n\nRecord the last included index and term along with the state needed to resume correct execution. If requests are deduplicated with a result table, that table or an equivalent retained identity mechanism is part of the correctness state. Dropping it while retaining only business balances can cause a retried pre-snapshot command to apply again. Snapshot content follows the state machine's contract, not merely the fields convenient to serialize.\n\nCreating, storing and installing snapshots must handle partial files and crashes. A practical implementation writes a complete new artifact, validates it, and atomically publishes its metadata before discarding the log prefix it supersedes. Exact implementation details depend on storage; the key lesson is never to destroy the only recovery path before the replacement is valid."
+    },
+    {
+      "id": "catchup",
+      "title": "A follower behind the retained log needs state transfer",
+      "markdown": "Imagine the leader retains log entries after index 10,000, while a recovering follower only has index 2,000. Repeatedly asking it to append at index 10,001 cannot reconstruct the missing prefix. The leader transfers a snapshot representing the compacted state and its index/term, then sends later log entries. The follower must install an internally consistent state and continue after the represented prefix without replaying already included commands.\n\nFor a 200 MiB snapshot over an effective 20 MiB/s link, payload transfer alone takes about ten seconds. This ignores protocol overhead, disk writes and ongoing writes. If the leader generates 5 MiB/s of new log during transfer, roughly 50 MiB more log accumulates in that simplified interval. Recovery capacity must exceed continuing generation or the follower never catches up. These are planning calculations, not a measured benchmark.\n\nA failed transfer should be retryable without treating half a snapshot as valid state. Track snapshot duration, bytes, install failures, retained-log pressure and post-snapshot catch-up lag. A tiny healthy quorum can still struggle operationally when replacement nodes repeatedly consume its disk/network budget."
+    },
+    {
+      "id": "membership",
+      "title": "Changing voters changes the proof",
+      "markdown": "The intersection of majorities is meaningful relative to a voter set. If old and new configurations are switched independently, one majority of the old set and another majority of the new set might make incompatible decisions. The extended Raft paper describes joint consensus, where an intermediate configuration requires majorities of both old and new voter sets before finalizing the transition.\n\nConsider old voters A,B,C and new voters C,D,E. Old majority A,B and new majority D,E do not overlap. Immediately allowing each side to use its own majority creates two independent authorities. During a joint phase, a decision must satisfy both sets; A,B alone or D,E alone is insufficient. The transition itself is logged state, not an operator changing a text file separately on every host.\n\nSome implementations support constrained one-at-a-time membership changes instead of the exact joint-consensus mechanism described here. Consult that implementation's supported process rather than improvising a generic “remove two, add two” operation. Adding a learner before promoting it can reduce catch-up disruption, but a nonvoting replica is not counted in a voting majority until the membership protocol changes its role."
+    },
+    {
+      "id": "history",
+      "title": "Keep the recovery story complete",
+      "markdown": "Worked failure: a leader snapshots account=100 at committed index 500 but omits the dedup result for request R that produced it. A client never received R's reply. After all old log entries are compacted, a restart installs the snapshot and sees R as new; retrying R credits the account again. The numerical state looked plausible, yet the snapshot did not preserve the full application contract. Include sufficient retry state or impose a documented retry-identity expiration policy coordinated with clients.\n\nThe common misconceptions are that snapshots can include uncommitted speculative state, that any convenient backup equals a log snapshot, and that resizing a cluster is merely a capacity operation. Each affects the safety proof. The core general route may proceed without this extension, but an advanced explanation should distinguish replicated-log recovery, independent disaster recovery backups, and membership authority."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Joint configuration requires both majority conditions",
+      "source": "flowchart LR\nO[Old A B C] -->|logged transition| J[Joint old plus new]\nJ -->|old majority AND new majority| N[New C D E]\nA[Old-only A B] -.->|insufficient alone| J\nD[New-only D E] -.->|insufficient alone| J",
+      "caption": "The example highlights disjoint old-only and new-only majorities. It describes the joint-consensus model, not every implementation’s administrative API.",
+      "steps": [
+        "Begin with one agreed voter configuration.",
+        "Log the joint transition.",
+        "Require both old and new majority conditions.",
+        "Finalize the new configuration through the supported protocol."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A snapshot is 120 MiB, effective transfer 12 MiB/s, and new log arrives at 3 MiB/s. Estimate the transfer floor and generated catch-up bytes. Name two nonbusiness-state fields that correctness may require in a snapshot.",
+    "rubric": [
+      "Carries MiB units consistently.",
+      "Separates floor from complete recovery time.",
+      "Includes log boundary and retry identity state."
+    ],
+    "solution": "Transfer alone takes 120/12=10 seconds, generating about 3×10=30 MiB of additional log under the constant-rate assumption. Installation and catch-up add time, and continued generation must be considered during catch-up. Snapshot metadata needs a last included index/term so later entries connect to the correct prefix; the state may also need client request IDs/results to preserve deduplication. Those fields are correctness obligations rather than incidental cache data."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "Payload floor for 200 MiB at 20 MiB/s?",
+      "answer": 10,
+      "unit": "seconds",
+      "tolerance": 0,
+      "explanation": "200/20 = 10; overhead and installation add time."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A snapshot may safely replace:",
+      "options": [
+        "Any speculative state",
+        "A consistent applied committed prefix"
+      ],
+      "answer": "A consistent applied committed prefix",
+      "explanation": "Speculative uncommitted effects cannot become durable authoritative snapshot state."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A joint configuration generally requires:",
+      "options": [
+        "Either old or new majority",
+        "Both old and new majorities"
+      ],
+      "answer": "Both old and new majorities",
+      "explanation": "The intermediate rule protects the membership transition."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why include request deduplication state in a snapshot?",
+      "answer": "Otherwise a retried old request can execute again after its log and identity record are compacted.",
+      "explanation": "Otherwise a retried old request can execute again after its log and identity record are compacted."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Snapshot boundary?",
+      "back": "A specific applied committed prefix with index/term metadata."
+    },
+    {
+      "front": "Snapshot completeness?",
+      "back": "Includes correctness state such as retry identities, not only business values."
+    },
+    {
+      "front": "Catch-up stability?",
+      "back": "Effective recovery throughput must exceed ongoing work generation."
+    },
+    {
+      "front": "Joint consensus?",
+      "back": "Intermediate decisions require majorities of both configurations."
+    },
+    {
+      "front": "Learner voter?",
+      "back": "A learner does not count until safely promoted by the membership protocol."
+    }
+  ],
+  "mentalModel": "Compaction preserves the meaning of the old prefix; membership change preserves the meaning of a quorum.",
+  "sources": [
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

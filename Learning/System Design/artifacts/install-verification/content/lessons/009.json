@@ -1,0 +1,151 @@
+{
+  "id": "009",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Allocate interview time while preserving a complete reasoning chain.",
+    "Choose architecture, sequence, and failure views for different questions.",
+    "Write a concise decision record with alternatives and revisit triggers.",
+    "Adapt a design when an assumption changes."
+  ],
+  "retrieval": [
+    "From L002: which guarantee must survive a convenience tradeoff?",
+    "From L008: explain the difference between peak demand and failure reserve."
+  ],
+  "sections": [
+    {
+      "id": "framework",
+      "title": "Time is another constrained resource",
+      "markdown": "Core budget: retrieval 5, framework and diagrams 18, worked rehearsal 8, exercise 10, questions 10, review 4 minutes. This session teaches the curriculum's interview structure. It is a training method, not a claim that every employer uses the same schedule. Official interview guidance can set broad expectations, but the allocations here are original to your supplied curriculum.\n\nFor 45 minutes, allocate 5 to scope and invariants, 4 to useful workload estimates, 6 to APIs and data ownership, 7 to an initial architecture and request trace, 12 to the most consequential deep dives, 7 to failures and operational constraints, and 4 to synthesis and changed requirements. The numbers sum to 45. For a 60-minute interview the corresponding allocations are 7, 5, 8, 10, 16, 9, and 5.\n\nTreat these as checkpoints, not a waterfall. Security shapes the API and data model early. Failure reasoning may expose a missing invariant during clarification. If the interviewer introduces a new requirement, revisit the relevant decision instead of saving all adaptation for the last minute. In a normal course mock, 45 minutes of interviewing and 15 of feedback fit a 60-minute session; L297 uses a separate 60-minute interview followed by its next-session debrief.\n\nThe most common timing failure is spending twenty minutes enumerating features or estimating bytes that never affect the design, then rushing through an unexplained diagram. A complete small design gives the interviewer something concrete to challenge. Deepen the risky edge after the end-to-end path is clear."
+    },
+    {
+      "id": "views",
+      "title": "Each drawing should answer one question",
+      "markdown": "An architecture view answers “who owns state and who communicates?” For a personal reading list, it might show browser, API, and a database, with a trust boundary at the API and authoritative records in the database. An arrow should name the operation or payload; a line alone leaves direction and meaning ambiguous.\n\nA sequence view answers “in what order does one operation happen, and when is success returned?” Draw the client submitting a save, the application validating ownership, the database accepting the write, and the response. A failure timeline answers “which steps happened before the interruption, and what can each participant know afterward?” These views describe the same names and guarantees at different levels.\n\nThe C4 reference separates levels of structural detail and also offers dynamic and deployment views. You need only the views that answer the current question. Do not turn a timed interview into a notation exam. Consistent labels and honest boundaries matter more than elaborate icons.\n\nMake synchronous requests and asynchronous messages visually distinct and say what an acknowledgment means. At this point you can label an asynchronous idea as future work without inventing delivery guarantees. Never use an animation to imply that data is durable before the mechanism has established that fact."
+    },
+    {
+      "id": "record",
+      "title": "A worked decision record",
+      "markdown": "Prompt: a small faculty team saves links privately and shares selected folders with colleagues. Initial assumptions: 200 active users/day, 20 actions each, a tenfold peak, one institution, and no offline editing. Average demand is about 0.046/s, peak about 0.46/s. This estimate suggests that basic correctness and operator effort are more important than introducing a distributed partitioning scheme. It does not prove any particular server's capacity.\n\nDecision D1: use one application and one persistent database for links, folders, and membership. Reason: the important operation is deciding whether the requester may see a folder and then retrieving its entries. Co-locating authoritative records supports a straightforward reasoning path. Alternative: several independently deployed services would add communication and failure boundaries without a stated scaling or team requirement. Risk: a machine outage stops access. Revisit trigger: the measured workload or recovery objective no longer fits the current deployment.\n\nTrace: request folder 17 as user 9; application establishes user identity; it checks membership against authoritative data; it reads the allowed links; it returns only those entries. A client-supplied folder ID is a lookup parameter, not evidence of permission. A useful test is that user 10 cannot read folder 17 merely by guessing its ID.\n\nChanged requirement: ten departments now need isolated administration. Adapt the ownership model by making department scope explicit and checking it consistently. Do not immediately multiply every component by ten. First decide whether shared storage with enforced isolation satisfies the threat model and operating constraints. Later modules develop the implementation details."
+    },
+    {
+      "id": "communication",
+      "title": "Explain the reason before naming the component",
+      "markdown": "Use a compact reasoning sentence: “Because confirmed membership changes must govern private reads, I will check authoritative access state before returning entries; this adds a read cost that I will measure.” Compare it with “I will use a cache because caches are fast.” The first establishes a guarantee and a cost; the second skips the problem and the stale-access risk.\n\nWhen challenged, distinguish disagreement about requirements from disagreement about mechanisms. If the requirement changes from private notes to public links, some isolation decisions may relax. If the requirement stays private but a proposed cache can serve revoked access, the mechanism needs repair. Adapting to evidence is a design skill, not a loss of confidence.\n\nSummarize at the end using scope, main state ownership, two key decisions, the most consequential failure, and a validation plan. Name uncertainty specifically: “I have not measured the large-folder read distribution, so pagination and capacity are the next test” is useful. “It should scale” is not.\n\nCommon mistakes are drawing everything at once, treating a component name as justification, answering a challenge by adding unexplained boxes, and using the full time without a conclusion. Optional rehearsal: record a five-minute explanation, then mark every sentence that lacks either a requirement, mechanism, consequence, or question. Editing the recording is additional practice, outside this session."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "reasoning-loop",
+      "title": "A design conversation is an iterative loop",
+      "source": "flowchart LR\nR[Agree scope and invariants] --> E[Estimate decision-relevant demand]\nE --> A[Trace smallest complete architecture]\nA --> F[Challenge failures and limits]\nF --> D[Record decision and evidence]\nF -->|Changed requirement| R\nD -->|Measured bottleneck| E",
+      "caption": "The loop explains how later evidence can revise an earlier decision. It is a reasoning map, not a network architecture.",
+      "steps": [
+        "Clarify the outcome and forbidden states.",
+        "Calculate only what influences a choice.",
+        "Expose a complete path before deepening it.",
+        "Use failure and requirement changes to revise the argument."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Spend ten minutes preparing a five-minute explanation of the faculty reading-list service. Write a six-line decision record and draw one architecture view plus one request sequence. Introduce a requirement that folder access revocation must apply to the next read and identify which decision needs more scrutiny.",
+    "minutes": 10,
+    "rubric": [
+      "Architecture and sequence use the same component names.",
+      "State ownership and authorization check are explicit.",
+      "Decision includes rejected alternative and revisit condition.",
+      "Revocation affects the read path rather than prompting unexplained infrastructure."
+    ],
+    "solution": "Record one app plus one database, private folder membership as an invariant, modest estimated demand, independent services as unjustified complexity for this scope, machine outage as a limit, and measured recovery/capacity as revisit triggers. Trace identity → authoritative membership → entries → response. Immediate next-read revocation means permission information must not be served from an arbitrarily stale cache; investigate a fresh authority check or a provably safe invalidation/version mechanism before introducing caching. The diagram should label that boundary."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which view best exposes success before persistence?",
+      "options": [
+        "A request sequence",
+        "A list of product names",
+        "A server-cost table"
+      ],
+      "answer": "A request sequence",
+      "explanation": "The error is about ordering and acknowledgment semantics."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What should a deep dive prioritize?",
+      "options": [
+        "The technology you know most buzzwords about",
+        "The decision with the greatest consequence for the scoped guarantees",
+        "Every component equally"
+      ],
+      "answer": "The decision with the greatest consequence for the scoped guarantees",
+      "explanation": "Time is limited; risk and requirements guide depth."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "In the supplied 45-minute framework, scope 5 + estimates 4 + APIs 6 + architecture 7 + deep dive 12 + failures 7 leaves how many minutes for synthesis?",
+      "answer": 4,
+      "unit": "minutes",
+      "tolerance": 0,
+      "explanation": "45 − 41 = 4."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What belongs in a decision record besides the chosen approach?",
+      "answer": "The requirement and reason, an alternative, consequences or limits, evidence, and a condition for revisiting it.",
+      "explanation": "A record should help a future reader understand why a different context could justify a different choice."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "A changed requirement invalidates your initial design. How should you respond?",
+      "answer": "Identify the assumption that changed, preserve still-valid pieces, compare repair options, and state the revised guarantee and costs.",
+      "explanation": "Defending the original diagram at all costs is weaker than controlled adaptation."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Architecture view answers?",
+      "back": "Who owns state and which components communicate."
+    },
+    {
+      "front": "Sequence view answers?",
+      "back": "Ordering, responses, and acknowledgment boundaries for one operation."
+    },
+    {
+      "front": "Failure timeline answers?",
+      "back": "What happened before interruption and what each actor can know."
+    },
+    {
+      "front": "A decision record needs?",
+      "back": "Context, choice, reason, alternative, consequences, evidence, and revisit condition."
+    },
+    {
+      "front": "Why begin with a complete small design?",
+      "back": "It provides a concrete path to test and deepen within the time budget."
+    },
+    {
+      "front": "Does the framework defer security until the end?",
+      "back": "No; security and failure constraints influence earlier decisions."
+    }
+  ],
+  "mentalModel": "Use the clock to preserve a complete argument, then spend depth where a wrong assumption would hurt most.",
+  "sources": [
+    {
+      "title": "Amazon Jobs: SDE II Interview Prep",
+      "url": "https://www.amazon.jobs/content/en/how-we-hire/sde-ii-interview-prep",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "C4 model: Diagrams",
+      "url": "https://c4model.com/diagrams",
+      "checked": "2026-09-29"
+    }
+  ]
+}

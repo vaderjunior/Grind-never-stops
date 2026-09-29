@@ -1,0 +1,286 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 11,
+  "title": "Logs, streams, and replay",
+  "level": "intermediate",
+  "minutes": 45,
+  "id": "streaming-and-replay",
+  "summary": "Learn why a retained event log lets several consumers work at different speeds, and why replay is powerful only when its side effects are controlled.",
+  "objectives": [
+    "Distinguish a queue-like work distribution from independent readers of a retained log.",
+    "Trace offsets, partitions, and lag with actual records.",
+    "Explain replay and the boundary of processing guarantees."
+  ],
+  "terms": [
+    {
+      "term": "Append-only log",
+      "definition": "An ordered sequence to which new records are added; retained records can be read again within the retention policy."
+    },
+    {
+      "term": "Partition",
+      "definition": "One ordered portion of a larger log, with its own sequence of offsets."
+    },
+    {
+      "term": "Offset",
+      "definition": "A position identifying a record within one partition."
+    },
+    {
+      "term": "Consumer group",
+      "definition": "Cooperating consumers that divide partitions for a particular processing application."
+    },
+    {
+      "term": "Replay",
+      "definition": "Reading retained records again from an earlier position to rebuild or reprocess something."
+    },
+    {
+      "term": "Consumer lag",
+      "definition": "How far a reader is behind the current log position; time-based lag adds useful context."
+    }
+  ],
+  "retrieval": [
+    "Why did the outbox consumer need an event identity?",
+    "What happens to queue depth when arrivals exceed processing capacity?"
+  ],
+  "sections": [
+    {
+      "id": "story",
+      "title": "One history, several readers",
+      "markdown": "Pocket Notes now uses publication events for two purposes: an activity page and daily usage counts. If two workers simply compete for one work queue, one event might go to the activity worker and another to the counting worker. That does not give each application all the facts it needs.\n\nA retained event log offers a different model. Think of a numbered notebook whose pages remain available for a defined period. Each application keeps its own bookmark. The activity application and the counting application can both read the same publication records at different speeds.\n\nThe analogy has limits. Real logs have storage limits, access rules, multiple partitions, failures, and retention policies. “Stored in a log” does not mean retained forever or available without operational work. Decide how long records must remain recoverable and who is allowed to reread them."
+    },
+    {
+      "id": "offset",
+      "title": "Follow five records with a bookmark",
+      "markdown": "Use one partition with offsets 40 through 44. Our explicit convention stores the **next position to read**, not the last record completed.\n\n| Reader | Last completed record | Saved next offset | Currently available unread records |\n| --- | --- | --- | --- |\n| Activity application | 42 | 43 | 43 and 44 |\n| Counting application | 44 | 45 | None |\n\nThe bookmarks are independent. Advancing the activity reader does not advance the counting reader. The log still retains entries according to its retention policy.\n\nNow write an activity for record 43, then crash before saving next offset 44. On restart, the saved position is still 43, so that record can be processed again. Saving 44 *before* safely applying 43 creates the opposite risk: a crash can skip uncommitted work.\n\n~~~text\napply record 43 durably → save next offset 44\n          crash here ↑ → record 43 can return\n~~~\n\nA bookmark and an unrelated database write are not automatically atomic. State whether a supported transaction covers them or whether the destination uses stable identities and duplicate-safe effects. Resume is also possible only while the required log history remains retained."
+    },
+    {
+      "id": "partitions",
+      "title": "Parallel processing has an ordering boundary",
+      "markdown": "A busy log can be divided into partitions. Within a partition, records have an order. There is usually no single total order across all partitions unless another mechanism explicitly provides one. Assigning a noteId as a routing key can keep events for that note together under the configured partitioning scheme.\n\nWithin one consumer group, consumers divide the partitions. If there are four partitions and two consumers, each might handle two. Adding a fifth consumer does not create a fifth partition to process in that group. Separate consumer groups can independently read the same retained log for different applications.\n\nA single very popular key can overload one partition even when other partitions are quiet. Splitting that key's work can improve throughput but may require a new ordering or merge design. Adding servers cannot remove an ordering dependency by itself. State whether order is required per note, per workspace, or across the whole product."
+    },
+    {
+      "id": "replay",
+      "title": "Rebuild a view without repeating every external effect",
+      "markdown": "A corrected consumer can rebuild a broken counts view if the needed history remains. Use a new destination and verify it before switching reads.\n\n| Replay destination | Intended behavior | Main check |\n| --- | --- | --- |\n| New counts table | Recompute the derived view | Correct counts, versions, deletes, and catch-up |\n| Existing email sender | Could notify old users again | Do not enable effects accidentally |\n| New search index | Reconstruct searchable state | Current permissions and removed content stay respected |\n\nReplaying is another execution of inputs, not a special promise that side effects disappear. Use an explicit replay mode, separate rebuild consumer, or stable effect policy where appropriate. A fresh consumer group only gives independent progress; it does not make its actions harmless.\n\nKeep event schemas compatible. A reader must understand older versions and missing fields. Changing a field's meaning without changing its contract can corrupt the rebuild.\n\nRetained events may include data later removed for privacy. A replay procedure must honor deletion and access rules instead of resurrecting that data. **Interview phrasing:** “I can rebuild this derived view only from a sufficient, authorized, retained history, with external effects controlled.”"
+    },
+    {
+      "id": "guarantees",
+      "title": "Measure backlog and name the guarantee boundary",
+      "markdown": "Record-count lag helps show backlog, but one thousand tiny events and one thousand slow events can imply very different recovery times. Also measure event age, processing latency, failure rate, and the rate at which the consumer catches up. If it processes 120 events per second while 100 arrive, only 20 events per second of spare capacity is available to drain existing backlog.\n\nKafka can coordinate consumed offsets and produced records in a Kafka transaction for supported processing workflows; this does not automatically include an arbitrary external database, payment, or email effect. “Exactly once” needs a stated scope and assumptions. For an external sink, describe its transaction, idempotency, or reconciliation mechanism separately.\n\nStart interview answers with why history and independent readers are useful. Choose an ordinary work queue when one worker must claim each job and replay/history are unnecessary. Choose a retained log when the required reading, ordering, recovery, and retention behavior justify it. Both are tools with contracts, not maturity badges."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "readers",
+      "title": "Two applications keep independent positions",
+      "source": "flowchart TB\nL[Partition records 40 through 44] --> A[Activity group: next offset 43]\nL --> B[Counts group: next offset 45]\nA --> V[(Activity view)]\nB --> C[(Daily counts)]\nL -.-> R[Rebuild group can reread retained records]",
+      "caption": "Offsets belong to a partition. The next-offset convention is explicit in this example.",
+      "steps": [
+        "Append records to the retained partition.",
+        "Track one position per application and partition.",
+        "Resume from saved positions after restart.",
+        "Replay only within retention and with controlled effects."
+      ],
+      "sectionId": "offset"
+    },
+    {
+      "id": "log-rebuild",
+      "title": "Rebuild beside the serving view before switching",
+      "sectionId": "replay",
+      "source": "flowchart LR\nL[(Retained authorized history)] --> R[Corrected rebuild consumer]\nR --> N[(New counts view)]\nO[(Current serving view)] --> C[Compare representative results]\nN --> C\nC --> V{Validated and caught up?}\nV -->|Yes| S[Switch serving pointer]\nV -->|No| K[Keep old view and investigate]",
+      "caption": "The capture/catch-up protocol must account for new events during the rebuild. Reading history does not authorize replaying emails or other external effects.",
+      "steps": [
+        "Start a separate destination from the required retained history.",
+        "Apply events with compatible schemas and explicit effect policy.",
+        "Catch up ongoing changes and compare meaningful results.",
+        "Switch only after the selected correctness and freshness gates pass."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A consumer has next offset 43 and the log contains through 44. It applies record 43 to an external database, then crashes before saving its next position. Trace the restart, propose duplicate handling, and explain how you would rebuild counts without sending old emails.",
+    "rubric": [
+      "Restart rereads 43 under the stated position convention.",
+      "External effect protection is separate from log position.",
+      "Rebuild avoids unintended external effects."
+    ],
+    "solution": "The saved next offset remains 43, so the consumer can reread record 43. Its destination can atomically record the event identity and update its local count to avoid applying the same event twice, then advance the log position after a successful effect. For a complete rebuild, use a new counts table and a dedicated replay consumer, validate totals, and switch views. Keep email delivery outside that rebuild path or use an explicit effect-suppression policy. Records must still exist under retention."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Does one partition order all records in every other partition?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if the records are JSON"
+      ],
+      "answer": "No",
+      "explanation": "Ordering is scoped to a partition unless another protocol explicitly establishes a broader order."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Saved next offset is 43; records exist through 44. How many records remain?",
+      "options": [
+        "1",
+        "2",
+        "3"
+      ],
+      "answer": "2",
+      "explanation": "Offsets 43 and 44 remain to be read under the stated next-position convention."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A supported Kafka transaction automatically commits an unrelated email provider call?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with one consumer"
+      ],
+      "answer": "No",
+      "explanation": "The transactional processing guarantee has a boundary; external side effects need their own contract."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can adding consumers fail to help a hot key?",
+      "answer": "The key may remain confined to one ordered partition; extra consumers do not split that ordering dependency.",
+      "explanation": "The key may remain confined to one ordered partition; extra consumers do not split that ordering dependency."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What should a replay plan check?",
+      "answer": "Retention, event/schema compatibility, privacy/deletion rules, destination validation, capacity, and whether repeated external effects are suppressed or safely deduplicated.",
+      "explanation": "Retention, event/schema compatibility, privacy/deletion rules, destination validation, capacity, and whether repeated external effects are suppressed or safely deduplicated."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Retained log versus one competing work queue?",
+      "back": "Independent applications can keep separate positions and reread retained facts."
+    },
+    {
+      "front": "Offset scope?",
+      "back": "One partition; specify next-to-read versus last-processed convention."
+    },
+    {
+      "front": "Crash before saving position?",
+      "back": "A previously applied record may be read again."
+    },
+    {
+      "front": "Replay danger?",
+      "back": "Old facts can accidentally trigger new external effects."
+    },
+    {
+      "front": "Exactly-once question?",
+      "back": "Exactly which records, effects, and transaction boundary are covered?"
+    }
+  ],
+  "mentalModel": "A log is a retained history with bookmarks. Recovery depends on both the bookmark and what reading a record does.",
+  "sources": [
+    {
+      "title": "Apache Kafka 4.1 — Introduction",
+      "url": "https://kafka.apache.org/41/getting-started/introduction/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Kafka 4.1 — Design and delivery semantics",
+      "url": "https://kafka.apache.org/41/design/design/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Kafka 4.1 — Streams core concepts",
+      "url": "https://kafka.apache.org/41/streams/core-concepts/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "offset-after-effect",
+      "title": "A bookmark can lag behind a committed effect",
+      "sectionId": "offset",
+      "intro": "Partition P0 retains events 100–103. The destination transaction uses event identity to protect one activity effect.",
+      "steps": [
+        {
+          "title": "Resume from a saved position",
+          "explanation": "The saved next offset is 102, so records through 101 have been accounted for.",
+          "state": [
+            {
+              "label": "Partition",
+              "value": "P0: 100, 101, 102, 103"
+            },
+            {
+              "label": "NextOffset",
+              "value": "102"
+            },
+            {
+              "label": "Activity",
+              "value": "Through 101"
+            }
+          ]
+        },
+        {
+          "title": "Commit record 102’s effect",
+          "explanation": "The activity and its processed marker commit. The reader has not saved its new bookmark yet.",
+          "state": [
+            {
+              "label": "NextOffset",
+              "value": "Still 102"
+            },
+            {
+              "label": "Activity",
+              "value": "Through 102"
+            },
+            {
+              "label": "ProcessedMarker",
+              "value": "P0/102 committed"
+            }
+          ]
+        },
+        {
+          "title": "Restart after a crash",
+          "explanation": "The consumer reads 102 again. The destination recognizes the same event rather than inserting a second effect.",
+          "state": [
+            {
+              "label": "ReadAgain",
+              "value": "P0/102"
+            },
+            {
+              "label": "Activity",
+              "value": "Still one effect for 102"
+            },
+            {
+              "label": "NextOffset",
+              "value": "102 until progress is saved"
+            }
+          ]
+        },
+        {
+          "title": "Advance the bookmark",
+          "explanation": "After safely accounting for 102, save 103 as next. Record 103 remains to be processed.",
+          "state": [
+            {
+              "label": "NextOffset",
+              "value": "103"
+            },
+            {
+              "label": "UnreadAvailable",
+              "value": "103"
+            },
+            {
+              "label": "DuplicatedEffects",
+              "value": "0 in this protected example"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A saved next offset claims that earlier work is safely accounted for. The destination transaction makes replay of already-accounted work safe."
+    }
+  ]
+}

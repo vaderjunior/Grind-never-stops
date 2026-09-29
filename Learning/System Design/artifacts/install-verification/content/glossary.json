@@ -1,0 +1,2744 @@
+[
+  {
+    "id": "guide-what-is-system-design-1",
+    "term": "System",
+    "definition": "A set of parts that work together to do something useful.",
+    "guideId": "what-is-system-design",
+    "guideTitle": "What is system design?"
+  },
+  {
+    "id": "guide-what-is-system-design-2",
+    "term": "Client",
+    "definition": "A program asking another program to do work. In our example, it is the browser.",
+    "guideId": "what-is-system-design",
+    "guideTitle": "What is system design?"
+  },
+  {
+    "id": "guide-what-is-system-design-3",
+    "term": "Server",
+    "definition": "A program that receives requests and sends responses. People also use “server” for the computer running it.",
+    "guideId": "what-is-system-design",
+    "guideTitle": "What is system design?"
+  },
+  {
+    "id": "guide-what-is-system-design-4",
+    "term": "Database",
+    "definition": "Software for storing and retrieving organized data, such as saved notes.",
+    "guideId": "what-is-system-design",
+    "guideTitle": "What is system design?"
+  },
+  {
+    "id": "guide-what-is-system-design-5",
+    "term": "Request / response",
+    "definition": "A message asking for work, followed by the message reporting the result.",
+    "guideId": "what-is-system-design",
+    "guideTitle": "What is system design?"
+  },
+  {
+    "id": "guide-read-system-diagrams-1",
+    "term": "Component",
+    "definition": "A part of a system with a named responsibility, such as checking a request.",
+    "guideId": "read-system-diagrams",
+    "guideTitle": "Read a system diagram, one arrow at a time"
+  },
+  {
+    "id": "guide-read-system-diagrams-2",
+    "term": "Boundary",
+    "definition": "A line or grouping showing a meaningful separation, such as your browser versus the service you call.",
+    "guideId": "read-system-diagrams",
+    "guideTitle": "Read a system diagram, one arrow at a time"
+  },
+  {
+    "id": "guide-read-system-diagrams-3",
+    "term": "Sequence diagram",
+    "definition": "A picture that shows messages in a chosen order, usually with time moving downward.",
+    "guideId": "read-system-diagrams",
+    "guideTitle": "Read a system diagram, one arrow at a time"
+  },
+  {
+    "id": "guide-read-system-diagrams-4",
+    "term": "Deployment",
+    "definition": "The arrangement of running software on computers or other execution environments.",
+    "guideId": "read-system-diagrams",
+    "guideTitle": "Read a system diagram, one arrow at a time"
+  },
+  {
+    "id": "guide-computer-and-server-basics-1",
+    "term": "CPU",
+    "definition": "The processor that executes instructions, such as comparing values or calculating a result.",
+    "guideId": "computer-and-server-basics",
+    "guideTitle": "Computers, servers, and the resources an application uses"
+  },
+  {
+    "id": "guide-computer-and-server-basics-2",
+    "term": "RAM",
+    "definition": "Working memory used by running programs; ordinary RAM does not retain its contents after power loss.",
+    "guideId": "computer-and-server-basics",
+    "guideTitle": "Computers, servers, and the resources an application uses"
+  },
+  {
+    "id": "guide-computer-and-server-basics-3",
+    "term": "Persistent storage",
+    "definition": "Storage intended to retain data beyond a running process or power cycle, subject to the device and write guarantees.",
+    "guideId": "computer-and-server-basics",
+    "guideTitle": "Computers, servers, and the resources an application uses"
+  },
+  {
+    "id": "guide-computer-and-server-basics-4",
+    "term": "Operating system",
+    "definition": "Software that manages processes, memory, devices, files, and other machine resources.",
+    "guideId": "computer-and-server-basics",
+    "guideTitle": "Computers, servers, and the resources an application uses"
+  },
+  {
+    "id": "guide-computer-and-server-basics-5",
+    "term": "Process",
+    "definition": "A running instance of a program, with memory and operating-system-managed resources.",
+    "guideId": "computer-and-server-basics",
+    "guideTitle": "Computers, servers, and the resources an application uses"
+  },
+  {
+    "id": "guide-request-journey-1",
+    "term": "URL",
+    "definition": "An address such as https://notes.example/notes/42. It includes how to connect, a website name, and a path.",
+    "guideId": "request-journey",
+    "guideTitle": "What happens when you open a website?"
+  },
+  {
+    "id": "guide-request-journey-2",
+    "term": "DNS",
+    "definition": "The system that helps turn a website name into a network address.",
+    "guideId": "request-journey",
+    "guideTitle": "What happens when you open a website?"
+  },
+  {
+    "id": "guide-request-journey-3",
+    "term": "HTTP",
+    "definition": "The agreed format and meaning of web requests and responses.",
+    "guideId": "request-journey",
+    "guideTitle": "What happens when you open a website?"
+  },
+  {
+    "id": "guide-request-journey-4",
+    "term": "HTTPS",
+    "definition": "HTTP over a protected connection that keeps messages private in transit and helps the browser verify the expected service.",
+    "guideId": "request-journey",
+    "guideTitle": "What happens when you open a website?"
+  },
+  {
+    "id": "guide-request-journey-5",
+    "term": "Network",
+    "definition": "The links and devices that carry messages between computers.",
+    "guideId": "request-journey",
+    "guideTitle": "What happens when you open a website?"
+  },
+  {
+    "id": "guide-dns-and-addresses-1",
+    "term": "Domain name",
+    "definition": "A human-readable name in the DNS hierarchy, such as notes.example.com.",
+    "guideId": "dns-and-addresses",
+    "guideTitle": "Domains, IP addresses, ports, and DNS"
+  },
+  {
+    "id": "guide-dns-and-addresses-2",
+    "term": "IP address",
+    "definition": "A network-layer address used to route packets toward an interface or destination; it is not necessarily one permanent application machine.",
+    "guideId": "dns-and-addresses",
+    "guideTitle": "Domains, IP addresses, ports, and DNS"
+  },
+  {
+    "id": "guide-dns-and-addresses-3",
+    "term": "Port",
+    "definition": "A transport-layer number used with an address and protocol to identify a communication endpoint.",
+    "guideId": "dns-and-addresses",
+    "guideTitle": "Domains, IP addresses, ports, and DNS"
+  },
+  {
+    "id": "guide-dns-and-addresses-4",
+    "term": "Resolver",
+    "definition": "Software or a service that finds DNS answers for a client, often using cached information.",
+    "guideId": "dns-and-addresses",
+    "guideTitle": "Domains, IP addresses, ports, and DNS"
+  },
+  {
+    "id": "guide-dns-and-addresses-5",
+    "term": "Authoritative DNS server",
+    "definition": "A server responsible for answering from the DNS data for a particular zone.",
+    "guideId": "dns-and-addresses",
+    "guideTitle": "Domains, IP addresses, ports, and DNS"
+  },
+  {
+    "id": "guide-dns-and-addresses-6",
+    "term": "TTL",
+    "definition": "Time to live: a limit on how long a DNS answer may normally be reused from cache before it needs refreshing.",
+    "guideId": "dns-and-addresses",
+    "guideTitle": "Domains, IP addresses, ports, and DNS"
+  },
+  {
+    "id": "guide-apis-without-jargon-1",
+    "term": "API",
+    "definition": "Application Programming Interface: the operations and rules one program offers to another.",
+    "guideId": "apis-without-jargon",
+    "guideTitle": "APIs: a menu for your application"
+  },
+  {
+    "id": "guide-apis-without-jargon-2",
+    "term": "Endpoint",
+    "definition": "A particular operation/address a client can call, such as GET /notes/42.",
+    "guideId": "apis-without-jargon",
+    "guideTitle": "APIs: a menu for your application"
+  },
+  {
+    "id": "guide-apis-without-jargon-3",
+    "term": "JSON",
+    "definition": "A text format for structured data, using objects, lists, strings, numbers, and other simple values.",
+    "guideId": "apis-without-jargon",
+    "guideTitle": "APIs: a menu for your application"
+  },
+  {
+    "id": "guide-apis-without-jargon-4",
+    "term": "Validation",
+    "definition": "Checking whether submitted data has an acceptable shape and value.",
+    "guideId": "apis-without-jargon",
+    "guideTitle": "APIs: a menu for your application"
+  },
+  {
+    "id": "guide-apis-without-jargon-5",
+    "term": "Status code",
+    "definition": "A number in an HTTP response summarizing its result, such as 200 for success or 404 for not found.",
+    "guideId": "apis-without-jargon",
+    "guideTitle": "APIs: a menu for your application"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-1",
+    "term": "Protocol",
+    "definition": "Rules that communicating programs follow to exchange and interpret messages.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-2",
+    "term": "Connection",
+    "definition": "An established communication relationship with state at its endpoints; exact semantics depend on the protocol.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-3",
+    "term": "TCP",
+    "definition": "A transport providing a reliable ordered byte stream between endpoints.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-4",
+    "term": "UDP",
+    "definition": "A transport sending datagrams without TCP-style reliability or ordering guarantees.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-5",
+    "term": "TLS",
+    "definition": "A protocol providing protected communication with authentication and confidentiality under its security assumptions.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-6",
+    "term": "Multiplexing",
+    "definition": "Carrying multiple logical streams through one underlying connection.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-7",
+    "term": "gRPC",
+    "definition": "A framework for calling defined remote procedures, commonly using Protocol Buffers and HTTP/2.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-connection-and-protocol-basics-8",
+    "term": "SSE",
+    "definition": "Server-sent events: a server-to-client event stream carried over HTTP.",
+    "guideId": "connection-and-protocol-basics",
+    "guideTitle": "Connections and protocols: TCP, TLS, HTTP, and beyond"
+  },
+  {
+    "id": "guide-http-requests-and-errors-1",
+    "term": "HTTP method",
+    "definition": "A request word such as GET or POST that communicates the intended kind of operation.",
+    "guideId": "http-requests-and-errors",
+    "guideTitle": "HTTP requests, responses, and errors you can read"
+  },
+  {
+    "id": "guide-http-requests-and-errors-2",
+    "term": "Header",
+    "definition": "A named field carrying message metadata, such as its content format.",
+    "guideId": "http-requests-and-errors",
+    "guideTitle": "HTTP requests, responses, and errors you can read"
+  },
+  {
+    "id": "guide-http-requests-and-errors-3",
+    "term": "Body",
+    "definition": "The content carried by a message, such as a JSON note.",
+    "guideId": "http-requests-and-errors",
+    "guideTitle": "HTTP requests, responses, and errors you can read"
+  },
+  {
+    "id": "guide-http-requests-and-errors-5",
+    "term": "Timeout",
+    "definition": "The caller stops waiting after a chosen time; this alone does not cancel all remote work.",
+    "guideId": "http-requests-and-errors",
+    "guideTitle": "HTTP requests, responses, and errors you can read"
+  },
+  {
+    "id": "guide-data-that-survives-1",
+    "term": "Memory / RAM",
+    "definition": "Fast working space used by running programs; ordinary process state there is temporary.",
+    "guideId": "data-that-survives",
+    "guideTitle": "Memory, disks, and data that survives"
+  },
+  {
+    "id": "guide-data-that-survives-2",
+    "term": "Disk / persistent storage",
+    "definition": "Storage intended to retain data beyond a program restart, subject to its hardware and software guarantees.",
+    "guideId": "data-that-survives",
+    "guideTitle": "Memory, disks, and data that survives"
+  },
+  {
+    "id": "guide-data-that-survives-3",
+    "term": "Durability",
+    "definition": "The promise that an acknowledged saved change survives the failures covered by the storage contract.",
+    "guideId": "data-that-survives",
+    "guideTitle": "Memory, disks, and data that survives"
+  },
+  {
+    "id": "guide-data-that-survives-4",
+    "term": "Backup",
+    "definition": "A recoverable copy kept for restoration after loss, corruption, or another supported recovery scenario.",
+    "guideId": "data-that-survives",
+    "guideTitle": "Memory, disks, and data that survives"
+  },
+  {
+    "id": "guide-data-that-survives-5",
+    "term": "State",
+    "definition": "Information the application needs to remember, such as notes, users, or completed operations.",
+    "guideId": "data-that-survives",
+    "guideTitle": "Memory, disks, and data that survives"
+  },
+  {
+    "id": "guide-processes-threads-and-concurrency-1",
+    "term": "CPU core",
+    "definition": "A hardware execution resource that runs instructions; actual throughput depends on the work and processor.",
+    "guideId": "processes-threads-and-concurrency",
+    "guideTitle": "Processes, threads, and doing several things at once"
+  },
+  {
+    "id": "guide-processes-threads-and-concurrency-3",
+    "term": "Thread",
+    "definition": "A schedulable execution path within a process; threads in that process share much of its memory.",
+    "guideId": "processes-threads-and-concurrency",
+    "guideTitle": "Processes, threads, and doing several things at once"
+  },
+  {
+    "id": "guide-processes-threads-and-concurrency-4",
+    "term": "Concurrency",
+    "definition": "Several tasks are in progress during overlapping periods.",
+    "guideId": "processes-threads-and-concurrency",
+    "guideTitle": "Processes, threads, and doing several things at once"
+  },
+  {
+    "id": "guide-processes-threads-and-concurrency-5",
+    "term": "Parallelism",
+    "definition": "Work executes at the same time on multiple execution resources.",
+    "guideId": "processes-threads-and-concurrency",
+    "guideTitle": "Processes, threads, and doing several things at once"
+  },
+  {
+    "id": "guide-processes-threads-and-concurrency-6",
+    "term": "Blocking",
+    "definition": "An execution path waits and cannot perform other work during that interval.",
+    "guideId": "processes-threads-and-concurrency",
+    "guideTitle": "Processes, threads, and doing several things at once"
+  },
+  {
+    "id": "guide-processes-threads-and-concurrency-7",
+    "term": "Event loop",
+    "definition": "A runtime mechanism that dispatches ready work and callbacks, often on one principal language execution thread.",
+    "guideId": "processes-threads-and-concurrency",
+    "guideTitle": "Processes, threads, and doing several things at once"
+  },
+  {
+    "id": "guide-processes-threads-and-concurrency-8",
+    "term": "Race condition",
+    "definition": "The result depends on the timing or ordering of competing operations.",
+    "guideId": "processes-threads-and-concurrency",
+    "guideTitle": "Processes, threads, and doing several things at once"
+  },
+  {
+    "id": "guide-databases-and-sql-1",
+    "term": "Table",
+    "definition": "A named collection of records organized into columns.",
+    "guideId": "databases-and-sql",
+    "guideTitle": "Tables, rows, and relationships"
+  },
+  {
+    "id": "guide-databases-and-sql-2",
+    "term": "Row",
+    "definition": "One record in a table, such as one saved note.",
+    "guideId": "databases-and-sql",
+    "guideTitle": "Tables, rows, and relationships"
+  },
+  {
+    "id": "guide-databases-and-sql-3",
+    "term": "Column",
+    "definition": "A named field shared by the table’s rows, such as title.",
+    "guideId": "databases-and-sql",
+    "guideTitle": "Tables, rows, and relationships"
+  },
+  {
+    "id": "guide-databases-and-sql-4",
+    "term": "Primary key",
+    "definition": "A column or combination whose value uniquely identifies each row.",
+    "guideId": "databases-and-sql",
+    "guideTitle": "Tables, rows, and relationships"
+  },
+  {
+    "id": "guide-databases-and-sql-5",
+    "term": "Foreign key",
+    "definition": "A database rule that a referenced identifier must exist in another specified set of rows.",
+    "guideId": "databases-and-sql",
+    "guideTitle": "Tables, rows, and relationships"
+  },
+  {
+    "id": "guide-databases-and-sql-6",
+    "term": "SQL",
+    "definition": "A language for asking a relational database to read and change data.",
+    "guideId": "databases-and-sql",
+    "guideTitle": "Tables, rows, and relationships"
+  },
+  {
+    "id": "guide-sql-in-small-steps-2",
+    "term": "Projection",
+    "definition": "Choosing which columns appear in a query result.",
+    "guideId": "sql-in-small-steps",
+    "guideTitle": "Read and change data with SQL, one step at a time"
+  },
+  {
+    "id": "guide-sql-in-small-steps-3",
+    "term": "Join",
+    "definition": "Combining rows from relations according to a stated matching condition.",
+    "guideId": "sql-in-small-steps",
+    "guideTitle": "Read and change data with SQL, one step at a time"
+  },
+  {
+    "id": "guide-sql-in-small-steps-4",
+    "term": "Aggregate",
+    "definition": "A calculation over several rows, such as counting them.",
+    "guideId": "sql-in-small-steps",
+    "guideTitle": "Read and change data with SQL, one step at a time"
+  },
+  {
+    "id": "guide-sql-in-small-steps-5",
+    "term": "NULL",
+    "definition": "A marker for a missing or unknown value, with special comparison behavior.",
+    "guideId": "sql-in-small-steps",
+    "guideTitle": "Read and change data with SQL, one step at a time"
+  },
+  {
+    "id": "guide-sql-in-small-steps-6",
+    "term": "Parameterized query",
+    "definition": "A query whose data values are passed separately from its SQL structure.",
+    "guideId": "sql-in-small-steps",
+    "guideTitle": "Read and change data with SQL, one step at a time"
+  },
+  {
+    "id": "guide-find-data-with-indexes-1",
+    "term": "Table scan",
+    "definition": "Reading through table rows to find the ones that match.",
+    "guideId": "find-data-with-indexes",
+    "guideTitle": "Indexes: finding a row without reading every row"
+  },
+  {
+    "id": "guide-find-data-with-indexes-2",
+    "term": "Index",
+    "definition": "An extra organized structure that helps the database locate rows.",
+    "guideId": "find-data-with-indexes",
+    "guideTitle": "Indexes: finding a row without reading every row"
+  },
+  {
+    "id": "guide-find-data-with-indexes-3",
+    "term": "Query",
+    "definition": "A request to read or change database data.",
+    "guideId": "find-data-with-indexes",
+    "guideTitle": "Indexes: finding a row without reading every row"
+  },
+  {
+    "id": "guide-find-data-with-indexes-4",
+    "term": "Composite index",
+    "definition": "An index whose search keys contain more than one column.",
+    "guideId": "find-data-with-indexes",
+    "guideTitle": "Indexes: finding a row without reading every row"
+  },
+  {
+    "id": "guide-find-data-with-indexes-5",
+    "term": "Query plan",
+    "definition": "The database’s chosen steps for producing a query result.",
+    "guideId": "find-data-with-indexes",
+    "guideTitle": "Indexes: finding a row without reading every row"
+  },
+  {
+    "id": "guide-pagination-from-scratch-1",
+    "term": "Pagination",
+    "definition": "Returning a large result in bounded pieces.",
+    "guideId": "pagination-from-scratch",
+    "guideTitle": "Pagination: read a large list in small, reliable pieces"
+  },
+  {
+    "id": "guide-pagination-from-scratch-2",
+    "term": "Offset",
+    "definition": "A number of matching rows to skip before returning a page.",
+    "guideId": "pagination-from-scratch",
+    "guideTitle": "Pagination: read a large list in small, reliable pieces"
+  },
+  {
+    "id": "guide-pagination-from-scratch-3",
+    "term": "Cursor",
+    "definition": "A continuation value that identifies a place in an ordered result.",
+    "guideId": "pagination-from-scratch",
+    "guideTitle": "Pagination: read a large list in small, reliable pieces"
+  },
+  {
+    "id": "guide-pagination-from-scratch-4",
+    "term": "Tie-breaker",
+    "definition": "An additional ordering field that makes equal primary values unambiguous.",
+    "guideId": "pagination-from-scratch",
+    "guideTitle": "Pagination: read a large list in small, reliable pieces"
+  },
+  {
+    "id": "guide-pagination-from-scratch-5",
+    "term": "Snapshot",
+    "definition": "A view of data from a defined point or consistency boundary, rather than an automatically changing live list.",
+    "guideId": "pagination-from-scratch",
+    "guideTitle": "Pagination: read a large list in small, reliable pieces"
+  },
+  {
+    "id": "guide-database-families-1",
+    "term": "Data model",
+    "definition": "The way records and their relationships are represented.",
+    "guideId": "database-families",
+    "guideTitle": "Relational, document, key-value, wide-column, and graph stores"
+  },
+  {
+    "id": "guide-database-families-2",
+    "term": "Access pattern",
+    "definition": "A question or update the application performs repeatedly.",
+    "guideId": "database-families",
+    "guideTitle": "Relational, document, key-value, wide-column, and graph stores"
+  },
+  {
+    "id": "guide-database-families-3",
+    "term": "Document",
+    "definition": "A record containing named fields, possibly with nested records and lists.",
+    "guideId": "database-families",
+    "guideTitle": "Relational, document, key-value, wide-column, and graph stores"
+  },
+  {
+    "id": "guide-database-families-4",
+    "term": "Key-value pair",
+    "definition": "A label and the value retrieved using that label.",
+    "guideId": "database-families",
+    "guideTitle": "Relational, document, key-value, wide-column, and graph stores"
+  },
+  {
+    "id": "guide-database-families-5",
+    "term": "Partition key",
+    "definition": "A value used to group related records and determine their placement.",
+    "guideId": "database-families",
+    "guideTitle": "Relational, document, key-value, wide-column, and graph stores"
+  },
+  {
+    "id": "guide-database-families-6",
+    "term": "Graph traversal",
+    "definition": "Following relationships from one record to connected records.",
+    "guideId": "database-families",
+    "guideTitle": "Relational, document, key-value, wide-column, and graph stores"
+  },
+  {
+    "id": "guide-transactions-and-correctness-1",
+    "term": "Transaction",
+    "definition": "A group of database operations handled together under specified correctness rules.",
+    "guideId": "transactions-and-correctness",
+    "guideTitle": "Transactions: keep related changes together"
+  },
+  {
+    "id": "guide-transactions-and-correctness-2",
+    "term": "Commit",
+    "definition": "Accept the transaction’s changes as the completed database result.",
+    "guideId": "transactions-and-correctness",
+    "guideTitle": "Transactions: keep related changes together"
+  },
+  {
+    "id": "guide-transactions-and-correctness-3",
+    "term": "Rollback",
+    "definition": "Discard the transaction’s uncommitted changes.",
+    "guideId": "transactions-and-correctness",
+    "guideTitle": "Transactions: keep related changes together"
+  },
+  {
+    "id": "guide-transactions-and-correctness-4",
+    "term": "Atomicity",
+    "definition": "The transaction’s changes are accepted together or not accepted.",
+    "guideId": "transactions-and-correctness",
+    "guideTitle": "Transactions: keep related changes together"
+  },
+  {
+    "id": "guide-transactions-and-correctness-5",
+    "term": "Isolation",
+    "definition": "Rules governing how concurrent transactions can observe and affect one another.",
+    "guideId": "transactions-and-correctness",
+    "guideTitle": "Transactions: keep related changes together"
+  },
+  {
+    "id": "guide-transactions-and-correctness-6",
+    "term": "Version number",
+    "definition": "A stored revision value used to recognize whether a record changed since it was read.",
+    "guideId": "transactions-and-correctness",
+    "guideTitle": "Transactions: keep related changes together"
+  },
+  {
+    "id": "guide-data-modeling-basics-1",
+    "term": "Entity",
+    "definition": "A kind of thing the application records, such as a user or note.",
+    "guideId": "data-modeling-basics",
+    "guideTitle": "Data modeling: keys, relationships, and duplication"
+  },
+  {
+    "id": "guide-data-modeling-basics-4",
+    "term": "Cardinality",
+    "definition": "How many records on one side can relate to records on another side.",
+    "guideId": "data-modeling-basics",
+    "guideTitle": "Data modeling: keys, relationships, and duplication"
+  },
+  {
+    "id": "guide-data-modeling-basics-5",
+    "term": "Normalization",
+    "definition": "Organizing facts according to what they describe, reducing avoidable duplication and contradictory updates.",
+    "guideId": "data-modeling-basics",
+    "guideTitle": "Data modeling: keys, relationships, and duplication"
+  },
+  {
+    "id": "guide-data-modeling-basics-6",
+    "term": "Denormalization",
+    "definition": "Deliberately storing redundant or combined data to make a particular operation easier.",
+    "guideId": "data-modeling-basics",
+    "guideTitle": "Data modeling: keys, relationships, and duplication"
+  },
+  {
+    "id": "guide-choose-a-database-2",
+    "term": "Relational database",
+    "definition": "A database that organizes related records into tables and supports operations over those relationships.",
+    "guideId": "choose-a-database",
+    "guideTitle": "SQL, NoSQL, and choosing what you need"
+  },
+  {
+    "id": "guide-choose-a-database-3",
+    "term": "Document store",
+    "definition": "A database organized around records that can contain nested fields and lists.",
+    "guideId": "choose-a-database",
+    "guideTitle": "SQL, NoSQL, and choosing what you need"
+  },
+  {
+    "id": "guide-choose-a-database-4",
+    "term": "Key-value store",
+    "definition": "A store that retrieves a value using its associated key.",
+    "guideId": "choose-a-database",
+    "guideTitle": "SQL, NoSQL, and choosing what you need"
+  },
+  {
+    "id": "guide-choose-a-database-5",
+    "term": "Object storage",
+    "definition": "Storage for named objects such as image files, with content and metadata.",
+    "guideId": "choose-a-database",
+    "guideTitle": "SQL, NoSQL, and choosing what you need"
+  },
+  {
+    "id": "guide-choose-a-database-6",
+    "term": "Metadata",
+    "definition": "Information describing content, such as its owner, size, or storage location.",
+    "guideId": "choose-a-database",
+    "guideTitle": "SQL, NoSQL, and choosing what you need"
+  },
+  {
+    "id": "guide-blobs-files-and-objects-1",
+    "term": "Byte",
+    "definition": "A small unit of digital data; files are represented as sequences of bytes.",
+    "guideId": "blobs-files-and-objects",
+    "guideTitle": "Files, blocks, objects, and the metadata around them"
+  },
+  {
+    "id": "guide-blobs-files-and-objects-2",
+    "term": "Blob",
+    "definition": "Binary large object: a piece of binary content such as an image or model file.",
+    "guideId": "blobs-files-and-objects",
+    "guideTitle": "Files, blocks, objects, and the metadata around them"
+  },
+  {
+    "id": "guide-blobs-files-and-objects-4",
+    "term": "Block storage",
+    "definition": "A storage interface exposing addressable blocks, commonly used beneath a filesystem or database.",
+    "guideId": "blobs-files-and-objects",
+    "guideTitle": "Files, blocks, objects, and the metadata around them"
+  },
+  {
+    "id": "guide-blobs-files-and-objects-5",
+    "term": "File storage",
+    "definition": "Storage accessed through files and directories with filesystem operations.",
+    "guideId": "blobs-files-and-objects",
+    "guideTitle": "Files, blocks, objects, and the metadata around them"
+  },
+  {
+    "id": "guide-blobs-files-and-objects-7",
+    "term": "Checksum",
+    "definition": "A value computed from content to help detect whether those bytes changed or were corrupted.",
+    "guideId": "blobs-files-and-objects",
+    "guideTitle": "Files, blocks, objects, and the metadata around them"
+  },
+  {
+    "id": "guide-numbers-bytes-and-units-1",
+    "term": "Bit",
+    "definition": "One binary digit; a basic unit of information.",
+    "guideId": "numbers-bytes-and-units",
+    "guideTitle": "Bytes, bandwidth, and units without guessing"
+  },
+  {
+    "id": "guide-numbers-bytes-and-units-3",
+    "term": "Bandwidth",
+    "definition": "A rate at which a connection can carry information, often advertised in bits per second.",
+    "guideId": "numbers-bytes-and-units",
+    "guideTitle": "Bytes, bandwidth, and units without guessing"
+  },
+  {
+    "id": "guide-numbers-bytes-and-units-4",
+    "term": "Payload",
+    "definition": "The application content itself, before counting surrounding protocol and storage overhead.",
+    "guideId": "numbers-bytes-and-units",
+    "guideTitle": "Bytes, bandwidth, and units without guessing"
+  },
+  {
+    "id": "guide-numbers-bytes-and-units-5",
+    "term": "Headroom",
+    "definition": "Capacity intentionally left unused so variation and failures do not immediately exhaust the system.",
+    "guideId": "numbers-bytes-and-units",
+    "guideTitle": "Bytes, bandwidth, and units without guessing"
+  },
+  {
+    "id": "guide-measure-before-scaling-1",
+    "term": "Latency",
+    "definition": "How long one operation takes between a stated start and finish.",
+    "guideId": "measure-before-scaling",
+    "guideTitle": "Latency, throughput, and simple estimates"
+  },
+  {
+    "id": "guide-measure-before-scaling-2",
+    "term": "Throughput",
+    "definition": "How many operations finish per unit of time at a stated boundary.",
+    "guideId": "measure-before-scaling",
+    "guideTitle": "Latency, throughput, and simple estimates"
+  },
+  {
+    "id": "guide-measure-before-scaling-3",
+    "term": "Workload",
+    "definition": "The mix and amount of work users and background tasks ask the system to do.",
+    "guideId": "measure-before-scaling",
+    "guideTitle": "Latency, throughput, and simple estimates"
+  },
+  {
+    "id": "guide-measure-before-scaling-4",
+    "term": "Bottleneck",
+    "definition": "A resource or step that currently limits useful progress.",
+    "guideId": "measure-before-scaling",
+    "guideTitle": "Latency, throughput, and simple estimates"
+  },
+  {
+    "id": "guide-measure-before-scaling-5",
+    "term": "Peak",
+    "definition": "A high-demand interval with a stated duration, such as the busiest minute.",
+    "guideId": "measure-before-scaling",
+    "guideTitle": "Latency, throughput, and simple estimates"
+  },
+  {
+    "id": "guide-grow-one-server-1",
+    "term": "Vertical scaling",
+    "definition": "Giving one machine more resources, such as memory or processor capacity.",
+    "guideId": "grow-one-server",
+    "guideTitle": "Grow one server, then add more"
+  },
+  {
+    "id": "guide-grow-one-server-2",
+    "term": "Horizontal scaling",
+    "definition": "Adding machines or application instances to share work.",
+    "guideId": "grow-one-server",
+    "guideTitle": "Grow one server, then add more"
+  },
+  {
+    "id": "guide-grow-one-server-3",
+    "term": "Instance",
+    "definition": "One running copy of an application.",
+    "guideId": "grow-one-server",
+    "guideTitle": "Grow one server, then add more"
+  },
+  {
+    "id": "guide-grow-one-server-4",
+    "term": "Shared dependency",
+    "definition": "A service or resource that several application instances all use.",
+    "guideId": "grow-one-server",
+    "guideTitle": "Grow one server, then add more"
+  },
+  {
+    "id": "guide-gateways-and-proxies-1",
+    "term": "Proxy",
+    "definition": "An intermediary that handles communication on behalf of another participant.",
+    "guideId": "gateways-and-proxies",
+    "guideTitle": "Proxies, load balancers, API gateways, and ingress"
+  },
+  {
+    "id": "guide-gateways-and-proxies-2",
+    "term": "Forward proxy",
+    "definition": "An intermediary used on the client side to reach other services.",
+    "guideId": "gateways-and-proxies",
+    "guideTitle": "Proxies, load balancers, API gateways, and ingress"
+  },
+  {
+    "id": "guide-gateways-and-proxies-3",
+    "term": "Reverse proxy",
+    "definition": "An entry intermediary that receives requests for a service and forwards them to its backend.",
+    "guideId": "gateways-and-proxies",
+    "guideTitle": "Proxies, load balancers, API gateways, and ingress"
+  },
+  {
+    "id": "guide-gateways-and-proxies-4",
+    "term": "Load balancer",
+    "definition": "A component or function that distributes eligible connections or requests among service instances.",
+    "guideId": "gateways-and-proxies",
+    "guideTitle": "Proxies, load balancers, API gateways, and ingress"
+  },
+  {
+    "id": "guide-gateways-and-proxies-5",
+    "term": "API gateway",
+    "definition": "An application entry point that applies API-facing policies such as routing, authentication, and request limits.",
+    "guideId": "gateways-and-proxies",
+    "guideTitle": "Proxies, load balancers, API gateways, and ingress"
+  },
+  {
+    "id": "guide-gateways-and-proxies-6",
+    "term": "Upstream",
+    "definition": "The backend destination a proxy forwards to; the word is relative to the proxy’s viewpoint.",
+    "guideId": "gateways-and-proxies",
+    "guideTitle": "Proxies, load balancers, API gateways, and ingress"
+  },
+  {
+    "id": "guide-service-boundaries-1",
+    "term": "Monolith",
+    "definition": "An application deployed as one main unit; its internal code can still be well organized.",
+    "guideId": "service-boundaries",
+    "guideTitle": "Monoliths, modules, and service boundaries"
+  },
+  {
+    "id": "guide-service-boundaries-2",
+    "term": "Module",
+    "definition": "A code boundary that groups a coherent responsibility behind an interface.",
+    "guideId": "service-boundaries",
+    "guideTitle": "Monoliths, modules, and service boundaries"
+  },
+  {
+    "id": "guide-service-boundaries-3",
+    "term": "Service",
+    "definition": "An independently running component reached through a defined communication contract.",
+    "guideId": "service-boundaries",
+    "guideTitle": "Monoliths, modules, and service boundaries"
+  },
+  {
+    "id": "guide-service-boundaries-4",
+    "term": "Coupling",
+    "definition": "How strongly a change or failure in one component forces a change or failure elsewhere.",
+    "guideId": "service-boundaries",
+    "guideTitle": "Monoliths, modules, and service boundaries"
+  },
+  {
+    "id": "guide-service-boundaries-5",
+    "term": "Data ownership",
+    "definition": "Responsibility for a fact’s meaning, allowed updates and authoritative representation.",
+    "guideId": "service-boundaries",
+    "guideTitle": "Monoliths, modules, and service boundaries"
+  },
+  {
+    "id": "guide-service-boundaries-6",
+    "term": "Partial failure",
+    "definition": "Some participating components work while another component or network path fails.",
+    "guideId": "service-boundaries",
+    "guideTitle": "Monoliths, modules, and service boundaries"
+  },
+  {
+    "id": "guide-service-boundaries-7",
+    "term": "Deployment boundary",
+    "definition": "A unit that can be released, scaled or restarted as part of an operational action.",
+    "guideId": "service-boundaries",
+    "guideTitle": "Monoliths, modules, and service boundaries"
+  },
+  {
+    "id": "guide-load-balancing-2",
+    "term": "Backend",
+    "definition": "An application server behind a routing component.",
+    "guideId": "load-balancing",
+    "guideTitle": "Load balancing: sharing incoming requests"
+  },
+  {
+    "id": "guide-load-balancing-3",
+    "term": "Round robin",
+    "definition": "A policy that takes turns selecting eligible destinations.",
+    "guideId": "load-balancing",
+    "guideTitle": "Load balancing: sharing incoming requests"
+  },
+  {
+    "id": "guide-load-balancing-4",
+    "term": "Health check",
+    "definition": "A test used to decide whether a destination should currently receive work.",
+    "guideId": "load-balancing",
+    "guideTitle": "Load balancing: sharing incoming requests"
+  },
+  {
+    "id": "guide-remember-with-caches-1",
+    "term": "Cache",
+    "definition": "A reusable copy of data or a computed result kept to avoid repeating expensive work.",
+    "guideId": "remember-with-caches",
+    "guideTitle": "Caching: reuse an answer you already have"
+  },
+  {
+    "id": "guide-remember-with-caches-2",
+    "term": "Cache key",
+    "definition": "The identifier used to find one cached result.",
+    "guideId": "remember-with-caches",
+    "guideTitle": "Caching: reuse an answer you already have"
+  },
+  {
+    "id": "guide-remember-with-caches-3",
+    "term": "Hit",
+    "definition": "A lookup finds a usable cached entry.",
+    "guideId": "remember-with-caches",
+    "guideTitle": "Caching: reuse an answer you already have"
+  },
+  {
+    "id": "guide-remember-with-caches-4",
+    "term": "Miss",
+    "definition": "A lookup does not find a usable cached entry.",
+    "guideId": "remember-with-caches",
+    "guideTitle": "Caching: reuse an answer you already have"
+  },
+  {
+    "id": "guide-remember-with-caches-5",
+    "term": "Source of truth",
+    "definition": "The main accepted record used to resolve disagreement with a cached copy.",
+    "guideId": "remember-with-caches",
+    "guideTitle": "Caching: reuse an answer you already have"
+  },
+  {
+    "id": "guide-remember-with-caches-6",
+    "term": "Cache-aside",
+    "definition": "The application checks the cache, and on a miss reads the main store and fills the cache.",
+    "guideId": "remember-with-caches",
+    "guideTitle": "Caching: reuse an answer you already have"
+  },
+  {
+    "id": "guide-redis-from-scratch-1",
+    "term": "Redis",
+    "definition": "A data-structure server that applications access using commands.",
+    "guideId": "redis-from-scratch",
+    "guideTitle": "Redis from scratch: keys, data types, expiry, and durability"
+  },
+  {
+    "id": "guide-redis-from-scratch-2",
+    "term": "Client library",
+    "definition": "Application code that manages communication with another service and exposes convenient operations.",
+    "guideId": "redis-from-scratch",
+    "guideTitle": "Redis from scratch: keys, data types, expiry, and durability"
+  },
+  {
+    "id": "guide-redis-from-scratch-4",
+    "term": "Eviction",
+    "definition": "Removal of data under a memory-management policy.",
+    "guideId": "redis-from-scratch",
+    "guideTitle": "Redis from scratch: keys, data types, expiry, and durability"
+  },
+  {
+    "id": "guide-redis-from-scratch-5",
+    "term": "Persistence",
+    "definition": "Saving data outside temporary process memory so it can be recovered under a configured policy.",
+    "guideId": "redis-from-scratch",
+    "guideTitle": "Redis from scratch: keys, data types, expiry, and durability"
+  },
+  {
+    "id": "guide-redis-from-scratch-6",
+    "term": "Atomic command",
+    "definition": "A command whose operation is indivisible with respect to competing operations under the server’s execution rules.",
+    "guideId": "redis-from-scratch",
+    "guideTitle": "Redis from scratch: keys, data types, expiry, and durability"
+  },
+  {
+    "id": "guide-cache-patterns-and-invalidation-2",
+    "term": "Invalidation",
+    "definition": "Making a cached representation unusable because it may no longer be valid.",
+    "guideId": "cache-patterns-and-invalidation",
+    "guideTitle": "Cache patterns, stale data, and cache stampedes"
+  },
+  {
+    "id": "guide-cache-patterns-and-invalidation-5",
+    "term": "Cache stampede",
+    "definition": "Many callers simultaneously perform the same expensive rebuild after a shared miss or expiry.",
+    "guideId": "cache-patterns-and-invalidation",
+    "guideTitle": "Cache patterns, stale data, and cache stampedes"
+  },
+  {
+    "id": "guide-cache-freshness-and-cdns-3",
+    "term": "CDN",
+    "definition": "Content delivery network: servers in multiple locations that can deliver cached content near users.",
+    "guideId": "cache-freshness-and-cdns",
+    "guideTitle": "Fresh caches and nearby content"
+  },
+  {
+    "id": "guide-cache-freshness-and-cdns-4",
+    "term": "Origin",
+    "definition": "The source server or storage from which a CDN obtains content.",
+    "guideId": "cache-freshness-and-cdns",
+    "guideTitle": "Fresh caches and nearby content"
+  },
+  {
+    "id": "guide-cache-freshness-and-cdns-5",
+    "term": "Versioned URL",
+    "definition": "An address that changes when the content version changes.",
+    "guideId": "cache-freshness-and-cdns",
+    "guideTitle": "Fresh caches and nearby content"
+  },
+  {
+    "id": "guide-serialization-and-data-formats-1",
+    "term": "Serialization",
+    "definition": "Turning a value or structure into a representation that can be stored or transmitted.",
+    "guideId": "serialization-and-data-formats",
+    "guideTitle": "JSON, bytes, serialization, and compression"
+  },
+  {
+    "id": "guide-serialization-and-data-formats-2",
+    "term": "Deserialization",
+    "definition": "Parsing a serialized representation back into a program value or structure.",
+    "guideId": "serialization-and-data-formats",
+    "guideTitle": "JSON, bytes, serialization, and compression"
+  },
+  {
+    "id": "guide-serialization-and-data-formats-3",
+    "term": "Encoding",
+    "definition": "A rule for representing information as bytes or symbols, such as UTF-8 for text.",
+    "guideId": "serialization-and-data-formats",
+    "guideTitle": "JSON, bytes, serialization, and compression"
+  },
+  {
+    "id": "guide-serialization-and-data-formats-4",
+    "term": "Schema",
+    "definition": "A definition of expected fields, types, and constraints for data.",
+    "guideId": "serialization-and-data-formats",
+    "guideTitle": "JSON, bytes, serialization, and compression"
+  },
+  {
+    "id": "guide-serialization-and-data-formats-5",
+    "term": "Compression",
+    "definition": "Representing data using fewer bytes when patterns allow it, with work needed to encode/decode.",
+    "guideId": "serialization-and-data-formats",
+    "guideTitle": "JSON, bytes, serialization, and compression"
+  },
+  {
+    "id": "guide-serialization-and-data-formats-6",
+    "term": "Binary format",
+    "definition": "A format designed directly around bytes rather than primarily human-readable text.",
+    "guideId": "serialization-and-data-formats",
+    "guideTitle": "JSON, bytes, serialization, and compression"
+  },
+  {
+    "id": "guide-background-jobs-1",
+    "term": "Background job",
+    "definition": "Work performed outside the immediate user request, with its own tracked outcome.",
+    "guideId": "background-jobs",
+    "guideTitle": "Background work: do not make the user wait"
+  },
+  {
+    "id": "guide-background-jobs-2",
+    "term": "Queue",
+    "definition": "A collection of work waiting to be taken by workers.",
+    "guideId": "background-jobs",
+    "guideTitle": "Background work: do not make the user wait"
+  },
+  {
+    "id": "guide-background-jobs-3",
+    "term": "Worker",
+    "definition": "A process or component that takes and performs jobs.",
+    "guideId": "background-jobs",
+    "guideTitle": "Background work: do not make the user wait"
+  },
+  {
+    "id": "guide-background-jobs-4",
+    "term": "Acknowledgment",
+    "definition": "A message or recorded decision that confirms a specified stage, such as task completion.",
+    "guideId": "background-jobs",
+    "guideTitle": "Background work: do not make the user wait"
+  },
+  {
+    "id": "guide-background-jobs-5",
+    "term": "Backlog",
+    "definition": "Work accepted but not yet finished.",
+    "guideId": "background-jobs",
+    "guideTitle": "Background work: do not make the user wait"
+  },
+  {
+    "id": "guide-containers-and-deployment-2",
+    "term": "Container image",
+    "definition": "A packaged filesystem and runtime metadata used to start containers.",
+    "guideId": "containers-and-deployment",
+    "guideTitle": "From a program to a container and a running service"
+  },
+  {
+    "id": "guide-containers-and-deployment-3",
+    "term": "Container",
+    "definition": "A running workload with operating-system isolation and resource controls; it is not a separate physical computer.",
+    "guideId": "containers-and-deployment",
+    "guideTitle": "From a program to a container and a running service"
+  },
+  {
+    "id": "guide-containers-and-deployment-4",
+    "term": "Virtual machine",
+    "definition": "A virtualized computer environment that typically runs its own guest operating-system kernel.",
+    "guideId": "containers-and-deployment",
+    "guideTitle": "From a program to a container and a running service"
+  },
+  {
+    "id": "guide-containers-and-deployment-5",
+    "term": "Registry",
+    "definition": "A service that stores and distributes container images.",
+    "guideId": "containers-and-deployment",
+    "guideTitle": "From a program to a container and a running service"
+  },
+  {
+    "id": "guide-containers-and-deployment-6",
+    "term": "Pod",
+    "definition": "Kubernetes’s smallest deployable workload unit, containing one or more closely related containers sharing selected resources.",
+    "guideId": "containers-and-deployment",
+    "guideTitle": "From a program to a container and a running service"
+  },
+  {
+    "id": "guide-queues-and-retries-1",
+    "term": "Retry",
+    "definition": "Another attempt to perform the same intended operation after an incomplete or uncertain attempt.",
+    "guideId": "queues-and-retries",
+    "guideTitle": "Queues, retries, and doing work twice"
+  },
+  {
+    "id": "guide-queues-and-retries-3",
+    "term": "At-least-once delivery",
+    "definition": "A delivery contract that can repeat messages while trying to avoid loss under its stated assumptions.",
+    "guideId": "queues-and-retries",
+    "guideTitle": "Queues, retries, and doing work twice"
+  },
+  {
+    "id": "guide-queues-and-retries-4",
+    "term": "Idempotent effect",
+    "definition": "Repeating the same intended operation does not add another unwanted effect beyond one successful execution.",
+    "guideId": "queues-and-retries",
+    "guideTitle": "Queues, retries, and doing work twice"
+  },
+  {
+    "id": "guide-queues-and-retries-5",
+    "term": "Backoff",
+    "definition": "Increasing the delay between retry attempts to reduce repeated pressure.",
+    "guideId": "queues-and-retries",
+    "guideTitle": "Queues, retries, and doing work twice"
+  },
+  {
+    "id": "guide-queues-and-retries-6",
+    "term": "Deduplication",
+    "definition": "Recognizing repeated operation identities and avoiding another application of the same protected effect.",
+    "guideId": "queues-and-retries",
+    "guideTitle": "Queues, retries, and doing work twice"
+  },
+  {
+    "id": "guide-queue-broker-fundamentals-1",
+    "term": "Producer",
+    "definition": "A program that publishes work or events.",
+    "guideId": "queue-broker-fundamentals",
+    "guideTitle": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+  },
+  {
+    "id": "guide-queue-broker-fundamentals-2",
+    "term": "Consumer",
+    "definition": "A program that receives and processes published work or events.",
+    "guideId": "queue-broker-fundamentals",
+    "guideTitle": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+  },
+  {
+    "id": "guide-queue-broker-fundamentals-3",
+    "term": "Broker",
+    "definition": "Software or a managed service that mediates message storage, routing or delivery.",
+    "guideId": "queue-broker-fundamentals",
+    "guideTitle": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+  },
+  {
+    "id": "guide-queue-broker-fundamentals-4",
+    "term": "Acknowledgement",
+    "definition": "A signal that a specifically defined delivery or processing step completed.",
+    "guideId": "queue-broker-fundamentals",
+    "guideTitle": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+  },
+  {
+    "id": "guide-queue-broker-fundamentals-5",
+    "term": "Visibility timeout",
+    "definition": "A period during which a received SQS message is hidden from ordinary competing receives.",
+    "guideId": "queue-broker-fundamentals",
+    "guideTitle": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+  },
+  {
+    "id": "guide-queue-broker-fundamentals-7",
+    "term": "Consumer group",
+    "definition": "A coordination unit whose members share consumption work under the system’s rules.",
+    "guideId": "queue-broker-fundamentals",
+    "guideTitle": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+  },
+  {
+    "id": "guide-queue-broker-fundamentals-8",
+    "term": "Replay",
+    "definition": "Reading retained events again from an earlier position.",
+    "guideId": "queue-broker-fundamentals",
+    "guideTitle": "Queues, pub/sub, and logs: RabbitMQ, SQS, and Kafka"
+  },
+  {
+    "id": "guide-job-lifecycle-and-backpressure-1",
+    "term": "Job",
+    "definition": "A recorded unit of work that can outlive the request that submitted it.",
+    "guideId": "job-lifecycle-and-backpressure",
+    "guideTitle": "Job states, retries, and backpressure"
+  },
+  {
+    "id": "guide-job-lifecycle-and-backpressure-4",
+    "term": "Backpressure",
+    "definition": "A signal or control that limits incoming work when downstream capacity cannot keep up.",
+    "guideId": "job-lifecycle-and-backpressure",
+    "guideTitle": "Job states, retries, and backpressure"
+  },
+  {
+    "id": "guide-job-lifecycle-and-backpressure-5",
+    "term": "Concurrency limit",
+    "definition": "A bound on the number of operations running at the same time.",
+    "guideId": "job-lifecycle-and-backpressure",
+    "guideTitle": "Job states, retries, and backpressure"
+  },
+  {
+    "id": "guide-job-lifecycle-and-backpressure-6",
+    "term": "Dead-letter queue",
+    "definition": "A separate place for messages that cannot be processed successfully under the retry policy.",
+    "guideId": "job-lifecycle-and-backpressure",
+    "guideTitle": "Job states, retries, and backpressure"
+  },
+  {
+    "id": "guide-job-lifecycle-and-backpressure-7",
+    "term": "Polling",
+    "definition": "Asking for status repeatedly instead of keeping the original request waiting.",
+    "guideId": "job-lifecycle-and-backpressure",
+    "guideTitle": "Job states, retries, and backpressure"
+  },
+  {
+    "id": "guide-first-design-url-shortener-1",
+    "term": "Short code",
+    "definition": "The compact identifier included in a shortened link.",
+    "guideId": "first-design-url-shortener",
+    "guideTitle": "A guided walkthrough: how familiar blocks fit together"
+  },
+  {
+    "id": "guide-first-design-url-shortener-2",
+    "term": "Redirect",
+    "definition": "An HTTP response telling the browser to request another address.",
+    "guideId": "first-design-url-shortener",
+    "guideTitle": "A guided walkthrough: how familiar blocks fit together"
+  },
+  {
+    "id": "guide-first-design-url-shortener-3",
+    "term": "Collision",
+    "definition": "Two attempts choose the same short code for different mappings.",
+    "guideId": "first-design-url-shortener",
+    "guideTitle": "A guided walkthrough: how familiar blocks fit together"
+  },
+  {
+    "id": "guide-first-design-url-shortener-4",
+    "term": "Unique constraint",
+    "definition": "A database rule rejecting duplicate values for a selected key.",
+    "guideId": "first-design-url-shortener",
+    "guideTitle": "A guided walkthrough: how familiar blocks fit together"
+  },
+  {
+    "id": "guide-first-design-url-shortener-5",
+    "term": "Operation ID",
+    "definition": "A stable identifier for one intended create action across retries.",
+    "guideId": "first-design-url-shortener",
+    "guideTitle": "A guided walkthrough: how familiar blocks fit together"
+  },
+  {
+    "id": "guide-copying-data-1",
+    "term": "Replication",
+    "definition": "Keeping copies of the same data on more than one database node.",
+    "guideId": "copying-data",
+    "guideTitle": "Replication: keeping another copy"
+  },
+  {
+    "id": "guide-copying-data-2",
+    "term": "Primary / leader",
+    "definition": "In this simple model, the database node accepting writes and sending its changes to replicas.",
+    "guideId": "copying-data",
+    "guideTitle": "Replication: keeping another copy"
+  },
+  {
+    "id": "guide-copying-data-3",
+    "term": "Replica",
+    "definition": "A node maintaining a copy by receiving and applying changes.",
+    "guideId": "copying-data",
+    "guideTitle": "Replication: keeping another copy"
+  },
+  {
+    "id": "guide-copying-data-4",
+    "term": "Replication lag",
+    "definition": "The gap between a change at the writer and that change being received/applied at a replica.",
+    "guideId": "copying-data",
+    "guideTitle": "Replication: keeping another copy"
+  },
+  {
+    "id": "guide-copying-data-5",
+    "term": "Failover",
+    "definition": "Moving a service role to another eligible node after a failure, under a defined safety procedure.",
+    "guideId": "copying-data",
+    "guideTitle": "Replication: keeping another copy"
+  },
+  {
+    "id": "guide-split-data-into-shards-1",
+    "term": "Shard",
+    "definition": "One partition of a dataset placed on a database node or group of nodes.",
+    "guideId": "split-data-into-shards",
+    "guideTitle": "Sharding: splitting a large dataset"
+  },
+  {
+    "id": "guide-split-data-into-shards-2",
+    "term": "Shard key",
+    "definition": "The field used to decide where a record belongs, such as owner_id.",
+    "guideId": "split-data-into-shards",
+    "guideTitle": "Sharding: splitting a large dataset"
+  },
+  {
+    "id": "guide-split-data-into-shards-3",
+    "term": "Hotspot",
+    "definition": "A key or partition receiving disproportionately much work.",
+    "guideId": "split-data-into-shards",
+    "guideTitle": "Sharding: splitting a large dataset"
+  },
+  {
+    "id": "guide-split-data-into-shards-4",
+    "term": "Routing",
+    "definition": "Finding which shard owns the requested data.",
+    "guideId": "split-data-into-shards",
+    "guideTitle": "Sharding: splitting a large dataset"
+  },
+  {
+    "id": "guide-split-data-into-shards-5",
+    "term": "Rebalancing",
+    "definition": "Moving ownership/data as shard capacity or membership changes.",
+    "guideId": "split-data-into-shards",
+    "guideTitle": "Sharding: splitting a large dataset"
+  },
+  {
+    "id": "guide-consistency-in-plain-language-1",
+    "term": "Consistency model",
+    "definition": "Rules describing which results reads and writes are allowed to produce together.",
+    "guideId": "consistency-in-plain-language",
+    "guideTitle": "Consistency: which value will I read?"
+  },
+  {
+    "id": "guide-consistency-in-plain-language-2",
+    "term": "Read-your-writes",
+    "definition": "A session should see its own completed updates, rather than an older state that omits them.",
+    "guideId": "consistency-in-plain-language",
+    "guideTitle": "Consistency: which value will I read?"
+  },
+  {
+    "id": "guide-consistency-in-plain-language-3",
+    "term": "Monotonic reads",
+    "definition": "Within the relevant session/history, a reader should not move backward after observing newer data.",
+    "guideId": "consistency-in-plain-language",
+    "guideTitle": "Consistency: which value will I read?"
+  },
+  {
+    "id": "guide-consistency-in-plain-language-4",
+    "term": "Linearizability",
+    "definition": "Operations appear to take effect one at a time between their call and response, while respecting the real-time order of nonoverlapping operations.",
+    "guideId": "consistency-in-plain-language",
+    "guideTitle": "Consistency: which value will I read?"
+  },
+  {
+    "id": "guide-consistency-in-plain-language-5",
+    "term": "Eventual consistency",
+    "definition": "A convergence promise under stated assumptions, such as updates stopping and communication/repair succeeding; it is not a fixed freshness deadline.",
+    "guideId": "consistency-in-plain-language",
+    "guideTitle": "Consistency: which value will I read?"
+  },
+  {
+    "id": "guide-partitions-and-quorums-1",
+    "term": "Network partition",
+    "definition": "A communication failure that separates some nodes so they cannot exchange the messages they need.",
+    "guideId": "partitions-and-quorums",
+    "guideTitle": "Network splits, CAP, and quorums"
+  },
+  {
+    "id": "guide-partitions-and-quorums-2",
+    "term": "CAP",
+    "definition": "A result showing that a partition-prone model cannot guarantee both linearizable read/write behavior and successful service of every request at nonfailed nodes.",
+    "guideId": "partitions-and-quorums",
+    "guideTitle": "Network splits, CAP, and quorums"
+  },
+  {
+    "id": "guide-partitions-and-quorums-3",
+    "term": "Quorum",
+    "definition": "A set of responses large enough for a particular protocol’s decision rule.",
+    "guideId": "partitions-and-quorums",
+    "guideTitle": "Network splits, CAP, and quorums"
+  },
+  {
+    "id": "guide-partitions-and-quorums-4",
+    "term": "N, W, R",
+    "definition": "In a simple fixed-replica model: total replicas, required write acknowledgments, and required read responses.",
+    "guideId": "partitions-and-quorums",
+    "guideTitle": "Network splits, CAP, and quorums"
+  },
+  {
+    "id": "guide-partitions-and-quorums-5",
+    "term": "Reconciliation",
+    "definition": "Comparing and repairing divergent or missing state after communication or processing resumes.",
+    "guideId": "partitions-and-quorums",
+    "guideTitle": "Network splits, CAP, and quorums"
+  },
+  {
+    "id": "guide-reliable-events-1",
+    "term": "Event",
+    "definition": "A record of a fact that happened, such as NotePublished, with an identity and relevant data.",
+    "guideId": "reliable-events",
+    "guideTitle": "Events and the transactional outbox"
+  },
+  {
+    "id": "guide-reliable-events-2",
+    "term": "Dual write",
+    "definition": "Updating two separate systems as part of one logical action without a shared atomic commit.",
+    "guideId": "reliable-events",
+    "guideTitle": "Events and the transactional outbox"
+  },
+  {
+    "id": "guide-reliable-events-3",
+    "term": "Transactional outbox",
+    "definition": "An outgoing-work record saved in the same database transaction as the business change.",
+    "guideId": "reliable-events",
+    "guideTitle": "Events and the transactional outbox"
+  },
+  {
+    "id": "guide-reliable-events-4",
+    "term": "Relay",
+    "definition": "A worker that reads committed outbox entries and publishes them to another system.",
+    "guideId": "reliable-events",
+    "guideTitle": "Events and the transactional outbox"
+  },
+  {
+    "id": "guide-reliable-events-5",
+    "term": "Idempotent processing",
+    "definition": "Repeating an operation with the same identity does not repeat its intended business effect.",
+    "guideId": "reliable-events",
+    "guideTitle": "Events and the transactional outbox"
+  },
+  {
+    "id": "guide-streaming-and-replay-1",
+    "term": "Append-only log",
+    "definition": "An ordered sequence to which new records are added; retained records can be read again within the retention policy.",
+    "guideId": "streaming-and-replay",
+    "guideTitle": "Logs, streams, and replay"
+  },
+  {
+    "id": "guide-streaming-and-replay-2",
+    "term": "Partition",
+    "definition": "One ordered portion of a larger log, with its own sequence of offsets.",
+    "guideId": "streaming-and-replay",
+    "guideTitle": "Logs, streams, and replay"
+  },
+  {
+    "id": "guide-streaming-and-replay-6",
+    "term": "Consumer lag",
+    "definition": "How far a reader is behind the current log position; time-based lag adds useful context.",
+    "guideId": "streaming-and-replay",
+    "guideTitle": "Logs, streams, and replay"
+  },
+  {
+    "id": "guide-identity-and-permissions-1",
+    "term": "Authentication",
+    "definition": "Establishing who or what is making a request, using a supported identity mechanism.",
+    "guideId": "identity-and-permissions",
+    "guideTitle": "Authentication, authorization, and tenant boundaries"
+  },
+  {
+    "id": "guide-identity-and-permissions-2",
+    "term": "Authorization",
+    "definition": "Deciding whether that identity may perform this action on this resource now.",
+    "guideId": "identity-and-permissions",
+    "guideTitle": "Authentication, authorization, and tenant boundaries"
+  },
+  {
+    "id": "guide-identity-and-permissions-3",
+    "term": "Session",
+    "definition": "A way to associate later requests with a previously established login or identity context.",
+    "guideId": "identity-and-permissions",
+    "guideTitle": "Authentication, authorization, and tenant boundaries"
+  },
+  {
+    "id": "guide-identity-and-permissions-4",
+    "term": "Tenant",
+    "definition": "A customer or organizational boundary whose data and permissions must be isolated from others.",
+    "guideId": "identity-and-permissions",
+    "guideTitle": "Authentication, authorization, and tenant boundaries"
+  },
+  {
+    "id": "guide-identity-and-permissions-5",
+    "term": "Least privilege",
+    "definition": "Granting only the access needed for the intended task.",
+    "guideId": "identity-and-permissions",
+    "guideTitle": "Authentication, authorization, and tenant boundaries"
+  },
+  {
+    "id": "guide-rate-limits-and-abuse-1",
+    "term": "Rate limit",
+    "definition": "A policy that bounds admitted work over time for a chosen identity or resource.",
+    "guideId": "rate-limits-and-abuse",
+    "guideTitle": "Rate limits: protecting a shared service"
+  },
+  {
+    "id": "guide-rate-limits-and-abuse-2",
+    "term": "Limit key",
+    "definition": "The scope being counted, such as one authenticated account and one operation.",
+    "guideId": "rate-limits-and-abuse",
+    "guideTitle": "Rate limits: protecting a shared service"
+  },
+  {
+    "id": "guide-rate-limits-and-abuse-3",
+    "term": "Fixed window",
+    "definition": "A counter for each aligned time interval that resets for the next interval.",
+    "guideId": "rate-limits-and-abuse",
+    "guideTitle": "Rate limits: protecting a shared service"
+  },
+  {
+    "id": "guide-rate-limits-and-abuse-4",
+    "term": "Token bucket",
+    "definition": "A budget that refills at a defined rate up to a maximum capacity; admitted work consumes budget.",
+    "guideId": "rate-limits-and-abuse",
+    "guideTitle": "Rate limits: protecting a shared service"
+  },
+  {
+    "id": "guide-reliable-systems-1",
+    "term": "Availability",
+    "definition": "How often an operation can produce an acceptable response, under a stated measurement rule.",
+    "guideId": "reliable-systems",
+    "guideTitle": "Availability, failure domains, and graceful degradation"
+  },
+  {
+    "id": "guide-reliable-systems-2",
+    "term": "Failure domain",
+    "definition": "Components that can fail together because they share a dependency.",
+    "guideId": "reliable-systems",
+    "guideTitle": "Availability, failure domains, and graceful degradation"
+  },
+  {
+    "id": "guide-reliable-systems-3",
+    "term": "Graceful degradation",
+    "definition": "Continuing a reduced but useful service when an optional part is unavailable.",
+    "guideId": "reliable-systems",
+    "guideTitle": "Availability, failure domains, and graceful degradation"
+  },
+  {
+    "id": "guide-reliable-systems-4",
+    "term": "Deadline",
+    "definition": "The latest time by which a request must finish.",
+    "guideId": "reliable-systems",
+    "guideTitle": "Availability, failure domains, and graceful degradation"
+  },
+  {
+    "id": "guide-reliable-systems-5",
+    "term": "Circuit breaker",
+    "definition": "A policy that temporarily stops calls to a failing dependency and later probes recovery.",
+    "guideId": "reliable-systems",
+    "guideTitle": "Availability, failure domains, and graceful degradation"
+  },
+  {
+    "id": "guide-reliability-controls-1",
+    "term": "SLI",
+    "definition": "Service-level indicator: a defined measurement of service behavior important to users.",
+    "guideId": "reliability-controls",
+    "guideTitle": "Timeouts, retry budgets, circuit breakers, and service objectives"
+  },
+  {
+    "id": "guide-reliability-controls-2",
+    "term": "SLO",
+    "definition": "Service-level objective: a target for an SLI over a stated window.",
+    "guideId": "reliability-controls",
+    "guideTitle": "Timeouts, retry budgets, circuit breakers, and service objectives"
+  },
+  {
+    "id": "guide-reliability-controls-3",
+    "term": "SLA",
+    "definition": "Service-level agreement: a commitment specifying service expectations and agreed consequences or remedies.",
+    "guideId": "reliability-controls",
+    "guideTitle": "Timeouts, retry budgets, circuit breakers, and service objectives"
+  },
+  {
+    "id": "guide-reliability-controls-6",
+    "term": "Retry budget",
+    "definition": "A bound on additional attempts so recovery work cannot grow without control.",
+    "guideId": "reliability-controls",
+    "guideTitle": "Timeouts, retry budgets, circuit breakers, and service objectives"
+  },
+  {
+    "id": "guide-reliability-controls-8",
+    "term": "Bulkhead",
+    "definition": "Isolation of resources or workload groups so one failure cannot consume every shared capacity pool.",
+    "guideId": "reliability-controls",
+    "guideTitle": "Timeouts, retry budgets, circuit breakers, and service objectives"
+  },
+  {
+    "id": "guide-observe-and-debug-1",
+    "term": "Metric",
+    "definition": "A numerical measurement recorded repeatedly, often summarized over time.",
+    "guideId": "observe-and-debug",
+    "guideTitle": "Logs, metrics, traces, and debugging"
+  },
+  {
+    "id": "guide-observe-and-debug-2",
+    "term": "Log",
+    "definition": "A record of an individual event with useful context.",
+    "guideId": "observe-and-debug",
+    "guideTitle": "Logs, metrics, traces, and debugging"
+  },
+  {
+    "id": "guide-observe-and-debug-3",
+    "term": "Trace",
+    "definition": "Linked spans describing one request’s journey across components.",
+    "guideId": "observe-and-debug",
+    "guideTitle": "Logs, metrics, traces, and debugging"
+  },
+  {
+    "id": "guide-observe-and-debug-4",
+    "term": "Span",
+    "definition": "A timed operation inside a trace.",
+    "guideId": "observe-and-debug",
+    "guideTitle": "Logs, metrics, traces, and debugging"
+  },
+  {
+    "id": "guide-observe-and-debug-6",
+    "term": "Connection pool",
+    "definition": "A bounded set of reusable database connections; a request may wait when all are in use.",
+    "guideId": "observe-and-debug",
+    "guideTitle": "Logs, metrics, traces, and debugging"
+  },
+  {
+    "id": "guide-kubernetes-building-blocks-3",
+    "term": "Node",
+    "definition": "A machine in the cluster that can run Pods.",
+    "guideId": "kubernetes-building-blocks",
+    "guideTitle": "Kubernetes: Pods, Deployments, Services, and the control loop"
+  },
+  {
+    "id": "guide-kubernetes-building-blocks-5",
+    "term": "ReplicaSet",
+    "definition": "A Kubernetes object declaring a desired number of matching Pods; its controller works to maintain that number.",
+    "guideId": "kubernetes-building-blocks",
+    "guideTitle": "Kubernetes: Pods, Deployments, Services, and the control loop"
+  },
+  {
+    "id": "guide-kubernetes-building-blocks-7",
+    "term": "Controller",
+    "definition": "A loop that observes current state and acts to bring it closer to desired state.",
+    "guideId": "kubernetes-building-blocks",
+    "guideTitle": "Kubernetes: Pods, Deployments, Services, and the control loop"
+  },
+  {
+    "id": "guide-kubernetes-building-blocks-8",
+    "term": "Control plane",
+    "definition": "Components that store cluster intent and coordinate scheduling and reconciliation.",
+    "guideId": "kubernetes-building-blocks",
+    "guideTitle": "Kubernetes: Pods, Deployments, Services, and the control loop"
+  },
+  {
+    "id": "guide-ship-and-recover-2",
+    "term": "Canary",
+    "definition": "A limited exposure of a change before expanding its rollout.",
+    "guideId": "ship-and-recover",
+    "guideTitle": "Deployments, backups, and restore drills"
+  },
+  {
+    "id": "guide-ship-and-recover-5",
+    "term": "Restore drill",
+    "definition": "A rehearsal that restores data and validates that the application can use it.",
+    "guideId": "ship-and-recover",
+    "guideTitle": "Deployments, backups, and restore drills"
+  },
+  {
+    "id": "guide-kubernetes-networking-1",
+    "term": "Pod IP",
+    "definition": "The network address assigned to a Pod; replacements can have different addresses.",
+    "guideId": "kubernetes-networking",
+    "guideTitle": "Kubernetes networking, discovery, and incoming traffic"
+  },
+  {
+    "id": "guide-kubernetes-networking-3",
+    "term": "Selector",
+    "definition": "A label-matching rule that identifies objects, such as the Pods backing a Service.",
+    "guideId": "kubernetes-networking",
+    "guideTitle": "Kubernetes networking, discovery, and incoming traffic"
+  },
+  {
+    "id": "guide-kubernetes-networking-4",
+    "term": "EndpointSlice",
+    "definition": "A Kubernetes object representing network endpoints and related conditions for a Service.",
+    "guideId": "kubernetes-networking",
+    "guideTitle": "Kubernetes networking, discovery, and incoming traffic"
+  },
+  {
+    "id": "guide-kubernetes-networking-5",
+    "term": "Ingress controller",
+    "definition": "A controller and associated implementation that make supported Ingress routing rules operational.",
+    "guideId": "kubernetes-networking",
+    "guideTitle": "Kubernetes networking, discovery, and incoming traffic"
+  },
+  {
+    "id": "guide-kubernetes-networking-6",
+    "term": "NetworkPolicy",
+    "definition": "Rules for permitted Pod network traffic, enforced only with a supporting networking implementation.",
+    "guideId": "kubernetes-networking",
+    "guideTitle": "Kubernetes networking, discovery, and incoming traffic"
+  },
+  {
+    "id": "guide-regions-and-disaster-recovery-1",
+    "term": "Region",
+    "definition": "A provider-defined geographic deployment area containing infrastructure.",
+    "guideId": "regions-and-disaster-recovery",
+    "guideTitle": "Regions, recovery targets, and failover"
+  },
+  {
+    "id": "guide-regions-and-disaster-recovery-2",
+    "term": "Recovery time objective (RTO)",
+    "definition": "A target upper bound on time to restore the required service after disruption.",
+    "guideId": "regions-and-disaster-recovery",
+    "guideTitle": "Regions, recovery targets, and failover"
+  },
+  {
+    "id": "guide-regions-and-disaster-recovery-3",
+    "term": "Recovery point objective (RPO)",
+    "definition": "A target bound on how far back recovered data may fall, expressed as time.",
+    "guideId": "regions-and-disaster-recovery",
+    "guideTitle": "Regions, recovery targets, and failover"
+  },
+  {
+    "id": "guide-regions-and-disaster-recovery-4",
+    "term": "Standby",
+    "definition": "Prepared infrastructure intended to take over when the primary fails.",
+    "guideId": "regions-and-disaster-recovery",
+    "guideTitle": "Regions, recovery targets, and failover"
+  },
+  {
+    "id": "guide-regions-and-disaster-recovery-5",
+    "term": "Fencing",
+    "definition": "Preventing an old owner from continuing protected work after ownership changes.",
+    "guideId": "regions-and-disaster-recovery",
+    "guideTitle": "Regions, recovery targets, and failover"
+  },
+  {
+    "id": "guide-kubernetes-operations-1",
+    "term": "ConfigMap",
+    "definition": "A Kubernetes object for non-secret configuration data.",
+    "guideId": "kubernetes-operations",
+    "guideTitle": "Kubernetes configuration, probes, resources, and autoscaling"
+  },
+  {
+    "id": "guide-kubernetes-operations-2",
+    "term": "Secret",
+    "definition": "A Kubernetes object intended to hold sensitive configuration; effective protection depends on access and storage controls.",
+    "guideId": "kubernetes-operations",
+    "guideTitle": "Kubernetes configuration, probes, resources, and autoscaling"
+  },
+  {
+    "id": "guide-kubernetes-operations-3",
+    "term": "Resource request",
+    "definition": "A declared resource amount used for scheduling and related resource accounting.",
+    "guideId": "kubernetes-operations",
+    "guideTitle": "Kubernetes configuration, probes, resources, and autoscaling"
+  },
+  {
+    "id": "guide-kubernetes-operations-4",
+    "term": "Resource limit",
+    "definition": "A configured bound enforced according to the resource type and runtime behavior.",
+    "guideId": "kubernetes-operations",
+    "guideTitle": "Kubernetes configuration, probes, resources, and autoscaling"
+  },
+  {
+    "id": "guide-kubernetes-operations-5",
+    "term": "Probe",
+    "definition": "A configured check used to judge startup, readiness, or whether a container should be restarted.",
+    "guideId": "kubernetes-operations",
+    "guideTitle": "Kubernetes configuration, probes, resources, and autoscaling"
+  },
+  {
+    "id": "guide-kubernetes-operations-6",
+    "term": "HPA",
+    "definition": "Horizontal Pod Autoscaler: a controller that adjusts desired replica count using configured metrics and policy.",
+    "guideId": "kubernetes-operations",
+    "guideTitle": "Kubernetes configuration, probes, resources, and autoscaling"
+  },
+  {
+    "id": "guide-kubernetes-operations-7",
+    "term": "Rolling update",
+    "definition": "Replacing application instances in controlled stages while old and new versions overlap.",
+    "guideId": "kubernetes-operations",
+    "guideTitle": "Kubernetes configuration, probes, resources, and autoscaling"
+  },
+  {
+    "id": "guide-interview-game-plan-1",
+    "term": "Functional requirement",
+    "definition": "Something a user or another system must be able to do.",
+    "guideId": "interview-game-plan",
+    "guideTitle": "A practical system design interview framework"
+  },
+  {
+    "id": "guide-interview-game-plan-2",
+    "term": "Quality requirement",
+    "definition": "A measurable property such as response time, durability, or permitted staleness.",
+    "guideId": "interview-game-plan",
+    "guideTitle": "A practical system design interview framework"
+  },
+  {
+    "id": "guide-interview-game-plan-3",
+    "term": "Scope",
+    "definition": "The behaviors included in the current design discussion.",
+    "guideId": "interview-game-plan",
+    "guideTitle": "A practical system design interview framework"
+  },
+  {
+    "id": "guide-interview-game-plan-4",
+    "term": "Deep dive",
+    "definition": "A detailed explanation of an important mechanism or failure path.",
+    "guideId": "interview-game-plan",
+    "guideTitle": "A practical system design interview framework"
+  },
+  {
+    "id": "guide-interview-game-plan-5",
+    "term": "Tradeoff",
+    "definition": "A choice that improves one property while costing another.",
+    "guideId": "interview-game-plan",
+    "guideTitle": "A practical system design interview framework"
+  },
+  {
+    "id": "guide-estimates-and-tradeoffs-1",
+    "term": "QPS",
+    "definition": "Queries or requests per second; state exactly which operation is counted.",
+    "guideId": "estimates-and-tradeoffs",
+    "guideTitle": "Make useful estimates and defend tradeoffs"
+  },
+  {
+    "id": "guide-estimates-and-tradeoffs-2",
+    "term": "Amplification",
+    "definition": "Extra internal work caused by one logical user operation.",
+    "guideId": "estimates-and-tradeoffs",
+    "guideTitle": "Make useful estimates and defend tradeoffs"
+  },
+  {
+    "id": "guide-estimates-and-tradeoffs-4",
+    "term": "Retention",
+    "definition": "How long data is kept before deletion or archival.",
+    "guideId": "estimates-and-tradeoffs",
+    "guideTitle": "Make useful estimates and defend tradeoffs"
+  },
+  {
+    "id": "guide-estimates-and-tradeoffs-5",
+    "term": "Sensitivity",
+    "definition": "How much a conclusion changes when an uncertain input changes.",
+    "guideId": "estimates-and-tradeoffs",
+    "guideTitle": "Make useful estimates and defend tradeoffs"
+  },
+  {
+    "id": "guide-design-notifications-1",
+    "term": "Notification intent",
+    "definition": "The durable decision that a particular user should be informed about a particular event.",
+    "guideId": "design-notifications",
+    "guideTitle": "Design a notification service"
+  },
+  {
+    "id": "guide-design-notifications-2",
+    "term": "Channel",
+    "definition": "A delivery medium such as email, push, SMS, or an in-app inbox.",
+    "guideId": "design-notifications",
+    "guideTitle": "Design a notification service"
+  },
+  {
+    "id": "guide-design-notifications-3",
+    "term": "Outbox",
+    "definition": "A durable event record committed with the business change, then published asynchronously.",
+    "guideId": "design-notifications",
+    "guideTitle": "Design a notification service"
+  },
+  {
+    "id": "guide-design-notifications-5",
+    "term": "Delivery state",
+    "definition": "A precisely named stage such as queued or accepted by provider; it is not automatically proof of being read.",
+    "guideId": "design-notifications",
+    "guideTitle": "Design a notification service"
+  },
+  {
+    "id": "guide-design-rate-limiter-1",
+    "term": "Admission",
+    "definition": "The decision to accept work before spending the protected resource.",
+    "guideId": "design-rate-limiter",
+    "guideTitle": "Design a distributed rate limiter"
+  },
+  {
+    "id": "guide-design-rate-limiter-2",
+    "term": "Subject",
+    "definition": "The user, tenant, token, or other identity whose quota is counted.",
+    "guideId": "design-rate-limiter",
+    "guideTitle": "Design a distributed rate limiter"
+  },
+  {
+    "id": "guide-design-rate-limiter-4",
+    "term": "Atomic operation",
+    "definition": "An operation whose protected steps cannot be interleaved with competing operations.",
+    "guideId": "design-rate-limiter",
+    "guideTitle": "Design a distributed rate limiter"
+  },
+  {
+    "id": "guide-design-rate-limiter-5",
+    "term": "Fail-open / fail-closed",
+    "definition": "Allowing or rejecting work when the admission decision cannot be obtained.",
+    "guideId": "design-rate-limiter",
+    "guideTitle": "Design a distributed rate limiter"
+  },
+  {
+    "id": "guide-design-chat-1",
+    "term": "WebSocket",
+    "definition": "A protocol for a persistent two-way connection between client and server.",
+    "guideId": "design-chat",
+    "guideTitle": "Design a chat service from first principles"
+  },
+  {
+    "id": "guide-design-chat-2",
+    "term": "Room",
+    "definition": "A conversation with a defined set of participants and a message history.",
+    "guideId": "design-chat",
+    "guideTitle": "Design a chat service from first principles"
+  },
+  {
+    "id": "guide-design-chat-3",
+    "term": "Client message ID",
+    "definition": "A stable identifier generated for one intended send and reused on retry.",
+    "guideId": "design-chat",
+    "guideTitle": "Design a chat service from first principles"
+  },
+  {
+    "id": "guide-design-chat-4",
+    "term": "Room sequence",
+    "definition": "An ordering number assigned within one conversation under a stated authority.",
+    "guideId": "design-chat",
+    "guideTitle": "Design a chat service from first principles"
+  },
+  {
+    "id": "guide-design-chat-5",
+    "term": "Presence",
+    "definition": "An approximate observation that a user or device is currently connected.",
+    "guideId": "design-chat",
+    "guideTitle": "Design a chat service from first principles"
+  },
+  {
+    "id": "guide-chat-reconnect-and-scale-2",
+    "term": "High-water mark",
+    "definition": "A known committed position that bounds one catch-up pass.",
+    "guideId": "chat-reconnect-and-scale",
+    "guideTitle": "Chat: reconnects, ordering, and growth"
+  },
+  {
+    "id": "guide-chat-reconnect-and-scale-4",
+    "term": "Tombstone",
+    "definition": "A retained deletion marker that lets replicas or clients learn an item was removed.",
+    "guideId": "chat-reconnect-and-scale",
+    "guideTitle": "Chat: reconnects, ordering, and growth"
+  },
+  {
+    "id": "guide-chat-reconnect-and-scale-5",
+    "term": "Reconnect storm",
+    "definition": "Many clients attempting to reestablish service at nearly the same time.",
+    "guideId": "chat-reconnect-and-scale",
+    "guideTitle": "Chat: reconnects, ordering, and growth"
+  },
+  {
+    "id": "guide-design-news-feed-1",
+    "term": "Feed",
+    "definition": "A selected, ordered list of content a user is eligible to see.",
+    "guideId": "design-news-feed",
+    "guideTitle": "Design a news feed"
+  },
+  {
+    "id": "guide-design-news-feed-2",
+    "term": "Follow edge",
+    "definition": "A relationship saying one user wants another user’s posts in their feed.",
+    "guideId": "design-news-feed",
+    "guideTitle": "Design a news feed"
+  },
+  {
+    "id": "guide-design-news-feed-3",
+    "term": "Fan-out",
+    "definition": "One event causing work for multiple recipients.",
+    "guideId": "design-news-feed",
+    "guideTitle": "Design a news feed"
+  },
+  {
+    "id": "guide-design-news-feed-4",
+    "term": "Feed index",
+    "definition": "A derived list of post identities prepared for a reader.",
+    "guideId": "design-news-feed",
+    "guideTitle": "Design a news feed"
+  },
+  {
+    "id": "guide-design-news-feed-5",
+    "term": "Hydration",
+    "definition": "Fetching the current data for identities selected in an earlier stage.",
+    "guideId": "design-news-feed",
+    "guideTitle": "Design a news feed"
+  },
+  {
+    "id": "guide-feed-fanout-and-ranking-1",
+    "term": "Celebrity account",
+    "definition": "An account whose audience is unusually large relative to the service’s normal workload.",
+    "guideId": "feed-fanout-and-ranking",
+    "guideTitle": "Feeds: fan-out, ranking, and celebrity traffic"
+  },
+  {
+    "id": "guide-feed-fanout-and-ranking-2",
+    "term": "Hybrid fan-out",
+    "definition": "Preparing some content on write while fetching other content on read.",
+    "guideId": "feed-fanout-and-ranking",
+    "guideTitle": "Feeds: fan-out, ranking, and celebrity traffic"
+  },
+  {
+    "id": "guide-feed-fanout-and-ranking-3",
+    "term": "Candidate",
+    "definition": "A potentially eligible item considered before final ordering and selection.",
+    "guideId": "feed-fanout-and-ranking",
+    "guideTitle": "Feeds: fan-out, ranking, and celebrity traffic"
+  },
+  {
+    "id": "guide-feed-fanout-and-ranking-4",
+    "term": "Ranking",
+    "definition": "Scoring or ordering eligible candidates according to the product objective.",
+    "guideId": "feed-fanout-and-ranking",
+    "guideTitle": "Feeds: fan-out, ranking, and celebrity traffic"
+  },
+  {
+    "id": "guide-feed-fanout-and-ranking-5",
+    "term": "Feature",
+    "definition": "An input used by a scoring rule or model, such as age or prior interaction.",
+    "guideId": "feed-fanout-and-ranking",
+    "guideTitle": "Feeds: fan-out, ranking, and celebrity traffic"
+  },
+  {
+    "id": "guide-design-file-storage-4",
+    "term": "Multipart upload",
+    "definition": "Upload a large file as separately retryable parts, then complete the assembled object.",
+    "guideId": "design-file-storage",
+    "guideTitle": "Design a file storage service"
+  },
+  {
+    "id": "guide-design-file-storage-5",
+    "term": "Signed upload URL",
+    "definition": "A limited, temporary permission to upload to a particular location. It should not grant general access to storage.",
+    "guideId": "design-file-storage",
+    "guideTitle": "Design a file storage service"
+  },
+  {
+    "id": "guide-file-sync-and-conflicts-1",
+    "term": "Base version",
+    "definition": "The saved version a device started editing.",
+    "guideId": "file-sync-and-conflicts",
+    "guideTitle": "File synchronization and conflicting edits"
+  },
+  {
+    "id": "guide-file-sync-and-conflicts-2",
+    "term": "Conditional update",
+    "definition": "An update accepted only if a stated condition still holds, such as the current version matching the base version.",
+    "guideId": "file-sync-and-conflicts",
+    "guideTitle": "File synchronization and conflicting edits"
+  },
+  {
+    "id": "guide-file-sync-and-conflicts-3",
+    "term": "Conflict",
+    "definition": "Two changes that cannot both replace the current value under the chosen rule.",
+    "guideId": "file-sync-and-conflicts",
+    "guideTitle": "File synchronization and conflicting edits"
+  },
+  {
+    "id": "guide-file-sync-and-conflicts-4",
+    "term": "Change cursor",
+    "definition": "A saved position in a stream of changes used to resume synchronization.",
+    "guideId": "file-sync-and-conflicts",
+    "guideTitle": "File synchronization and conflicting edits"
+  },
+  {
+    "id": "guide-file-sync-and-conflicts-5",
+    "term": "Deletion marker",
+    "definition": "A record that something was deleted, retained long enough for other devices to learn about it.",
+    "guideId": "file-sync-and-conflicts",
+    "guideTitle": "File synchronization and conflicting edits"
+  },
+  {
+    "id": "guide-design-video-platform-1",
+    "term": "Transcoding",
+    "definition": "Creating a new encoded version of a video, often at a different resolution or bitrate.",
+    "guideId": "design-video-platform",
+    "guideTitle": "Design video upload and playback"
+  },
+  {
+    "id": "guide-design-video-platform-2",
+    "term": "Bitrate",
+    "definition": "How many bits per second a media stream requires.",
+    "guideId": "design-video-platform",
+    "guideTitle": "Design video upload and playback"
+  },
+  {
+    "id": "guide-design-video-platform-3",
+    "term": "Segment",
+    "definition": "A short piece of a video downloaded separately during playback.",
+    "guideId": "design-video-platform",
+    "guideTitle": "Design video upload and playback"
+  },
+  {
+    "id": "guide-design-video-platform-4",
+    "term": "Playlist or manifest",
+    "definition": "A small description that tells the player which video pieces and quality options exist.",
+    "guideId": "design-video-platform",
+    "guideTitle": "Design video upload and playback"
+  },
+  {
+    "id": "guide-design-search-and-autocomplete-1",
+    "term": "Inverted index",
+    "definition": "A lookup from a word to the documents containing that word.",
+    "guideId": "design-search-and-autocomplete",
+    "guideTitle": "Design search and autocomplete"
+  },
+  {
+    "id": "guide-design-search-and-autocomplete-2",
+    "term": "Token",
+    "definition": "A unit of text produced by analysis, often a word or part of a word.",
+    "guideId": "design-search-and-autocomplete",
+    "guideTitle": "Design search and autocomplete"
+  },
+  {
+    "id": "guide-design-search-and-autocomplete-4",
+    "term": "Prefix",
+    "definition": "The beginning of a string, such as “sys” in “system.”",
+    "guideId": "design-search-and-autocomplete",
+    "guideTitle": "Design search and autocomplete"
+  },
+  {
+    "id": "guide-design-search-and-autocomplete-5",
+    "term": "Index freshness",
+    "definition": "How far the searchable representation may lag behind accepted document changes.",
+    "guideId": "design-search-and-autocomplete",
+    "guideTitle": "Design search and autocomplete"
+  },
+  {
+    "id": "guide-design-bookings-1",
+    "term": "Invariant",
+    "definition": "A rule that must remain true through every allowed operation.",
+    "guideId": "design-bookings",
+    "guideTitle": "Design a booking system without overselling"
+  },
+  {
+    "id": "guide-design-bookings-2",
+    "term": "Hold",
+    "definition": "A temporary claim on inventory while a customer completes another step.",
+    "guideId": "design-bookings",
+    "guideTitle": "Design a booking system without overselling"
+  },
+  {
+    "id": "guide-design-bookings-5",
+    "term": "Conditional transition",
+    "definition": "Changing a state only if the stored owner, version, and other required conditions still match.",
+    "guideId": "design-bookings",
+    "guideTitle": "Design a booking system without overselling"
+  },
+  {
+    "id": "guide-design-payments-1",
+    "term": "Idempotency key",
+    "definition": "A stable identifier that tells a service retries belong to the same intended operation under its documented rules.",
+    "guideId": "design-payments",
+    "guideTitle": "Design payment workflows and reconciliation"
+  },
+  {
+    "id": "guide-design-payments-2",
+    "term": "Payment attempt",
+    "definition": "A durable record of one intended payment operation and what is known about it.",
+    "guideId": "design-payments",
+    "guideTitle": "Design payment workflows and reconciliation"
+  },
+  {
+    "id": "guide-design-payments-3",
+    "term": "Webhook",
+    "definition": "A provider-initiated HTTP notification sent to an application endpoint.",
+    "guideId": "design-payments",
+    "guideTitle": "Design payment workflows and reconciliation"
+  },
+  {
+    "id": "guide-design-payments-5",
+    "term": "Ledger",
+    "definition": "A history of monetary entries designed to explain how balances changed, rather than only storing the latest total.",
+    "guideId": "design-payments",
+    "guideTitle": "Design payment workflows and reconciliation"
+  },
+  {
+    "id": "guide-coordination-and-leases-1",
+    "term": "Leader",
+    "definition": "The participant currently responsible for ordering or coordinating a particular scope of work.",
+    "guideId": "coordination-and-leases",
+    "guideTitle": "Leaders, leases, fencing, and consensus"
+  },
+  {
+    "id": "guide-coordination-and-leases-2",
+    "term": "Lease",
+    "definition": "Time-limited ownership that must be renewed under a defined protocol.",
+    "guideId": "coordination-and-leases",
+    "guideTitle": "Leaders, leases, fencing, and consensus"
+  },
+  {
+    "id": "guide-coordination-and-leases-3",
+    "term": "Fencing token",
+    "definition": "An increasing ownership number that a protected resource checks to reject older owners.",
+    "guideId": "coordination-and-leases",
+    "guideTitle": "Leaders, leases, fencing, and consensus"
+  },
+  {
+    "id": "guide-coordination-and-leases-4",
+    "term": "Consensus",
+    "definition": "A protocol by which participants agree on a sequence of decisions despite specified failures.",
+    "guideId": "coordination-and-leases",
+    "guideTitle": "Leaders, leases, fencing, and consensus"
+  },
+  {
+    "id": "guide-change-data-safely-1",
+    "term": "Migration",
+    "definition": "A controlled change to storage layout, schema, or the system serving a responsibility.",
+    "guideId": "change-data-safely",
+    "guideTitle": "Migrations, event sourcing, and safe replay"
+  },
+  {
+    "id": "guide-change-data-safely-3",
+    "term": "Change data capture",
+    "definition": "A mechanism for observing changes committed to a source database.",
+    "guideId": "change-data-safely",
+    "guideTitle": "Migrations, event sourcing, and safe replay"
+  },
+  {
+    "id": "guide-change-data-safely-5",
+    "term": "Event sourcing",
+    "definition": "Keeping accepted domain events as the authoritative history from which state is derived.",
+    "guideId": "change-data-safely",
+    "guideTitle": "Migrations, event sourcing, and safe replay"
+  },
+  {
+    "id": "guide-mcp-platform-architecture-1",
+    "term": "AI host",
+    "definition": "The application coordinating the user interaction, model and tool access.",
+    "guideId": "mcp-platform-architecture",
+    "guideTitle": "Design an MCP platform across gateways and replicas"
+  },
+  {
+    "id": "guide-mcp-platform-architecture-2",
+    "term": "MCP client",
+    "definition": "The host-side component that communicates with a particular MCP server.",
+    "guideId": "mcp-platform-architecture",
+    "guideTitle": "Design an MCP platform across gateways and replicas"
+  },
+  {
+    "id": "guide-mcp-platform-architecture-3",
+    "term": "MCP server",
+    "definition": "A component exposing defined tools, resources or prompts through the Model Context Protocol.",
+    "guideId": "mcp-platform-architecture",
+    "guideTitle": "Design an MCP platform across gateways and replicas"
+  },
+  {
+    "id": "guide-mcp-platform-architecture-4",
+    "term": "Tool discovery",
+    "definition": "Retrieving descriptions and schemas of available callable capabilities.",
+    "guideId": "mcp-platform-architecture",
+    "guideTitle": "Design an MCP platform across gateways and replicas"
+  },
+  {
+    "id": "guide-mcp-platform-architecture-5",
+    "term": "Stateless handler",
+    "definition": "A request handler that does not depend on a particular process retaining private state between requests.",
+    "guideId": "mcp-platform-architecture",
+    "guideTitle": "Design an MCP platform across gateways and replicas"
+  },
+  {
+    "id": "guide-mcp-platform-architecture-6",
+    "term": "Application state",
+    "definition": "Durable domain facts such as jobs, operation results, permissions or learner progress.",
+    "guideId": "mcp-platform-architecture",
+    "guideTitle": "Design an MCP platform across gateways and replicas"
+  },
+  {
+    "id": "guide-mcp-platform-architecture-7",
+    "term": "Streamable HTTP",
+    "definition": "An MCP transport binding using HTTP requests with JSON or request-scoped event-stream responses.",
+    "guideId": "mcp-platform-architecture",
+    "guideTitle": "Design an MCP platform across gateways and replicas"
+  },
+  {
+    "id": "guide-platform-security-and-tenancy-1",
+    "term": "Workload identity",
+    "definition": "The identity of a running service or job, distinct from the human who requested work.",
+    "guideId": "platform-security-and-tenancy",
+    "guideTitle": "Platform identity, secrets, tenant isolation, and tool permissions"
+  },
+  {
+    "id": "guide-platform-security-and-tenancy-2",
+    "term": "Audience",
+    "definition": "The intended recipient or resource for an access token; a service should reject tokens not meant for it.",
+    "guideId": "platform-security-and-tenancy",
+    "guideTitle": "Platform identity, secrets, tenant isolation, and tool permissions"
+  },
+  {
+    "id": "guide-platform-security-and-tenancy-3",
+    "term": "Delegation",
+    "definition": "Allowing another component to act with a specifically bounded authority on behalf of a caller.",
+    "guideId": "platform-security-and-tenancy",
+    "guideTitle": "Platform identity, secrets, tenant isolation, and tool permissions"
+  },
+  {
+    "id": "guide-platform-security-and-tenancy-4",
+    "term": "Confused deputy",
+    "definition": "A privileged service being tricked into using its authority for an action the original caller was not permitted to perform.",
+    "guideId": "platform-security-and-tenancy",
+    "guideTitle": "Platform identity, secrets, tenant isolation, and tool permissions"
+  },
+  {
+    "id": "guide-platform-security-and-tenancy-5",
+    "term": "Trust boundary",
+    "definition": "A point where data or authority crosses between components with different trust assumptions.",
+    "guideId": "platform-security-and-tenancy",
+    "guideTitle": "Platform identity, secrets, tenant isolation, and tool permissions"
+  },
+  {
+    "id": "guide-platform-security-and-tenancy-6",
+    "term": "Secret rotation",
+    "definition": "Replacing a credential and retiring its predecessor through a controlled transition.",
+    "guideId": "platform-security-and-tenancy",
+    "guideTitle": "Platform identity, secrets, tenant isolation, and tool permissions"
+  },
+  {
+    "id": "guide-platform-security-and-tenancy-7",
+    "term": "Access token",
+    "definition": "A credential issued for permitted access to a resource; the receiving service verifies its validity and allowed scope.",
+    "guideId": "platform-security-and-tenancy",
+    "guideTitle": "Platform identity, secrets, tenant isolation, and tool permissions"
+  },
+  {
+    "id": "guide-ai-system-design-1",
+    "term": "Inference",
+    "definition": "Running a trained model to produce an output from an input.",
+    "guideId": "ai-system-design",
+    "guideTitle": "Design an AI application and inference gateway"
+  },
+  {
+    "id": "guide-ai-system-design-3",
+    "term": "Gateway",
+    "definition": "An application-controlled entry point that checks and routes requests to model serving.",
+    "guideId": "ai-system-design",
+    "guideTitle": "Design an AI application and inference gateway"
+  },
+  {
+    "id": "guide-ai-system-design-4",
+    "term": "Time to first token",
+    "definition": "Time until the user receives the first generated output token.",
+    "guideId": "ai-system-design",
+    "guideTitle": "Design an AI application and inference gateway"
+  },
+  {
+    "id": "guide-ai-system-design-5",
+    "term": "Prefill and decode",
+    "definition": "First processing the input context, then generating output tokens step by step.",
+    "guideId": "ai-system-design",
+    "guideTitle": "Design an AI application and inference gateway"
+  },
+  {
+    "id": "guide-ai-system-design-6",
+    "term": "KV cache",
+    "definition": "Stored attention information used during generation; longer active contexts generally require more memory.",
+    "guideId": "ai-system-design",
+    "guideTitle": "Design an AI application and inference gateway"
+  },
+  {
+    "id": "guide-model-serving-and-gpus-2",
+    "term": "GPU",
+    "definition": "A processor designed for large amounts of parallel numerical work; suitability depends on the workload and software.",
+    "guideId": "model-serving-and-gpus",
+    "guideTitle": "Model serving: GPUs, memory, batching, and scheduling"
+  },
+  {
+    "id": "guide-model-serving-and-gpus-3",
+    "term": "VRAM",
+    "definition": "Memory attached to a GPU, with a finite capacity used by model data and active computation.",
+    "guideId": "model-serving-and-gpus",
+    "guideTitle": "Model serving: GPUs, memory, batching, and scheduling"
+  },
+  {
+    "id": "guide-model-serving-and-gpus-4",
+    "term": "Weights",
+    "definition": "The learned numerical parameters stored by a model.",
+    "guideId": "model-serving-and-gpus",
+    "guideTitle": "Model serving: GPUs, memory, batching, and scheduling"
+  },
+  {
+    "id": "guide-model-serving-and-gpus-6",
+    "term": "Prefill",
+    "definition": "Processing the input context before generating subsequent output tokens.",
+    "guideId": "model-serving-and-gpus",
+    "guideTitle": "Model serving: GPUs, memory, batching, and scheduling"
+  },
+  {
+    "id": "guide-model-serving-and-gpus-7",
+    "term": "Decode",
+    "definition": "Generating additional tokens step by step using the current context.",
+    "guideId": "model-serving-and-gpus",
+    "guideTitle": "Model serving: GPUs, memory, batching, and scheduling"
+  },
+  {
+    "id": "guide-model-serving-and-gpus-8",
+    "term": "Continuous batching",
+    "definition": "Updating the set of active sequences at scheduling steps as requests finish and new work enters.",
+    "guideId": "model-serving-and-gpus",
+    "guideTitle": "Model serving: GPUs, memory, batching, and scheduling"
+  },
+  {
+    "id": "guide-rag-and-inference-1",
+    "term": "RAG",
+    "definition": "Retrieval-augmented generation: retrieve relevant material and provide it to a model as context for an answer.",
+    "guideId": "rag-and-inference",
+    "guideTitle": "RAG, retrieval permissions, and serving tradeoffs"
+  },
+  {
+    "id": "guide-rag-and-inference-2",
+    "term": "Chunk",
+    "definition": "A selected portion of a document stored and retrieved as a unit.",
+    "guideId": "rag-and-inference",
+    "guideTitle": "RAG, retrieval permissions, and serving tradeoffs"
+  },
+  {
+    "id": "guide-rag-and-inference-3",
+    "term": "Embedding",
+    "definition": "A numeric representation used to compare similarity; it does not encode permission or truth.",
+    "guideId": "rag-and-inference",
+    "guideTitle": "RAG, retrieval permissions, and serving tradeoffs"
+  },
+  {
+    "id": "guide-rag-and-inference-4",
+    "term": "Grounding",
+    "definition": "Connecting an answer to supporting source material.",
+    "guideId": "rag-and-inference",
+    "guideTitle": "RAG, retrieval permissions, and serving tradeoffs"
+  },
+  {
+    "id": "guide-rag-and-inference-5",
+    "term": "Reranking",
+    "definition": "Reordering an initial candidate set with a more focused relevance method.",
+    "guideId": "rag-and-inference",
+    "guideTitle": "RAG, retrieval permissions, and serving tradeoffs"
+  },
+  {
+    "id": "guide-rag-and-inference-6",
+    "term": "Prefix cache",
+    "definition": "Reusing previously computed serving state for a matching input prefix; this is different from caching a final answer.",
+    "guideId": "rag-and-inference",
+    "guideTitle": "RAG, retrieval permissions, and serving tradeoffs"
+  },
+  {
+    "id": "guide-ai-platform-operations-1",
+    "term": "Model registry",
+    "definition": "A system for organizing model versions and associated metadata or lifecycle references; registration is not deployment.",
+    "guideId": "ai-platform-operations",
+    "guideTitle": "Model registries, routing, rollout, and AI observability"
+  },
+  {
+    "id": "guide-ai-platform-operations-2",
+    "term": "Serving runtime",
+    "definition": "The process that loads a model and executes inference requests.",
+    "guideId": "ai-platform-operations",
+    "guideTitle": "Model registries, routing, rollout, and AI observability"
+  },
+  {
+    "id": "guide-ai-platform-operations-4",
+    "term": "Data plane",
+    "definition": "The components that handle the actual inference requests and responses.",
+    "guideId": "ai-platform-operations",
+    "guideTitle": "Model registries, routing, rollout, and AI observability"
+  },
+  {
+    "id": "guide-ai-platform-operations-5",
+    "term": "Canary rollout",
+    "definition": "A controlled introduction of a new version to limited traffic before broader use.",
+    "guideId": "ai-platform-operations",
+    "guideTitle": "Model registries, routing, rollout, and AI observability"
+  },
+  {
+    "id": "guide-ai-platform-operations-8",
+    "term": "Tokenizer",
+    "definition": "The model-compatible rules and software that turn text into token identities and interpret token output.",
+    "guideId": "ai-platform-operations",
+    "guideTitle": "Model registries, routing, rollout, and AI observability"
+  },
+  {
+    "id": "guide-full-mock-interview-1",
+    "term": "Clarification",
+    "definition": "A question that resolves an ambiguity affecting the design.",
+    "guideId": "full-mock-interview",
+    "guideTitle": "A full mock interview with a changing requirement"
+  },
+  {
+    "id": "guide-full-mock-interview-5",
+    "term": "Evidence",
+    "definition": "Your actual explanation, calculation, diagram, or failure trace—not an inferred skill from simply reading a lesson.",
+    "guideId": "full-mock-interview",
+    "guideTitle": "A full mock interview with a changing requirement"
+  },
+  {
+    "id": "guide-capstone-and-readiness-plan-1",
+    "term": "Capstone",
+    "definition": "A substantial final project that combines skills learned separately.",
+    "guideId": "capstone-and-readiness-plan",
+    "guideTitle": "Your capstone, evidence, and readiness plan"
+  },
+  {
+    "id": "guide-capstone-and-readiness-plan-2",
+    "term": "Acceptance criterion",
+    "definition": "An observable condition that tells you whether a requirement has been met.",
+    "guideId": "capstone-and-readiness-plan",
+    "guideTitle": "Your capstone, evidence, and readiness plan"
+  },
+  {
+    "id": "guide-capstone-and-readiness-plan-3",
+    "term": "Failure injection",
+    "definition": "Deliberately introducing a bounded failure to test recovery behavior.",
+    "guideId": "capstone-and-readiness-plan",
+    "guideTitle": "Your capstone, evidence, and readiness plan"
+  },
+  {
+    "id": "guide-capstone-and-readiness-plan-4",
+    "term": "Remediation",
+    "definition": "Focused practice aimed at a specific demonstrated gap.",
+    "guideId": "capstone-and-readiness-plan",
+    "guideTitle": "Your capstone, evidence, and readiness plan"
+  },
+  {
+    "id": "guide-capstone-and-readiness-plan-5",
+    "term": "Readiness evidence",
+    "definition": "Repeated successful reasoning on representative tasks, with limitations made explicit.",
+    "guideId": "capstone-and-readiness-plan",
+    "guideTitle": "Your capstone, evidence, and readiness plan"
+  },
+  {
+    "id": "g045",
+    "term": "Bounded queue",
+    "definition": "A queue with an explicit capacity or admission limit. It bounds memory and waiting exposure; it does not increase the service rate or eliminate overload.",
+    "lessonId": "022"
+  },
+  {
+    "id": "g054",
+    "term": "Cache invalidation",
+    "definition": "Making a derived cached value unusable after a change. An invalidation can race with an older fill, so ordering and version checks matter.",
+    "lessonId": "058"
+  },
+  {
+    "id": "g043",
+    "term": "Cancellation",
+    "definition": "A request to stop work that is no longer needed. Each stage must cooperate and release resources; a committed external effect may still need reconciliation.",
+    "lessonId": "022"
+  },
+  {
+    "id": "g020",
+    "term": "Certificate verification",
+    "definition": "Checking the peer’s certificate and the expected service identity under a trust policy. Encryption without authenticating the intended endpoint does not establish who receives the plaintext.",
+    "lessonId": "013"
+  },
+  {
+    "id": "g048",
+    "term": "Closed-loop load test",
+    "definition": "A load model in which each simulated user waits before issuing its next request. It can represent real interaction, but slower responses may reduce offered load.",
+    "lessonId": "051"
+  },
+  {
+    "id": "g030",
+    "term": "Connection draining",
+    "definition": "Stopping new work while allowing bounded in-flight work to finish before closing a process or connection. Long-lived clients need an explicit reconnect and recovery plan.",
+    "lessonId": "017"
+  },
+  {
+    "id": "g014",
+    "term": "Critical path",
+    "definition": "The dependent chain of work that determines completion time. Independent branches can overlap; sequential dependencies accumulate.",
+    "lessonId": "008"
+  },
+  {
+    "id": "g046",
+    "term": "Cursor pagination",
+    "definition": "Pagination using a stable ordering position instead of only a numeric offset. Define tie-breakers, mutation behavior, expiry, and authorization of the cursor.",
+    "lessonId": "024"
+  },
+  {
+    "id": "g059",
+    "term": "Evidence-based feedback",
+    "definition": "Feedback tied to actual submitted work, concrete excerpts, and an explicit rubric. A total score is derived from recorded dimensions and is not a hiring guarantee.",
+    "lessonId": "010"
+  },
+  {
+    "id": "g018",
+    "term": "Head-of-line blocking",
+    "definition": "Progress waits for earlier required work. TCP byte ordering can hold later bytes behind a gap; an HTTP/2 application stream and a transport byte stream have different ordering boundaries.",
+    "lessonId": "016"
+  },
+  {
+    "id": "g024",
+    "term": "HTTP/2 stream",
+    "definition": "A logical request/response channel multiplexed within an HTTP/2 connection. Independent streams still share transport behavior and resource limits.",
+    "lessonId": "016"
+  },
+  {
+    "id": "g021",
+    "term": "Idempotent operation",
+    "definition": "An operation whose intended effect is the same when applied repeatedly with the same meaning. This does not promise identical responses or make all surrounding side effects safe.",
+    "lessonId": "014"
+  },
+  {
+    "id": "g028",
+    "term": "L4 load balancing",
+    "definition": "Assignment based on transport/network information, often at connection or flow granularity. Equal connection counts do not imply equal request cost.",
+    "lessonId": "017"
+  },
+  {
+    "id": "g029",
+    "term": "L7 load balancing",
+    "definition": "Routing using application information such as an HTTP hostname or path. Access to encrypted application data generally requires an appropriate TLS termination boundary.",
+    "lessonId": "017"
+  },
+  {
+    "id": "g012",
+    "term": "Little’s Law",
+    "definition": "For a stable system with consistent boundaries, average work in progress equals average throughput times average time in the system: L = λW. Use matching units and do not treat an unstable, growing backlog as steady state.",
+    "lessonId": "007"
+  },
+  {
+    "id": "g003",
+    "term": "Nonfunctional requirement",
+    "definition": "A measurable quality or constraint: latency, availability, durability, privacy, cost, or an operational limit. “Fast” becomes useful only after defining a workload and threshold.",
+    "lessonId": "003"
+  },
+  {
+    "id": "g047",
+    "term": "Open-loop load test",
+    "definition": "A load model that schedules arrivals independently of prior completions, within generator capacity. It can expose backlog growth that a waiting-client loop may suppress.",
+    "lessonId": "051"
+  },
+  {
+    "id": "g007",
+    "term": "Peak factor",
+    "definition": "A stated multiplier from an average arrival rate to a modeled busy interval. It is an assumption to validate, not a universal constant for all products.",
+    "lessonId": "004"
+  },
+  {
+    "id": "g010",
+    "term": "Percentile",
+    "definition": "A boundary in an ordered sample distribution. A p95 below 200 ms describes approximately 95% of the measured population under the chosen convention; it does not bound every request. Do not average instance percentiles into a fleet percentile.",
+    "lessonId": "051"
+  },
+  {
+    "id": "g032",
+    "term": "Protocol Buffers",
+    "definition": "A schema-based encoding and interface toolchain. Field numbers carry wire identity, so contract evolution must preserve their meaning and avoid recycling removed numbers.",
+    "lessonId": "018"
+  },
+  {
+    "id": "g025",
+    "term": "QUIC stream",
+    "definition": "An ordered byte stream within a QUIC connection. Loss affecting one stream’s data need not block delivery of unrelated stream data, though congestion and shared resource limits still matter.",
+    "lessonId": "016"
+  },
+  {
+    "id": "g036",
+    "term": "Reconnect cursor",
+    "definition": "A stable position identifying the history already applied by a client. Recovery requires retained history or a defined snapshot fallback and fresh authorization.",
+    "lessonId": "019"
+  },
+  {
+    "id": "g031",
+    "term": "RPC",
+    "definition": "Remote procedure call: an interface shaped as an operation on another process. Generated bindings reduce encoding work; they do not remove network delays, uncertain outcomes, or authorization requirements.",
+    "lessonId": "018"
+  },
+  {
+    "id": "g023",
+    "term": "Safe HTTP method",
+    "definition": "A method whose defined semantics are essentially read-only. Safety and idempotence are distinct properties; neither is a claim that a broken implementation cannot mutate state.",
+    "lessonId": "014"
+  },
+  {
+    "id": "g058",
+    "term": "Self-assessment",
+    "definition": "A learner’s own evaluation of submitted reasoning against a rubric. This academy labels it separately from objective quiz results and model-generated feedback.",
+    "lessonId": "005"
+  },
+  {
+    "id": "g034",
+    "term": "Server-Sent Events",
+    "definition": "A server-to-client event stream over HTTP. Reconnect metadata can help resume delivery, but the application must supply retention and replay semantics.",
+    "lessonId": "019"
+  },
+  {
+    "id": "g060",
+    "term": "Simulation",
+    "definition": "An explicit model used to explore consequences under stated assumptions. Its generated output is illustrative and must not be presented as measured production performance.",
+    "lessonId": "006"
+  },
+  {
+    "id": "g055",
+    "term": "Stale data",
+    "definition": "A value that does not include some newer authoritative update. Whether serving it is acceptable depends on the operation’s freshness and correctness contract.",
+    "lessonId": "058"
+  },
+  {
+    "id": "g019",
+    "term": "TLS termination",
+    "definition": "The endpoint that decrypts a TLS connection. Plaintext is available there, so its identity, access, logging, and any next network hop belong in the trust model.",
+    "lessonId": "013"
+  },
+  {
+    "id": "g006",
+    "term": "Workload model",
+    "definition": "A set of explicit assumptions about users, arrival rates, request mix, object sizes, skew, and growth. Estimates should expose the assumptions that could change the architecture.",
+    "lessonId": "004"
+  }
+]

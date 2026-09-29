@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "interview_008",
+  "lessonId": "040",
+  "title": "Diagnose overselling and lost updates using transaction histories",
+  "aliases": [
+    "L040",
+    "lesson_040",
+    "m04_debug"
+  ],
+  "modeType": "debugging",
+  "minutes": 45,
+  "sessionMinutes": 60,
+  "brief": "An inventory service uses a relational database and wraps each reservation in a transaction. Two customers still reserve the last unit, and two staff edits occasionally overwrite each other. Investigate the exact histories, propose scoped repairs, and explain which retries are safe. The database is PostgreSQL 18; do not assume that the word transaction alone enforces every invariant.",
+  "clarifications": [
+    {
+      "question": "What is the inventory history?",
+      "answer": "Available starts at 1. A reads 1, B reads 1. Each application decides to reserve one, then each writes available=0 and inserts its own reservation. Both transactions use READ COMMITTED and commit."
+    },
+    {
+      "question": "What is the staff-edit history?",
+      "answer": "Both read item version 3. A writes a new description and version 4. B later assigns its old edited representation without a version condition."
+    },
+    {
+      "question": "What invariant must hold?",
+      "answer": "Accepted reservations cannot exceed stock. No staff edit should silently overwrite a change made after the editor’s version was read."
+    },
+    {
+      "question": "Are there external effects?",
+      "answer": "The transaction callback sends a notification email before COMMIT. The retry wrapper retries any exception up to five times."
+    },
+    {
+      "question": "What multi-row rule is proposed next?",
+      "answer": "A department must always retain at least one authorized inventory supervisor. Two supervisors may concurrently remove their own role."
+    },
+    {
+      "question": "What outcomes can clients tolerate?",
+      "answer": "Explicit conflict, temporary failure, or a correctly identified pending operation is acceptable. False confirmation and duplicate external effects are not."
+    }
+  ],
+  "hints": [
+    "Write the state of both reservations as well as the final stock column.",
+    "An atomic version predicate differs from reading a version and then writing unconditionally.",
+    "Retrying a database transaction does not rewind a remote email."
+  ],
+  "changes": [
+    "The team adds a process-local lock but deploys two processes. Is the invariant now safe?",
+    "Both supervisors use a stable transaction snapshot and update different rows. Show whether the no-supervisor result has a valid serial order.",
+    "A COMMIT response is lost. Explain how this differs from a known serialization abort."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "The stock history loses a decrement while accepting two reservation rows; a nonnegative stock CHECK alone does not detect the full invariant. Use a conditional authoritative decrement with affected-row checking plus reservation insertion in one transaction, or correctly scoped row locking and revalidation. The staff edit needs an atomic expected-version predicate and explicit conflict handling, not blind retries of stale human intent. Process-local locks do not coordinate multiple processes. The supervisor scenario is write skew: either serial order would leave the second removal rejected, so both-off is anomalous. Use serializable execution with full-transaction retry or an all-writer shared guard covering the predicate. Retry only appropriate abort/error classes within budget; recompute from fresh state. The notification call must move to a separately designed durable-effect workflow or have its own safe protocol, because rollback and retries can otherwise send duplicates. A known serialization abort permits a fresh transaction; a lost COMMIT response leaves an uncertain outcome requiring stable operation identity or authoritative lookup. PostgreSQL behavior must be tested in coordinated sessions rather than inferred from a SQLite fixture.",
+  "debrief": "Require the candidate to name the invariant, show the unsafe interleaving, and connect each repair to that interleaving. Preserve alternative mechanisms when their scope is complete. Record whether external effects and uncertain commits were distinguished. Retry a changed-quantity scenario and a different multi-row predicate before treating the skill as demonstrated.",
+  "remediation": [
+    "032",
+    "036",
+    "037",
+    "038"
+  ]
+}

@@ -1,0 +1,787 @@
+[
+  {
+    "id": "bbg-what-happens-when-you-type-a-url-into-your-browser",
+    "title": "What Happens When You Type a URL Into Your Browser?",
+    "url": "https://bytebytego.com/guides/what-happens-when-you-type-a-url-into-your-browser/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Visual reinforcement for the browser-to-server journey after the original first explanation. The example is HTTP/TCP; it is not every modern transport.",
+    "weeks": [
+      1
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-how-does-the-domain-name-system-dns-lookup-work",
+    "title": "How Does the Domain Name System (DNS) Lookup Work?",
+    "url": "https://bytebytego.com/guides/how-does-the-domain-name-system-dns-lookup-work/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Follow a named resolver through DNS lookup after domain and address are defined. Treat timings as context-specific.",
+    "weeks": [
+      1
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-how-does-rest-api-work",
+    "title": "How does REST API work?",
+    "url": "https://bytebytego.com/guides/how-does-rest-api-work/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A visual checklist after the original request/response guide; its short text is not a standalone beginner lesson.",
+    "weeks": [
+      2
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-what-does-acid-mean",
+    "title": "What does ACID mean?",
+    "url": "https://bytebytego.com/guides/what-does-acid-mean/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A vocabulary recap after a concrete transaction example. Read alongside the guide’s explicit failure and isolation scope.",
+    "weeks": [
+      4
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-what-is-a-load-balancer",
+    "title": "What is a Load Balancer?",
+    "url": "https://bytebytego.com/guides/what-is-a-load-balancer/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Locate the traffic distributor in a small multi-server app before exploring its many types.",
+    "weeks": [
+      6
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-proxy-vs-reverse-proxy",
+    "title": "Proxy vs Reverse Proxy",
+    "url": "https://bytebytego.com/guides/proxy-vs-reverse-proxy/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Compare which side of a conversation the intermediary serves, after the main load-balancing walkthrough.",
+    "weeks": [
+      6
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-top-5-caching-strategies",
+    "title": "Top 5 Caching Strategies",
+    "url": "https://bytebytego.com/guides/top-5-caching-strategies/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Optional visual vocabulary for read/write cache paths. Our original guide supplies freshness and failure reasoning.",
+    "weeks": [
+      6,
+      7
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-a-crash-course-in-database-sharding",
+    "title": "A Crash Course on Database Sharding",
+    "url": "https://bytebytego.com/guides/a-crash-course-in-database-sharding/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Introduces partition keys, placement approaches, and cross-shard costs after the learner understands one table.",
+    "weeks": [
+      9
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-consistent-hashing",
+    "title": "Consistent Hashing Explained",
+    "url": "https://bytebytego.com/guides/consistent-hashing/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Shows why changing a modulo divisor moves keys. Treat vendor examples as historical illustrations, not current architecture evidence.",
+    "weeks": [
+      9
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-cap-theorem-one-of-the-most-misunderstood-terms",
+    "title": "CAP Theorem: One of the Most Misunderstood Terms",
+    "url": "https://bytebytego.com/guides/cap-theorem-one-of-the-most-misunderstood-terms/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A discussion prompt after precise partition histories. Keep formal availability distinct from merely returning an HTTP response.",
+    "weeks": [
+      10
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-delivery-semantics",
+    "title": "Delivery Semantics",
+    "url": "https://bytebytego.com/guides/delivery-semantics/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Compare delivery terms after tracing one thumbnail task. Our guide distinguishes message delivery from a once-only business effect.",
+    "weeks": [
+      8,
+      11
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-how-do-we-detect-node-failures-in-distributed-systems",
+    "title": "How to Detect Node Failures in Distributed Systems",
+    "url": "https://bytebytego.com/guides/how-do-we-detect-node-failures-in-distributed-systems/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A visual catalog of heartbeat approaches after learning that timeout means suspicion, not proof of death.",
+    "weeks": [
+      13,
+      22
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-how-to-ace-system-design-interviews-like-a-boss",
+    "title": "How to Ace System Design Interviews",
+    "url": "https://bytebytego.com/guides/how-to-ace-system-design-interviews-like-a-boss/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Optional interview structure once components have concrete meaning. Use a complete small design before deep dives.",
+    "weeks": [
+      15,
+      24
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-how-to-design-google-docs",
+    "title": "How to Design Google Docs",
+    "url": "https://bytebytego.com/guides/how-to-design-google-docs/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Later comparison exercise for collaboration paths; a teaching sketch, not verified current product internals.",
+    "weeks": [
+      19
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "bbg-how-to-avoid-double-payment",
+    "title": "How to Avoid Double Payment",
+    "url": "https://bytebytego.com/guides/how-to-avoid-double-payment/",
+    "provider": "ByteByteGo",
+    "kind": "visual-guide",
+    "access": "Free public guide; linked courses or other destinations may have separate access requirements.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Motivates stable operation identity through a user-visible duplicate-charge problem. Our core material supplies the atomic effect/deduplication boundary and limits.",
+    "weeks": [
+      21
+    ],
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-01",
+    "title": "Client-Server Architecture",
+    "url": "https://algomaster.io/learn/system-design/client-server-architecture",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "First picture: client requests work from a service that owns shared state.",
+    "weeks": [
+      1
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-02",
+    "title": "APIs",
+    "url": "https://algomaster.io/learn/system-design/what-is-an-api",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Connect a user action to a request and response.",
+    "weeks": [
+      2
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-03",
+    "title": "HTTP/HTTPS",
+    "url": "https://algomaster.io/learn/system-design/http-https",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Give the request journey concrete protocol vocabulary.",
+    "weeks": [
+      2
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-04",
+    "title": "Domain Name System (DNS)",
+    "url": "https://blog.algomaster.io/p/how-dns-actually-works",
+    "provider": "blog.algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Follow name lookup before the HTTP request.",
+    "weeks": [
+      1,
+      2
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-05",
+    "title": "ACID Transactions",
+    "url": "https://algomaster.io/learn/system-design/acid-transactions",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Revisit all-or-nothing updates after learning tables.",
+    "weeks": [
+      4
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-06",
+    "title": "Database Indexes",
+    "url": "https://algomaster.io/learn/system-design/indexing",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Connect query shape to the cost of finding data.",
+    "weeks": [
+      3
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-07",
+    "title": "Latency vs Throughput",
+    "url": "https://aws.amazon.com/compare/the-difference-between-throughput-and-latency/",
+    "provider": "aws.amazon.com",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Use the AWS comparison to separate request delay from completed work per second.",
+    "weeks": [
+      5
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-08",
+    "title": "Load Balancing",
+    "url": "https://blog.algomaster.io/p/load-balancing-algorithms-explained-with-code",
+    "provider": "blog.algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "See selection algorithms after understanding replicated application servers.",
+    "weeks": [
+      6
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-09",
+    "title": "Caching 101",
+    "url": "https://algomaster.io/learn/system-design/what-is-caching",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Introduce repeated reads and freshness.",
+    "weeks": [
+      6
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-10",
+    "title": "Content Delivery Network (CDN)",
+    "url": "https://algomaster.io/learn/system-design/content-delivery-network-cdn",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Extend caching to geographically distributed readers.",
+    "weeks": [
+      7
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-11",
+    "title": "Message Queues",
+    "url": "https://algomaster.io/learn/system-design/message-queues",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Learn deferred work before designing notifications.",
+    "weeks": [
+      7,
+      11
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-12",
+    "title": "Data Replication",
+    "url": "https://redis.com/blog/what-is-data-replication/",
+    "provider": "redis.com",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Study copied data and lag after one-database correctness.",
+    "weeks": [
+      9
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-13",
+    "title": "Database Sharding",
+    "url": "https://algomaster.io/learn/system-design/sharding",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Divide data only after explaining the access pattern.",
+    "weeks": [
+      9
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-14",
+    "title": "CAP Theorem",
+    "url": "https://algomaster.io/learn/system-design/cap-theorem",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Read after concrete network-partition examples, not as a slogan.",
+    "weeks": [
+      10
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-15",
+    "title": "Idempotency",
+    "url": "https://algomaster.io/learn/system-design/idempotency",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Reason about retries using a stable operation identity.",
+    "weeks": [
+      4,
+      11
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-16",
+    "title": "Rate limiting",
+    "url": "https://blog.algomaster.io/p/rate-limiting-algorithms-explained-with-code",
+    "provider": "blog.algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Compare algorithm behavior; linked repository sketches need the corrections in this review.",
+    "weeks": [
+      12,
+      16
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-17",
+    "title": "Disaster Recovery",
+    "url": "https://cloud.google.com/learn/what-is-disaster-recovery",
+    "provider": "cloud.google.com",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Tie recovery choices to acceptable downtime and data loss.",
+    "weeks": [
+      14
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-18",
+    "title": "How to Answer a System Design Interview Problem",
+    "url": "https://algomaster.io/learn/system-design-interviews/answering-framework",
+    "provider": "algomaster.io",
+    "kind": "article",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Use a discussion checklist after building foundational understanding.",
+    "weeks": [
+      15
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-19",
+    "title": "Design URL Shortener like TinyURL",
+    "url": "https://algomaster.io/learn/system-design-interviews/design-url-shortener",
+    "provider": "algomaster.io",
+    "kind": "worked-design",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Compare a complete small design after making your own attempt.",
+    "weeks": [
+      8
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-20",
+    "title": "Design Notification Service",
+    "url": "https://algomaster.io/learn/system-design-interviews/design-notification-service",
+    "provider": "algomaster.io",
+    "kind": "worked-design",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Compare asynchronous delivery and preferences after queues.",
+    "weeks": [
+      16
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-21",
+    "title": "Design WhatsApp",
+    "url": "https://algomaster.io/learn/system-design-interviews/design-whatsapp",
+    "provider": "algomaster.io",
+    "kind": "worked-design",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Compare durable history with live delivery after WebSockets and retries.",
+    "weeks": [
+      17
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-22",
+    "title": "Real time messaging at Slack",
+    "url": "https://slack.engineering/real-time-messaging/",
+    "provider": "slack.engineering",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Primary engineering case study: separate persistent connections and routing.",
+    "weeks": [
+      17
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-23",
+    "title": "How Discord stores trillions of messages",
+    "url": "https://discord.com/blog/how-discord-stores-trillions-of-messages",
+    "provider": "discord.com",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Primary case study to revisit data layout and hot partitions.",
+    "weeks": [
+      17,
+      19
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-24",
+    "title": "How Canva scaled Media uploads from Zero to 50 Million per Day",
+    "url": "https://www.canva.dev/blog/engineering/from-zero-to-50-million-uploads-per-day-scaling-media-at-canva/",
+    "provider": "canva.dev",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Primary case study about workload-driven evolution and staged migration.",
+    "weeks": [
+      14,
+      19
+    ],
+    "verification": "HEAD returned 405; web GET content inspected successfully.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-25",
+    "title": "Stripe’s payments APIs - The first 10 years",
+    "url": "https://stripe.com/blog/payment-api-design",
+    "provider": "stripe.com",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Primary API-evolution case study; page metadata loads, article rendering may require a browser.",
+    "weeks": [
+      21
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-26",
+    "title": "Distributed Locking",
+    "url": "https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html",
+    "provider": "martin.kleppmann.com",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Read the author’s failure argument only after leases, pauses, and fencing.",
+    "weeks": [
+      22
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-27",
+    "title": "MapReduce: Simplified Data Processing on Large Clusters",
+    "url": "https://research.google.com/archive/mapreduce-osdi04.pdf",
+    "provider": "research.google.com",
+    "kind": "paper",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Optional original paper after partitioned data and background work.",
+    "weeks": [
+      20,
+      22
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-28",
+    "title": "Dynamo: Amazon’s Highly Available Key-value Store",
+    "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+    "provider": "allthingsdistributed.com",
+    "kind": "paper",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Optional original paper after replication and consistency tradeoffs.",
+    "weeks": [
+      10,
+      22
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-29",
+    "title": "ByteByteGo",
+    "url": "https://www.youtube.com/@ByteByteGo",
+    "provider": "youtube.com",
+    "kind": "video-channel",
+    "access": "Public channel; individual video access and content unreviewed.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Optional visual channel. Endpoint reachable; individual videos were not watched or quality-rated.",
+    "weeks": [
+      1,
+      6,
+      15
+    ],
+    "verification": "HTTP HEAD 200; reachability only unless separately noted in review.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-30",
+    "title": "Distributed Tracing",
+    "url": "https://www.dynatrace.com/knowledge-base/distributed-tracing/",
+    "provider": "dynatrace.com",
+    "kind": "article",
+    "access": "Public destination; no login or paid material copied.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "verified",
+    "why": "Original README URL returned HEAD 404; browser lookup found a working replacement.",
+    "weeks": [
+      13
+    ],
+    "verification": "Web content inspected at replacement; original HEAD returned 404.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "awesome-31",
+    "title": "Design Autocomplete for Search Engines",
+    "url": "https://algomaster.io/learn/system-design-interviews/design-instagram",
+    "provider": "algomaster.io",
+    "kind": "worked-design",
+    "access": "Public page reachable; some course features/content may require an account or payment.",
+    "checkedAt": "2026-09-29T12:30:07.989928+00:00",
+    "status": "broken",
+    "why": "Incorrect README topic mapping: the destination is Design Instagram. Do not assign this as autocomplete.",
+    "weeks": [
+      20
+    ],
+    "verification": "HTTP 200 but destination title is Design Instagram.",
+    "linkStatus": "Broken link — excluded"
+  },
+  {
+    "id": "hello-introduction",
+    "title": "System Design in a Hurry — Introduction",
+    "url": "https://www.hellointerview.com/learn/system-design/in-a-hurry/introduction",
+    "provider": "Hello Interview",
+    "kind": "article",
+    "access": "Public introductory article; premium destinations are separate and optional.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Read after building your first small systems to connect learning with interview expectations.",
+    "weeks": [
+      8,
+      15
+    ],
+    "verification": "Opened and inspected the public introduction and its access explanation.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "hello-delivery",
+    "title": "System Design Delivery Framework",
+    "url": "https://www.hellointerview.com/learn/system-design/in-a-hurry/delivery",
+    "provider": "Hello Interview",
+    "kind": "article",
+    "access": "Public framework article; linked premium features are optional.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "A second explanation of how to organize the interview conversation after trying the academy's own framework.",
+    "weeks": [
+      15,
+      24
+    ],
+    "verification": "Public page opened and its framework content retrieved.",
+    "linkStatus": "Link checked"
+  },
+  {
+    "id": "hello-bitly",
+    "title": "Design a URL Shortener Like Bitly",
+    "url": "https://www.hellointerview.com/learn/system-design/problem-breakdowns/bitly",
+    "provider": "Hello Interview",
+    "kind": "worked-design",
+    "access": "Public design breakdown; separate site features may require an account.",
+    "checkedAt": "2026-09-29",
+    "status": "verified",
+    "why": "Compare another worked design only after attempting the guided shortener. Treat it as one defensible solution, not an answer to memorize.",
+    "weeks": [
+      8
+    ],
+    "verification": "Public problem breakdown opened with its expected title and content.",
+    "linkStatus": "Link checked"
+  }
+]

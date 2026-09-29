@@ -1,0 +1,142 @@
+{
+  "id": "001",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Explain system design as a chain of justified decisions.",
+    "Distinguish state, computation, and communication in one request.",
+    "Create a notebook with assumptions, guarantees, and falsifiable evidence.",
+    "Identify a simple architecture and one honest limitation."
+  ],
+  "retrieval": [
+    "Recall a program you wrote that stored data. What would disappear if its process stopped?",
+    "Name a bug where valid-looking input produced an incorrect business result."
+  ],
+  "sections": [
+    {
+      "id": "start",
+      "title": "A small problem with real consequences",
+      "markdown": "Core budget: 5 minutes diagnostic, 14 minutes explanation and trace, 8 minutes notebook example, 10 minutes exercise, 5 minutes questions, 3 minutes review. No system-design vocabulary is required yet. Your Python and SQL experience is enough.\n\nImagine a department needs a borrowing register for 200 pieces of equipment. A student scans a tag, borrows an item, and returns it later. Start by writing what success means: an authorized student can see current availability; an item has at most one active borrower; a confirmed loan remains recorded after restarting the application. These statements immediately tell you more than a list of fashionable components.\n\nSystem design connects user behavior to mechanisms and their limits. You choose where data lives, who may change it, when a response is safe to return, and how the system behaves when something fails. The design includes ordinary operation and recovery. It is a model you can challenge, not a beautiful drawing you must defend at all costs.\n\nBefore reading further, spend two minutes proposing your own design. Preserve it unchanged in the notebook. This is a diagnostic, not a graded exam: later compare how your reasoning changes. Record unknowns rather than filling them with confident guesses."
+    },
+    {
+      "id": "mechanism",
+      "title": "Follow one authoritative state change",
+      "markdown": "Use one backend application and one persistent database. The browser expresses intent; the application checks the request; the database owns the borrowing record. That separation gives each component a responsibility. The browser must not be the authority on whether an item is available, because two browsers can have old information.\n\nTrace a successful loan in six steps: the student submits item 42; the application identifies the student; it verifies permission; it asks the database to create a loan only if the item is free; the database persists the accepted change; the application returns the resulting loan ID. The response belongs after the persistence decision. A success response sent before saving cannot honestly mean that the loan is recorded.\n\nNow challenge the trace. Two students can submit at the same time. Checking availability and later inserting a loan as unrelated actions allows both to pass the check. You do not need the names of transaction isolation levels yet. You do need the requirement that the check and state transition act as one protected operation. Write that requirement next to the database boundary. M04 will implement it.\n\nA different failure happens when saving succeeds but the response is lost. The student sees an error although the state changed. A design that equates missing response with no change will create duplicate actions. For now record an unresolved outcome and a need to retrieve the current state; later lessons develop retries and idempotency. Good early design exposes such obligations rather than pretending all requests finish cleanly."
+    },
+    {
+      "id": "notebook",
+      "title": "A decision notebook that supports learning",
+      "markdown": "Keep four short records for each design: assumptions, decisions, unresolved questions, and evidence. An assumption might be “200 items; up to 50 simultaneously active students; one campus.” A decision is “use one database as the authority for active loans.” Its reason is “all competing claims on an item must be compared in one place.” A rejected alternative is “browser-local storage cannot arbitrate between students.” A test is “two simultaneous claims produce exactly one active loan.”\n\nSeparate facts from estimates. A stakeholder-supplied item count is a fact for the exercise; a traffic multiplier you guessed is an assumption. Put a confidence level and a validation action beside uncertain numbers. Avoid inventing a precise throughput ceiling for a component you have never measured.\n\nHere is a compact evidence entry:\n\n~~~text\nDecision D1: authoritative loans live in one database.\nGuarantee: at most one active loan per item.\nFailure to test: process stops after saving, before response.\nEvidence needed: restart and query the item; inspect active loan count.\nRevisit when: one server cannot meet measured peak demand or recovery needs.\n~~~\n\nReading about a guarantee is not evidence that you can implement it. Distinguish “I can explain,” “I have attempted,” and “I demonstrated using this test.” At this stage your evidence may be a precise trace and a counterexample; executable tests will join it later."
+    },
+    {
+      "id": "tradeoffs",
+      "title": "The first architecture is allowed to be small",
+      "markdown": "One server has a shared failure domain: if it stops, the service is unavailable. Persistent storage can preserve data while the application is down, so unavailability and data loss are different problems. A backup may help recover data but does not automatically keep the service running. Conversely, two application copies cannot recover information that both depend on a lost database to read.\n\nWhether that limitation is acceptable depends on the department's tolerance. If a clerk can use a temporary paper record during a short outage, a modest design may be justified. If this were emergency medical equipment, the consequences and requirements would change. The product name alone does not select the architecture.\n\nCommon mistakes are equating more boxes with more reliability, saying “scalable” without a workload, treating every failure as identical, and drawing arrows without stating whether they carry a command, a response, or stored data. Ask of every box: which requirement needs it; what state does it own; what fails if it disappears; what is the simpler alternative?\n\nOptional practice, outside the 45-minute core: inspect one of your previous backend projects and write a missing-response failure trace. Do not add a queue or cache yet; first explain the unmet requirement."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "loan-path",
+      "title": "When does a loan become real?",
+      "source": "sequenceDiagram\nparticipant S as Student browser\nparticipant A as Application\nparticipant D as Database authority\nS->>A: Borrow item 42\nA->>A: Check identity and permission\nA->>D: Protected claim on item 42\nD-->>A: Persisted loan 81\nA-->>S: Confirm loan 81\nNote over A,D: Success means the authoritative<br/>change was accepted",
+      "caption": "All arrows represent a synchronous request or its response. The browser is outside the trusted application boundary. Saving precedes confirmation.",
+      "steps": [
+        "The browser submits intent, not authoritative availability.",
+        "The application applies identity and permission checks.",
+        "The database arbitrates the state change.",
+        "Only an accepted stored loan is confirmed."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "In ten minutes, sketch the borrowing register and trace two students attempting to borrow the same item. Write one invariant, one outage consequence, one lost-response ambiguity, and one measurable test. Do not choose a distributed-system product.",
+    "minutes": 10,
+    "rubric": [
+      "Names authoritative state and its owner.",
+      "Shows the two competing claims, not only the happy path.",
+      "Separates unavailable service from lost data.",
+      "States an observable result for the proposed test."
+    ],
+    "solution": "Use browser → application → persistent loans database. The invariant is active_loans(item_id) ≤ 1. Both students may have seen “free”; only one protected claim may succeed. If the application stops, reads and writes fail temporarily while existing stored loans may survive. If it stops after storing loan 81, the browser cannot infer failure from a timeout. Querying the item or operation state resolves the ambiguity. A concurrency test submits both claims together and checks exactly one accepted loan and one explicit conflict; a restart test checks the accepted loan still exists."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which observation is evidence of a reliable borrowing operation?",
+      "options": [
+        "The diagram has five components.",
+        "The accepted loan survives a restart test.",
+        "The page loads once."
+      ],
+      "answer": "The accepted loan survives a restart test.",
+      "explanation": "A restart test challenges a specified guarantee. Component count and a successful page load do not establish persistence."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Who should be authoritative about the active borrower?",
+      "options": [
+        "Each browser independently",
+        "The persistent shared borrowing store",
+        "The label printed on the item"
+      ],
+      "answer": "The persistent shared borrowing store",
+      "explanation": "Shared state needs a shared authority; a stale browser view cannot arbitrate competing updates."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "A response disappears after the database saved a loan. What is known, and what remains unknown to the client?",
+      "answer": "The loan may have been accepted; the missing response does not establish that no state changed. The client needs a way to inspect the authoritative outcome.",
+      "explanation": "Assess the distinction between request outcome and observation, not use of a particular retry product."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When can a single-server design be a defensible decision?",
+      "answer": "When its measured capacity and accepted outage/recovery behavior meet the scoped requirements, and its limitations and revisit triggers are explicit.",
+      "explanation": "The tradeoff is smaller operational burden against a shared failure domain; “small company” alone is not evidence."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "System design begins with what?",
+      "back": "A user need, a workload, and correctness or service guarantees."
+    },
+    {
+      "front": "What is authoritative state?",
+      "back": "The state accepted as the source of truth when representations disagree."
+    },
+    {
+      "front": "Why keep assumptions separate from evidence?",
+      "back": "An untested estimate must remain revisable; evidence records an observation."
+    },
+    {
+      "front": "Does a timeout prove no change occurred?",
+      "back": "No. The operation may have completed while its response was lost."
+    },
+    {
+      "front": "What does an invariant express?",
+      "back": "A condition that must remain true across every accepted state change."
+    },
+    {
+      "front": "What makes a design decision useful?",
+      "back": "Its requirement, reason, rejected alternative, and revisit or validation condition."
+    }
+  ],
+  "mentalModel": "Design is a traceable argument: requirement → state and mechanism → guarantee → failure test.",
+  "sources": [
+    {
+      "title": "Google SRE: Simplicity",
+      "url": "https://sre.google/sre-book/simplicity/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon Jobs: SDE II Interview Prep",
+      "url": "https://www.amazon.jobs/content/en/how-we-hire/sde-ii-interview-prep",
+      "checked": "2026-09-29"
+    }
+  ]
+}

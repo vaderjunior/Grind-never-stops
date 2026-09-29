@@ -1,0 +1,143 @@
+{
+  "id": "008",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Find the limiting resource from a per-operation demand model.",
+    "Calculate headroom with explicit utilization and failure assumptions.",
+    "Perform sensitivity analysis on uncertain inputs.",
+    "Compare operating cost without treating illustrative prices as current quotes."
+  ],
+  "retrieval": [
+    "From L007: how long does a backlog take to drain when new work still arrives?",
+    "From L006: distinguish live data and provisioned capacity."
+  ],
+  "sections": [
+    {
+      "id": "bottleneck",
+      "title": "A pipeline is limited by its tightest relevant resource",
+      "markdown": "Core budget: retrieval 5, explanation 18, worked decision 8, exercise 10, questions 10, review 4 minutes. A campus image converter accepts a picture and returns a thumbnail. Assume each request consumes 20 ms of CPU, reads 1 MB, writes 100 kB, and has a 500 ms interactive deadline. These costs are supplied teaching measurements; they do not describe your computer or a cloud instance.\n\nAn eight-core machine has at most eight CPU-seconds available per wall-clock second. At 0.020 CPU-seconds/request, the ideal CPU bound is 400 requests/s. This is a resource-accounting upper bound, not a safe benchmark result. It ignores scheduling overhead, other processes, uneven task sizes, and contention. If you target at most 60% CPU use under the representative peak, the planning CPU capacity becomes 240 requests/s.\n\nSuppose effective storage read capacity is 150 MB/s. At 1 MB/read per request it bounds demand at 150 requests/s, below the CPU planning value. More CPU alone cannot fix that read bottleneck. Reducing read bytes, improving the storage path, or exploiting valid reuse might. The requirement and access pattern choose the remedy.\n\nSome resources are counts rather than rates: maximum open connections, memory for concurrent work, or available identifiers. Check them using the right model. A service may fit average disk bandwidth but exhaust memory during a slow dependency, as L007 showed."
+    },
+    {
+      "id": "headroom",
+      "title": "State exactly which bad day you are reserving for",
+      "markdown": "Headroom is spare capacity relative to an explicit scenario. It may cover workload uncertainty, burstiness, recovery, or a failed instance. If one machine safely sustains 100 requests/s at the required latency and peak demand is 180/s, two machines provide only 20/s spare while both are healthy. Losing one leaves half the fleet and too little capacity. Three such machines provide 200/s with one lost, assuming balanced routing and no shared bottleneck.\n\nFor identical independent instances, a simple one-failure sizing rule is n ≥ ceil(peak / sustainable_capacity_per_instance) + 1. It only applies if the measured per-instance capacity remains valid together, failover works, data dependencies still fit, and the failure does not remove more than one instance. Two copies on the same host do not satisfy a host-failure assumption.\n\nAvoid hiding every uncertainty in one multiplier. A peak factor describes demand shape. A target utilization describes operating margin. A failure reserve describes lost capacity. They can all be appropriate, but each should have a purpose so you can detect double counting. Do not multiply peak demand by two “for safety” and then also require 50% utilization without explaining whether those cover distinct risks.\n\nSpare capacity is not instantaneous recovery. Detection, rerouting, warm-up, and data loading take time. A design can have enough theoretical surviving capacity while violating latency during the transition."
+    },
+    {
+      "id": "sensitivity",
+      "title": "A small table can change the architecture",
+      "markdown": "For the image converter, evaluate three input-size scenarios:\n\n| Average source bytes | Read bound at 150 MB/s | Consequence |\n|---|---:|---|\n| 0.5 MB | 300 requests/s | CPU planning bound of 240/s dominates |\n| 1 MB | 150 requests/s | Storage reads dominate |\n| 3 MB | 50 requests/s | Storage dominates much earlier |\n\nThis table identifies a useful next measurement: source-image size and effective read throughput. It also prevents an expensive response to the wrong bottleneck. Buying more CPU while images triple in size does not follow from the model.\n\nNow compare two hypothetical plans. Plan A costs 100 cost-units/month per machine and needs three machines. Plan B costs 180 per machine, sustains twice the tested rate, and needs two machines for the same one-failure scenario. Machine cost is 300 versus 360 units. But Plan B may reduce patching or coordination work; Plan A may offer a smaller failure increment. These are invented cost units, not cloud price quotes. Add storage, network transfer, backups, and operator effort before choosing.\n\nArithmetic implementation, executable with Python 3.11+:\n\n~~~python\nfrom math import ceil\n\ndef instances(peak_rps: float, safe_rps: float, failed: int = 1) -> int:\n    assert peak_rps >= 0 and safe_rps > 0 and failed >= 0\n    return ceil(peak_rps / safe_rps) + failed\n\nassert instances(180, 100) == 3\nassert instances(180, 200) == 2\nprint(\"A: 3 instances; B: 2 instances\")\n~~~\n\nThe function validates a sizing formula, not routing behavior or real-world service capacity."
+    },
+    {
+      "id": "failure",
+      "title": "Scaling evidence must include the shared dependency",
+      "markdown": "Suppose each application copy individually reaches 100/s, but all copies share a database capped at 150 useful operations/s. Three copies do not produce 300/s. Parallelism increases pressure on the same authority. Benchmarking one copy then multiplying by fleet size is a hypothesis to test, not demonstrated scalability.\n\nA failure can also change request cost. If cached thumbnails disappear, each request may read and convert the original image. A replica recovering from disk can compete with foreground reads. Capacity planning should therefore name degraded modes, not only the happy-path peak.\n\nCommon misconceptions include “70% CPU is always safe,” “autoscaling has no delay,” “a larger machine fixes every bottleneck,” “cost equals the server bill,” and “twice the components means twice the capacity.” The correction is not another universal percentage; it is a demand-per-resource model with measured sustainable limits and failure assumptions.\n\nFinish a capacity argument in three sentences: identify the limiting resource under the current model; state the amount of margin and the event it covers; name the measurement or requirement change that would make you revisit the design. Optional depth is a real benchmark on your machine, explicitly separate from the supplied illustrative measurements."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "limits",
+      "title": "Which resource limits the current request?",
+      "source": "flowchart LR\nR[One conversion request] -->|0.020 CPU seconds| C[8 cores with 60 percent target]\nR -->|1 MB read| D[150 MB per second read path]\nC -->|Planning bound| CP[240 requests per second]\nD -->|Planning bound| DP[150 requests per second]\nCP --> B[Current bound is the smaller one]\nDP --> B",
+      "caption": "The calculation compares supplied resource budgets. The result remains an estimate until an integrated workload test confirms it.",
+      "steps": [
+        "Translate each request into resource demand.",
+        "Compute a rate bound for each limiting rate resource.",
+        "Take the tightest relevant bound.",
+        "Test the combined system and its degraded mode."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A service peaks at 260 requests/s. A representative benchmark shows one instance sustaining 100/s at the required latency, but its shared database sustains only 220/s. Explain why adding a fourth application instance alone does not meet the requirement. Give a one-instance-loss sizing calculation after the database is improved to 500/s. Identify one remaining failure assumption.",
+    "minutes": 10,
+    "rubric": [
+      "Identifies shared database as the current bottleneck.",
+      "Does not sum app capacity past the shared limit.",
+      "Calculates three survivors plus one failure reserve.",
+      "Names routing, correlated failure, or degraded-cost assumptions."
+    ],
+    "solution": "At 260/s demand, the 220/s shared database saturates regardless of a fourth application copy. Improve or reduce database demand and verify its 500/s limit under the actual mix. After that, ceil(260/100)+1 = 4 application instances covers loss of one, leaving nominal 300/s. This assumes traffic reaches survivors, capacities are sustainable together, and the lost failure domain contains only one copy. Database failure tolerance remains a separate question."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "4 CPU cores, 10 ms CPU/request: ideal CPU-only upper bound?",
+      "answer": 400,
+      "unit": "requests/s",
+      "tolerance": 0.01,
+      "explanation": "4 CPU-seconds/s divided by 0.01 CPU-seconds/request = 400."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A shared dependency caps useful throughput at 200/s. Adding app replicas necessarily:",
+      "options": [
+        "Increases throughput beyond 200/s",
+        "May increase pressure without lifting the shared limit",
+        "Eliminates queueing"
+      ],
+      "answer": "May increase pressure without lifting the shared limit",
+      "explanation": "The bottleneck remains shared unless its workload or capacity changes."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Peak 350/s, sustainable instance rate 100/s, reserve for one lost instance. How many instances?",
+      "answer": 5,
+      "unit": "instances",
+      "tolerance": 0,
+      "explanation": "ceil(350/100)+1 = 5."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why state the purpose of each headroom factor?",
+      "answer": "To separate peak shape, utilization margin, failure reserve, and uncertainty so the same risk is not counted twice or omitted.",
+      "explanation": "A factor with no scenario is hard to validate or revise."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When would the cheaper server plan be more expensive overall?",
+      "answer": "When it adds enough operator work, network or storage charges, failure exposure, or migration burden to exceed the apparent machine saving.",
+      "explanation": "Use explicit assumptions and comparable scopes, not invented current prices."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "CPU rate bound?",
+      "back": "Available CPU-seconds per second / CPU-seconds per request."
+    },
+    {
+      "front": "A shared bottleneck defeats what assumption?",
+      "back": "That fleet capacity is automatically the sum of isolated instance benchmarks."
+    },
+    {
+      "front": "One-instance-loss rule?",
+      "back": "ceil(peak / sustainable per-instance capacity) + 1, subject to independent-failure and routing assumptions."
+    },
+    {
+      "front": "What should sensitivity analysis prioritize?",
+      "back": "Uncertain terms whose changes alter the decision."
+    },
+    {
+      "front": "Headroom covers what?",
+      "back": "A named demand, variation, recovery, or failure scenario."
+    },
+    {
+      "front": "What is sustainable capacity?",
+      "back": "Measured useful throughput while relevant latency/error objectives hold."
+    }
+  ],
+  "mentalModel": "Demand consumes several budgets; the smallest remaining budget limits you, and the reserve must cover a named event.",
+  "sources": [
+    {
+      "title": "Google SRE: Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

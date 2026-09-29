@@ -1,0 +1,149 @@
+{
+  "id": "023",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Describe resources, operations, and representations as an API contract.",
+    "Separate shape validation, business rules, and authorization.",
+    "Choose useful error categories without leaking internal details.",
+    "Bound request and response sizes before they become resource problems."
+  ],
+  "retrieval": [
+    "From L014, distinguish safe and idempotent method semantics.",
+    "From L002, express an invariant for a reservation without naming a database."
+  ],
+  "sections": [
+    {
+      "id": "contract",
+      "title": "An API is a promise to another program",
+      "markdown": "Core: retrieval 5, explanation 18, worked contract 8, exercise 10, questions 10, review 4 minutes. Design an equipment-loan API for the register introduced in L001. A resource is a thing the contract identifies, such as an item, loan, or borrower. A representation is the fields sent about it. Keeping the distinction clear lets you evolve storage without exposing table internals as the public interface.\n\nStart with operations: list available items, request a loan, inspect its status, and return an item. Possible contracts are GET /items, POST /loans, GET /loans/{id}, and POST /loans/{id}/return. Resource-oriented naming improves consistency but is not a ban on explicit actions. A return is a meaningful state transition; pretending it is an arbitrary row update can obscure the permitted behavior.\n\nFor each operation record method, path, authenticated actor, request shape, response shape, status outcomes, limits, and side effects. Say whether a success response means accepted intent or completed durable change. A 202 response with a status resource can describe deferred work; it must not imply that the loan already exists if the authority has not accepted it."
+    },
+    {
+      "id": "validation",
+      "title": "Three checks answer different questions",
+      "markdown": "Shape validation checks whether the input is parseable and in the supported schema: item_id is an integer, duration_days is within 1–14, no oversized content, and required fields exist. Business validation asks whether this item is loanable and whether the requested duration obeys policy. Authorization asks whether this actor may borrow this item or act for that user. Passing one does not imply passing the others.\n\nDo not trust owner_id supplied by a browser merely because it is a valid integer. Derive the ordinary borrower from authenticated identity, or require a separately authorized administrative operation to act for someone else. Likewise, a valid item_id does not prove that the item belongs to the actor's tenant. Authorization must remain attached to the state being returned or changed.\n\nLimits belong in the contract: maximum page size, maximum body bytes, supported content types, field lengths, and bounded batches. Apply byte limits before fully parsing a huge request. A schema validator that runs only after allocating a gigabyte has protected field types but not process memory. Allowlist writable fields rather than copying every submitted property into a persistent object."
+    },
+    {
+      "id": "worked",
+      "title": "A concrete create and error response",
+      "markdown": "Assume the caller is already authenticated. A create request contains only the requested item and duration:\n\n~~~json\n{\"item_id\": 42, \"duration_days\": 7}\n~~~\n\nAn accepted durable loan could return 201 with a Location header naming /loans/81 and a representation containing loan_id, item_id, borrower_id, and state. If the item was claimed concurrently, return an explicit conflict outcome rather than a generic “try again” success. The exact atomic mechanism is M04 work; the API already needs to communicate its result.\n\nRFC 9457 offers a machine-readable problem-details format. An original example is:\n\n~~~json\n{\n  \"type\": \"https://academy.example/problems/item-unavailable\",\n  \"title\": \"Item cannot be borrowed\",\n  \"status\": 409,\n  \"detail\": \"Choose another item or check availability later.\",\n  \"instance\": \"/request-errors/rq-721\"\n}\n~~~\n\nThe example domain is illustrative, not a live endpoint. Clients should use the stable problem type and status contract, not parse English prose to control behavior. The instance identifier can link a support report to internal diagnostics. Keep SQL text, stack traces, credentials, and another borrower's personal data out of the client response. Internal logs also require deliberate redaction.\n\nReturn errors at the appropriate boundary: malformed input is not a server outage; lack of permission is not a successful empty update; an unexpected internal failure is not a validation error. Some APIs deliberately use 404 to avoid revealing whether a private object exists. Document the policy consistently rather than relying on status selection alone for security."
+    },
+    {
+      "id": "evolution",
+      "title": "Clients rely on the behaviors you expose",
+      "markdown": "An API can break clients without renaming a field. Changing integer units from seconds to milliseconds, making a nullable value always absent, reordering results without a contract, or adding an unrecognized enum state can be breaking changes. Specify units and absent/null semantics. Clients should handle unknown fields where the contract permits evolution; servers still need input validation for writable data.\n\nFailure scenario: a browser retries loan creation after a timeout and creates two loans for two different items in a buggy implementation. A well-shaped API alone does not establish retry safety. L027 develops uncertainty and retry boundaries; L093 later implements persistent idempotency. For now record whether an operation is safe to retry and what identifier permits outcome inspection.\n\nCommon misconceptions: a JSON schema proves authorization; REST means every action is a CRUD update; HTTP 200 means the business succeeded; changing only an optional field is always compatible; validation can wait until after expensive work. Test contracts using both valid and deliberately invalid requests, including unauthorized but correctly shaped ones.\n\nOptional depth: write an OpenAPI description for these operations and compare it with observed behavior. Documentation generated from a schema is useful, but still needs tests of semantics and side effects."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "checks",
+      "title": "A valid shape is only the first boundary",
+      "source": "flowchart LR\nR[Untrusted request] --> L[Size and format limits]\nL --> V[Shape validation]\nV --> I[Established identity]\nI --> P[Object-level permission]\nP --> B[Business transition at authority]\nB --> O[Documented outcome]\nV -->|Invalid fields| E[Bounded safe error]\nP -->|Not permitted| E\nB -->|Conflict| E",
+      "caption": "The ordering is a teaching contract, not a claim that authentication must always occur after parsing. Real systems may authenticate earlier; all boundaries remain necessary.",
+      "steps": [
+        "Bound the input before expensive processing.",
+        "Validate the supported representation.",
+        "Check the actor against the specific object.",
+        "Return the authoritative outcome with a stable error contract."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Specify POST /reservations for a study room. Include inputs, actor derivation, one accepted response, three error outcomes, a size bound, and one unauthorized request that passes shape validation. Keep the exercise to a contract, not a full server.",
+    "minutes": 10,
+    "rubric": [
+      "Separates actor identity from submitted fields.",
+      "Defines accepted versus pending semantics.",
+      "Distinguishes malformed, forbidden, and conflicting outcomes.",
+      "Includes explicit bounds and an object-level authorization test."
+    ],
+    "solution": "Inputs room_id, start, end with defined timestamp format and start < end; derive requester from the authenticated session. Bound body to an agreed small limit such as 8 KiB and reject unsupported writable properties. Return 201 and reservation ID only after authoritative acceptance. Use documented invalid-input, forbidden-or-concealed, and time-conflict errors. A user submitting a syntactically valid room_id for another restricted department passes shape validation but must fail its permission check. If processing is deferred, return a separate pending operation contract rather than 201 confirmed."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which check answers “may this actor read this particular object”?",
+      "options": [
+        "JSON parsing",
+        "Authorization",
+        "Compression"
+      ],
+      "answer": "Authorization",
+      "explanation": "Shape and encoding do not establish rights over an object."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Why bound body bytes before full parsing?",
+      "options": [
+        "To avoid allocating unbounded resources before validation",
+        "To make every business operation idempotent",
+        "To replace authentication"
+      ],
+      "answer": "To avoid allocating unbounded resources before validation",
+      "explanation": "A correct field validator can still be reached only after excessive allocation."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why should clients not parse English error messages for control flow?",
+      "answer": "Wording and localization can change; stable machine-readable types or codes define the behavior contract.",
+      "explanation": "Human detail supplements rather than replaces machine semantics."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Give a change that breaks a contract without deleting a field.",
+      "answer": "Changing time units, enum possibilities unsupported by clients, null semantics, ordering guarantees, or what success acknowledges can break behavior.",
+      "explanation": "Explain the client assumption affected by the example."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Should owner_id always be writable when it appears in responses?",
+      "answer": "No. Output fields and allowed input fields are different; owner identity usually derives from authenticated context or an explicitly authorized transfer operation.",
+      "explanation": "Copying an entire input object creates an authorization and integrity risk."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Resource versus representation?",
+      "back": "Identified thing versus the fields exchanged about it."
+    },
+    {
+      "front": "Shape validation establishes?",
+      "back": "Supported syntax, types, bounds, and fields, not permission."
+    },
+    {
+      "front": "Business validation establishes?",
+      "back": "Whether the requested transition obeys domain rules."
+    },
+    {
+      "front": "Stable error identity?",
+      "back": "Machine-readable type or code independent of prose."
+    },
+    {
+      "front": "Why separate input and output schemas?",
+      "back": "A field visible to a reader may not be writable by that reader."
+    },
+    {
+      "front": "A success response must specify?",
+      "back": "Which authoritative outcome or accepted intent it acknowledges."
+    }
+  ],
+  "mentalModel": "An API contract joins identity, bounded input, permitted state transition, and an unambiguous observable outcome.",
+  "sources": [
+    {
+      "title": "IETF RFC 9110: HTTP Semantics, HTTPWG edition",
+      "url": "https://httpwg.org/specs/rfc9110.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "IETF RFC 9457: Problem Details for HTTP APIs",
+      "url": "https://www.rfc-editor.org/info/rfc9457/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

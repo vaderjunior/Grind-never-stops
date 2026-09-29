@@ -1,0 +1,277 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 10,
+  "title": "Consistency: which value will I read?",
+  "level": "intermediate",
+  "minutes": 45,
+  "id": "consistency-in-plain-language",
+  "summary": "Use short read-and-write stories to choose what users should observe when several copies of data exist.",
+  "objectives": [
+    "Describe consistency as allowed observations, not a vague quality label.",
+    "Explain read-your-writes, monotonic reads, and linearizability with examples.",
+    "Choose a guarantee for a specific operation."
+  ],
+  "terms": [
+    {
+      "term": "Consistency model",
+      "definition": "Rules describing which results reads and writes are allowed to produce together."
+    },
+    {
+      "term": "Read-your-writes",
+      "definition": "A session should see its own completed updates, rather than an older state that omits them."
+    },
+    {
+      "term": "Monotonic reads",
+      "definition": "Within the relevant session/history, a reader should not move backward after observing newer data."
+    },
+    {
+      "term": "Linearizability",
+      "definition": "Operations appear to take effect one at a time between their call and response, while respecting the real-time order of nonoverlapping operations."
+    },
+    {
+      "term": "Eventual consistency",
+      "definition": "A convergence promise under stated assumptions, such as updates stopping and communication/repair succeeding; it is not a fixed freshness deadline."
+    }
+  ],
+  "retrieval": [
+    "How did the lagging replica make a saved note appear old?",
+    "Which reads can tolerate an old cached value, and which cannot?"
+  ],
+  "sections": [
+    {
+      "id": "story",
+      "title": "Start with what the person sees",
+      "markdown": "You change a note title from “Draft” to “Finished.” The save succeeds. A refresh shows “Draft,” and another refresh shows “Finished.” The database may have stored the write correctly, but the product feels unreliable because the visible story is confusing.\n\nConsistency is about the rules for that story. Instead of asking “is the database consistent?”, ask “after this completed write, what may this reader observe?” Different operations can need different answers. A public like count may tolerate a short delay. Confirming that a user’s private note was deleted may need stronger behavior.\n\nThe word consistency also appears in ACID transactions, where it concerns preserving application/database rules. That usage is related to correctness but is not the same as a distributed read/write consistency model. Always say which question you are answering."
+    },
+    {
+      "id": "session",
+      "title": "Two useful promises for one person",
+      "markdown": "Start with what one person expects across requests. These promises solve different surprises.\n\n| Promise | Small history it prevents | What it does not automatically promise |\n| --- | --- | --- |\n| Read your writes | You save v9, then your session reads a state before v9 | Every other user immediately sees v9 |\n| Monotonic reads | You read v9, then later see v7 in the same ordered history | You necessarily see the newest global value |\n| Causal consistency | You see a reply before the message it depends on | One total real-time order of all unrelated operations |\n\nA session can carry a required version or route suitable reads to the writer. A replica must meet that version before returning a promised result; otherwise use a bounded wait, appropriate fallback, or explicit inability to meet the contract.\n\nVersions need a defined order and scope. Arbitrary timestamps from unsynchronized machines are not a substitute. A note revision, a per-partition position, and a global protocol revision may have different meanings.\n\n**Pause and predict:** a reader saw v9 without writing it, then receives v7. Which session promise matters? Focus on the observed history, not whether the user pressed Save."
+    },
+    {
+      "id": "strong",
+      "title": "One shared order that respects completed operations",
+      "markdown": "For a simple single-value register—a stored value that can be read and written—linearizability gives an intuitive stronger rule. Each operation looks as if it happened at one point during its execution. If writing “Finished” completes before a new read begins, that read cannot return the earlier “Draft” value unless another permitted write changed it in between.\n\nIf a read overlaps the write, either old or new can be valid depending on where the operations fit in the single order. This is why “always the latest value” can be misleading shorthand: during overlap, there may be no single already-completed newest write to use.\n\nThis guarantee does not mean zero latency, physical simultaneous updates on every disk, or automatically correct multi-row transactions. A booking operation also needs an atomic rule that permits only one claimant. Consistency models and transaction isolation describe different aspects of the design and must be combined deliberately."
+    },
+    {
+      "id": "worked",
+      "title": "Judge three small histories",
+      "markdown": "Draw invocation and response points. The overlap between operations matters as much as the returned value.\n\n| History for one register | Interpretation under the stated model |\n| --- | --- |\n| Write Finished starts; read returns Draft; write then completes | Can be linearizable: place the read before the overlapping write |\n| Write Finished completes; a later read returns Draft; no other write | Violates linearizability: the completed write must come first |\n| One session reads v8, then v6 | Violates its monotonic-read promise for this version history |\n\nA **register** is a simple stored value with read and write operations. Linearizability gives those operations one order that respects already completed operations. It does not require disk changes to happen simultaneously on every machine.\n\nThe first history does not mean every old read is acceptable. Its permission comes from the overlap. Move the read's start until after the write's response, and the reasoning changes.\n\nFor a booking or transfer, also identify the protected multi-field operation and transaction rules. A strong individual read alone does not make a multi-step read/check/write sequence atomic. Use a timeline to state the promise before choosing replica coordination or database settings."
+    },
+    {
+      "id": "choose",
+      "title": "Pay for the promise you need",
+      "markdown": "To enforce stronger observations, a system may route to a leader, coordinate replicas, wait for a known version, or refuse to serve a read that cannot meet the contract. Each has latency, load, or availability consequences. Serving an older value can be a useful choice when the operation explicitly permits it; it is not a universal excuse for bugs.\n\nEventual consistency says convergence under the stated conditions. It does not promise “within one second” unless a separate bounded-freshness objective or guarantee says so. Failed repair, continuous updates, or a lost update can defeat a careless interpretation. Monitor the actual propagation and reconciliation behavior.\n\nIn an interview, begin with a concrete requirement: “the author must see their edit on refresh,” or “two callers cannot both successfully claim the final seat.” Then choose mechanisms. A list of consistency names without a history does not explain what the system will do. Your exercise is to turn three product expectations into explicit read/write stories."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "histories",
+      "title": "The read begins after the write completed",
+      "source": "sequenceDiagram\nparticipant A as Writer\nparticipant S as Shared value\nparticipant B as Reader\nA->>S: Write Finished\nS-->>A: Write completed\nB->>S: Read begins after completion\nS-->>B: Finished\nNote over S,B: Draft would violate the stated linearizable register contract",
+      "caption": "This history assumes no intervening write. Overlapping operations require a separate ordering analysis.",
+      "steps": [
+        "Observe the write response.",
+        "Start a later read.",
+        "Apply the real-time ordering requirement.",
+        "Reject an older value unless another valid write explains it."
+      ],
+      "sectionId": "worked"
+    },
+    {
+      "id": "causal-message",
+      "title": "Show the cause before exposing its dependent reply",
+      "sectionId": "session",
+      "source": "flowchart LR\nM[Message M accepted] --> R[Reply R records dependency on M]\nR --> C{Reader has required cause M?}\nC -->|Yes| V[Expose reply R]\nC -->|No| W[Fetch or wait for cause under contract]\nW --> V",
+      "caption": "This illustrates a user-visible causal dependency, not a complete causal-consistency algorithm. Permission checks still apply to both records.",
+      "steps": [
+        "Accept the original message.",
+        "Associate its reply with the dependency that matters.",
+        "Check that the reader can observe the required cause under the chosen contract.",
+        "Expose the dependent result only when the contract is met."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Choose a consistency expectation for: an author refreshing their edited note, a visitor reading a public like count, and two buyers claiming one seat. Draw one failure story for each rather than only naming a model.",
+    "rubric": [
+      "Guarantees refer to actual operations.",
+      "Session freshness differs from a shared atomic claim.",
+      "Stale counters have an explicit tolerance/policy."
+    ],
+    "solution": "For the author, require read-your-writes and route/wait for a version that includes the edit. For public counts, a defined freshness target with eventual repair may be acceptable; show the older count and state its limit. For the seat, use an atomic conditional claim at an authority with appropriate consistency/isolation so two callers cannot both succeed. Merely making the displayed seat count fresh does not protect the claim transaction."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A write completes before a read begins; no other write occurs. A linearizable register may return what?",
+      "options": [
+        "Only the old value",
+        "The completed write’s value",
+        "Any historical value"
+      ],
+      "answer": "The completed write’s value",
+      "explanation": "The single operation order must respect the completed write before the later read."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Read-your-writes automatically makes every other user see the update instantly?",
+      "options": [
+        "Yes",
+        "No",
+        "Only over HTTPS"
+      ],
+      "answer": "No",
+      "explanation": "It is a scoped promise for the relevant session, not automatically a global instant-visibility guarantee."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Eventual consistency alone gives a one-second deadline?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with three replicas"
+      ],
+      "answer": "No",
+      "explanation": "Convergence assumptions and a concrete freshness bound are separate statements."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can an overlapping read return the old value under linearizability?",
+      "answer": "The read may be placed before the write at a point within their overlapping executions, while respecting the required order.",
+      "explanation": "The read may be placed before the write at a point within their overlapping executions, while respecting the required order."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is a fresh seat count insufficient to prevent overselling?",
+      "answer": "Two buyers can read the same fresh availability and race. The claim itself needs an atomic invariant-preserving transition.",
+      "explanation": "Two buyers can read the same fresh availability and race. The claim itself needs an atomic invariant-preserving transition."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Consistency models describe?",
+      "back": "Allowed results across operation histories."
+    },
+    {
+      "front": "Read-your-writes?",
+      "back": "Your session sees its completed updates."
+    },
+    {
+      "front": "Monotonic reads?",
+      "back": "Do not go backward after seeing newer state in the promised history."
+    },
+    {
+      "front": "Linearizability respects?",
+      "back": "A single operation order and real-time order of nonoverlapping calls."
+    },
+    {
+      "front": "Eventual implies a fixed deadline?",
+      "back": "No; state convergence assumptions and freshness targets separately."
+    }
+  ],
+  "mentalModel": "Draw what completed before what. Then state which observations the product permits.",
+  "sources": [
+    {
+      "title": "Jepsen — Linearizability model and histories",
+      "url": "https://jepsen.io/consistency/models/linearizable",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Gilbert and Lynch — Perspectives on CAP",
+      "url": "https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "overlap-register",
+      "title": "Move the read across the write response",
+      "sectionId": "strong",
+      "intro": "One register starts at blue. No other writes occur. Times are illustrative logical observations, not synchronized-clock machinery.",
+      "steps": [
+        {
+          "title": "A write begins",
+          "explanation": "The caller asks to change blue to green. It has not yet received completion.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "t1"
+            },
+            {
+              "label": "StoredHistory",
+              "value": "blue before this write"
+            },
+            {
+              "label": "Write",
+              "value": "In progress"
+            }
+          ]
+        },
+        {
+          "title": "A read overlaps",
+          "explanation": "A different read starts and returns blue before the write response. A single order can place this read first.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "t2"
+            },
+            {
+              "label": "ReadResult",
+              "value": "blue"
+            },
+            {
+              "label": "AllowedOrder",
+              "value": "Read, then write"
+            }
+          ]
+        },
+        {
+          "title": "The write completes",
+          "explanation": "The writer receives success. Every later-starting operation must respect that completed write in a linearizable history.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "t3"
+            },
+            {
+              "label": "WriteResult",
+              "value": "Success: green"
+            },
+            {
+              "label": "OverlappingRead",
+              "value": "Already finished"
+            }
+          ]
+        },
+        {
+          "title": "A later read begins",
+          "explanation": "This new read cannot return blue under the stated contract, since no intervening write restored it.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "t4"
+            },
+            {
+              "label": "RequiredObservation",
+              "value": "green"
+            },
+            {
+              "label": "Reason",
+              "value": "Write completed before this read began"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Linearizability constrains a history, not a slogan such as “all replicas always match.” Identify which operations overlap before judging their results."
+    }
+  ]
+}

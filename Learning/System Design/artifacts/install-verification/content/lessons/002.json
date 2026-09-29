@@ -1,0 +1,149 @@
+{
+  "id": "002",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Convert vague adjectives into testable requirements.",
+    "Write non-goals that protect scope.",
+    "Express business invariants independently of implementation.",
+    "Negotiate compromises without silently weakening correctness."
+  ],
+  "retrieval": [
+    "From L001: where did the borrowing register keep its authoritative state?",
+    "Explain why a missing response can leave the client uncertain."
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "“Build a booking system” is not yet a specification",
+      "markdown": "Core budget: retrieval 5, explanation 18, worked clarification 8, exercise 10, questions 10, review 4 minutes. This lesson uses a campus rehearsal-room booking service. We deliberately separate describing required behavior from choosing transactions or locks, which come later.\n\nA request to “make booking fast, secure, and scalable” contains aspirations but almost no acceptance criteria. Which rooms? Who is allowed to reserve them? Are overlapping reservations allowed for setup time? Can someone edit a confirmed booking? Does “fast” concern viewing availability or receiving confirmation? Clarifying these points is engineering work: each answer can change state ownership, query patterns, or the response contract.\n\nStart with the user journey. A student browses rooms, chooses a start and end time, submits a reservation, and later cancels it. A facilities administrator can block a room for maintenance. Restrict the initial release to one campus and authenticated students. Payments, recurring bookings, and automatic conflict resolution are non-goals. A non-goal does not mean “never”; it means the current design does not promise that behavior."
+    },
+    {
+      "id": "invariants",
+      "title": "Write guarantees that survive changes of technology",
+      "markdown": "A functional requirement describes an action: reserve a room. An invariant constrains every valid result: two confirmed reservations for the same room must not overlap. A service objective constrains observed behavior: 99% of valid availability searches complete within 500 ms during the specified peak workload. An operational constraint limits your choices: one part-time operator and one campus deployment. Keep these categories separate because they are checked differently.\n\nFor half-open time intervals [start, end), reservations overlap when start_A < end_B and start_B < end_A. Half-open intervals allow a booking ending at 11:00 and another beginning at 11:00, if the product permits no turnaround time. If cleaning needs ten minutes, incorporate that explicitly rather than changing comparison operators accidentally.\n\nAn invariant should describe the business, not a favored tool. “Use a lock” is not an invariant. “At most one confirmed reservation covers any instant for a room” is. Many mechanisms might enforce it. Conversely, “availability pages may lag by 30 seconds” can be an acceptable compromise only if the final confirmation still arbitrates the authoritative state. A stale hint is not permission to violate the booking rule.\n\nScope each guarantee. “No duplicate bookings” could mean no overlapping room occupancy or no repeated result from one retried action. Those are different conditions. Write the exact entities and transitions. Ask what happens if two students reserve simultaneously or an administrator closes a room while a student is choosing it."
+    },
+    {
+      "id": "worked",
+      "title": "A clarification exchange and its consequences",
+      "markdown": "Candidate: “Do we need global rooms or one campus?” Stakeholder: “One campus, 40 rooms.” Consequence: no global placement requirement has been established.\n\nCandidate: “Is a displayed slot guaranteed until the user submits?” Stakeholder: “No, but an accepted reservation must not conflict.” Consequence: searching can provide a provisional view while confirmation needs an authoritative check.\n\nCandidate: “Can the system reject new bookings if it cannot verify availability?” Stakeholder: “Yes; browsing can stay available from a slightly old view.” Consequence: different operations have different failure policies. Showing old availability may be tolerable; inventing a confirmation is not.\n\nCandidate: “What is most painful: a slow page or two groups arriving for the same room?” Stakeholder: “Double booking is worse.” Consequence: when speed and correctness conflict, preserve the invariant and return a clear unsuccessful or unresolved result.\n\nRecord the result as a contract:\n\n~~~text\nAction: confirm a reservation for room_id, start, end, student_id.\nPreconditions: start < end; student authorized; room usable.\nAccepted result: reservation ID with a confirmed time interval.\nInvariant: confirmed intervals for the same room do not overlap.\nRejected result: explicit conflict, invalid input, or unavailable decision.\nNon-goals: payments, recurring series, cross-campus operation.\n~~~\n\nThis does not yet implement safe concurrency. It tells later mechanisms what they must prove. If you cannot describe a counterexample, your requirement may be too vague to test."
+    },
+    {
+      "id": "compromises",
+      "title": "Negotiation is explicit, not accidental",
+      "markdown": "Some requirements can move: result freshness, image quality, or the size of a search page. Others may define the product's validity: isolation between private accounts or preserving confirmed reservations. You may negotiate either category with the relevant owner, but must not silently trade away an invariant because a component is inconvenient.\n\nConsider three alternatives during an outage. Reject confirmation and keep browsing: bookings are temporarily unavailable, but no unverified booking is accepted. Accept a tentative request and clearly label it pending: this changes the API and user expectation; it is not a confirmed booking. Accept every request as confirmed and reconcile later: this breaks the stated invariant and requires a different product agreement. Naming a queue does not make the third option correct.\n\nFailure scenarios should be requirement probes. If deletion of a student account must remove their private data, what happens to an audit record? The answer may require separate retention policies and pseudonymous references, rather than a blanket deletion claim. Do not invent legal deadlines; record the policy owner and a question.\n\nCommon misconceptions: non-functional means optional; low latency means low average only; a non-goal is irrelevant forever; choosing a database proves business correctness. Each mistakes a label for an observable contract. End clarification by reading back a small list of agreed guarantees and the most consequential uncertainty."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "confirmation",
+      "title": "An available-looking slot is only a proposal",
+      "source": "flowchart LR\nB[Browse provisional availability] -->|Choose room and interval| P[Submit proposal]\nP -->|Authoritative check| C{Can confirm safely?}\nC -->|Yes| A[Persist confirmed reservation]\nC -->|Conflict| R[Reject with conflict]\nC -->|Cannot decide| U[Return unavailable or pending]\nA -->|Only then| S[Send confirmed ID]",
+      "caption": "The diagram distinguishes a convenient view from a correctness decision. “Pending” must be a documented product state, never a disguised confirmation.",
+      "steps": [
+        "Browsing supports selection but grants no ownership.",
+        "The proposed interval reaches the authority.",
+        "Only a safe accepted change becomes confirmed.",
+        "An unknown decision must be communicated honestly."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "A stakeholder says “Build a fast parcel-locker booking app.” In ten minutes write three clarifying questions, two non-goals, two invariants, one measurable service objective, and an outage compromise. Include what would make your compromise unacceptable.",
+    "minutes": 10,
+    "rubric": [
+      "Questions change architecture or response guarantees.",
+      "Invariants identify entities and forbidden states.",
+      "Objective includes operation, threshold, percentile, and workload or window.",
+      "Compromise preserves or explicitly renegotiates the invariant."
+    ],
+    "solution": "Ask whether reservations are for a specific compartment, whether one user may hold several, and whether pickup must work when the network is down. Initial non-goals could be payment and cross-city transfers. Invariants: a compartment has at most one active allocation; only the intended recipient or authorized operator may unlock it. Example objective: 99% of valid reservation decisions within 800 ms at 40 requests/s, measured over one campus business day. During inability to inspect current allocation, browsing approximate availability may continue but confirmation fails explicitly. This is unacceptable if stakeholders require guaranteed offline reservation; that would require a changed allocation protocol and further design."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which is a business invariant?",
+      "options": [
+        "Use PostgreSQL.",
+        "At most one active allocation per locker.",
+        "The service should be modern."
+      ],
+      "answer": "At most one active allocation per locker.",
+      "explanation": "It constrains valid states independently of implementation."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A stale availability page is permitted. What follows?",
+      "options": [
+        "Confirmation may ignore conflicts.",
+        "Confirmation still must preserve the agreed invariant.",
+        "All operations must use stale data."
+      ],
+      "answer": "Confirmation still must preserve the agreed invariant.",
+      "explanation": "Freshness for a view and correctness for an accepted change are different guarantees."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which clarification is most useful first?",
+      "options": [
+        "Which queue brand should we use?",
+        "What outcome would be unacceptable even during failure?",
+        "Should the logo be blue?"
+      ],
+      "answer": "What outcome would be unacceptable even during failure?",
+      "explanation": "Failure consequences identify required guarantees before components are chosen."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Explain the difference between pending and confirmed during an outage.",
+      "answer": "Pending records intent awaiting a decision; confirmed asserts that the acceptance conditions were satisfied. The UI and API must expose that distinction.",
+      "explanation": "A queue can hold pending work, but its presence does not establish the business outcome."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Should a faster confirmation path be adopted if it can occasionally double-book?",
+      "answer": "Only if stakeholders explicitly accept a different invariant and its consequences. Under the current contract it is invalid even when latency improves.",
+      "explanation": "A valid tradeoff names the sacrificed guarantee and the decision owner."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Functional requirement?",
+      "back": "An action the system must support."
+    },
+    {
+      "front": "Invariant?",
+      "back": "A condition preserved by every accepted transition."
+    },
+    {
+      "front": "Non-goal?",
+      "back": "A behavior deliberately excluded from the current scope."
+    },
+    {
+      "front": "Why clarify failure behavior early?",
+      "back": "It determines when the system may accept, reject, or defer work."
+    },
+    {
+      "front": "Can stale reads coexist with strict confirmation?",
+      "back": "Yes, if the final authoritative check enforces the invariant."
+    },
+    {
+      "front": "What makes an objective measurable?",
+      "back": "A defined operation, population, threshold, measurement window, and observation point."
+    }
+  ],
+  "mentalModel": "Clarify what may be approximate, what must remain true, and what the system is allowed to say when it cannot decide.",
+  "sources": [
+    {
+      "title": "Google SRE: Service Level Objectives",
+      "url": "https://sre.google/sre-book/service-level-objectives/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

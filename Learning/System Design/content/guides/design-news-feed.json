@@ -1,0 +1,286 @@
+{
+  "id": "design-news-feed",
+  "title": "Design a news feed",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 18,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Build a chronological feed from posts and follow relationships, then add precomputed feed entries when reads justify the cost.",
+  "objectives": [
+    "Distinguish source posts from a derived feed index.",
+    "Trace posting, reading, pagination, deletion, and unfollow behavior.",
+    "Compare computing a feed on read with preparing it on write."
+  ],
+  "terms": [
+    {
+      "term": "Feed",
+      "definition": "A selected, ordered list of content a user is eligible to see."
+    },
+    {
+      "term": "Follow edge",
+      "definition": "A relationship saying one user wants another user’s posts in their feed."
+    },
+    {
+      "term": "Fan-out",
+      "definition": "One event causing work for multiple recipients."
+    },
+    {
+      "term": "Feed index",
+      "definition": "A derived list of post identities prepared for a reader."
+    },
+    {
+      "term": "Hydration",
+      "definition": "Fetching the current data for identities selected in an earlier stage."
+    }
+  ],
+  "retrieval": [
+    "Why does storing a cache entry not make it the authoritative source of a fact?",
+    "How does one post create more internal work than one database insert?"
+  ],
+  "sections": [
+    {
+      "id": "scope",
+      "title": "Define what belongs in the first feed",
+      "markdown": "Design a feed for a community of people sharing study progress. Users publish short posts, follow others, and read recent posts by accounts they follow. Start with reverse chronological ordering. Exclude advertisements, machine-learning ranking, reposts, and complex recommendations until the basic behavior works. Include deletion and private-account authorization because they affect which content may be shown.\n\nOur initial quality goal is a reasonably fast first page with a small allowed delay before a new post appears in every follower’s feed. Confirmed posts must remain durable under the chosen storage contract. A feed can be temporarily incomplete while still being useful, but it must not disclose a post the reader is not authorized to see. Separate freshness preferences from access-control obligations; they are not interchangeable consistency choices."
+    },
+    {
+      "id": "model",
+      "title": "Keep source facts separate from the prepared list",
+      "markdown": "The post and the reader’s prepared list have different responsibilities.\n\n| Stored record | Concrete example | Owns which fact? |\n| --- | --- | --- |\n| Post | p_91 by user_4, body, visibility, deletion state | Current content and availability |\n| Follow | reader_8 follows user_4 | The relationship used by feed policy |\n| FeedEntry | reader_8 → p_91 at an order key | A candidate shortcut for this reader |\n\nA feed entry is not permanent permission to show a post. The source post and current relationship/policy decide eligibility.\n\n~~~text\nPOST /posts + stable operation identity → one accepted source post\nGET /feed?cursor=...&limit=20 → a bounded eligible page\n~~~\n\nDerive the author from authentication and authorize follow operations. Index recent posts by author and follow relationships by reader because those are the reads the design needs.\n\n**Pause and predict:** if the body of p_91 changes, should every prepared feed entry become another owner of the text? Storing post IDs keeps that responsibility with the source."
+    },
+    {
+      "id": "pull",
+      "title": "Make the simplest working read path",
+      "markdown": "Begin by assembling a feed when a reader asks for it:\n\n~~~text\nfollowed authors → bounded recent posts → current eligibility → ordered page\n~~~\n\nFor a small community, an indexed relational query or bounded service operation may satisfy the latency goal. Avoid assuming that one simple query is inherently too small-scale.\n\n| Pay for assembly… | Work when posting | Work when reading |\n| --- | --- | --- |\n| On read | Mostly one source-post write | Retrieve and merge authors’ candidates |\n| On write | Source write plus recipient index work | Read prepared candidate IDs, then hydrate and authorize |\n\nA reader following ten quiet people and a reader following two thousand busy accounts have different read costs. Bound candidate counts and history ranges; do not fetch every historical post.\n\nMeasure first-page latency and database work. A prepared index is justified when its reduced read work is worth extra recipient writes, delayed fan-out, storage, and rebuild responsibility."
+    },
+    {
+      "id": "push",
+      "title": "Prepare a shortcut when reads dominate",
+      "markdown": "If feed reads become expensive, a post event can create feed entries for eligible followers in the background. Commit the post and durable event intent, then let workers enumerate followers in bounded batches. Store post IDs in recipient feed indexes; fetch the current post content later. Use a uniqueness rule for reader and post so a repeated event does not create duplicate feed entries.\n\nPosting now causes more work, and some readers may wait for fan-out to catch up. Keep the source post immediately accessible through its own page while describing feed freshness honestly. Workers need checkpoints and retry-safe batches so they can resume after failure. Limit the retained feed-index length or age; otherwise one old account can accumulate unbounded derived history. Rebuild capability matters because this index is a projection of authoritative posts and relationships."
+    },
+    {
+      "id": "read",
+      "title": "Hydrate, authorize, and page in a stable order",
+      "markdown": "The prepared-feed read obtains candidate post IDs, loads current content, checks current visibility and relationship rules, then returns eligible items. A deleted post can remain in a stale index without being shown if the authoritative hydration or policy check rejects it. Unfollow should affect new reads according to the defined rule even if cleanup of old feed entries is asynchronous.\n\nFor chronological pages, use a stable key such as server-assigned creation time plus unique post ID as a tie-breaker. A cursor represents the ordering boundary from the preceding page; it is not just an offset into a changing list. New posts arriving at the top should not shift an offset and duplicate the last item from the previous page.\n\nIf the product needs a stable multi-page snapshot, retain or encode an appropriate snapshot boundary and specify its expiration."
+    },
+    {
+      "id": "verify",
+      "title": "Walk through changes after the happy path",
+      "markdown": "Alice posts once and her followers Ben and Chen receive entries. The worker crashes after writing Ben’s entry and retries: Ben’s duplicate insertion is harmless, and Chen still gets the entry. Alice deletes the post before Chen opens the feed: hydration must suppress it even if cleanup has not reached Chen’s index. Ben unfollows Alice: the current relationship rule decides whether the old entry remains eligible.\n\nObserve fan-out completion age, feed-read latency, candidate-to-returned-item ratio, duplicate suppression, and authorization failures. Large numbers of filtered candidates can make a page unexpectedly expensive or short. Bound additional fetching and return a valid cursor rather than looping forever to fill twenty items. The next guide handles celebrity accounts and ranking, where one average follower count stops being an adequate capacity model."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "feed-projection",
+      "sectionId": "push",
+      "title": "Posts are authoritative; feed entries are a read shortcut",
+      "source": "flowchart LR\nA[Author publishes] --> P[(Post and event intent)]\nP --> W[Fan-out worker]\nF[(Follow graph)] --> W\nW --> I[(Reader feed: post IDs)]\nR[Reader requests page] --> I\nI --> H[Hydrate and authorize current posts]\nP --> H\nH --> O[Eligible ordered page]",
+      "steps": [
+        "Persist the source post.",
+        "Prepare retry-safe recipient index entries.",
+        "Read candidate identities from the shortcut.",
+        "Check current content and permission before returning it."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "feed-page-cursor",
+      "sectionId": "read",
+      "title": "A cursor follows a stable boundary, not a shifting row number",
+      "source": "flowchart TB\nP[Page one ends at time 10:00 and post p_70] --> C[Cursor stores the defined ordering boundary]\nN[New post arrives above page one] --> T[Top of feed changes]\nC --> Q[Next query asks for keys below the boundary]\nQ --> A[Authorize and return eligible older candidates]\nT -.-> Q",
+      "caption": "Creation time needs a unique tie-breaker. A stable full browsing snapshot is an additional contract; the boundary alone does not freeze permissions or content.",
+      "steps": [
+        "Order using a defined key with a unique tie-breaker.",
+        "Return the last ordering boundary with the page.",
+        "Use that boundary when new items appear at the top.",
+        "Recheck current eligibility on every returned page."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Design a chronological feed for a small study community. Start with compute-on-read, then add a prepared feed index. Trace a worker crash after half the followers receive a post and a deletion before remaining readers open their feeds. State a page cursor key.",
+    "rubric": [
+      "Source post and follow relationship have clear owners.",
+      "Read and write amplification are compared.",
+      "Fan-out retries are idempotent per reader/post.",
+      "Deletion and access checks survive stale index entries.",
+      "Cursor uses a stable tie-broken order."
+    ],
+    "solution": "The basic read merges bounded recent posts for followed authors. A prepared index shifts work to posting: durable event workers add unique reader/post entries in batches and resume or safely repeat after a crash. Feed reads hydrate current source posts and reject deleted or unauthorized content, so stale entries cannot alone disclose content. A chronological cursor can use a defined creation-time/post-ID pair and a snapshot boundary if stable multi-page behavior is required. Cleanup is useful but does not replace read-time correctness."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which record owns current post visibility?",
+      "options": [
+        "The source post and policy data",
+        "An old feed entry alone",
+        "A client’s cached follower count"
+      ],
+      "answer": "The source post and policy data",
+      "explanation": "A derived index may lag and cannot alone authorize access."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "An author has 800 followers. A naive push design adds one feed entry each. How many entries per post?",
+      "answer": 800,
+      "unit": "entries",
+      "tolerance": 0,
+      "explanation": "One post fans out to eight hundred recipient indexes."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Why prefer an ordered cursor over a simple offset in a changing feed?",
+      "options": [
+        "New insertions can shift offsets and repeat or skip items",
+        "Cursors make authorization unnecessary",
+        "Offsets cannot be integers"
+      ],
+      "answer": "New insertions can shift offsets and repeat or skip items",
+      "explanation": "A stable boundary is less sensitive to items added before the next page."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is computing the feed on read a reasonable first design?",
+      "answer": "When follow counts, traffic and indexed query costs fit the response-time requirement. It avoids writing many derived recipient entries until those entries are justified.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What happens if a fan-out batch is repeated?",
+      "answer": "A unique reader/post key or equivalent idempotent update prevents duplicate logical entries, while the worker can safely continue covering recipients not yet updated.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Feed index contains what?",
+      "back": "A derived ordered set of candidate post identities for a reader."
+    },
+    {
+      "front": "Pull feed cost?",
+      "back": "More work at read time, less recipient work when posting."
+    },
+    {
+      "front": "Push feed cost?",
+      "back": "More recipient writes and delayed fan-out, cheaper candidate retrieval."
+    },
+    {
+      "front": "Hydration purpose?",
+      "back": "Load current content and policy-relevant state for candidate identities."
+    },
+    {
+      "front": "Stale deleted-post index entry?",
+      "back": "Must be suppressed by current source/policy checks, then cleaned up asynchronously."
+    }
+  ],
+  "mentalModel": "Store the post once as truth, then choose when to pay for assembling each reader’s view.",
+  "sources": [
+    {
+      "title": "W3C — ActivityPub social objects and delivery, optional protocol comparison",
+      "url": "https://www.w3.org/TR/activitypub/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Amazon DynamoDB — Query pagination",
+      "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "AWS — Transactional outbox pattern",
+      "url": "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "candidate-is-not-permission",
+      "title": "Turn candidate IDs into a permitted page",
+      "sectionId": "read",
+      "intro": "The prepared index is only a starting list. Follow a normal read that contains one stale candidate.",
+      "steps": [
+        {
+          "title": "Read the shortcut",
+          "explanation": "The feed index has three candidate identities for reader_8.",
+          "state": [
+            {
+              "label": "Reader",
+              "value": "reader_8"
+            },
+            {
+              "label": "Candidate IDs",
+              "value": "p_91, p_88, p_83"
+            },
+            {
+              "label": "Returned content",
+              "value": "none yet"
+            }
+          ]
+        },
+        {
+          "title": "Load current source facts",
+          "explanation": "Hydration retrieves the current records. One candidate is now deleted.",
+          "state": [
+            {
+              "label": "p_91",
+              "value": "visible and allowed"
+            },
+            {
+              "label": "p_88",
+              "value": "deleted"
+            },
+            {
+              "label": "p_83",
+              "value": "visible and allowed"
+            }
+          ]
+        },
+        {
+          "title": "Apply policy and order",
+          "explanation": "The page keeps eligible candidates in the defined order. It does not display the deleted body merely because its ID remains in the index.",
+          "state": [
+            {
+              "label": "Eligible IDs",
+              "value": "p_91, p_83"
+            },
+            {
+              "label": "Suppressed",
+              "value": "p_88"
+            },
+            {
+              "label": "Index cleanup",
+              "value": "may happen later"
+            }
+          ]
+        },
+        {
+          "title": "Return a bounded result",
+          "explanation": "If the page is short, any extra candidate fetch must remain bounded. Return a valid continuation under the chosen cursor contract.",
+          "state": [
+            {
+              "label": "Items returned",
+              "value": "2 in this trace"
+            },
+            {
+              "label": "Extra fetching",
+              "value": "bounded by policy"
+            },
+            {
+              "label": "Cursor",
+              "value": "defined candidate/order boundary"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A prepared list saves search work. It does not become a second authority for current content or access."
+    }
+  ]
+}

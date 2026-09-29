@@ -1,0 +1,149 @@
+{
+  "id": "037",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Choose between optimistic version checks and explicit row locking.",
+    "Recognize contention and transaction retry costs.",
+    "Construct a deadlock cycle and prevent common lock-order conflicts.",
+    "Retry the whole transaction safely after a retryable database failure."
+  ],
+  "retrieval": [
+    "From L014: where must an If-Match version check occur?",
+    "From L036: why does rollback not reverse a remote notification?"
+  ],
+  "sections": [
+    {
+      "id": "optimistic",
+      "title": "Detect that the world changed before applying an edit",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, worked histories 8, exercise 10, questions 10, review 4. Two staff members edit an equipment description loaded at version 3. The first save changes it to version 4. The second should not silently overwrite that change using its stale copy. An optimistic check makes the write conditional on the version the editor actually read.\n\nUse an authoritative conditional update: UPDATE items SET description=:text, version=version+1 WHERE item_id=:id AND version=:expected, with the required tenant scope. One affected row means the expected state was still current at the decision. Zero means the caller must resolve a stale or unavailable resource under the API's disclosure policy. Do not automatically replay the same stale overwrite until it succeeds; human edits may need merging or confirmation.\n\nOptimistic control works well when conflicting edits are rare and retaining a lock while a human types would be unreasonable. Under heavy contention, repeated failed work can be costly. Its name does not mean it avoids all internal database locks; it describes the application's strategy of detecting a conflict rather than holding an application-level reservation throughout its think time."
+    },
+    {
+      "id": "locking",
+      "title": "Reserve the row while making a short decision",
+      "markdown": "For a short multi-step operation, a transaction can SELECT the relevant row FOR UPDATE, inspect its current state, and then change it before commit. Competing operations using conflicting row locks wait or fail under the configured policy. In PostgreSQL, row locks are normally retained until transaction end; ordinary snapshot readers can still have different behavior from competing writers. “Locking a row blocks the whole database” is too vague.\n\nLock the correct authority. Locking one inventory row can serialize decisions about that stock item if every relevant path follows the protocol. It does not automatically lock nonexistent reservations, every row matching a future predicate, or a different service's state. A multi-row invariant needs a strategy that covers all competing changes.\n\nAvoid remote calls and user interaction while holding the lock. A lock wait timeout should be treated as a failed attempt under a documented deadline, not as permission to proceed without the lock. Release by committing or rolling back promptly."
+    },
+    {
+      "id": "deadlock",
+      "title": "Two owners can each wait for the other",
+      "markdown": "Suppose transferring capacity between bins needs rows A and B. Transaction T1 locks A then requests B. T2 locks B then requests A. Neither can advance without a resource held by the other: this is a cycle, not merely a long queue. PostgreSQL detects deadlocks and aborts a participant; the application must handle the failure.\n\nA consistent acquisition order, such as ascending bin ID, removes this particular cycle. It is not a complete proof against every possible lock pattern elsewhere in the application. Keep the operation short, acquire the needed locks in a shared order, and observe lock waits and abort rates. Reducing contention may be more effective than increasing every timeout.\n\nOriginal two-row history:\n\n~~~text\nT1: lock bin 10\nT2: lock bin 20\nT1: request bin 20 -> waits for T2\nT2: request bin 10 -> waits for T1\nCycle: T1 -> T2 -> T1\nRepair for this path: both request 10 before 20.\n~~~\n\nThis is a reasoning trace, not a claim that a PostgreSQL server was run during authoring. The local lab checks conditional updates and rollback using SQLite; it does not reproduce PostgreSQL row-lock modes."
+    },
+    {
+      "id": "retry",
+      "title": "A retry must recompute from a new valid starting point",
+      "markdown": "After a deadlock or serialization failure, retry the entire transaction from its beginning where the database contract requires it. Reusing values read by an aborted attempt can repeat the invalid decision. Bound attempts within the request deadline, add suitable delay/jitter under contention, and distinguish retryable errors from constraint failures or invalid user requests that should be reported instead.\n\nKeep external side effects out of a transaction-retry callback unless a separate idempotent protocol handles them. A callback that sends email can send it on each attempt even though only one database transaction commits. A stable operation identity must also cover an uncertain final commit response; database conflict retries and client network retries are related but distinct cases.\n\nChoosing a strategy: a human note edit favors version conflict detection; a brief transfer between known rows may favor ordered locks; a predicate invariant across changing rows may need a broader design or serializable execution. Test the actual counterexample and include all writers. Do not decide from a slogan that optimistic is always faster or pessimistic is always safer.\n\nCommon misconceptions: FOR UPDATE is a global mutex; deadlock means database corruption; any SQL error should be retried; only the failed final statement needs retrying; a longer timeout fixes a cycle. Optional practice: write a retry policy table containing error class, maximum attempts, deadline behavior, and whether the caller must reconcile an uncertain outcome."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "deadlock",
+      "title": "A wait cycle cannot drain itself",
+      "source": "flowchart LR\nT1[Transaction 1 holds row A] -->|Waits for row B held by| T2[Transaction 2 holds row B]\nT2 -->|Waits for row A held by| T1\nO[Shared acquisition order A then B] -.->|Prevents this particular cycle| T1",
+      "caption": "The cycle is the defining dependency. A consistent order addresses this path; other lock patterns still require review.",
+      "steps": [
+        "T1 owns A while T2 owns B.",
+        "Each asks for the resource held by the other.",
+        "The database aborts an attempt to break the cycle.",
+        "A retry starts from fresh state; future attempts use consistent order."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Two administrators edit version 8 of the same item while two background jobs transfer capacity between rows 2 and 9 in opposite lock order. Choose a concurrency strategy for each case. Show the optimistic update predicate and the repaired lock order; define what gets retried after a deadlock.",
+    "minutes": 10,
+    "rubric": [
+      "Uses version predicate and checks affected rows for human edits.",
+      "Does not hold a lock across human think time.",
+      "Orders both transfer locks consistently.",
+      "Retries the whole aborted transaction without repeating unprotected remote effects."
+    ],
+    "solution": "Human edits use an atomic conditional update WHERE version=8 with version increment; the loser receives a conflict and reconciles, rather than blindly overwriting. Transfer jobs acquire row 2 then row 9 in one short transaction, regardless of transfer direction. On a retryable deadlock abort, rollback and rerun the full transaction using current state and bounded attempts. Do not resend an email inside each retry without its own effect contract."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A zero-row optimistic update means:",
+      "options": [
+        "The stale change was safely applied",
+        "The expected-version predicate did not produce an accepted update",
+        "The database necessarily crashed"
+      ],
+      "answer": "The expected-version predicate did not produce an accepted update",
+      "explanation": "Resolve conflict or disclosure policy; do not treat no-op as business success."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A deadlock requires:",
+      "options": [
+        "Any slow query",
+        "A cycle of waiting dependencies",
+        "A missing index only"
+      ],
+      "answer": "A cycle of waiting dependencies",
+      "explanation": "A long wait without a cycle is blocking, not necessarily deadlock."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why retry the whole transaction after serialization failure?",
+      "answer": "Its earlier reads and decisions may be invalid; a fresh attempt must recompute from a new valid state.",
+      "explanation": "Repeating only the final statement may preserve the incorrect assumptions."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is optimistic conflict reporting preferable to silent retry?",
+      "answer": "For human edits whose stale intent may overwrite another meaningful change and requires conscious merge or review.",
+      "explanation": "Retry policy follows semantics, not just database error handling."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What does consistent lock order fail to prove?",
+      "answer": "That every other path, predicate, nonexistent row, or external authority is covered; it only prevents cycles under the shared ordering protocol.",
+      "explanation": "State scope and include every participating writer."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Optimistic write check?",
+      "back": "Apply only if the authoritative revision still matches the one read."
+    },
+    {
+      "front": "Row lock lifetime?",
+      "back": "Normally the transaction lifetime under the engine’s documented behavior."
+    },
+    {
+      "front": "Deadlock?",
+      "back": "A cycle where each participant waits for a resource another holds."
+    },
+    {
+      "front": "Common deadlock prevention?",
+      "back": "Consistent acquisition order and short transactions."
+    },
+    {
+      "front": "Retry unit?",
+      "back": "The whole aborted transaction, with fresh reads and bounded attempts."
+    },
+    {
+      "front": "External effect in retry callback?",
+      "back": "Can repeat independently of database rollback; needs a separate effect contract."
+    }
+  ],
+  "mentalModel": "Either hold the right authority briefly or detect that it changed; conflicts and retries are part of the operation contract.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Explicit locking",
+      "url": "https://www.postgresql.org/docs/18/explicit-locking.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL 18: Transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

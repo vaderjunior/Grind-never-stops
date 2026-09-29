@@ -1,0 +1,328 @@
+{
+  "id": "database-families",
+  "title": "Relational, document, key-value, wide-column, and graph stores",
+  "version": 2,
+  "week": 3,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Understand what relational, document, key-value, wide-column, and graph databases make convenient by asking each one concrete questions.",
+  "objectives": [
+    "Read a small example in each database family.",
+    "Connect a data shape to its recurring queries.",
+    "Explain why flexible documents still need rules.",
+    "Distinguish graph traversal from ordinary related rows."
+  ],
+  "terms": [
+    {
+      "term": "Data model",
+      "definition": "The way records and their relationships are represented."
+    },
+    {
+      "term": "Access pattern",
+      "definition": "A question or update the application performs repeatedly."
+    },
+    {
+      "term": "Document",
+      "definition": "A record containing named fields, possibly with nested records and lists."
+    },
+    {
+      "term": "Key-value pair",
+      "definition": "A label and the value retrieved using that label."
+    },
+    {
+      "term": "Partition key",
+      "definition": "A value used to group related records and determine their placement."
+    },
+    {
+      "term": "Graph traversal",
+      "definition": "Following relationships from one record to connected records."
+    }
+  ],
+  "retrieval": [
+    "How does an owner identifier connect a note to a user?",
+    "What changes when a query needs twenty matching records instead of one known identity?"
+  ],
+  "sections": [
+    {
+      "id": "start",
+      "title": "Begin with five questions, not five logos",
+      "markdown": "Pocket Notes has users, notes, labels, and photos. We might ask for one note by its identity, a user’s newest notes, all notes carrying a label, recent editing events, or every note linked to a particular research topic. These questions can describe the same product while asking the storage system to do different work.\n\nA database family describes a useful way to organize and operate on data. It does not determine every feature of every product. Think of organizing a workshop: drawers work well for labeled parts, a project box keeps related materials together, and a wall map shows connections. The analogy helps explain organization; it does not tell us anything about database speed, durability, or concurrent updates.\n\nThis chapter compares organizations. We will not deploy five databases. A modest application can often answer all its initial questions with one well-chosen database. Learning alternatives helps recognize a new requirement, rather than giving us a shopping list."
+    },
+    {
+      "id": "relational",
+      "title": "Relational tables connect facts through keys",
+      "markdown": "Our users table has user_id and display_name. The notes table has note_id, owner_id, and title. Each row represents one record. The owner_id value connects a note to a user. A query can filter notes, order them, and join matching user information into the result. A join combines related facts for a question; it does not permanently glue the tables together.\n\nSuppose user 7 is Maya, and notes 41 and 42 belong to her. To display her notes with her current name, match their owner_id to the users table. Renaming Maya changes one user record. Both notes still point to the same identity and display the new name when queried.\n\nThis organization is convenient when many questions combine relationships or filter records in different ways. Constraints can reject invalid stored relationships, and transactions can group supported changes. Neither feature chooses business rules for you. The application must still ask the right question and enforce the caller’s permission."
+    },
+    {
+      "id": "documents",
+      "title": "Documents keep a bounded record together",
+      "markdown": "A document store could represent a note like this:\n\n~~~json\n{\"note_id\":41,\"owner_id\":7,\"title\":\"Garden\",\n \"labels\":[\"home\",\"summer\"],\"photo\":{\"key\":\"photos/p81\",\"width\":1200}}\n~~~\n\nThe photo field is nested: it contains a smaller record inside the note. If opening one note commonly needs these fields together, that shape is convenient. Different note types might carry different optional fields. A checklist could have items; a photo note could have dimensions.\n\nFlexible does not mean rule-free. Require a valid owner, reject nonsensical dimensions, and define how older readers handle new fields. An unlimited edit history embedded in one note keeps growing, making reads and updates expensive or exceeding product limits. Give independently growing information its own records when appropriate. Referencing another document is also possible; embedding everything is not the definition of a document database.\n\n> **Pause and predict:** A note’s embedded labels fit in a short list, but its edit history grows every day. Must both stay inside one document? No. Choose a bounded document for the fields read together and a separately managed history when independent growth calls for it."
+    },
+    {
+      "id": "keyvalue",
+      "title": "A known key is a very specific question",
+      "markdown": "A basic key-value operation asks for one exact label:\n\n| Known key | Value stored for that key |\n| --- | --- |\n| note:41 | A serialized record for Garden |\n| session:abc | The application’s session record |\n| account:7:preference:theme | dark |\n\nA **serialized record** is data encoded into bytes or text so it can be stored or sent. The application must know or derive the key before looking it up. Include the scope that makes keys unique, such as an account identity when identifiers repeat across accounts. Another operation can replace the value under the key.\n\nThis is attractive for a lookup such as session:abc, where abc is an opaque session identity. It is less directly expressive for “find every note edited yesterday by members of this team.” A product may offer indexes or richer structures, or the application may maintain another mapping. Those capabilities have costs and consistency rules; they do not arise from the key-value label alone.\n\nRedis is one example with useful structures beyond plain values. We will learn its commands and failure behavior separately. A key-value store is not necessarily a temporary cache: whether data is replaceable depends on the application’s role for that store."
+    },
+    {
+      "id": "widecolumn",
+      "title": "Wide-column models organize a known range of records",
+      "markdown": "Consider “show edits for owner 7 on this date, newest first.” A Cassandra-style model can use an owner-and-date **partition key**, the values choosing one group, then order rows within the group by edit time and an identity for ties:\n\n| Group key | Edit time | Edit identity | Changed note |\n| --- | --- | --- | --- |\n| owner 7, 29 September | 10:05 | e3 | 42 |\n| owner 7, 29 September | 10:02 | e2 | 41 |\n| owner 7, 29 September | 10:02 | e1 | 41 |\n| owner 9, 29 September | 10:04 | e4 | 43 |\n\nThe owner 7 query can target its known group. The edit identity distinguishes the two events at 10:02.\n\nThe partition is a collection of related rows, not a requirement to draw a table with thousands of visible columns. The important idea is planning the grouping and order around a query. Requesting one owner’s day can then target a known group. Asking for all failed edits across all owners may need a differently organized table or another supported access path.\n\nDates bound growth only if the chosen time window fits the actual workload. One extremely busy owner can still create a large or busy partition. This family should also not be confused with a column-oriented analytics engine, which stores column values efficiently for analytical scans. Similar words describe different design decisions."
+    },
+    {
+      "id": "graph",
+      "title": "Graphs make paths through relationships explicit",
+      "markdown": "Suppose notes link to topics, topics cite papers, and papers refer to other papers. The question becomes “starting at this topic, which related papers can I reach in two steps?” In a property graph, nodes represent things such as notes or papers. Relationships connect them and can have a name and properties. A traversal follows those connections under a query’s rules.\n\nAn ordinary ownership relationship alone does not require a graph database. Relational tables can represent edges and answer many relationship queries too. A graph model becomes interesting when multi-step paths are central, variable, and worth evaluating with representative data.\n\nBound the traversal. “Follow every connection forever” can visit enormous parts of a graph or repeatedly encounter cycles. State direction, permitted relationship types, depth, and result limits. Also check access: a private paper should not become visible merely because a public note points toward it. Convenient navigation does not erase permission boundaries."
+    },
+    {
+      "id": "compare",
+      "title": "Ask the same product different questions",
+      "markdown": "Compare these candidate fits without turning them into absolute rules:\n\n| Repeated question | Natural organization to investigate | What still needs thought |\n| --- | --- | --- |\n| Notes with their owners and team permissions | Related tables | Indexes, joins, transaction boundaries |\n| One note with bounded nested settings | Document | Validation, update conflicts, record growth |\n| Value for an already-known session identity | Key-value | Expiration, loss behavior, alternate queries |\n| One owner’s ordered events in a time window | Wide-column grouping | Partition size, skew, other access paths |\n| Paths from a topic through related papers | Graph | Traversal bounds and authorization |\n\nThese are starting hypotheses. Real products overlap. PostgreSQL can store JSON; a document database can support transactions; a key-value product may expose secondary indexes. Investigate the exact features and guarantees needed. “SQL is always correct” and “NoSQL is always fast” replace reasoning with slogans."
+    },
+    {
+      "id": "ai",
+      "title": "Worked example: an AI deployment registry",
+      "markdown": "An AI platform runs model deployments. A deployment is a configured running instance of a model. Our registry records deployment identity, owning team, region, status, model version, and resource settings. First question: “Which failed deployments belong to my team?” Second: “Open this deployment’s full configuration.” Third: “Show configuration changes for this deployment during the last hour.”\n\nStart with related team and deployment tables for ownership and filtering. A nested JSON settings field can hold differing CPU and GPU configuration shapes, with validation. That single database may satisfy the first two questions well; nested settings alone do not force a separate document product.\n\nIf measured event volume later makes the third question difficult, evaluate a separately organized event history keyed by deployment and time window. If the platform instead needs multi-step dependency impact—models using datasets produced by jobs—evaluate a graph representation of those dependencies. Each addition answers a concrete question and introduces another copy or store to operate. The word AI does not automatically determine the database family."
+    },
+    {
+      "id": "practice",
+      "title": "Change a requirement and watch the tradeoff",
+      "markdown": "Try a small decision exercise. A configuration service initially retrieves a whole record by deployment identity. A key-based or document model is plausible. Then operators require searching all deployments by team, region, status, and model version. The old direct lookup is still useful, but it no longer explains the whole workload.\n\nList the new questions, candidate indexes or derived views, update frequency, and required freshness. Compare expanding the existing store with choosing a relational model. Do not silently promise arbitrary filtering without identifying how the records will be found. Conversely, do not migrate simply because a new query exists; measure its size and frequency.\n\nCommon mistakes are equating a family with one brand, treating nested data as proof that SQL cannot work, and choosing a scalable write path without checking required reads. Your checkpoint is to explain one convenient query and one awkward query for each family. A well-understood boundary is more valuable than memorizing five product names."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "questions",
+      "title": "Choose an organization from the question",
+      "source": "flowchart TB\nQ[What question repeats?] --> R[Combine related records]\nQ --> D[Read bounded nested record]\nQ --> K[Find one known key]\nQ --> W[Read one grouped ordered range]\nQ --> G[Follow relationship paths]\nR --> RT[Investigate relational tables]\nD --> DT[Investigate documents]\nK --> KT[Investigate key-value]\nW --> WT[Investigate wide-column model]\nG --> GT[Investigate graph model]",
+      "caption": "These are candidate fits, not exclusive features or automatic product choices.",
+      "steps": [
+        "Write the question in ordinary language.",
+        "Identify the lookup, grouping, or traversal it needs.",
+        "Consider an organization that supports that work.",
+        "Check update rules and operational costs before choosing."
+      ],
+      "sectionId": "compare"
+    },
+    {
+      "id": "paths",
+      "title": "Following a relationship is different from fetching one known key",
+      "source": "flowchart LR\nT[Topic: useful model evaluation] -->|discussed in| N[Note 41]\nN -->|cites| P[Paper A]\nP -->|cites| B[Paper B]\nP -->|cites| C[Paper C]",
+      "caption": "Original illustrative graph. A query needs an allowed starting point, relationship types, and a depth limit.",
+      "steps": [
+        "Start at the permitted topic.",
+        "Follow the discussed-in relationship to a note.",
+        "Follow its citation to a paper.",
+        "Stop or continue only according to the query’s depth and access rules."
+      ],
+      "sectionId": "graph"
+    },
+    {
+      "id": "known-event-group",
+      "sectionId": "widecolumn",
+      "title": "A query chooses one group and an order inside it",
+      "source": "flowchart LR\nQ[Owner 7 on 29 September] --> P[Group key: owner 7 and date]\nP --> E3[10:05 e3]\nE3 --> E2[10:02 e2]\nE2 --> E1[10:02 e1]\nX[Owner 9 on same date] --> Y[Different group]",
+      "caption": "Arrows within the selected group indicate the requested result order, not network messages. Group size and busy owners still need limits; this does not show a physical cluster.",
+      "steps": [
+        "Use the query’s owner and date to select a known group.",
+        "Order that group’s events with a tie-breaker.",
+        "Recognize that a different cross-owner question needs another supported access path."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "For an AI deployment registry, list a candidate organization for: opening a known configuration, filtering by team and status, and exploring three levels of dataset dependencies. Explain why these questions do not necessarily require three deployed products.",
+    "rubric": [
+      "Matches organizations to specific questions.",
+      "Recognizes overlapping product capabilities.",
+      "Names costs or limits of adding another store."
+    ],
+    "solution": "A known configuration fits a key lookup or document, while team/status filtering and ownership fit relational tables with suitable indexes. Dependency paths invite a graph representation with bounded traversal. One relational database may meet all initial needs, including JSON settings and edge tables. Evaluate actual query costs before adding products; each additional store brings synchronization, recovery, permission, and operating work."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Does a nested configuration automatically require a document database?",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "Relational products can support structured JSON and other representations; choose from the full workload."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What must a basic key-value lookup already know?",
+      "options": [
+        "The value’s key",
+        "Every row in the store",
+        "The database password of every user"
+      ],
+      "answer": "The value’s key",
+      "explanation": "The key tells the store which value to retrieve."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which question most directly suggests evaluating graph traversal?",
+      "options": [
+        "Fetch known note 41",
+        "Find papers reached through three citation relationships",
+        "Store one image byte sequence"
+      ],
+      "answer": "Find papers reached through three citation relationships",
+      "explanation": "It asks for paths through connected records."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why plan a wide-column partition around a query and bounded growth?",
+      "answer": "Grouping controls which records a request can target and how much work one partition accumulates; poor grouping can scatter reads or create a hotspot.",
+      "explanation": "State both convenient retrieval and the busy-partition risk."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What rules remain necessary in a flexible document?",
+      "answer": "Required fields, types or valid shapes, ownership, size limits, version compatibility, and update-conflict behavior.",
+      "explanation": "Flexible storage does not define the application’s correctness rules."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Family versus product?",
+      "back": "A family describes an organization; exact products have overlapping features and different guarantees."
+    },
+    {
+      "front": "Document advantage?",
+      "back": "Related bounded nested fields can be read together."
+    },
+    {
+      "front": "Basic key-value question?",
+      "back": "What value belongs to this known key?"
+    },
+    {
+      "front": "Wide-column modeling focus?",
+      "back": "Grouping and ordering records for planned queries."
+    },
+    {
+      "front": "Graph traversal must bound?",
+      "back": "Starting points, relationship types, direction, depth, and allowed results."
+    }
+  ],
+  "mentalModel": "Choose the organization that makes your recurring questions and updates understandable; check what becomes harder.",
+  "sources": [
+    {
+      "title": "PostgreSQL: JSON types",
+      "url": "https://www.postgresql.org/docs/18/datatype-json.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MongoDB: data modeling",
+      "url": "https://www.mongodb.com/docs/manual/data-modeling/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: data types",
+      "url": "https://redis.io/docs/latest/develop/data-types/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Cassandra: logical data modeling",
+      "url": "https://cassandra.apache.org/doc/latest/cassandra/developing/data-modeling/data-modeling_logical.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Neo4j: graph database concepts",
+      "url": "https://neo4j.com/docs/getting-started/appendix/graphdb-concepts/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "event-question-changes",
+      "sectionId": "widecolumn",
+      "title": "One event layout, two different questions",
+      "intro": "The sample layout groups edits by owner and date. Watch how a new question changes the work it needs.",
+      "steps": [
+        {
+          "title": "Name the repeated query",
+          "explanation": "The application knows both values used to select a group.",
+          "state": [
+            {
+              "label": "Owner",
+              "value": "7"
+            },
+            {
+              "label": "Date",
+              "value": "29 September"
+            },
+            {
+              "label": "Requested order",
+              "value": "Newest first"
+            }
+          ]
+        },
+        {
+          "title": "Read the matching range",
+          "explanation": "The owner 7 group holds three edits; equal times use the edit identity as a tie-breaker.",
+          "state": [
+            {
+              "label": "Selected group",
+              "value": "7 / 29 September"
+            },
+            {
+              "label": "Ordered events",
+              "value": "e3, e2, e1"
+            },
+            {
+              "label": "Owner 9 events",
+              "value": "Outside this group"
+            }
+          ]
+        },
+        {
+          "title": "Ask a cross-owner question",
+          "explanation": "“All edits to note 41” no longer supplies the same group key and may span days or owners under the product’s rules.",
+          "state": [
+            {
+              "label": "New filter",
+              "value": "note_id = 41"
+            },
+            {
+              "label": "Known owner/date",
+              "value": "Not supplied"
+            },
+            {
+              "label": "Existing layout",
+              "value": "Does not directly answer it"
+            }
+          ]
+        },
+        {
+          "title": "Make the extra access path explicit",
+          "explanation": "Investigate a supported index, another organized view, or a different model. Maintaining another view brings update and consistency work.",
+          "state": [
+            {
+              "label": "Needed organization",
+              "value": "Find by note identity"
+            },
+            {
+              "label": "Extra work",
+              "value": "Keep representations consistent"
+            },
+            {
+              "label": "Decision input",
+              "value": "Query frequency and data size"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A storage organization is useful because of a question. A changed question may require a changed access path, not a slogan about database families."
+    }
+  ]
+}

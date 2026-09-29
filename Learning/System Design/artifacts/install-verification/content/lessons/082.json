@@ -1,0 +1,132 @@
+{
+  "id": "082",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Trace a term change and majority election.",
+    "Apply one durable vote per term and the log freshness rule.",
+    "Explain why timeouts suspect failure without proving it."
+  ],
+  "retrieval": [
+    "L081: why can a minority safely stop?",
+    "L027: why does a timeout not prove the remote action failed?"
+  ],
+  "sections": [
+    {
+      "id": "terms",
+      "title": "An epoch identifies the authority being discussed",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, worked trace 8, exercise 10, questions 10, review 4. A Raft term is a monotonically increasing logical epoch, not a wall-clock second and not a guarantee that every machine observed the same events. A node can learn about a higher term through an RPC and move forward without seeing the intervening elections. Messages carry terms so recipients can reject obsolete authority.\n\nNodes act as followers, candidates or leader. A follower that does not hear from a leader within its election timeout becomes a candidate, increments its term, votes for itself, and requests votes. A candidate wins only with a majority in that term. Randomized timeout choices reduce repeated split votes; they improve the chance of progress rather than proving a crashed leader.\n\nA five-node cluster might use different timeout values across nodes. Do not hardcode a universal millisecond value from a blog post: the design relationship is that ordinary broadcast/persistence latency should be comfortably smaller than election timeout, while timeout is acceptably small compared with a real failure interval. Excessively short timeouts convert transient scheduling or disk stalls into disruptive election churn."
+    },
+    {
+      "id": "votes",
+      "title": "A vote has durable consequences",
+      "markdown": "A voter grants at most one candidate a vote in a term and requires the candidate's log to be at least as up-to-date as its own. Protocol term and vote state must survive crash/restart before the vote is acknowledged. Otherwise a voter could vote, crash, forget, and vote again in the same term; the quorum-intersection argument would rely on a promise the system did not persist.\n\nFreshness compares the last log term first, then the last index if terms tie. A candidate with last term 8 and index 20 is fresher by this rule than one with last term 7 and index 100. “Longest log wins” is therefore not the rule. This restriction connects elections to the preservation of committed history; L083 explains the log side of that connection.\n\nTwo majorities within the same fixed voter set intersect. Since an intersecting voter cannot give two distinct candidates its vote in the same term, two candidates cannot both obtain a majority for that term. This argument says at most one elected leader per term. It does not mean an old partitioned leader instantly learns it has been replaced in a later term."
+    },
+    {
+      "id": "walk",
+      "title": "A delayed leader returns",
+      "markdown": "Nodes A, B and C begin in term 4 with A leading. A is paused. B times out, starts term 5, persists its self-vote, and asks C. C sees term 5, validates B's log, persists its vote and replies. B now has two of three votes and becomes leader. A resumes still believing term 4. Its term-4 AppendEntries is rejected by B or C with term 5, and A steps down after observing the higher term.\n\nUntil A hears a newer term, it may retain a local leadership belief. That belief is insufficient to acknowledge arbitrary writes or provide an unqualified fresh read. A current leader also needs protocol evidence that its authority has not been superseded; safe read paths are more than reading a local variable named is_leader.\n\nThis Python comparison is a small executable predicate, not a full election implementation:\n\n~~~python\ndef log_at_least_as_fresh(candidate, voter):\n    # tuples are (last_log_term, last_log_index)\n    return candidate >= voter\n\nassert log_at_least_as_fresh((8, 20), (7, 100))\nassert not log_at_least_as_fresh((8, 19), (8, 20))\n~~~\n\nIf B and C both time out together, each can vote for itself and neither may win. A later randomized retry in a new term can resolve the split. A sequence of failed elections is a liveness symptom; inventing a majority rule exception to make a dashboard green would threaten safety."
+    },
+    {
+      "id": "operations",
+      "title": "Election health is observable",
+      "markdown": "Track term changes, leader changes, election durations, peer round-trip latency and persistence latency. Frequent elections can originate in overloaded disks or stop-the-world pauses, not just broken cables. Avoid making more nodes voters as a reflex: adding a voter increases replication/coordination work and can change quorum requirements. Nonvoting learners and membership transitions are separate mechanisms, introduced as optional depth in L084.\n\nThe main interview explanation should connect durable voting, majority intersection and candidate freshness. Naming follower/candidate/leader without showing why an old leader cannot safely act alone is insufficient. Distinguish a safe protocol that cannot currently elect from an unsafe implementation that elects quickly after forgetting its vote."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "A new term invalidates old authority",
+      "source": "sequenceDiagram\nparticipant A as A term 4 leader\nparticipant B as B candidate\nparticipant C as C follower\nNote over A: Paused\nB->>B: Persist term 5 and self-vote\nB->>C: RequestVote term 5\nC->>C: Persist vote if log fresh\nC-->>B: Vote granted\nNote over B: Majority elected\nA->>C: AppendEntries term 4\nC-->>A: Reject with term 5\nA->>A: Step down",
+      "caption": "A delayed node can retain old beliefs; term comparisons and quorum requirements prevent those beliefs from creating current authority.",
+      "steps": [
+        "Candidate advances and persists its term.",
+        "Voter checks durable voting and log freshness.",
+        "A majority elects one leader for that term.",
+        "Returning old authority is rejected."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "In five voters, candidate X has last-log (term 6,index 90) and candidate Y has (term 7,index 12). A voter ends at (term 7,index 10). Which log meets the freshness rule, and why must its vote be durable before reply?",
+    "rubric": [
+      "Compares term before index.",
+      "Does not infer election from one eligible vote.",
+      "Explains double-voting after crash."
+    ],
+    "solution": "Y meets freshness because its final term equals the voter and its index is greater. X is older by log term despite having more entries. Eligibility for one vote is not election; Y still needs a majority in its current election term. Persisting the chosen term/vote before replying prevents this voter from forgetting after restart and granting a competing candidate another vote in the same term."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Election timeout proves the current leader is dead:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Delay, partition and pause are indistinguishable to the timeout observer."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Minimum votes to elect in five fixed voters?",
+      "answer": 3,
+      "unit": "votes",
+      "tolerance": 0,
+      "explanation": "A majority is floor(5/2)+1."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Candidate freshness compares first:",
+      "options": [
+        "Last log term",
+        "Wall-clock timestamp",
+        "Log length alone"
+      ],
+      "answer": "Last log term",
+      "explanation": "Only equal last terms are compared by last index."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can two nodes believe they are leader without two valid leaders in one term?",
+      "answer": "A partitioned old leader can retain an earlier-term belief while another leader is elected in a newer term; authority and read/write rules must reject stale action.",
+      "explanation": "A partitioned old leader can retain an earlier-term belief while another leader is elected in a newer term; authority and read/write rules must reject stale action."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Term?",
+      "back": "Logical authority epoch; not elapsed wall-clock time."
+    },
+    {
+      "front": "Votes per term?",
+      "back": "At most one durable candidate choice per voter."
+    },
+    {
+      "front": "Freshness order?",
+      "back": "Last log term, then last log index."
+    },
+    {
+      "front": "Randomized election timeout?",
+      "back": "Reduces repeated split votes; helps progress, not failure certainty."
+    },
+    {
+      "front": "Old leader on higher term?",
+      "back": "Updates its term and steps down."
+    }
+  ],
+  "mentalModel": "A timeout starts a candidacy; durable votes, log freshness and a majority establish authority.",
+  "sources": [
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

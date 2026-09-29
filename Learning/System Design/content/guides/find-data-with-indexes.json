@@ -1,0 +1,270 @@
+{
+  "id": "find-data-with-indexes",
+  "title": "Indexes: finding a row without reading every row",
+  "version": 2,
+  "week": 3,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Follow a note lookup with and without an index, and discover why faster reads require extra storage and write work.",
+  "objectives": [
+    "Explain a table scan and an index lookup with the same example.",
+    "Choose an index from a concrete query.",
+    "Explain why an index has write and storage costs.",
+    "Avoid assuming every query should use an index."
+  ],
+  "terms": [
+    {
+      "term": "Table scan",
+      "definition": "Reading through table rows to find the ones that match."
+    },
+    {
+      "term": "Index",
+      "definition": "An extra organized structure that helps the database locate rows."
+    },
+    {
+      "term": "Query",
+      "definition": "A request to read or change database data."
+    },
+    {
+      "term": "Composite index",
+      "definition": "An index whose search keys contain more than one column."
+    },
+    {
+      "term": "Query plan",
+      "definition": "The database’s chosen steps for producing a query result."
+    }
+  ],
+  "retrieval": [
+    "Which column identifies note 41 even if its title changes?",
+    "What does WHERE owner_id=7 ask the database to keep?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Finding one note in a growing pile",
+      "markdown": "Our app now stores 100,000 notes. Maya opens note 41 by its identifier. The database must find that row. One possible method is to examine rows until it finds a match. More generally, a table scan reads through the table and checks the condition on each relevant row. A scan can be perfectly reasonable for a tiny table, but repeatedly searching a large table for just one record can waste work.\n\nImagine a book with no index at the back. To find every page mentioning a certain topic, you might read the whole book. A book index gives you a smaller, organized list of terms and page locations. A database index plays a similar role: a search value helps locate the matching rows. The analogy has limits. Database indexes are maintained automatically as data changes, and their physical structures are designed for computer storage rather than printed page numbers.\n\nThe index is extra organization. The note still exists as stored data. Do not picture an index as a second application server or a cache that is allowed to forget correctness. It is part of how the database locates records while preserving the database’s defined behavior.\n\n> **Common mistake:** “Returning one row means reading one row.” A result count describes the output. Without a suitable search path, finding that one result can still require inspecting many candidates."
+    },
+    {
+      "id": "lookup",
+      "title": "Walk the same request along two paths",
+      "markdown": "For our teaching sketch, imagine note IDs organized as an ordered directory. Large real indexes use several levels so the database can narrow its search without reading every entry. You do not need to memorize the tree algorithm today. Follow the decision: the requested value 41 leads to the location of note 41, and the database retrieves the requested title and text.\n\nCompare two questions. “Find note 41” identifies one row. “Show all 100,000 notes” needs the entire collection. An index can help the first question avoid examining most notes. It cannot make the second question return 100,000 complete records without processing and transferring those results. The amount of output is itself work.\n\nUse five paper cards and a separate directory:\n\n| Ordered search value | Location of the note card |\n| --- | --- |\n| 12 | Card A |\n| 18 | Card B |\n| 41 | Card C |\n| 57 | Card D |\n| 88 | Card E |\n\nFor note 41, use the directory to choose Card C. For every note, all five cards still need to be collected. This paper model shows search versus output work; it does not predict a real database’s disk operations.\n\nDatabases commonly create an index to support a primary key, but exact automatic behavior depends on the database and constraint. Check the chosen system rather than assuming every useful index already exists."
+    },
+    {
+      "id": "query",
+      "title": "Choose the index for the question you actually ask",
+      "markdown": "Maya’s home page asks for her notes, newest first. For now, use increasing note_id as our exercise’s order; it is not a universal guarantee of creation time. The query is:\n\n~~~sql\nSELECT note_id, title\nFROM notes\nWHERE owner_id = 7\nORDER BY note_id DESC\nLIMIT 20;\n~~~\n\nLIMIT 20 asks for at most twenty results. A suitable composite index begins with owner_id and then note_id. Think of a directory grouped first by owner, with that owner’s notes ordered within the group. The database can locate Maya’s group and read from the requested end, instead of examining every other user’s notes.\n\n~~~sql\nCREATE INDEX notes_owner_note ON notes(owner_id, note_id);\n~~~\n\nThis is an illustrative SQL definition, not a benchmark. With only three rows, creating it may make little practical difference. With a large relevant workload, it may matter greatly. An index on title answers a different kind of search; adding it because title appears on the screen does not prove it helps the owner-filtered query.\n\nColumn order matters because it determines the organization available to searches. The first owner grouping is useful when the question names an owner. Later database study adds exceptions and more advanced index types. The beginner rule is to start from the filter and requested order, then check the actual database plan."
+    },
+    {
+      "id": "cost",
+      "title": "Every shortcut must be maintained",
+      "markdown": "A read shortcut adds write responsibilities:\n\n| Change | Stored row | Relevant index work |\n| --- | --- | --- |\n| Create note 100001 | Add the new record | Add entries to its indexes |\n| Change an indexed value | Store the new value | Maintain the affected search organization |\n| Add another index | Keep the same logical records | Store and maintain another structure |\n\nIndexes occupy storage and can add write work. Ten unnecessary indexes may leave the screen no faster while making every save more expensive.\n\nThe database chooses a query plan, meaning a sequence of steps to produce the answer. An explanation tool such as EXPLAIN shows that choice. A scan is not automatically a failure: returning a large share of a table may make sequential reading sensible. Compare actual query time, returned rows, and write cost with representative data before declaring an index successful. A screenshot showing the word index is not enough.\n\nFor our notes app, begin with unique note identity and the frequently used owner-list lookup. Record which screen motivates each additional index. If a new search feature appears, its query may justify another structure. If a rarely used report reads nearly everything, accept that it has a different access pattern rather than forcing every screen through the same shortcut.\n\nYour checkpoint is to explain both sides in one sentence: this index helps find one owner’s ordered notes while avoiding unrelated rows, and we pay storage plus maintenance on changes. That is a design decision tied to observed behavior, not a rule that more indexes always mean more speed."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "lookup",
+      "title": "An index narrows the search for Maya’s notes",
+      "source": "flowchart LR\nQ[Question: owner 7 latest 20 notes] --> S[Without suitable index: inspect many owners]\nQ --> I[Owner then note ID index]\nI --> G[Locate owner 7 group]\nG --> N[Read up to 20 matching rows]\nS --> N",
+      "caption": "Both paths must return the same permitted result. The drawing compares search work; it does not promise a measured speedup.",
+      "steps": [
+        "Start with the exact filter and requested order.",
+        "Compare scanning other owners with locating owner 7’s group.",
+        "Retrieve only the needed result rows.",
+        "Remember the index must be maintained whenever its indexed values change."
+      ],
+      "sectionId": "lookup"
+    },
+    {
+      "id": "index-maintenance",
+      "sectionId": "cost",
+      "title": "A new record also updates its search structures",
+      "source": "flowchart LR\nS[Save note 100001] --> D[Database coordinates the write]\nD --> R[(Note row)]\nD --> P[Primary identity index]\nD --> O[Owner and note index]\nR --> C[Commit under database rules]\nP --> C\nO --> C",
+      "caption": "This is a responsibility sketch. The database controls the physical ordering and recovery of row and index changes; application code does not manually perform these three writes.",
+      "steps": [
+        "Submit the logical row change.",
+        "Let the database maintain the relevant row and index structures.",
+        "Include added storage and write cost when evaluating an index."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "The app repeatedly shows the newest 20 notes for one owner. You may add either an index on(title) or an index on(owner_id,note_id). Choose one, explain its organization, and name two costs. Assume note_id supplies the intended exercise order.",
+    "minutes": 8,
+    "rubric": [
+      "Selects the owner/note index.",
+      "Explains grouping by owner then ordering within the group.",
+      "Names storage and write maintenance."
+    ],
+    "solution": "Choose (owner_id, note_id), which groups one owner’s notes and provides ordering within that group. A title-only index does not directly organize the requested owner-list query. The added structure occupies storage and must be maintained as indexed rows change. Measure the real workload; this is a reasoned candidate, not a universal speed guarantee."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which request most clearly benefits from locating a small part of a large table?",
+      "options": [
+        "Return one note by ID",
+        "Return every full note",
+        "Back up the entire table"
+      ],
+      "answer": "Return one note by ID",
+      "explanation": "The output is small and can avoid unrelated rows."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "An index is free after it has been created:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It occupies storage and relevant changes require maintenance."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A table scan always means the database made a mistake:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "A small table or a query returning most rows may make a scan sensible."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why start index design with a query rather than every column name?",
+      "answer": "The index should organize data for a frequent filter or order; a displayed column may not be part of how rows are found.",
+      "explanation": "Tie the cost to a real access pattern."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What should you measure after adding the owner index?",
+      "answer": "Representative owner-list query performance, returned results, and save/update cost with realistic data sizes and owners.",
+      "explanation": "A faster isolated lookup may trade off against other work."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Table scan?",
+      "back": "Read rows and check which match."
+    },
+    {
+      "front": "Index?",
+      "back": "An extra organized structure for locating rows."
+    },
+    {
+      "front": "Composite index?",
+      "back": "An index with keys built from multiple columns."
+    },
+    {
+      "front": "Two index costs?",
+      "back": "Extra storage and maintenance during writes."
+    },
+    {
+      "front": "Why inspect the query plan?",
+      "back": "To understand which steps the database chose for this actual query."
+    }
+  ],
+  "mentalModel": "An index is a maintained shortcut for a particular question, not a promise that every operation becomes faster.",
+  "sources": [
+    {
+      "title": "PostgreSQL18: indexes",
+      "url": "https://www.postgresql.org/docs/current/indexes.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18: multicolumn indexes",
+      "url": "https://www.postgresql.org/docs/18/indexes-multicolumn.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "directory-to-card",
+      "sectionId": "lookup",
+      "title": "Find one record, then ask for all records",
+      "intro": "Use the five-card directory above. The card model explains organization without promising an exact tree shape or access count.",
+      "steps": [
+        {
+          "title": "State the question",
+          "explanation": "A known note identity is selective: the user wants one particular record.",
+          "state": [
+            {
+              "label": "Requested ID",
+              "value": "41"
+            },
+            {
+              "label": "Directory IDs",
+              "value": "12, 18, 41, 57, 88"
+            },
+            {
+              "label": "Needed output",
+              "value": "One note"
+            }
+          ]
+        },
+        {
+          "title": "Find its location",
+          "explanation": "The directory maps the search value to a card location.",
+          "state": [
+            {
+              "label": "Matched entry",
+              "value": "41 → Card C"
+            },
+            {
+              "label": "Selected card",
+              "value": "C"
+            },
+            {
+              "label": "Unrelated cards",
+              "value": "A, B, D, E"
+            }
+          ]
+        },
+        {
+          "title": "Read the record",
+          "explanation": "The selected card supplies the fields requested by the application.",
+          "state": [
+            {
+              "label": "Card C",
+              "value": "41 — Garden photo"
+            },
+            {
+              "label": "Result count",
+              "value": "1"
+            },
+            {
+              "label": "Directory role",
+              "value": "Locate the record"
+            }
+          ]
+        },
+        {
+          "title": "Change the question",
+          "explanation": "Asking for every note still requires the entire output. An index cannot eliminate the cost of producing it.",
+          "state": [
+            {
+              "label": "New question",
+              "value": "Return all five notes"
+            },
+            {
+              "label": "Needed cards",
+              "value": "A, B, C, D, E"
+            },
+            {
+              "label": "Output count",
+              "value": "5"
+            }
+          ]
+        }
+      ],
+      "takeaway": "An index can avoid unrelated search work. It cannot make the required output disappear."
+    }
+  ]
+}

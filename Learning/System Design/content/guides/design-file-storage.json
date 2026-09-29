@@ -1,0 +1,285 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 19,
+  "title": "Design a file storage service",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "design-file-storage",
+  "summary": "Build a small shared drive. Separate the file itself from its name and permissions, then follow an upload that can survive an interruption.",
+  "objectives": [
+    "Give file bytes and file metadata different jobs.",
+    "Trace a resumable upload from permission check to a published file.",
+    "Explain recovery when only half of a two-store operation succeeds."
+  ],
+  "terms": [
+    {
+      "term": "Object storage",
+      "definition": "A service that stores a large byte sequence under a key, such as an uploaded photo."
+    },
+    {
+      "term": "Metadata",
+      "definition": "Information about a file: its owner, name, size, version, and storage location."
+    },
+    {
+      "term": "Checksum",
+      "definition": "A value calculated from bytes to help detect whether they changed or were damaged."
+    },
+    {
+      "term": "Multipart upload",
+      "definition": "Upload a large file as separately retryable parts, then complete the assembled object."
+    },
+    {
+      "term": "Signed upload URL",
+      "definition": "A limited, temporary permission to upload to a particular location. It should not grant general access to storage."
+    }
+  ],
+  "retrieval": [
+    "How does a database differ from a cache?",
+    "What can a client infer if its request times out?"
+  ],
+  "sections": [
+    {
+      "id": "why",
+      "title": "A file has a body and a description",
+      "markdown": "A community club shares event photos. Members upload, rename, organize, and download permitted files. Start with files up to 200 MB and exclude live collaborative editing.\n\nThink of a cloakroom: the coat is large, while its claim ticket is small. File bytes are the coat; searchable metadata is the ticket. The analogy explains roles, but actual software must also handle concurrency, interrupted messages, and access changes.\n\n| Fact | Example | Stored responsibility |\n| --- | --- | --- |\n| Stable file identity | file_57 | Metadata database |\n| Display name | summer.jpg | Metadata database; can be renamed |\n| Current version | version_3 | Metadata points to exact accepted content |\n| Object key | files/57/versions/3 | Object storage holds those immutable bytes |\n| Permission | club editors may download | Current application policy |\n\nRenaming summer.jpg to picnic.jpg does not require copying 200 MB. The file identity and byte version can stay unchanged.\n\n**Common mistake:** treating the visible filename as the only identity. Names can change or repeat; internal identity should remain unambiguous."
+    },
+    {
+      "id": "architecture",
+      "title": "Draw the small design first",
+      "markdown": "Our application server checks the logged-in user and creates upload records. The metadata database is the authority for whether a file is ready and who can access it. Object storage holds the bytes. A background cleanup job eventually removes abandoned uploads after a safe retention period.\n\nThe server can issue a limited upload permission so the browser sends bytes directly to storage. That prevents every byte passing through the application server. The permission must constrain the destination and expiry; apply size and integrity checks supported by the storage service and verify the completed upload before publishing it. A random-looking object key is not an authorization policy.\n\nFor a private download, the server checks the current metadata permission before granting bounded access to the correct immutable version. A signed link may remain usable until its expiry, so choose that period according to the sharing and revocation requirements. Public and private delivery policies need different cache rules."
+    },
+    {
+      "id": "upload",
+      "title": "Follow one upload, including the finishing step",
+      "markdown": "Mina uploads a 24 MB image. In our teaching example the client divides it into three 8 MB parts. First, the server creates file 42 with status “uploading” and an upload identity. Second, the client sends the parts. Third, it retries only part two if that transfer fails.\n\nFourth, the storage service completes and verifies the assembled object according to its API. Fifth, the application verifies the expected version, size, and integrity evidence and conditionally marks file 42 “ready.”\n\nUntil that last step, other users should not see the file as available. A successful part upload is not a completed file. The client can ask the application for the upload's status after a lost reply. Repeating finalization with the same upload identity should return the existing result instead of creating duplicate metadata.\n\nThese part sizes are illustrative, not universal storage limits. Different services impose different rules. The transferable lesson is that a stable upload identity and separately retryable parts bound how much work a weak connection loses."
+    },
+    {
+      "id": "failure",
+      "title": "Handle the gap between the two stores",
+      "markdown": "Suppose the object finishes successfully, but the server crashes before publishing the metadata. The bytes exist, yet file 42 is still “uploading.” That is recoverable: a retry or reconciliation job verifies the object and completes the metadata transition. An old retry must identify the same upload and expected file version so it cannot replace a newer edit.\n\nNow reverse the order: publishing “ready” before the bytes exist can send readers to a missing object. That is why the readiness check is a real boundary. The database and object store do not magically share one transaction. We choose states and recovery steps that tolerate the gap.\n\nAbandoned bytes cost space. Cleanup must distinguish expired abandoned uploads from current, still-referenced versions; a grace period alone is not proof that a file is unused. Record ownership and lifecycle state, check references, and test restoration before making deletion aggressive."
+    },
+    {
+      "id": "size",
+      "title": "Estimate the part that drives this design",
+      "markdown": "Estimate the two storage paths separately. These are supplied decimal-unit assumptions, not product measurements.\n\n| Daily input | Calculation | Result |\n| --- | --- | --- |\n| Original bytes | 10,000 uploads × 8 MB | 80 GB/day |\n| Thirty days of originals | 80 GB × 30 | 2.4 TB |\n| Searchable metadata | 10,000 files × 1 kB | About 10 MB/day |\n\nVersions, backups, previews, redundancy, and overhead are additional assumptions. Do not hide them inside the 2.4 TB number.\n\nThis difference explains separate storage roles. It does not prove that the small metadata service needs several databases.\n\n**Interview phrase:** “I would scale the byte-transfer path and metadata path from their separate workload measurements.” Then trace an interrupted upload and a private download so the drawing explains correctness as well as capacity."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "file-roles",
+      "title": "File bytes and file metadata take different paths",
+      "source": "flowchart LR\nB[Browser] -->|Create upload and check permission| A[Application server]\nA --> M[(Metadata database)]\nB -->|Limited upload permission| O[(Object storage)]\nA -->|Verify completed object| O\nA -->|Mark exact version ready| M",
+      "caption": "Original design sketch. The application publishes a file only after verifying the completed object.",
+      "steps": [
+        "The browser asks to create an upload.",
+        "The application checks permission and records an uploading file.",
+        "The browser transfers bytes to object storage.",
+        "The application verifies the object and marks that version ready."
+      ],
+      "sectionId": "architecture"
+    },
+    {
+      "id": "file-state",
+      "title": "A recoverable upload has explicit states",
+      "source": "flowchart LR\nU[Uploading] -->|Bytes complete and verified| V[Verified object]\nV -->|Conditional metadata update| R[Ready for authorized readers]\nU -->|Abandoned and safely expired| C[Cleanup candidate]\nV -->|Crash before publishing| T[Retry finalization]\nT --> R",
+      "caption": "Cleanup eligibility requires lifecycle and reference checks; it is not triggered merely by a slow request.",
+      "steps": [
+        "An upload begins without claiming that a readable file exists.",
+        "Complete and verify the bytes.",
+        "Publish the corresponding metadata version.",
+        "After a crash, retry finalization for the same upload."
+      ],
+      "sectionId": "failure"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw a 24 MB upload in three parts. Part two fails once, and the server crashes after all bytes are assembled but before metadata becomes ready. Explain the two retries and what another user sees during recovery.",
+    "rubric": [
+      "Retry the missing part using the original upload identity.",
+      "Keep incomplete metadata out of normal ready-file listings.",
+      "Verify the same object and conditionally finish metadata publication."
+    ],
+    "solution": "Retry only the failed part, then complete the object. The metadata still says uploading after the server crash, so normal readers do not receive it as a ready file. Finalization can be retried with the original upload identity: verify the object, size, and expected version, then atomically change the metadata to ready. A repeated request returns the same ready file. An unexpected newer version must produce a conflict rather than being overwritten."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Renaming a large file should normally change…",
+      "options": [
+        "The metadata display name",
+        "Every byte of the file",
+        "The owner without a permission check"
+      ],
+      "answer": "The metadata display name",
+      "explanation": "The stable file identity and object version can remain unchanged."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "When is our uploaded file advertised as ready?",
+      "options": [
+        "After the first part arrives",
+        "After the completed object is verified and metadata is published",
+        "As soon as the browser selects the file"
+      ],
+      "answer": "After the completed object is verified and metadata is published",
+      "explanation": "The ready state must refer to a complete verified object."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A random object key gives sufficient private-file protection.",
+      "options": [
+        "True",
+        "False: access still needs authorization",
+        "True if the file is large"
+      ],
+      "answer": "False: access still needs authorization",
+      "explanation": "Unpredictability can reduce guessing, but it does not express current user permissions."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can an uploaded but unpublished object be recoverable?",
+      "answer": "Its upload identity links durable bytes to pending metadata. A verified retry can finish publication without retransmitting the whole file.",
+      "explanation": "Its upload identity links durable bytes to pending metadata. A verified retry can finish publication without retransmitting the whole file."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What must cleanup check before removing an old object?",
+      "answer": "Lifecycle state and whether retained metadata or versions still reference it, along with an explicit retention policy. Age alone is insufficient.",
+      "explanation": "Lifecycle state and whether retained metadata or versions still reference it, along with an explicit retention policy. Age alone is insufficient."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "What belongs in file metadata?",
+      "back": "Identity, owner, permissions, display name, version, size, state, and storage location."
+    },
+    {
+      "front": "Why immutable file versions?",
+      "back": "Readers can refer to a specific version and retries cannot silently mutate its bytes."
+    },
+    {
+      "front": "Multipart upload benefit?",
+      "back": "Retry failed parts instead of restarting an entire large transfer."
+    },
+    {
+      "front": "What does ready mean?",
+      "back": "The application has verified the completed object and published its corresponding metadata."
+    },
+    {
+      "front": "Two-store gap strategy?",
+      "back": "Explicit intermediate states, repeatable finalization, and safe cleanup."
+    }
+  ],
+  "mentalModel": "Store the bytes, verify the bytes, then publish the exact version that readers may access.",
+  "sources": [
+    {
+      "title": "Amazon S3 — Multipart upload concepts",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "HTTP conditional requests — If-Match",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Match",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "rename-and-download",
+      "title": "Change a name without changing the file bytes",
+      "sectionId": "why",
+      "intro": "Follow an already-ready club photo through a rename and a private download. Watch which metadata changes and which byte version stays the same.",
+      "steps": [
+        {
+          "title": "Start with a ready version",
+          "explanation": "The database points to a verified immutable object, and the club can list the file.",
+          "state": [
+            {
+              "label": "File",
+              "value": "file_57"
+            },
+            {
+              "label": "Display name",
+              "value": "summer.jpg"
+            },
+            {
+              "label": "Current version",
+              "value": "version_3"
+            },
+            {
+              "label": "State",
+              "value": "ready"
+            }
+          ]
+        },
+        {
+          "title": "Accept a rename",
+          "explanation": "An authorized editor changes the display name. The accepted byte version and internal identity stay the same.",
+          "state": [
+            {
+              "label": "File",
+              "value": "file_57"
+            },
+            {
+              "label": "Display name",
+              "value": "picnic.jpg"
+            },
+            {
+              "label": "Current version",
+              "value": "version_3"
+            },
+            {
+              "label": "Bytes rewritten",
+              "value": "none for this rename"
+            }
+          ]
+        },
+        {
+          "title": "Check a download request",
+          "explanation": "A member asks for file_57. The application checks current permission before granting access to version_3.",
+          "state": [
+            {
+              "label": "Requested file",
+              "value": "file_57"
+            },
+            {
+              "label": "Permission",
+              "value": "checked now"
+            },
+            {
+              "label": "Target object",
+              "value": "files/57/versions/3"
+            }
+          ]
+        },
+        {
+          "title": "Grant bounded content access",
+          "explanation": "If the chosen design uses a signed link, its scope and expiry constrain the grant. Revocation requirements must account for its remaining lifetime.",
+          "state": [
+            {
+              "label": "Granted version",
+              "value": "version_3"
+            },
+            {
+              "label": "Link scope",
+              "value": "this content operation"
+            },
+            {
+              "label": "Grant lifetime",
+              "value": "chosen product bound"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A name describes a file, identity finds it, a version identifies its bytes, and permission decides who may obtain them."
+    }
+  ]
+}

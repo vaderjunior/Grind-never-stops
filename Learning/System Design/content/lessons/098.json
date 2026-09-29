@@ -1,0 +1,136 @@
+{
+  "id": "098",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Specify durable job states and legal transitions.",
+    "Separate lease ownership from idempotent effect completion.",
+    "Design retry/dead-letter and operator recovery semantics."
+  ],
+  "retrieval": [
+    "L087: what can a paused old owner still do?",
+    "L093: where does a dedup marker need to commit?"
+  ],
+  "sections": [
+    {
+      "id": "states",
+      "title": "A job is a recoverable state machine",
+      "markdown": "Core55 minutes: retrieval5, mechanism18, worked flow8, exercise10, questions10, review4. A thumbnail job can be queued, running, scheduled for retry, completed, cancelled or dead-lettered. These labels are useful only when transitions are defined durably. “Running” should identify an owner generation and lease deadline; “completed” should identify the result/effect boundary; “dead” should preserve a reason and an operator decision rather than deleting evidence.\n\nUse a stable job ID and a validated payload fingerprint. An enqueue retry with the same identity/payload can return the existing job; a changed payload under that identity conflicts. Store enough timestamps to distinguish created, available, claimed and completed time. The worker’s local memory is not authoritative after a crash.\n\nAt claim, atomically select eligible work, establish a lease and new claim token, and increment the attempt count. Claim selection outside the transaction can let two workers believe they own the same pending row. SQL locking, compare-and-set or a broker’s supported claim semantics can implement the boundary; the choice must match the storage contract."
+    },
+    {
+      "id": "lease",
+      "title": "Heartbeats renew permission, not certainty",
+      "markdown": "A worker can renew a lease while making progress. If it crashes or loses connectivity, the lease eventually expires so another worker can recover the job. A pause may outlast the lease, leaving an old worker able to resume. Completion must therefore validate the current token and deadline at the protected state/effect authority, not merely trust the worker’s earlier claim response.\n\nChoose lease duration relative to observed task behavior and renewal failure tolerance. Very short leases cause duplicate work during transient pauses; very long leases delay recovery after a real crash. A heartbeat is not proof that meaningful progress is occurring: a stuck worker might continue renewing forever. Use separate progress monitoring and a maximum operation policy when needed.\n\nThe prepared P3 implementation uses a fake clock for boundary tests and fresh random claim tokens whose equality is checked in the queue’s transaction. These tokens distinguish claim generations at this one authority; they are not ordered fencing numbers for arbitrary external resources. The external effect still needs its own protection."
+    },
+    {
+      "id": "completion",
+      "title": "Only one transition can establish the protected result",
+      "markdown": "For a local result ledger, complete(job_id,token,result) begins a transaction, verifies running/current/unexpired ownership, inserts the result keyed by job ID, marks done and commits. A duplicate or stale completion cannot overwrite a newer result. The following is a contract sketch rather than executable SQL for every database:\n\n~~~python\nwith transaction():\n    job = require_current_unexpired_claim(job_id, token)\n    insert_unique_result(job_id, result)\n    mark_done(job_id)\n~~~\n\nIf the effect is outside this transaction, define idempotency at the receiver or an explicit reconciliation flow. A broker’s delivery acknowledgement should follow the chosen durable result boundary. Crashing after a local result commit but before broker ack can redeliver safely only when the repeated logical job recognizes the committed outcome.\n\nWorked trace: A claims at t100 with expiry110. At t110 the lease is no longer valid under a strict greater-than deadline check. B reclaims and obtains a new token. A’s delayed complete must fail; B’s complete can succeed if its lease is current. The test should check the result as well as the job state, because a rejected status update after an already executed side effect is too late."
+    },
+    {
+      "id": "retry",
+      "title": "Dead letters are a workflow, not a rubbish bin",
+      "markdown": "A retry policy classifies failure, records a bounded reason, schedules available_at after backoff and increments attempts according to the chosen definition. Transient network loss may deserve retry; an unsupported payload schema may require a producer fix. At the attempt or age limit, move to a dead-letter state that operators can inspect without automatically repeating an unsafe effect.\n\nAn operator retry should preserve the history and state what identity/effect policy applies. If the original effect may have occurred, reconcile before issuing a new business operation ID. Metrics should expose oldest queued age, running lease age, renewals, expired claims, attempts, dead letters and completion latency. Queue count alone does not reveal a poison job holding up one key.\n\nGraceful shutdown stops new claims, lets current bounded work finish or safely relinquish its lease, and closes resources. If forced termination occurs, leases and durable state provide recovery. Recovery tests should include crash after claim, crash after effect, stale completion, duplicate enqueue, exhausted retries and restore from a consistent backup. L099 implements the first of these using the prepared skeleton."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Job states preserve both work and recovery evidence",
+      "source": "stateDiagram-v2\n[*] --> queued: durable enqueue\nqueued --> running: atomic claim with lease token\nrunning --> done: protected result committed\nrunning --> retry_wait: retryable failure\nretry_wait --> queued: available time reached\nrunning --> queued: expired lease recovery\nrunning --> dead: attempt or age limit\ndead --> [*]: operator decision recorded",
+      "caption": "A retry is a durable transition with a schedule and history. Expired ownership never authorizes the previous worker to commit a later result.",
+      "steps": [
+        "Persist work before acceptance.",
+        "Claim with an identifiable lease generation.",
+        "Commit only under current ownership.",
+        "Retain failure and retry evidence for recovery."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A job takes about30 seconds, lease lasts10 seconds and there is no heartbeat. A pauses at second8, B reclaims at10, and A resumes at12. Define the necessary correctness check and two operational improvements without pretending overlap becomes impossible.",
+    "rubric": [
+      "Checks current token at effect boundary.",
+      "Addresses lease/renewal policy.",
+      "Separates duplicate work from duplicate effects."
+    ],
+    "solution": "A’s old completion must be rejected by an atomic current-token/unexpired check at the protected result authority; a local check before its pause is insufficient. Use a justified lease duration and renewal mechanism that fit task timing, and monitor progress/maximum duration so a stuck worker does not renew forever. Duplicate computation can still occur around pauses and recovery. Protect any external effect with receiver idempotency or fencing as appropriate, and record stale-claim rejections so the lease policy can be tuned from evidence."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A heartbeat proves useful job progress:",
+      "options": [
+        "Always",
+        "Not necessarily"
+      ],
+      "answer": "Not necessarily",
+      "explanation": "A stuck worker can keep renewing; progress and ownership are different signals."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "With lease expiry110 and current time110, is strict lease_until > now valid? Enter1 for yes,0 for no.",
+      "answer": 0,
+      "unit": "boolean",
+      "tolerance": 0,
+      "explanation": "110 >110 is false; the exact boundary is expired."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A dead-letter job should retain:",
+      "options": [
+        "Identity, failure reason and attempt history",
+        "No record after deletion"
+      ],
+      "answer": "Identity, failure reason and attempt history",
+      "explanation": "Recovery needs evidence and a safe replay decision."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why are queue claim tokens insufficient for an arbitrary external API?",
+      "answer": "The external receiver must enforce its own idempotency or fencing; a local token check cannot atomically stop an already issued external effect.",
+      "explanation": "The external receiver must enforce its own idempotency or fencing; a local token check cannot atomically stop an already issued external effect."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Durable claim?",
+      "back": "A state transition establishing owner generation, deadline and attempt evidence."
+    },
+    {
+      "front": "Lease expiry purpose?",
+      "back": "Allow recovery when an owner stops renewing."
+    },
+    {
+      "front": "Current-token completion?",
+      "back": "Rejects stale owners at the protected result boundary."
+    },
+    {
+      "front": "Dead letter?",
+      "back": "A preserved failed-work record requiring diagnosis and an explicit replay decision."
+    },
+    {
+      "front": "Graceful worker shutdown?",
+      "back": "Stop new claims and finish or safely relinquish bounded current work."
+    }
+  ],
+  "mentalModel": "Persist work as a state machine whose transitions remain meaningful after the worker disappears.",
+  "sources": [
+    {
+      "title": "RabbitMQ documentation: consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python sqlite3 documentation: transaction control",
+      "url": "https://docs.python.org/3/library/sqlite3.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

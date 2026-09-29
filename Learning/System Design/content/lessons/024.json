@@ -1,0 +1,144 @@
+{
+  "id": "024",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Demonstrate duplicate or skipped records with offset pagination.",
+    "Define a deterministic order with a tie-breaker.",
+    "Build a cursor predicate matching that order.",
+    "State what cursor pagination does not guarantee during updates."
+  ],
+  "retrieval": [
+    "From L023: why do ordering and units belong to an API contract?",
+    "From L002: distinguish a useful approximate view from an invariant."
+  ],
+  "sections": [
+    {
+      "id": "offset",
+      "title": "A page number refers to a position that can move",
+      "markdown": "Core: retrieval 5, mechanism 18, worked SQL 8, exercise 10, questions 10, review 4 minutes. Consider an activity list ordered newest first: E, D, C, B, A. Page size is two. Offset page one returns E,D. Before page two, a new F is inserted at the front. OFFSET 2 now skips F,E and returns D,C: D appears again. If a preceding row were deleted instead, an unseen row could be skipped.\n\nOffset pagination is simple, supports approximate random page navigation, and can be fine for small stable datasets. Its semantics under mutation are the problem here, not the existence of an offset keyword. Large offsets may also require the database to examine or skip many preceding rows; actual performance depends on the query plan and indexes discussed in M04.\n\nA stable ordering needs a total order. created_at alone can tie: two records share the same timestamp. Add a unique immutable tie-breaker such as id and specify both directions. Without that, even an unchanged dataset may produce inconsistent page boundaries depending on execution plans."
+    },
+    {
+      "id": "cursor",
+      "title": "Continue after a position in the order",
+      "markdown": "With descending (created_at, id), a cursor holds the last row's pair. The next page asks for rows whose pair is smaller, ordered by the same pair descending. For a timestamp tie, the ID decides position. A row newly inserted before the cursor no longer shifts the continuation point. The cursor describes where to continue, not how many earlier rows exist.\n\nIn SQL, for non-null fields and a fixed tenant/filter scope:\n\n~~~sql\nSELECT id, created_at, title\nFROM entries\nWHERE tenant_id = :tenant_id\n  AND (created_at < :last_time\n       OR (created_at = :last_time AND id < :last_id))\nORDER BY created_at DESC, id DESC\nLIMIT :page_size_plus_one;\n~~~\n\nRequest one extra row to learn whether another page exists, then return at most page_size rows and a cursor based on the last returned row. Do not base the cursor on the extra unreturned row or it will be skipped. A useful future index begins with the scoped filter and ordering fields, but index design must follow actual access patterns.\n\nEncode cursor fields as an opaque token so clients do not depend on representation details. Opaque does not mean secret or authorized. A base64 token can be decoded or modified. Bind the cursor to the query filters and ordering version, validate it, and repeat authorization on every page. Signing or storing cursor state may prevent tampering but never substitutes for access checks."
+    },
+    {
+      "id": "trace",
+      "title": "What changes are still visible?",
+      "markdown": "Start with immutable IDs [5,4,3,2,1], ordered descending, and page size two. Page one returns [5,4] and cursor 4. Insert 6. The next page predicate id < 4 returns [3,2]; the new 6 will appear when the user refreshes from the beginning. That is a valid “continue older items” contract, not a snapshot of all current records.\n\nNow imagine ordering by a mutable score. Item 2 receives votes and moves ahead of the cursor after page one. The continuation may miss it because its new position is outside the remaining range. A cursor removes shifting-offset problems but does not freeze mutable ranking. If the product requires an exact snapshot, it needs a snapshot/version boundary or materialized result set with a lifecycle, and the costs of retaining that view.\n\nAn executable Python model of the immutable-ID case:\n\n~~~python\ndef page(ids: list[int], after: int | None, size: int) -> list[int]:\n    ordered = sorted(ids, reverse=True)\n    eligible = [item for item in ordered if after is None or item < after]\n    return eligible[:size]\n\nfirst = page([5, 4, 3, 2, 1], None, 2)\nsecond = page([6, 5, 4, 3, 2, 1], first[-1], 2)\nassert first == [5, 4] and second == [3, 2]\nprint(first, second)\n~~~\n\nThis deterministic standard-library example tests continuation semantics only; it does not benchmark a database or implement secure tokens."
+    },
+    {
+      "id": "evolution",
+      "title": "Treat the continuation token as versioned state",
+      "markdown": "If a client changes filters between pages, an old cursor can point into a different result set. Reject incompatible tokens rather than silently mixing results. Include or associate a cursor version, relevant scope, and optional expiration. Expiration is an API behavior: tell clients when to restart, especially if snapshots have been discarded.\n\nAvoid requiring a costly exact total count merely to paginate. Whether “about 10,000 results,” a has-more flag, or a precise count is appropriate depends on the user task. An exact count under ongoing writes also needs a clear consistency boundary. The interface should not promise a fixed total while the query produces a moving view.\n\nFailure scenarios include tied timestamps without a tie-breaker, reversed comparison operators, filters applied after pagination, tokens reused across tenants, deleted cursor-anchor rows, and mutable order keys. A value-based cursor need not look up the anchor row, so its deletion can be tolerated if the stored ordering values remain valid.\n\nCommon misconception: cursor pagination guarantees no omissions under every possible mutation. It guarantees only what the order and snapshot contract establish. Optional depth: extend the harness with tied timestamps and a composite predicate, then state its null-handling policy."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "pagination",
+      "title": "Insertions shift offsets but not an immutable cursor",
+      "source": "flowchart TD\nP[Initial order 5 4 3 2 1] -->|Page 1 returns 5 and 4| C[Cursor stores last ID 4]\nP -->|Insert newest ID 6| N[New order 6 5 4 3 2 1]\nN -->|Offset 2| O[Returns 4 and 3: duplicate 4]\nC -->|Predicate ID less than 4| K[Returns 3 and 2]\nN --> K",
+      "caption": "The demonstration assumes unique immutable IDs ordered descending. Mutable ranking requires a different guarantee or a snapshot.",
+      "steps": [
+        "Read the first two rows.",
+        "Insert a new row before the old page.",
+        "Observe how a positional offset shifts.",
+        "Continue from the saved ordered value instead."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Rows ordered by (created_at DESC, id DESC) are (10,9), (10,7), (9,8), (8,4). Page size is two. Write the cursor after page one and the exact predicate for page two. Then explain what happens if a new row (11,10) arrives and what changes if created_at may be edited.",
+    "minutes": 10,
+    "rubric": [
+      "Keeps both ordering fields in cursor.",
+      "Uses strict comparison with a tie clause.",
+      "Does not skip the first unreturned row.",
+      "States limits under mutable ordering."
+    ],
+    "solution": "Page one returns (10,9),(10,7), so cursor=(10,7). Predicate: created_at < 10 OR (created_at = 10 AND id < 7), with the same descending order. It returns (9,8),(8,4). New (11,10) is before the continuation and appears on a new traversal. If timestamps are edited, rows may move across the boundary and be skipped or repeated; a snapshot contract or immutable ordering key is needed for stronger behavior."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Why add unique id after created_at?",
+      "options": [
+        "To create a deterministic tie-breaker",
+        "To encrypt the cursor",
+        "To guarantee every row is immutable"
+      ],
+      "answer": "To create a deterministic tie-breaker",
+      "explanation": "Timestamps can tie; a total order needs a unique final discriminator."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Should the next cursor refer to the extra unreturned row?",
+      "options": [
+        "Yes",
+        "No, use the last returned row",
+        "Only if the page is full"
+      ],
+      "answer": "No, use the last returned row",
+      "explanation": "Using the extra row as the boundary can skip it."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Does base64 make a cursor authorized or secret?",
+      "answer": "No. It is an encoding. Validate scope and repeat authorization; use integrity protection if the token design requires it.",
+      "explanation": "Cursor possession alone does not establish rights."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When might offset pagination be reasonable?",
+      "answer": "A small or stable dataset needing simple page navigation, where its mutation and performance limits are acceptable and documented.",
+      "explanation": "A valid answer compares requirements instead of treating one mechanism as universally wrong."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why does a cursor not freeze a leaderboard?",
+      "answer": "Scores can change and move items across its boundary; the continuation describes an order position without preserving the prior result set.",
+      "explanation": "Exact traversal needs a defined snapshot or versioned view."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Offset mutation problem?",
+      "back": "Insertions or deletions before the next offset shift positions, causing duplicates or skips."
+    },
+    {
+      "front": "Total order needs?",
+      "back": "All ordering fields plus a unique deterministic tie-breaker."
+    },
+    {
+      "front": "Cursor points to?",
+      "back": "The last returned position in the specified order."
+    },
+    {
+      "front": "Why request size plus one?",
+      "back": "To detect whether more results exist without returning the extra row."
+    },
+    {
+      "front": "Opaque cursor is not?",
+      "back": "A substitute for authorization, validation, or integrity protection."
+    },
+    {
+      "front": "Cursor versus snapshot?",
+      "back": "Continuation position versus a preserved result population."
+    }
+  ],
+  "mentalModel": "A cursor follows an ordered value; its guarantee is only as stable as the ordering and result-set contract.",
+  "sources": [
+    {
+      "title": "Google AIP-158: Pagination",
+      "url": "https://google.aip.dev/158",
+      "checked": "2026-09-29"
+    }
+  ]
+}

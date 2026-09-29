@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "055",
+  "objectives": [
+    "Diagnose from supplied evidence.",
+    "Defend a bounded design and its failure behavior."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate brief",
+      "markdown": "An API became slower after increasing replicas from4 to20. Explain how you would investigate, which measurements you need, and what safe change you would test first. Do not assume the database is the culprit before asking for evidence."
+    },
+    {
+      "id": "format",
+      "title": "Assessment workflow",
+      "markdown": "Use the interview center for the saved attempt. Ask clarifying questions, record actual evidence, and finish the answering phase before opening the separate debrief. Scheduled hour:45 minutes reasoning and15 minutes feedback/retry planning."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "prompt": "An API became slower after increasing replicas from4 to20. Explain how you would investigate, which measurements you need, and what safe change you would test first. Do not assume the database is the culprit before asking for evidence.",
+    "minutes": 45,
+    "rubric": [
+      "Scope and workload.",
+      "Mechanism and bottleneck.",
+      "Failure and tradeoff reasoning."
+    ],
+    "solution": "Reference reasoning is available through the interview debrief after submission."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "Use observations to narrow the mechanism before adding capacity.",
+  "sources": []
+}

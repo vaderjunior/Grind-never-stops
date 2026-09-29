@@ -1,0 +1,136 @@
+{
+  "id": "089",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Turn safety claims into deterministic history assertions.",
+    "Distinguish overlapping from ordered operations in a register history.",
+    "Inject a stale-owner write and preserve the failing trace."
+  ],
+  "retrieval": [
+    "L087: which component enforces a fence?",
+    "L076–083: why is an acknowledged write followed by an old read suspicious under a fresh-read contract?"
+  ],
+  "sections": [
+    {
+      "id": "harness",
+      "title": "Test a claim you can actually falsify",
+      "markdown": "This 60-minute lab uses the prepared projects/labs/coordination.py file. Budget: read/retrieve10, trace prediction10, execute and modify20, evidence/tests15, reflection5. Python setup is separate. The supplied model is deliberately small: a fenced register and an exhaustive checker for at most eight completed register operations. It is not a Raft implementation or a general proof of a distributed system.\n\nA safety test starts with an observable contract. For a single register, a completed write that precedes a later read in real time must be visible to that read unless another write intervenes. Concurrent operations allow more than one valid ordering. The test should ask whether one complete legal sequential explanation exists that respects real-time precedence, rather than demanding one arbitrary interleaving chosen by the test author.\n\nRepresent each completed operation with kind, invocation time, response time and value. Here write.value is the submitted register value; read.value is the observed result. Times are integers in a deterministic teaching schedule, not distributed wall clocks. The harness controls the schedule and knows the interval boundaries."
+    },
+    {
+      "id": "execute",
+      "title": "Run the included examples and inspect the counterexample",
+      "markdown": "From the repository root run:\n\n~~~powershell\npy -3 projects/labs/coordination.py\npy -3 -m unittest discover -s projects/tests -p test_coordination.py -v\n~~~\n\nUse python or python3 if that is your installed launcher. The expected first output is: Safe history accepted; lost acknowledged write rejected; stale worker fenced. Four focused tests check the corresponding mechanisms. These tests were executed using the bundled Python interpreter on the target Windows workspace.\n\nHistory A writes1 during interval[0,2], then reads1 during[3,4]. It has a legal explanation: write followed by read. History B writes1 during[0,2], then reads0 during[3,4], with initial0. It has no legal explanation under a linearizable register contract, because the read starts after the write completed and no intervening write restores0.\n\nHistory C writes1 during[0,4] while a read returns0 during[1,2]. It may be legal: the overlapping read can be ordered before the write's effect. Rejecting all old values without checking overlap would create a false positive. The checker explores possible orders consistent with interval precedence, updating a model register along each candidate path."
+    },
+    {
+      "id": "inject",
+      "title": "Use deterministic failures before random chaos",
+      "markdown": "For the fencing trace, create a FencedRegister, write42 with worker B's value, then attempt41 with worker A's delayed value. The second call must raise PermissionError, and the register must still hold B's value. As a deliberate exercise mutation, remove the token comparison in a copy of the learner experiment and rerun the test. The test should now fail by allowing stale replacement. Restore the check after recording the counterexample.\n\nThis is failure injection because the test explicitly constructs the consequence of a delayed old owner, rather than hoping random sleeps happen to reproduce it. A real integration test would delay an actual worker or message at a chosen boundary, capture invocation/response records, and feed the resulting history into an appropriate checker. The small model tests the receiver invariant; it does not validate real network transport, disk durability or a coordinator implementation.\n\nAvoid wall-clock sleeps in these unit tests. They are slow and nondeterministic, especially across Windows scheduling and loaded CI machines. Use a fake clock and explicit event order for unit histories, then add separately labeled integration and stress tests for real dependencies."
+    },
+    {
+      "id": "interpret",
+      "title": "A passing history is evidence with a scope",
+      "markdown": "The checker handles only completed reads and writes to one register and at most eight operations; its search can grow factorially. Pending operations, multi-key transactions, compare-and-set, client crashes and clock uncertainty require a richer model. A timeout in a real trace cannot simply be marked “write did not happen”; uncertain outcomes must be modeled explicitly.\n\nRecord the exact schedule, initial state, expected property and observed result with a minimal counterexample. If a failure disappears under retries, keep the original history rather than declaring the system healthy. A test suite that only checks the final value can miss an earlier impossible read, so inspect the sequence of observations as well as the final state.\n\nCommon mistakes are calling a simulation a production benchmark, equating no detected failure with proof, and accidentally testing a different consistency model from the product contract. The learning objective is to make one claim falsifiable and repeatable before expanding the implementation's complexity."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Intervals constrain legal sequential explanations",
+      "source": "sequenceDiagram\nparticipant W as Writer\nparticipant R as Reader\nparticipant S as Register authority\nW->>S: Write 1 begins at 0\nS-->>W: Write completes at 2\nR->>S: Read begins at 3\nS-->>R: Returns 0 at 4\nNote over W,R: No overlap, old value violates this contract",
+      "caption": "With initial0 and no intervening write, a read invoked after write1 completed cannot return0 under the declared linearizable register contract.",
+      "steps": [
+        "Capture invocation and completion boundaries.",
+        "Derive real-time precedence for nonoverlapping operations.",
+        "Search for a legal single-register explanation.",
+        "Preserve a history with no valid explanation as a counterexample."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Add a history with write1 [0,2], read1 [3,4], read0 [5,6]. Predict the checker result and explain why checking only the first read would miss the issue. Then run the existing matching test.",
+    "rubric": [
+      "Requires one ordering for the entire history.",
+      "Detects impossible later regression.",
+      "Uses an executed deterministic test."
+    ],
+    "solution": "The checker must reject the history. The write completes before both reads, no later write restores0, and the reads are also ordered, so no legal sequential register execution returns1 and then0. Checking only the first read would pass and miss the later regression. Run test_one_shared_explanation_required in test_coordination.py and record the result; the important evidence is the three-operation counterexample, not merely a green test count."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "An old read overlapping an unfinished write is always invalid:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "It may legally be ordered before the overlapping write, depending on the complete history."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "Maximum completed operations accepted by this teaching checker?",
+      "answer": 8,
+      "unit": "operations",
+      "tolerance": 0,
+      "explanation": "The bound keeps exhaustive permutation exploration small and explicit."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A timed-out real write should automatically be modeled as absent:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "The write may have taken effect before its response was lost."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What does the fenced-register unit test not establish?",
+      "answer": "It does not validate a real coordination service, transport, disk durability or every concurrency history; it checks the resource-side token invariant under a deterministic schedule.",
+      "explanation": "It does not validate a real coordination service, transport, disk durability or every concurrency history; it checks the resource-side token invariant under a deterministic schedule."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "History record?",
+      "back": "Operation kind, invocation, response, and observed or written value."
+    },
+    {
+      "front": "Real-time order?",
+      "back": "A completed operation precedes one invoked strictly afterward."
+    },
+    {
+      "front": "Overlapping operations?",
+      "back": "May admit more than one legal sequential order."
+    },
+    {
+      "front": "Deterministic failure injection?",
+      "back": "Place a fault at a known boundary and reproduce the same trace."
+    },
+    {
+      "front": "Passing tests prove what?",
+      "back": "The tested model satisfies selected cases; they do not prove all executions safe."
+    }
+  ],
+  "mentalModel": "A useful failure test names the contract, controls a boundary, and saves a minimal contradictory history.",
+  "sources": [
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "etcd v3.5 API guarantees: revisions, watches, leases and consistency modes",
+      "url": "https://etcd.io/docs/v3.5/learning/api_guarantees/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

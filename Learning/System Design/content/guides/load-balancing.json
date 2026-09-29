@@ -1,0 +1,275 @@
+{
+  "id": "load-balancing",
+  "title": "Load balancing: sharing incoming requests",
+  "version": 2,
+  "week": 6,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Put a clear routing step in front of the notes app’s two copies, then test what happens when a copy is slow or unavailable.",
+  "objectives": [
+    "Trace a request through a load balancer to an application instance.",
+    "Explain a simple round-robin policy and its limits.",
+    "Distinguish a failed health check from proof that all work failed.",
+    "Identify state and shared dependencies that balancing does not solve."
+  ],
+  "terms": [
+    {
+      "term": "Load balancer",
+      "definition": "A component that distributes incoming connections or requests among eligible servers."
+    },
+    {
+      "term": "Backend",
+      "definition": "An application server behind a routing component."
+    },
+    {
+      "term": "Round robin",
+      "definition": "A policy that takes turns selecting eligible destinations."
+    },
+    {
+      "term": "Health check",
+      "definition": "A test used to decide whether a destination should currently receive work."
+    },
+    {
+      "term": "Reverse proxy",
+      "definition": "A server that accepts a client request and forwards it to another server on the service’s behalf."
+    }
+  ],
+  "retrieval": [
+    "Why can application B read a note saved through application A?",
+    "Why can a shared database limit throughput even after adding app copies?"
+  ],
+  "sections": [
+    {
+      "id": "front",
+      "title": "The browser needs one place to begin",
+      "markdown": "Our notes app has two copies, A and B. Maya should not have to know their machine addresses or decide which one is free. She uses the app’s normal address. A load balancer provides a routing step in front of the copies and selects an eligible destination for incoming work.\n\nImagine a receptionist directing visitors to available service desks. Visitors approach one entrance; the receptionist chooses a desk. This helps explain distribution, but the receptionist does not do the desk’s work or manufacture more staff. Likewise, a load balancer cannot make an overloaded database faster or make an invalid save correct. It chooses a path to the application capacity that exists.\n\nIn this guide we use an HTTP reverse-proxy load balancer: it receives the browser’s HTTP request, makes a request to a backend application, and returns the response. Other balancers work at different networking layers and make different decisions. That distinction matters later; the concrete request-level path is enough for today."
+    },
+    {
+      "id": "routing",
+      "title": "Follow six requests through two healthy copies",
+      "markdown": "Start with A and B both eligible and equally capable. A simple round-robin policy alternates choices. Six note-list requests go A, B, A, B, A, B. Each copy receives three. The database still stores accepted notes, so it does not matter which application handled Maya’s previous save.\n\nFor one request, follow the arrows: Maya asks for her notes; the balancer chooses A; A checks who Maya is and what she may read; A queries the database; A returns the permitted titles to the balancer; the balancer returns them to Maya. The balancer is not the owner of the notes and does not replace the application’s permission logic.\n\nEqual request counts need not mean equal work:\n\n| Signal used for selection | What it can show | What it can miss |\n| --- | --- | --- |\n| Request count | How many requests were assigned | Two photo transformations may cost more than many tiny reads |\n| Active connections | How many connections remain active | One may be idle; another may carry expensive or multiplexed work |\n| Measured load | Some current resource use | Observations can be delayed or omit a shared dependency |\n\nChoose the signal for the workload. No selection policy creates CPU time or database capacity that does not exist.\n\nThe teaching sequence assumes short independent HTTP requests. A long-lived connection, such as a live chat session, may remain tied to one backend. The ability to distribute new requests does not mean an existing conversation can be moved between machines without a reconnect or application support."
+    },
+    {
+      "id": "health",
+      "title": "Choose where new work should go during trouble",
+      "markdown": "The balancer periodically checks whether each backend appears able to serve. A check might call a small endpoint that reports whether the application is ready. If A repeatedly fails the chosen check, the balancer can stop sending new requests to A and use B. This reduces exposure to a known bad path.\n\nA health check is **evidence, not perfect knowledge**. Its answer has a scope and an age.\n\nA lightweight endpoint may answer while a database-dependent page is stuck. A busy but alive server may miss a deadline. A request can reach A between a failure starting and routing learning about it. Keep timeouts and clear error behavior on the request path.\n\nRequests already sent to A deserve separate attention. If A saved a note and then stopped before responding, routing a new save to B does not prove the first save was absent. Retrying a read is different from creating a second note. Week 8 teaches stable identifiers for repeated creation attempts; for now, do not promise that load balancing makes all retries harmless.\n\nB must also have enough spare capacity to handle the remaining work. If A and B were each nearly full, shifting A’s traffic onto B can overload it. Combining health checks with the capacity reasoning from last week makes the failure plan meaningful."
+    },
+    {
+      "id": "limits",
+      "title": "The new entrance is another part of the system",
+      "markdown": "The load balancer can itself fail. In a real deployment, its availability and how clients find a working entrance need a design too. A managed service may handle some of that work, but you still need its actual guarantees and failure behavior. For this beginner drawing, label the entrance as a dependency rather than pretending one extra box removes every possible outage.\n\nUser state is another boundary. If a login session exists only in A’s memory, Maya can appear logged out when the balancer selects B. A deliberate session design can use a shared session record or a properly verified token; those details arrive later. Routing all of Maya’s requests back to A can hide the problem temporarily, but it needs a failover story when A disappears.\n\nPractice with a paper trace. Write six requests and alternate A/B. Cross out A after request two, then send later requests only to B. Circle any in-flight request whose outcome you do not know. Finally cross out the shared database. Both application copies now lose a required data dependency even though the balancer still reaches them.\n\nYour checkpoint is to explain the entrance, choice, application work, and response in that order. Add one limitation: health checks can be delayed, requests differ in cost, or the shared database can fail. This gives a complete small routing argument without memorizing networking layers or a catalog of algorithms.\n\n> **Interview phrasing:** “The balancer chooses among eligible instances. I still need shared saved state, enough surviving capacity, and a policy for requests whose result becomes uncertain during failure.”"
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "request",
+      "title": "The balancer chooses; the application still does the work",
+      "source": "sequenceDiagram\nparticipant U as Maya browser\nparticipant L as HTTP load balancer\nparticipant A as Application A\nparticipant D as Shared database\nU->>L: Read my notes\nL->>A: Forward request to eligible A\nA->>A: Identify user and check permission\nA->>D: Query permitted note rows\nD-->>A: Rows\nA-->>L: Response\nL-->>U: Note list",
+      "caption": "A later request may use application B. Both copies need the same accepted data and a deliberate session design.",
+      "steps": [
+        "The browser contacts the app’s entrance.",
+        "The balancer selects an eligible backend.",
+        "The backend performs permission checks and data work.",
+        "The response travels back through the balancer."
+      ],
+      "sectionId": "routing"
+    },
+    {
+      "id": "health-information-lag",
+      "sectionId": "health",
+      "title": "Routing sees observations after reality changes",
+      "source": "flowchart LR\nH[Last check says A ready] --> F[A develops a problem]\nF --> G[Routing may still select A]\nG --> C[Later check reports failure]\nC --> U[Eligibility rule removes A]\nU --> B[New work uses other eligible instances]",
+      "caption": "The time between stages depends on check intervals, thresholds, and propagation. The diagram does not promise a fixed detection time or prove that every symptom is a failed process.",
+      "steps": [
+        "Separate the actual backend condition from the last observed health result.",
+        "Recognize that some requests may use stale eligibility information.",
+        "Update new-request selection while handling earlier requests under their own failure policy."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Six equally costly requests arrive while A and B are healthy. Assign them with round robin. Then assume A fails its health check after request two. Assign requests three through six and explain one risk that remains for a save already sent to A.",
+    "minutes": 8,
+    "rubric": [
+      "Healthy assignment alternates A/B.",
+      "After removing A, all later requests go to B.",
+      "Recognizes the uncertain result of an in-flight save."
+    ],
+    "solution": "With both healthy: A,B,A,B,A,B. If A becomes ineligible after request two: A,B,B,B,B,B, assuming B can take the load. A save sent earlier to A might have committed before its response was lost. Sending a fresh create to B can duplicate the user’s action unless the operation contract handles that uncertainty."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does the balancer primarily do in this design?",
+      "options": [
+        "Select an application destination",
+        "Store the only copy of notes",
+        "Make database transactions unnecessary"
+      ],
+      "answer": "Select an application destination",
+      "explanation": "The application and database retain their own responsibilities."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Equal request counts always mean equal processing work:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Photo processing and small metadata reads can have very different costs."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A passing lightweight health check proves every business request will succeed:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Other paths may use failing dependencies or more expensive work."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can a login kept only in A’s memory cause trouble?",
+      "answer": "A later request routed to B lacks that session state, and A’s failure can remove the only copy.",
+      "explanation": "State needed across requests needs deliberate handling beyond routing."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What should be checked before B takes all traffic after A fails?",
+      "answer": "That B and shared dependencies have enough capacity, that new requests can reach it, and that in-flight outcomes are handled honestly.",
+      "explanation": "A routing change does not create spare capacity or undo accepted work."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Load balancer?",
+      "back": "Distributes incoming work among eligible servers."
+    },
+    {
+      "front": "Round robin?",
+      "back": "Take turns choosing destinations."
+    },
+    {
+      "front": "Health check?",
+      "back": "Evidence used to decide eligibility for new work."
+    },
+    {
+      "front": "Reverse proxy?",
+      "back": "Receives requests and forwards them on the service’s behalf."
+    },
+    {
+      "front": "What remains shared here?",
+      "back": "Persistent notes and their database dependency."
+    }
+  ],
+  "mentalModel": "A load balancer chooses a door; the application behind that door still has to perform the right work.",
+  "sources": [
+    {
+      "title": "ByteByteGo: What is a Load Balancer?",
+      "url": "https://bytebytego.com/guides/what-is-a-load-balancer/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "ByteByteGo: Proxy vs Reverse Proxy",
+      "url": "https://bytebytego.com/guides/proxy-vs-reverse-proxy/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE: handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "equal-count-unequal-work",
+      "sectionId": "routing",
+      "title": "Round robin can split counts evenly and work unevenly",
+      "intro": "Four short independent requests alternate A/B. The CPU costs are invented for this example and exclude all waiting and shared dependencies.",
+      "steps": [
+        {
+          "title": "Assign a photo transformation",
+          "explanation": "Round robin sends the first request to A. This operation needs much more computation than a small read.",
+          "state": [
+            {
+              "label": "Chosen backend",
+              "value": "A"
+            },
+            {
+              "label": "A assigned CPU work",
+              "value": "200 ms"
+            },
+            {
+              "label": "B assigned CPU work",
+              "value": "0 ms"
+            }
+          ]
+        },
+        {
+          "title": "Assign a small metadata read",
+          "explanation": "The next request goes to B. Each backend has one request, but the work differs.",
+          "state": [
+            {
+              "label": "Chosen backend",
+              "value": "B"
+            },
+            {
+              "label": "A assigned CPU work",
+              "value": "200 ms"
+            },
+            {
+              "label": "B assigned CPU work",
+              "value": "10 ms"
+            }
+          ]
+        },
+        {
+          "title": "Assign another photo transformation",
+          "explanation": "The third request goes to A under the same alternating policy.",
+          "state": [
+            {
+              "label": "Chosen backend",
+              "value": "A"
+            },
+            {
+              "label": "A assigned CPU work",
+              "value": "400 ms total"
+            },
+            {
+              "label": "B assigned CPU work",
+              "value": "10 ms total"
+            }
+          ]
+        },
+        {
+          "title": "Assign another small read",
+          "explanation": "B receives the fourth request. Counts are equal; this workload’s CPU demand is not.",
+          "state": [
+            {
+              "label": "Requests assigned",
+              "value": "A: 2, B: 2"
+            },
+            {
+              "label": "CPU work assigned",
+              "value": "A: 400 ms, B: 20 ms"
+            },
+            {
+              "label": "Conclusion",
+              "value": "Count is not cost"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Explain what the routing signal measures. Equal distribution of one signal does not guarantee equal use of every resource."
+    }
+  ]
+}

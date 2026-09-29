@@ -1,0 +1,282 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 10,
+  "title": "Network splits, CAP, and quorums",
+  "level": "intermediate",
+  "minutes": 45,
+  "id": "partitions-and-quorums",
+  "summary": "A broken network can leave healthy computers unable to agree. Learn the real CAP tradeoff and what overlapping replica groups do—and do not—prove.",
+  "objectives": [
+    "Explain a network partition using an unavailable communication link.",
+    "Reason about consistency and valid responses during that split.",
+    "Calculate a quorum overlap and name its assumptions."
+  ],
+  "terms": [
+    {
+      "term": "Network partition",
+      "definition": "A communication failure that separates some nodes so they cannot exchange the messages they need."
+    },
+    {
+      "term": "CAP",
+      "definition": "A result showing that a partition-prone model cannot guarantee both linearizable read/write behavior and successful service of every request at nonfailed nodes."
+    },
+    {
+      "term": "Quorum",
+      "definition": "A set of responses large enough for a particular protocol’s decision rule."
+    },
+    {
+      "term": "N, W, R",
+      "definition": "In a simple fixed-replica model: total replicas, required write acknowledgments, and required read responses."
+    },
+    {
+      "term": "Reconciliation",
+      "definition": "Comparing and repairing divergent or missing state after communication or processing resumes."
+    }
+  ],
+  "retrieval": [
+    "What read after a completed write would violate linearizability?",
+    "Why might two database copies have different values?"
+  ],
+  "sections": [
+    {
+      "id": "split",
+      "title": "Healthy machines can still be unable to talk",
+      "markdown": "Two database nodes, East and West, store a value. Both are running, and each can serve nearby clients, but the link between them stops carrying messages. That is a network partition. It is different from dividing a table into shards, even though the word partition appears in both topics.\n\nSuppose East accepts a write changing a value from 0 to 1 and tells its caller it succeeded. A later client asks West to read. West cannot contact East. It cannot know whether East accepted the write or whether no write happened at all. Waiting longer does not resolve the uncertainty if the communication failure continues indefinitely.\n\nThis tiny story is the useful starting point for CAP. You do not need a triangle or a database-product ranking to understand the missing information."
+    },
+    {
+      "id": "choice",
+      "title": "The response must mean something",
+      "markdown": "East has acknowledged changing a value from 0 to 1. A later read reaches West, which still has 0 and cannot communicate with East.\n\n| West's action during this split | Consequence for this request |\n| --- | --- |\n| Return the old 0 immediately | Can violate the linearizable read contract |\n| Wait until the required evidence is available | Cannot guarantee a successful response while the split persists |\n| Refuse with a clear temporary-unavailable result | Honest operational behavior, but not CAP's successful availability |\n\nCAP's argument uses a precise availability definition: a nonfailed node eventually serves every request according to the operation's valid response contract. A fast arbitrary error does not satisfy the same successful read/write service.\n\nOperational SLO percentages and latency deadlines are also important, but they are not identical to that theorem definition. Avoid the slogan “pick any two.” You cannot wish unreliable communication away. State what this particular operation does when it cannot obtain the evidence its correctness promise requires.\n\nA product may continue serving older public browsing data while refusing an inventory claim. That is a scoped product decision, not a single label for the entire architecture."
+    },
+    {
+      "id": "business",
+      "title": "Choose behavior for the operation",
+      "markdown": "For claiming the last seat, letting both disconnected sides independently report success can oversell. A design may allow only the side with a valid coordination majority to commit claims, while the other side returns a clear temporary-unavailable or pending result. The choice protects the booking rule at the cost of some successful service.\n\nFor an editable personal draft, accepting local edits during disconnection may be useful if the product explicitly supports later conflicts and merge. Do not claim a simple last-write-wins timestamp will preserve both people’s intent; clocks and overwrite semantics need care. The acceptable behavior comes from the product, not a label attached to the entire company.\n\nA system can make different choices for different actions: serve an older public catalog, while refusing an inventory claim that cannot meet its correctness rule. Name the scope rather than calling the whole architecture simply “AP” or “CP.”"
+    },
+    {
+      "id": "quorum",
+      "title": "Overlap gives information a place to meet",
+      "markdown": "Take a fixed replica set A, B, C. A write waits for W = 2 acknowledgements. A read collects R = 2 responses. Because R + W > N, the two groups must share at least one replica.\n\n| Completed write group | Possible read group | Shared replica |\n| --- | --- | --- |\n| A and B | A and B | A and B |\n| A and B | A and C | A |\n| A and B | B and C | B |\n\nOverlap gives new information somewhere to meet the read. It is **not the whole consistency protocol**. The reader must recognize versions, handle concurrent and partial writes, and obey membership/failure assumptions. Returning only the first response could discard the useful evidence from the other replica.\n\nFor N = 5, W = 3, R = 3, minimum overlap is one. A 3–2 network split leaves only the group of three able to form a majority. That arithmetic alone does not specify safe leader election, commits, reads, or recovery.\n\nSubstitute replicas outside the fixed set can invalidate this simple argument. Before saying “quorums make it consistent,” name the actual protocol and show how it treats conflicting or unfinished operations."
+    },
+    {
+      "id": "recovery",
+      "title": "The end of a split is another design phase",
+      "markdown": "When communication returns, compare versions and repair missing data under the protocol. If the product allowed conflicting writes, apply its explicit merge or conflict-resolution policy. If it refused writes on one side, clients may retry with stable operation identities. A retry can encounter an operation that actually completed before the response was lost.\n\nMonitor time spent unable to meet the contract, replication/repair progress, rejected operations, and unresolved conflicts. Test the split and its recovery, not only killing one process on an otherwise healthy network.\n\nCommon mistakes: treating an HTTP 500 as theorem-level successful availability, equating quorum overlap with full linearizability, and using timestamps to guess which business update must win. For this chapter, a successful explanation is the East/West story plus one correct overlap calculation and one explicit caveat."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "overlap",
+      "title": "The read and write sets share replica B",
+      "source": "flowchart TB\nW[Write waits for A and B] --> A[(Replica A)]\nW --> B[(Replica B)]\nR[Read collects B and C] --> B\nR --> C[(Replica C)]\nB -.->|Shared evidence, protocol still required| P[Compare versions and handle concurrent work]",
+      "caption": "Fixed three-replica example with W=2 and R=2. The picture shows overlap, not a complete read/write algorithm.",
+      "steps": [
+        "Choose the fixed replica set.",
+        "Complete a write at two replicas.",
+        "Read from two replicas.",
+        "Use the overlap through a correct version/conflict protocol."
+      ],
+      "sectionId": "quorum"
+    },
+    {
+      "id": "partition-choice",
+      "title": "The same split can allow browsing and block a claim",
+      "sectionId": "business",
+      "source": "flowchart TB\nS[Required coordination link unavailable] --> B[Public catalog read]\nS --> C[Last-seat claim]\nB --> P{Product permits older catalog?}\nP -->|Yes| O[Serve allowed cached view]\nP -->|No| U[Explain unavailable result]\nC --> Q{Valid commit authority reachable?}\nQ -->|Yes| A[Attempt protected claim]\nQ -->|No| U",
+      "caption": "The diagram expresses operation-specific contracts. It does not claim a cache can confirm inventory or that returning an error satisfies CAP availability.",
+      "steps": [
+        "Identify the operation affected by the split.",
+        "Check the browsing freshness promise separately from inventory correctness.",
+        "Commit a claim only through a valid authority and protocol.",
+        "Return an honest unavailable result where the guarantee cannot be met."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Five replicas use W=3 and R=3. Draw a network split of 3 versus 2. Which side can collect three replies? Explain the response policy for a last-seat claim, then name two reasons quorum arithmetic alone is not a full correctness proof.",
+    "rubric": [
+      "Correct majority/overlap arithmetic.",
+      "Business rule determines partition behavior.",
+      "Version/concurrency/membership caveats are concrete."
+    ],
+    "solution": "Only the connected group of 3 can collect three replies within its side. A safe last-seat claim may proceed only through the protocol-authorized side; the other cannot promise an independent successful claim. With a fixed set, read/write groups of 3 overlap in at least 1. Correct version selection and concurrent/partial-write handling are still required, and changing membership or substituting unrelated replicas can break the simple argument. The arithmetic alone does not implement atomic seat claims."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A network partition means what here?",
+      "options": [
+        "The SQL table has extra columns",
+        "Some nodes cannot exchange needed messages",
+        "Every computer is powered off"
+      ],
+      "answer": "Some nodes cannot exchange needed messages",
+      "explanation": "Nodes can remain alive and serve local clients while coordination messages fail."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Returning any quick error satisfies the same successful read/write availability contract?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if status is 500"
+      ],
+      "answer": "No",
+      "explanation": "The theorem concerns serving operations according to their valid service semantics, not merely transmitting bytes."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "For fixed N=5,W=3,R=3, what is the minimum read/write-set overlap?",
+      "answer": 1,
+      "unit": "replica",
+      "explanation": "At least W+R−N=1 replica. This is an overlap fact, not a full protocol proof.",
+      "tolerance": 0
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might drafts and seat claims make different partition choices?",
+      "answer": "Drafts may allow disconnected edits with explicit later conflict handling; seats often require preventing two successful claims of the same limited item.",
+      "explanation": "Drafts may allow disconnected edits with explicit later conflict handling; seats often require preventing two successful claims of the same limited item."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What else must a quorum protocol specify?",
+      "answer": "Version/order rules, concurrent and incomplete writes, membership changes, failure assumptions, and how readers select or repair values.",
+      "explanation": "Version/order rules, concurrent and incomplete writes, membership changes, failure assumptions, and how readers select or repair values."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Partition in CAP?",
+      "back": "A failure of communication, not ordinary data sharding."
+    },
+    {
+      "front": "The East/West uncertainty?",
+      "back": "West cannot distinguish a remote completed write from no such write."
+    },
+    {
+      "front": "W+R>N proves?",
+      "back": "Overlap under a fixed replica-set model."
+    },
+    {
+      "front": "Overlap alone proves linearizability?",
+      "back": "No; the complete protocol and assumptions matter."
+    },
+    {
+      "front": "Recovery after a split?",
+      "back": "Repair or resolve conflicts and retry operations under explicit identities/policies."
+    }
+  ],
+  "mentalModel": "A disconnected node cannot learn a remote fact by wishing harder. Decide which promises survive that uncertainty.",
+  "sources": [
+    {
+      "title": "Gilbert and Lynch — Perspectives on the CAP theorem",
+      "url": "https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Dynamo paper — Quorums, versions, and availability tradeoffs",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "quorum-evidence",
+      "title": "Find the newer version inside an overlapping read",
+      "sectionId": "quorum",
+      "intro": "Three fixed replicas store a versioned value. This walkthrough demonstrates overlap only; it does not implement a complete linearizable register.",
+      "steps": [
+        {
+          "title": "Begin with agreement",
+          "explanation": "All three replicas hold version 4.",
+          "state": [
+            {
+              "label": "A",
+              "value": "v4 = amber"
+            },
+            {
+              "label": "B",
+              "value": "v4 = amber"
+            },
+            {
+              "label": "C",
+              "value": "v4 = amber"
+            }
+          ]
+        },
+        {
+          "title": "A write reaches two replicas",
+          "explanation": "The protocol’s illustrated write condition is met by A and B. C remains behind.",
+          "state": [
+            {
+              "label": "A",
+              "value": "v5 = teal"
+            },
+            {
+              "label": "B",
+              "value": "v5 = teal"
+            },
+            {
+              "label": "C",
+              "value": "v4 = amber"
+            },
+            {
+              "label": "Acknowledgements",
+              "value": "A and B"
+            }
+          ]
+        },
+        {
+          "title": "Read from a different pair",
+          "explanation": "The read collects B and C. B is the intersection with the completed write group.",
+          "state": [
+            {
+              "label": "ReadGroup",
+              "value": "B and C"
+            },
+            {
+              "label": "BReply",
+              "value": "v5 = teal"
+            },
+            {
+              "label": "CReply",
+              "value": "v4 = amber"
+            },
+            {
+              "label": "Intersection",
+              "value": "B"
+            }
+          ]
+        },
+        {
+          "title": "Use evidence under a protocol",
+          "explanation": "For this simple ordered-version example, v5 is recognizable. A real implementation still needs rules for concurrent and incomplete writes.",
+          "state": [
+            {
+              "label": "Candidate",
+              "value": "v5 = teal"
+            },
+            {
+              "label": "RequiredRule",
+              "value": "Resolve versions and operation state"
+            },
+            {
+              "label": "NotProven",
+              "value": "Full linearizability from overlap alone"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Quorum arithmetic explains why evidence can overlap. The protocol explains which evidence constitutes a safe result."
+    }
+  ]
+}

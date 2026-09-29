@@ -1,0 +1,146 @@
+[
+  {
+    "id": "design-file-storage",
+    "week": 19,
+    "bodyWords": 739,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "file-sync-and-conflicts",
+    "week": 19,
+    "bodyWords": 761,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "design-video-platform",
+    "week": 20,
+    "bodyWords": 754,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "design-search-and-autocomplete",
+    "week": 20,
+    "bodyWords": 747,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "design-bookings",
+    "week": 21,
+    "bodyWords": 723,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "design-payments",
+    "week": 21,
+    "bodyWords": 739,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "coordination-and-leases",
+    "week": 22,
+    "bodyWords": 729,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "change-data-safely",
+    "week": 22,
+    "bodyWords": 763,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "ai-system-design",
+    "week": 23,
+    "bodyWords": 745,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "rag-and-inference",
+    "week": 23,
+    "bodyWords": 770,
+    "sections": 5,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "full-mock-interview",
+    "week": 24,
+    "bodyWords": 868,
+    "sections": 6,
+    "diagrams": 1,
+    "errors": []
+  },
+  {
+    "id": "capstone-and-readiness-plan",
+    "week": 24,
+    "bodyWords": 876,
+    "sections": 6,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "dns-and-addresses",
+    "week": 1,
+    "bodyWords": 1522,
+    "sections": 9,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "gateways-and-proxies",
+    "week": 5,
+    "bodyWords": 1385,
+    "sections": 9,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "containers-and-deployment",
+    "week": 7,
+    "bodyWords": 1432,
+    "sections": 9,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "job-lifecycle-and-backpressure",
+    "week": 8,
+    "bodyWords": 1448,
+    "sections": 9,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "kubernetes-networking",
+    "week": 14,
+    "bodyWords": 1254,
+    "sections": 8,
+    "diagrams": 2,
+    "errors": []
+  },
+  {
+    "id": "kubernetes-operations",
+    "week": 14,
+    "bodyWords": 1322,
+    "sections": 8,
+    "diagrams": 2,
+    "errors": []
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "lessonId": "018",
+  "sha256": "e56a200d00f89414f46f46e06ea597c26d97d8d56d83395f44cbd0afd5ef3692",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: typed code generation does not replace authorization, business validation, retry semantics, or cancellation handling.",
+    "Protocol alternatives are justified by client ecosystem and streaming needs; no universal speed multiplier is claimed."
+  ]
+}

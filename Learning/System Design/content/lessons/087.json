@@ -1,0 +1,131 @@
+{
+  "id": "087",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish an ownership lease from resource-side enforcement.",
+    "Trace a paused worker after lease expiry.",
+    "Design monotonically ordered fencing and separate retry idempotency."
+  ],
+  "retrieval": [
+    "L082: a stale leader can retain an old belief.",
+    "L037: where must a concurrency check sit relative to the protected write?"
+  ],
+  "sections": [
+    {
+      "id": "stale",
+      "title": "A lock response cannot stop a paused process",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, failure timeline 8, exercise 10, questions 10, review 4. A batch worker obtains an exclusive lease to update an object. It pauses for a minute because of scheduling or a long runtime pause. The lease expires and another worker obtains ownership. The old worker resumes with the bytes it was about to write. It can still send a request even though its local lease library once said “acquired.”\n\nA lease bounds how long the coordination service recognizes ownership without renewal. It does not remotely erase instructions from a stopped process. Checking “is my lease valid?” immediately before a write leaves a gap: the process can pause after the check and before the resource commits the write. The protected resource must participate in preventing obsolete owners from changing authoritative state.\n\nThis distinction matters for object writers, job workers, scheduled compaction and controller reconciliation. Locks used only to reduce duplicate work can tolerate occasional overlap; locks used to protect correctness need a specific failure argument. Begin by saying which category the lock belongs to."
+    },
+    {
+      "id": "fence",
+      "title": "Move the final check to the authority",
+      "markdown": "A fencing token is an ordered ownership generation attached to every protected operation. When worker B obtains token 42 after A had token 41, the resource remembers the greatest accepted token. After observing42, it rejects a write with41. The comparison and the protected write must be atomic at the resource. If one replica checks while another writes without that check, the fence is decorative.\n\nEqual tokens may represent multiple operations from one owner; whether to permit them depends on the operation protocol. A fence alone does not deduplicate retries within the same generation. Add request identities or version checks for that purpose. Likewise, a bare monotonically increasing counter does not solve resource authorization: only authorized owners should obtain/use tokens for the relevant resource scope.\n\nThe exact guarantee is worth stating carefully: once the resource has observed a newer generation, an older generation cannot overwrite it. A resource that has seen only41 cannot infer from the number alone that lease41 expired elsewhere. If rejecting all post-expiry operations even before any newer owner appears is required, the resource needs additional lease validation or revocation semantics. Avoid claiming that a token acts as a magical globally synchronized clock."
+    },
+    {
+      "id": "timeline",
+      "title": "Show the stale write being rejected",
+      "markdown": "At t0 A holds41 and computes a replacement index file. At t1 A pauses. At t2 the coordinator expires A's lease. At t3 B obtains42 and writes a correct replacement; the object authority atomically records max_token=42 with the new value. At t4 A resumes and submits its older output with41. The authority rejects it before changing bytes. The successful path is about the receiver's behavior, not about hoping A notices a lost lease.\n\nThe supplied deterministic lab in projects/labs/coordination.py models that receiver with FencedRegister. Run it using Python; it accepts42 and rejects a delayed41. It is an in-memory teaching model, not a distributed lock implementation. The important test assertion is that the protected value remains B's result after A attempts its write.\n\nSQL-style predicate sketch for a resource with one row:\n\n~~~sql\nUPDATE protected_objects\nSET value = :new_value, fence = :token\nWHERE object_id = :id AND fence <= :token;\n~~~\n\nThe application must check whether a row was changed, enforce ownership/authentication, and define equal-token retries. Inserts, multiple-row invariants and external file writes need corresponding transactional or storage-native support. Copying this query next to an unrelated filesystem write does not make the two atomic."
+    },
+    {
+      "id": "alternatives",
+      "title": "Choose a mechanism the resource can enforce",
+      "markdown": "If the target API supports conditional updates with an object version, optimistic concurrency may avoid a separate distributed lock. If it accepts an idempotency key for a business operation, retry safety can sometimes remove the need to exclude duplicate attempts. If it supports neither conditions nor fencing, a lock service alone cannot guarantee protection against an indefinitely delayed old owner.\n\nLeases also need renewal and failure policies. A worker should stop initiating new work when renewal becomes uncertain, but the resource fence remains the final defense. Use bounded operation duration and cancellation for efficiency, not as the only correctness proof. Track lease-loss events, stale-fence rejections and repeated work so an operator can see churn.\n\nA common misleading answer is “use Redis/ZooKeeper/etcd locks” without naming what checks the final write. Name the authoritative resource, the generation's scope, when it changes, and the atomic stale-owner rejection. Those details make the design reviewable."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Lease expiry leaves a stale process; fencing protects the resource",
+      "source": "sequenceDiagram\nparticipant A as Worker A token 41\nparticipant L as Lease authority\nparticipant B as Worker B token 42\nparticipant R as Protected resource\nNote over A: Pauses beyond lease\nL-->>B: New ownership token 42\nB->>R: Write with 42\nR->>R: Store value and fence 42 atomically\nNote over A: Resumes\nA->>R: Delayed write with 41\nR-->>A: Reject stale generation",
+      "caption": "The stale write is rejected by the resource after it has accepted the newer generation. Lease expiration alone cannot stop A from sending.",
+      "steps": [
+        "Old owner pauses.",
+        "Authority grants a newer generation.",
+        "Resource atomically accepts the newer value and fence.",
+        "Resource rejects the delayed old generation."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A lock service grants42 to B after A’s41 expires. The storage server ignores tokens, and both workers write files. Explain the failure and give two defensible repairs when the object API does or does not support conditional versions.",
+    "rubric": [
+      "Locates enforcement at storage.",
+      "Does not rely only on client lease check.",
+      "Distinguishes supported from unsupported guarantees."
+    ],
+    "solution": "The storage server can accept A’s delayed write after B’s write, because the lock authority cannot revoke already executing code. If the object API supports version conditions, attach an expected version or supported fencing generation to an atomic write and reject stale conditions. If it has no conditional or fencing mechanism, place writes behind an authority that can enforce them or redesign the effect to be idempotent/commutative where possible. Merely checking the lease at A before sending still leaves a pause window; do not claim a correctness guarantee the target cannot enforce."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Who must reject the stale owner for resource correctness?",
+      "options": [
+        "Only the former worker",
+        "The protected resource or its atomic write authority"
+      ],
+      "answer": "The protected resource or its atomic write authority",
+      "explanation": "A paused former owner can resume without observing its lost lease."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "After accepting fence42, a request arrives with41. How many protected writes should this stale request apply?",
+      "answer": 0,
+      "unit": "writes",
+      "tolerance": 0,
+      "explanation": "The resource must reject the older generation before mutation."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Fencing alone deduplicates repeated commands with the same token:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Same-owner retries need a separate idempotency or version mechanism."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is a client-side lease-valid check insufficient?",
+      "answer": "The client may pause after checking and before its write commits, allowing a later owner to be overwritten unless the receiver enforces freshness.",
+      "explanation": "The client may pause after checking and before its write commits, allowing a later owner to be overwritten unless the receiver enforces freshness."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Lease?",
+      "back": "Time-bounded recognized ownership, normally maintained by renewals."
+    },
+    {
+      "front": "Fence?",
+      "back": "Ordered generation checked atomically by the protected resource."
+    },
+    {
+      "front": "Stale pause hazard?",
+      "back": "Old code can continue after authority has moved to a new owner."
+    },
+    {
+      "front": "Fence versus idempotency?",
+      "back": "Fence orders owners; idempotency identifies repeated logical operations."
+    },
+    {
+      "front": "No receiver support?",
+      "back": "A separate lock cannot by itself prevent every delayed obsolete effect."
+    }
+  ],
+  "mentalModel": "An owner may be stale; correctness lives in the resource’s atomic decision to accept or reject its generation.",
+  "sources": [
+    {
+      "title": "etcd v3.5 API guarantees: revisions, watches, leases and consistency modes",
+      "url": "https://etcd.io/docs/v3.5/learning/api_guarantees/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

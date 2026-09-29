@@ -1,0 +1,38 @@
+{
+  "id": "035",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Defend relational identities and scoped constraints.",
+    "Tie a small index plan to measured access patterns.",
+    "Diagnose query amplification and distribution changes."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "assessment",
+      "title": "Assessment session",
+      "markdown": "Start interview_007 in the Interview Center. This 60-minute session reserves 45 minutes for the concept-check assessment and 15 for feedback. The candidate brief appears at start; reference solutions require the debrief stage. Record actual queries, histories, or diagrams rather than awarding proficiency for viewing the rubric."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "prompt": "Start the mapped assessment and save the actual reasoning and evidence.",
+    "minutes": 45,
+    "rubric": [
+      "Use the supplied weighted rubric with concrete attempt excerpts."
+    ],
+    "solution": "Reference reasoning is stored separately in the gated interview debrief."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "Correctness is a history you can defend, not a database feature name.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

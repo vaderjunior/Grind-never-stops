@@ -1,0 +1,819 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "cache-freshness-and-cdns",
+    "serialization-and-data-formats",
+    "background-jobs",
+    "containers-and-deployment",
+    "queues-and-retries",
+    "queue-broker-fundamentals",
+    "job-lifecycle-and-backpressure",
+    "first-design-url-shortener",
+    "copying-data",
+    "split-data-into-shards",
+    "consistency-in-plain-language",
+    "partitions-and-quorums",
+    "reliable-events",
+    "streaming-and-replay",
+    "identity-and-permissions",
+    "rate-limits-and-abuse",
+    "reliable-systems",
+    "reliability-controls",
+    "observe-and-debug",
+    "kubernetes-building-blocks",
+    "ship-and-recover",
+    "kubernetes-networking",
+    "regions-and-disaster-recovery",
+    "kubernetes-operations"
+  ],
+  "method": "Full prose read followed by original instructional rewrites. Comparison tables, concrete state changes, and diagrams explain the same user-facing guarantees. Quiz answers, exercise solutions, and flashcard order are preserved.",
+  "guides": [
+    {
+      "id": "cache-freshness-and-cdns",
+      "path": "content/guides/cache-freshness-and-cdns.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "7e5c2e868ef3c7613080ebae11cb93add6f4724b177a01ec1163a53cdc30da93",
+      "sha256": "b75accf9da750bb482f3320f574b81d65feb46c090339ce46fd20f91a6aeed7c",
+      "protectedContentSha256": "b57ab12fce9be60bab0a6720ea70c5d9cfe28404ea371ad48efdfb4d74c169fc",
+      "sectionsRewritten": [
+        "old",
+        "version"
+      ],
+      "diagrams": [
+        {
+          "id": "cdn",
+          "sectionId": "nearby"
+        },
+        {
+          "id": "stale-fill",
+          "sectionId": "refresh"
+        }
+      ],
+      "walkthroughId": "caption-clock",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Replaced dense TTL prose with a four-row changing-state table.",
+        "Added a stale-fill race diagram and a distinct clock walkthrough.",
+        "Separated image bytes, metadata references, and private-access limits in an annotated text flow."
+      ],
+      "gaps": [],
+      "bodyWords": 863
+    },
+    {
+      "id": "serialization-and-data-formats",
+      "path": "content/guides/serialization-and-data-formats.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "f94d672d7c4dee3575db035c25a9882a4badc458c34e6257d0d970233b50f436",
+      "sha256": "3f4f6d0884a52599d1458ab54f7e03e4c638ffe80ebfbfb7b7fa1593d6860452",
+      "protectedContentSha256": "cd2c60ed661e658ed3eef6156a383cda68ffe07d0d169a7f110281faf6b7c6ac",
+      "sectionsRewritten": [
+        "bytes",
+        "schema",
+        "compression"
+      ],
+      "diagrams": [
+        {
+          "id": "format-layers",
+          "sectionId": "schema"
+        },
+        {
+          "id": "versions",
+          "sectionId": "evolution"
+        }
+      ],
+      "walkthroughId": "note-message",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added byte-count and validation-contract tables with exact example values.",
+        "Replaced the compression paragraph calculation with a stage-by-stage cost table.",
+        "Refined the representation diagram and authored a message lifecycle walkthrough without copying quiz or exercise solutions."
+      ],
+      "gaps": [],
+      "bodyWords": 1485
+    },
+    {
+      "id": "background-jobs",
+      "path": "content/guides/background-jobs.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "33c20a652ad840e64f42f27c7f7858e83f96227578ee1cf3242541efcd690dc3",
+      "sha256": "a6f15d165f290d2eca5d99174b4aa2fcc27d56e9615698453f85df6c1aedf580",
+      "protectedContentSha256": "bb302b45c555f2f1e5a289a1c0690d7a672302ed6c5ee69a1b647e0fd2adff83",
+      "sectionsRewritten": [
+        "flow",
+        "capacity"
+      ],
+      "diagrams": [
+        {
+          "id": "job",
+          "sectionId": "flow"
+        },
+        {
+          "id": "job-lifecycle",
+          "sectionId": "recover"
+        }
+      ],
+      "walkthroughId": "preview-receipt",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Reworked the job-table explanation into concrete stored data and lifecycle responsibilities.",
+        "Made burst and recovery arithmetic visible in a two-phase table.",
+        "Added a recoverable-state diagram and a receipt-to-result walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 838
+    },
+    {
+      "id": "containers-and-deployment",
+      "path": "content/guides/containers-and-deployment.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "ab6fff79c0a301545cb6ddd5e6080d396e7e5a946f9ac0f1f00781cbe97de0f5",
+      "sha256": "ea4c6973d8474a93a8abfd975f950210f123bc88e9123bba16206e6fb38cf0a4",
+      "protectedContentSha256": "8bed3e83fc2778850733c30c1978a56f5ca850c8a67e0837e414ccfe58f39492",
+      "sectionsRewritten": [
+        "package",
+        "release"
+      ],
+      "diagrams": [
+        {
+          "id": "container-layers",
+          "sectionId": "storage"
+        },
+        {
+          "id": "deployment-management",
+          "sectionId": "pod"
+        }
+      ],
+      "walkthroughId": "replace-notes-instance",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added a source/image/container/database comparison with a concrete saved-record distinction.",
+        "Rewrote deployment as a short annotated decision flow.",
+        "Refined the persistence diagram and added a replacement walkthrough with explicit memory and database states."
+      ],
+      "gaps": [],
+      "bodyWords": 1465
+    },
+    {
+      "id": "queues-and-retries",
+      "path": "content/guides/queues-and-retries.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "2f35236bd1194cb3393e0c859a5a40325a036edf42613446e23c4e7c050b01ee",
+      "sha256": "d2001aef518ee4e94e811e206e9bccb886542edc40c8007b7b55ff2a569fbf28",
+      "protectedContentSha256": "aab54f39cdfa9cf4fd57a55a4437e0114e61ff6cdd53b33154ac5fcb081a0fb4",
+      "sectionsRewritten": [
+        "crash",
+        "policy"
+      ],
+      "diagrams": [
+        {
+          "id": "redelivery",
+          "sectionId": "crash"
+        },
+        {
+          "id": "protected-effect",
+          "sectionId": "effect"
+        }
+      ],
+      "walkthroughId": "repeat-result",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Replaced the crash-window paragraph with an evidence table.",
+        "Added a retry decision comparison and kept external-effect limits explicit.",
+        "Added a local transaction diagram and an evolving two-delivery walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 843
+    },
+    {
+      "id": "queue-broker-fundamentals",
+      "path": "content/guides/queue-broker-fundamentals.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "d0971632f2609b9effe7ff38d54607f40178d5f71c926c772fbcd7b1d25f662f",
+      "sha256": "df3f08eccb90fcf474ada36e4ec2359d65e92a6ed5e263bb3ebc1144939d2602",
+      "protectedContentSha256": "93d82a89ac5e9729388409f93577823a8b8a80073ab15c45682891a64949e143",
+      "sectionsRewritten": [
+        "patterns",
+        "operate"
+      ],
+      "diagrams": [
+        {
+          "id": "messaging-patterns",
+          "sectionId": "patterns"
+        },
+        {
+          "id": "durable-ai-job",
+          "sectionId": "worked"
+        }
+      ],
+      "walkthroughId": "independent-readers",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Rewrote messaging-pattern prose as recipient/progress/retention decisions.",
+        "Added a concrete product-role comparison without inventing universal guarantees.",
+        "Refined the branching diagram and authored independent subscriber state progression."
+      ],
+      "gaps": [],
+      "bodyWords": 1464
+    },
+    {
+      "id": "job-lifecycle-and-backpressure",
+      "path": "content/guides/job-lifecycle-and-backpressure.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "df49c83d4cbeb17563af7ba1226b2675a9af1bdba536c9b2d7c68444883ee553",
+      "sha256": "19fb18a6948b5dfaa1c6238759a4a798cab7f66ca7fa888c99b25bdfa4762662",
+      "protectedContentSha256": "dd0da4b8bd680dc1c7a88144f30aeffc3c424e60031a2cbf4df3ba5e05fccf85",
+      "sectionsRewritten": [
+        "states",
+        "capacity"
+      ],
+      "diagrams": [
+        {
+          "id": "job-states",
+          "sectionId": "states"
+        },
+        {
+          "id": "job-backpressure",
+          "sectionId": "protect"
+        }
+      ],
+      "walkthroughId": "burst-and-drain",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Made lifecycle states and their limits comparable in a concrete evidence table.",
+        "Turned capacity arithmetic into labeled quantities and explicit FIFO assumptions.",
+        "Refined the admission diagram and authored a separate burst/drain state walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 1570
+    },
+    {
+      "id": "first-design-url-shortener",
+      "path": "content/guides/first-design-url-shortener.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "90695ad7906aea98b58b403e16e9d7bd254673cdaa0814914b84edf1392a88bf",
+      "sha256": "3f1df9ff1ffeb454a3020b25ea4abb929afecba7d39d78c7a06a44ce16169df2",
+      "protectedContentSha256": "bf9c8ba1ee724131ad750dc49c3657145df06d2851e7bbea574f0f170bdb17b6",
+      "sectionsRewritten": [
+        "data",
+        "paths"
+      ],
+      "diagrams": [
+        {
+          "id": "redirect",
+          "sectionId": "data"
+        },
+        {
+          "id": "create-intent",
+          "sectionId": "paths"
+        }
+      ],
+      "walkthroughId": "redirect-two-requests",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Reworked APIs and stored data into a compact request table and record example.",
+        "Separated code collisions from repeated creation attempts with a decision comparison.",
+        "Added lost-reply diagram and a distinct browser redirect walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 874
+    },
+    {
+      "id": "copying-data",
+      "path": "content/guides/copying-data.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "b5aaaf822b21dc4faede47e2ddb675d43e72d44e602bceb2dd7710bf3c85c9e4",
+      "sha256": "a51a2d8ae6157ae40476b9554f73f74663eec4e35865e10bc711a07c7e8d1a00",
+      "protectedContentSha256": "888bc08d5c0d8096f95a49ee500ead140f6c57b5a56529a8b7584a7729da3436",
+      "sectionsRewritten": [
+        "trace",
+        "numbers"
+      ],
+      "diagrams": [
+        {
+          "id": "replicate",
+          "sectionId": "trace"
+        },
+        {
+          "id": "version-aware-read",
+          "sectionId": "user"
+        }
+      ],
+      "walkthroughId": "delayed-copy",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Converted replication milestones into a concrete value table.",
+        "Separated moved reads from copied writes in the capacity example.",
+        "Added a follow-up read decision diagram and a version-position walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 806
+    },
+    {
+      "id": "split-data-into-shards",
+      "path": "content/guides/split-data-into-shards.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "561d18549458f757ba228cccbf73675edd491059f9fc88d890c83376063b9b79",
+      "sha256": "cbea2834d7a0a53784387b69d8696c9bcc329f04e529e4291c079444edb99c9a",
+      "protectedContentSha256": "85de5ae65f3ed96b8fc34a0b2691dca49d37f2203cb1965751995bedd898f130",
+      "sectionsRewritten": [
+        "key",
+        "route"
+      ],
+      "diagrams": [
+        {
+          "id": "shards",
+          "sectionId": "key"
+        },
+        {
+          "id": "shards-and-copies",
+          "sectionId": "problem"
+        }
+      ],
+      "walkthroughId": "move-owner",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added a shard-key decision table tied to actual queries and hot keys.",
+        "Made modulo-remapping consequences visible with three computed examples.",
+        "Added a shard-versus-replica diagram and a catch-up/ownership walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 802
+    },
+    {
+      "id": "consistency-in-plain-language",
+      "path": "content/guides/consistency-in-plain-language.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "cdb112740c50bc640f34c4d64ccc9faad825ef2848f8b549c2b819f25b7bb560",
+      "sha256": "60294e67467aa398d9bc8df14f574b3ef1cc0268a4d3f36368e05367d814d238",
+      "protectedContentSha256": "fd8535d810467b00d6410eb55406d7d4f146146465a81db24e4919201ee75ff7",
+      "sectionsRewritten": [
+        "session",
+        "worked"
+      ],
+      "diagrams": [
+        {
+          "id": "histories",
+          "sectionId": "worked"
+        },
+        {
+          "id": "causal-message",
+          "sectionId": "session"
+        }
+      ],
+      "walkthroughId": "overlap-register",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Converted session guarantees into concrete prevented histories and limitations.",
+        "Reworked the three-history comparison around call/response timing.",
+        "Added a causal dependency diagram and an independent register walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 845
+    },
+    {
+      "id": "partitions-and-quorums",
+      "path": "content/guides/partitions-and-quorums.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "e66931858c67c9aaef8744c5cdfc543339ad03cc502ede659903b2d50d8ef29e",
+      "sha256": "5abaa92b093f65f97ade1354b5f4dd13d040cd2d80084a500ab682a682150b12",
+      "protectedContentSha256": "fafa682528e95c2e1f5ea8291241d7f83d15ae440d9a848e59ecdf63431d4e36",
+      "sectionsRewritten": [
+        "choice",
+        "quorum"
+      ],
+      "diagrams": [
+        {
+          "id": "overlap",
+          "sectionId": "quorum"
+        },
+        {
+          "id": "partition-choice",
+          "sectionId": "business"
+        }
+      ],
+      "walkthroughId": "quorum-evidence",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Replaced CAP slogans with a response/consequence comparison.",
+        "Added an explicit three-pair overlap table and retained all protocol caveats.",
+        "Added operation-specific partition behavior diagram and a versioned quorum evidence walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 812
+    },
+    {
+      "id": "reliable-events",
+      "path": "content/guides/reliable-events.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "42e1d47e19a940fb85a45505da4e58a11d4fa8ecf35a5e6a6b7456e004ee5be2",
+      "sha256": "f38cb3eea709a1f172ee3b7deefba290ade73247808d432516d4de492177f105",
+      "protectedContentSha256": "33b50086240cedfd5223e4257421b18932c263e9ab4be33dbd6a68cf73be844e",
+      "sectionsRewritten": [
+        "gap",
+        "outbox"
+      ],
+      "diagrams": [
+        {
+          "id": "outbox-flow",
+          "sectionId": "outbox"
+        },
+        {
+          "id": "outbox-duplicate",
+          "sectionId": "duplicates"
+        }
+      ],
+      "walkthroughId": "outbox-obligation",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Replaced dual-write narration with an order/failure/outcome comparison.",
+        "Added an illustrative transaction record and participant responsibility table.",
+        "Added relay-repeat diagram and durable-obligation walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 790
+    },
+    {
+      "id": "streaming-and-replay",
+      "path": "content/guides/streaming-and-replay.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "44f35c6cddac494126874b8f91aa1b5c43b4c7c9d3be9a8064b149e84747cd29",
+      "sha256": "babbb644998fac1c8061862e7285f8a4fbeb162a07c05d187f5ff0a266f3e232",
+      "protectedContentSha256": "8afc1a3908275b11b085963223b52d745e688c418d5c8908faeb009b2391c08c",
+      "sectionsRewritten": [
+        "offset",
+        "replay"
+      ],
+      "diagrams": [
+        {
+          "id": "readers",
+          "sectionId": "offset"
+        },
+        {
+          "id": "log-rebuild",
+          "sectionId": "replay"
+        }
+      ],
+      "walkthroughId": "offset-after-effect",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Made next-offset convention and independent reader progress visible in a table.",
+        "Added a replay-destination comparison and an annotated crash boundary.",
+        "Added rebuild-switch diagram and a protected offset/effect walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 851
+    },
+    {
+      "id": "identity-and-permissions",
+      "path": "content/guides/identity-and-permissions.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "a5ae0c93f0dc2dc8115eb1c7cd69621f8eb7b394e91dfe5249cd59804566e42b",
+      "sha256": "d5440c0e77ae47c129daec87aee32ecd5a0de3f1d246102e88037a13985bec76",
+      "protectedContentSha256": "36ff05125874d68aa8ec76e1704da2fa58a578fd866009d31eb8a54a0b27065d",
+      "sectionsRewritten": [
+        "check",
+        "tenant"
+      ],
+      "diagrams": [
+        {
+          "id": "private-read",
+          "sectionId": "check"
+        },
+        {
+          "id": "tenant-boundary",
+          "sectionId": "tenant"
+        }
+      ],
+      "walkthroughId": "same-number-two-tenants",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added an actor/action/object decision table.",
+        "Reworked tenant key collisions into concrete records and boundary responsibilities.",
+        "Added a verified-scope diagram and a two-tenant walkthrough without using real private data."
+      ],
+      "gaps": [],
+      "bodyWords": 833
+    },
+    {
+      "id": "rate-limits-and-abuse",
+      "path": "content/guides/rate-limits-and-abuse.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "cf7a6c6275b5ffa15881f81cd4e4ec662e9e24a34104c84aa6235a5c5003951e",
+      "sha256": "1a025a93a8cf6167bb2eee353c54209d3366b8eb6ec9651a56005cd512db850b",
+      "protectedContentSha256": "1aef6d135a5fd1754a4fc5495a463a9795bef706eefa4a112efe1a4948d914e1",
+      "sectionsRewritten": [
+        "bucket",
+        "distributed"
+      ],
+      "diagrams": [
+        {
+          "id": "bucket-flow",
+          "sectionId": "bucket"
+        },
+        {
+          "id": "rate-and-concurrency",
+          "sectionId": "distributed"
+        }
+      ],
+      "walkthroughId": "small-bucket",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Turned token arithmetic into an inspectable event table.",
+        "Added a local/shared enforcement comparison and explicit rate-versus-concurrency distinction.",
+        "Added a two-budget diagram and a separate small-bucket walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 848
+    },
+    {
+      "id": "reliable-systems",
+      "path": "content/guides/reliable-systems.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "3a1e12ab3f5be7286a7b11def4262c30e3945728a46734375b57a972eed11cbc",
+      "sha256": "de9069f6521ac9ba3ddbb836f68424b05854a6ae2d3e46ab37e7b78b0c18d81c",
+      "protectedContentSha256": "983928d3cfd292ce871aa39580a8b880709dde8775b302a3ed608396fabe94af",
+      "sectionsRewritten": [
+        "domains",
+        "degrade"
+      ],
+      "diagrams": [
+        {
+          "id": "degraded-save",
+          "sectionId": "degrade"
+        },
+        {
+          "id": "survivor-budget",
+          "sectionId": "capacity"
+        }
+      ],
+      "walkthroughId": "survive-one-instance",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Replaced generic redundancy prose with failure-domain comparisons.",
+        "Made optional-work separation visible in before/after flows and fallback outcomes.",
+        "Added survivor admission diagram and a fully calculated capacity walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 902
+    },
+    {
+      "id": "reliability-controls",
+      "path": "content/guides/reliability-controls.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "4ee10507b2d2d01f3ad2b6c791719f0bd3e66857af837b6e7cadfa3ff479af0d",
+      "sha256": "1e32c49ce2dc41fbf468df6b64a834e1cd3f10a2f5ad3e1e354e834c5074e891",
+      "protectedContentSha256": "1d2ad273261d6a7ef96ea9f37841ea27048cca267c5f42dbc0944a405176a03f",
+      "sectionsRewritten": [
+        "budget",
+        "time"
+      ],
+      "diagrams": [
+        {
+          "id": "deadline",
+          "sectionId": "time"
+        },
+        {
+          "id": "breaker-states",
+          "sectionId": "breaker"
+        }
+      ],
+      "walkthroughId": "one-allowance",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Reworked error-budget and request-deadline arithmetic into inspectable tables.",
+        "Added a concise one-deadline annotated flow and operational interview phrasing.",
+        "Refined the deadline diagram and authored a separate allowance-spending walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 1541
+    },
+    {
+      "id": "observe-and-debug",
+      "path": "content/guides/observe-and-debug.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "eb4ff172330ad16c5f41bc48c04c623fbeddde9ca62601b301a6442c4c93a9fa",
+      "sha256": "795584f30988980643bbfb9f670d7ac3997dbe31746bf8ce7d1eab00230f8b66",
+      "protectedContentSha256": "f15fb8a98b20618f55579de5bdb591885080d2628825f720a467b152787ce230",
+      "sectionsRewritten": [
+        "signals",
+        "timeline"
+      ],
+      "diagrams": [
+        {
+          "id": "save-trace",
+          "sectionId": "timeline"
+        },
+        {
+          "id": "debug-hypothesis",
+          "sectionId": "hypothesis"
+        }
+      ],
+      "walkthroughId": "trace-a-wait",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added metric/log/trace purpose and limitation comparisons.",
+        "Turned the latency breakdown into a timed table with explicit overlap assumptions.",
+        "Added a hypothesis-testing diagram and a fictional before/after state walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 927
+    },
+    {
+      "id": "kubernetes-building-blocks",
+      "path": "content/guides/kubernetes-building-blocks.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "cdd64f8edb51465e1744469f4c926058d008a36f6b7a9c5c57001e83944160f1",
+      "sha256": "aedc268cb57348ff387ceae48a0a95924cc47ad8e971d0dce25f0a9ad86e32f6",
+      "protectedContentSha256": "21bd1ef6b25f5b5234b34b5b577b3cad992b6ce3a076f065f2a8d3087a4cbb9f",
+      "sectionsRewritten": [
+        "deployment",
+        "declarative"
+      ],
+      "diagrams": [
+        {
+          "id": "control",
+          "sectionId": "declarative"
+        },
+        {
+          "id": "traffic",
+          "sectionId": "service"
+        }
+      ],
+      "walkthroughId": "desired-observed",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Separated workload-object responsibilities from the traffic path in a comparison table.",
+        "Made desired/existing/ready counts explicit rather than equating replicas with capacity.",
+        "Refined the control-plane diagram and authored a pending replacement walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 1659
+    },
+    {
+      "id": "ship-and-recover",
+      "path": "content/guides/ship-and-recover.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "36bf47e252899bf4cf25fa161290328ccd293230ad7fd8395be4ef10249c91e2",
+      "sha256": "81a9caed13cd424d0e8d90b493756911c5d52e6625785bed0a30ba1dbab99f3b",
+      "protectedContentSha256": "2cacada412e53f759b80a0963169e5b39bc043dc16ccc71790afa716621b72e0",
+      "sectionsRewritten": [
+        "compatibility",
+        "restore"
+      ],
+      "diagrams": [
+        {
+          "id": "compatible-change",
+          "sectionId": "compatibility"
+        },
+        {
+          "id": "restore-isolated",
+          "sectionId": "restore"
+        }
+      ],
+      "walkthroughId": "expand-before-contract",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Replaced migration narration with reader/writer stages and a concrete value mapping.",
+        "Added a restore-evidence checklist table.",
+        "Added isolated-restore diagram and a mixed-version data walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 947
+    },
+    {
+      "id": "kubernetes-networking",
+      "path": "content/guides/kubernetes-networking.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "eeee216cd709cdb44a6da58beae8fb5efbb94f33015ee4b3a64b2723b58563ab",
+      "sha256": "265671dc18bd24aa8fae38bd2f2b41484849de8dd1da0396c078cd8e15267f30",
+      "protectedContentSha256": "fe14012218b1bc0300cef100f5501aeac333e46059623c56e24c146f252d18a5",
+      "sectionsRewritten": [
+        "service",
+        "policy"
+      ],
+      "diagrams": [
+        {
+          "id": "kubernetes-internal",
+          "sectionId": "service"
+        },
+        {
+          "id": "kubernetes-external",
+          "sectionId": "outside"
+        }
+      ],
+      "walkthroughId": "service-listener-mismatch",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added a Service-field map and annotated client/backend port flow.",
+        "Turned NetworkPolicy semantics into a precise comparison table while preserving additive/default behavior.",
+        "Refined the internal routing diagram and authored a distinct listener-mismatch walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 1374
+    },
+    {
+      "id": "regions-and-disaster-recovery",
+      "path": "content/guides/regions-and-disaster-recovery.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "ace5739208d17765d056953f7088cb67e7c173e5cec2d3052c1f584950021882",
+      "sha256": "659d90b5d7abd72020b694de5757881d806938d2a041fc2a04550f0c096d56aa",
+      "protectedContentSha256": "dad4feb516c5ebfc0e4b3e6520182235892fe9904a7dcf5f388d6cf5169f57b9",
+      "sectionsRewritten": [
+        "timeline",
+        "options"
+      ],
+      "diagrams": [
+        {
+          "id": "region-promotion",
+          "sectionId": "promotion"
+        },
+        {
+          "id": "recovery-journey",
+          "sectionId": "timeline"
+        }
+      ],
+      "walkthroughId": "regional-drill",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added RTO/RPO clock arithmetic and a full recovery-stage breakdown.",
+        "Compared preparation options by what is ready and what remains to do.",
+        "Added an end-to-end recovery diagram and a distinct timed drill walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 924
+    },
+    {
+      "id": "kubernetes-operations",
+      "path": "content/guides/kubernetes-operations.json",
+      "originalVersion": 1,
+      "version": 2,
+      "originalSha256": "da32c9ba8bf2e2f0e38a320b30d30c2949c8a21703ead332580104d4feabcf77",
+      "sha256": "5e4daf99b93c1e04e69e5d6b9b6b69e27c7336a72ce68d3b04efc6cf94708fcb",
+      "protectedContentSha256": "c1705dd20870529a5c943567a153adae1b348cc380cbcb15ac1ab923b8cbaa77",
+      "sectionsRewritten": [
+        "resources",
+        "probes",
+        "scaling"
+      ],
+      "diagrams": [
+        {
+          "id": "probe-actions",
+          "sectionId": "probes"
+        },
+        {
+          "id": "hpa-loop",
+          "sectionId": "scaling"
+        }
+      ],
+      "walkthroughId": "pod-health-lifecycle",
+      "walkthroughSteps": 4,
+      "changes": [
+        "Added concrete resource quantities and their enforcement limitations.",
+        "Converted startup/readiness/liveness into an action comparison while preserving startup failure semantics.",
+        "Made HPA arithmetic/stages visible, refined its diagram, and authored a changing health-state walkthrough."
+      ],
+      "gaps": [],
+      "bodyWords": 1408
+    }
+  ],
+  "limitations": [
+    "Examples are original teaching models, not production measurements.",
+    "Previously reviewed primary references are reused; no new product guarantee is inferred from an illustrative diagram.",
+    "Structural and arithmetic checks are separate from independent editorial and rendered UI review."
+  ],
+  "generatedAt": "2026-09-29T13:56:50.522Z",
+  "localChecks": {
+    "checkedAt": "2026-09-29T13:57:38.151Z",
+    "command": "node scripts/refine-systems-check.mjs",
+    "reviewedGuides": 24,
+    "exactCurrentHashes": 24,
+    "protectedQuizExerciseFlashcardHashes": 24,
+    "walkthroughs": 24,
+    "diagramAnchors": 48,
+    "result": "passed",
+    "limits": "This verifies structure, anchoring, immutable assessment material, and current hashes. It does not replace the separate editorial review or root-owned Mermaid/UI rendering."
+  }
+}

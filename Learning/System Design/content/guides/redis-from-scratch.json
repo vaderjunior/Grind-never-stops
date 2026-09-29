@@ -1,0 +1,371 @@
+{
+  "id": "redis-from-scratch",
+  "title": "Redis from scratch: keys, data types, expiry, and durability",
+  "version": 2,
+  "week": 6,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Meet Redis as a running data-structure server, read its basic commands, and distinguish a disposable cache from data whose loss changes the product.",
+  "objectives": [
+    "Trace a command from application to Redis and back.",
+    "Choose strings, hashes, lists, sets, and sorted sets from concrete operations.",
+    "Explain key expiration and memory eviction.",
+    "Distinguish cache correctness from persistence and atomic command behavior."
+  ],
+  "terms": [
+    {
+      "term": "Redis",
+      "definition": "A data-structure server that applications access using commands."
+    },
+    {
+      "term": "Client library",
+      "definition": "Application code that manages communication with another service and exposes convenient operations."
+    },
+    {
+      "term": "TTL",
+      "definition": "Time to live: an expiration duration associated with stored data."
+    },
+    {
+      "term": "Eviction",
+      "definition": "Removal of data under a memory-management policy."
+    },
+    {
+      "term": "Persistence",
+      "definition": "Saving data outside temporary process memory so it can be recovered under a configured policy."
+    },
+    {
+      "term": "Atomic command",
+      "definition": "A command whose operation is indivisible with respect to competing operations under the server’s execution rules."
+    }
+  ],
+  "retrieval": [
+    "What is the difference between a cached copy and the saved record it represents?",
+    "Why should a cache key distinguish data that different users are allowed to see?"
+  ],
+  "sections": [
+    {
+      "id": "server",
+      "title": "Redis is a program your application talks to",
+      "markdown": "Pocket Notes already keeps accepted notes in a database. Imagine its public home page repeatedly asks for the same small summary. We can keep a copy in Redis and avoid doing the same database work for every visit. First understand what Redis is: a server process that receives commands, manages data, and sends replies.\n\nThe notes application uses a Redis client library to connect and issue those commands. Redis is not a keyword added to a SQL query, and installing a library does not by itself start a Redis server. In a local setup both programs can run on one machine; in a larger service they may be separate network participants.\n\nThink of a staffed desk holding labeled working cards. You ask the desk for a card or request a change. The analogy stops at guarantees: Redis has specific data types, concurrency, memory, and persistence behavior. A desk metaphor cannot prove that a saved value survives a crash."
+    },
+    {
+      "id": "commands",
+      "title": "Read a small command conversation",
+      "markdown": "These commands illustrate the Redis command interface. They are examples to trace, not evidence that a Redis instance has been installed or tested on your machine.\n\n~~~text\nSET demo:note:41 \"Garden\"\nGET demo:note:41\nDEL demo:note:41\nGET demo:note:41\n~~~\n\nRead the commands as a conversation:\n\n| Command | Effect or reply in this successful sequence |\n| --- | --- |\n| SET demo:note:41 \"Garden\" | Store the string Garden under that key |\n| GET demo:note:41 | Return Garden |\n| DEL demo:note:41 | Remove the existing key |\n| GET demo:note:41 | Report no value, commonly shown as nil |\n\nMissing is different from an existing empty string, an error, or a timeout. Keep those outcomes separate in the application.\n\nThe colons are a naming convention, not automatic nested folders. A name such as demo:note:41 makes the scope understandable. In a shared application, include every identity needed to avoid mixing different accounts or representations. Keep command names separate from untrusted values through the client library’s argument interface."
+    },
+    {
+      "id": "types",
+      "title": "Choose the structure from the operation",
+      "markdown": "A string holds a sequence of bytes; it can contain text, encoded JSON, or a supported integer representation. A hash stores named fields under one key. A list keeps values in sequence. A set keeps unique members without promising application-visible ordering. A sorted set associates unique members with numeric scores for ordered retrieval.\n\n| Need | Candidate structure | Example operation |\n| --- | --- | --- |\n| One prepared public summary | String | GET the known key |\n| A small group of deployment fields | Hash | HGET a named field |\n| Ordered recent values | List | Read a bounded slice |\n| Unique labels attached to a note | Set | Add or test membership |\n| Ranked items with scores | Sorted set | Retrieve a score range |\n\nRedis also has other structures, including streams, but the first five already illustrate the principle. Choose by required operations and measured size. Storing a huge JSON string and replacing it for every tiny change has different costs from changing one hash field."
+    },
+    {
+      "id": "hash",
+      "title": "Worked example: update a field and a counter",
+      "markdown": "Consider these illustrative commands:\n\n~~~text\nHSET demo:deployment:301 status ready region eu\nHGET demo:deployment:301 status\nSET demo:views 0\nINCR demo:views\n~~~\n\nHSET records two fields in one hash. HGET returns ready for the status field. INCR adds one to the integer value, so the counter becomes 1. Redis checks types: using an unsuitable command on a key with an incompatible type produces an error rather than treating every representation as interchangeable.\n\nWhy use INCR rather than GET, add in application code, then SET? Two callers can both read 0 and each write 1, losing one increment. A supported atomic increment avoids that split operation. But sending the same increment twice still increments twice. Atomic does not mean duplicate-safe: a retried view event needs its own product policy if duplicate counting matters."
+    },
+    {
+      "id": "expiry",
+      "title": "Expiration removes a key; it does not refresh it",
+      "markdown": "SET demo:summary \"Garden\" EX 60 stores a string with a sixty-second expiration. TTL demo:summary asks about remaining lifetime in seconds:\n\n| Example TTL result | Meaning |\n| --- | --- |\n| 35 | About 35 seconds of remaining lifetime |\n| -1 | Key exists without an expiration |\n| -2 | Key does not exist |\n\nThe negative values are special results, not an ordinary negative countdown. Redis does not regenerate a value when its lifetime ends.\n\nAfter the expiry time, the key is no longer usable as a live cached answer. The next cache miss may trigger a fresh database read. Redis does not know how to regenerate this summary simply because EX was supplied. That work belongs to the application.\n\nAlso, sixty seconds since cache insertion is not necessarily sixty seconds since the source changed. A slow fill could insert an already-old value. Replacing a key with plain SET normally discards its earlier TTL unless an appropriate option preserves it. Always review expiration when changing write commands; accidentally immortal cache entries are a common source of stale results."
+    },
+    {
+      "id": "cache",
+      "title": "Follow a miss, a fill, and a later hit",
+      "markdown": "Use cache-aside for the public summary. First the application checks Redis. If the key exists and its representation is valid for this request, return it. If the key is absent, read the saved database records, compute the summary, store it with a chosen expiration, and return it. A later request can reuse that stored result.\n\nThe database remains the source of truth here: the place whose accepted state decides the real saved notes. Losing the cache should lose a shortcut, not the only copy of a note. Cache failure can fall back to the database within a bounded load policy; sending an unlimited burst to storage may overload it.\n\nAn edit changes the saved note first under its normal rules. Then the application can remove or refresh affected cached representations. There is still a race if an older in-flight read fills the cache afterward. Later freshness lessons examine versions and coordination; Redis’s presence alone does not solve that ordering problem."
+    },
+    {
+      "id": "memory",
+      "title": "A fast working copy still has limits",
+      "markdown": "Redis commonly keeps its working dataset in memory, avoiding disk access for many ordinary operations. This is a reason to investigate it for low-latency work, not a guarantee that every command is cheap. Large values, large scans, network delay, and busy processing all affect response time.\n\nMemory has a budget. An eviction policy may remove eligible keys when the configured limit is reached; a no-eviction policy can instead reject writes that need more memory. Eviction differs from expiry: expiry follows a key’s time condition, while eviction responds to capacity policy. Applications using Redis as a cache must expect misses from either cause.\n\nDecide which keys are replaceable. Mixing disposable summaries and irreplaceable work records under an unsuitable eviction policy can lose important state. Bounded result sizes and explicit memory observations matter more than assuming that an in-memory product has infinite capacity."
+    },
+    {
+      "id": "persistence",
+      "title": "A cache and a primary store need different recovery promises",
+      "markdown": "Redis supports persistence mechanisms such as snapshots, which periodically record dataset state, and an append-only file, which records changes for recovery. The exact policy determines which acknowledged changes might be absent after a failure and how long restoration takes. Turning on persistence is not a universal zero-loss promise.\n\nIf Redis only caches public summaries, rebuilding them may be acceptable. If it is the only store for user sessions or job state, a loss changes user or workflow behavior. A session loss might require signing in again; lost payment or job state may be far less acceptable. State the loss tolerance for the actual data.\n\nReplicas and backups address different failure stories. Another live copy can help with some failures, while retained recoverable history may help after an accidental change. Configure, monitor, and test the required recovery path. Do not infer safe failover or complete backup coverage from the name Redis."
+    },
+    {
+      "id": "correctness",
+      "title": "Atomic operations do not cover an entire application",
+      "markdown": "A single supported command can protect its own operation, but a sequence of separate application commands can have gaps. Redis transactions group queued commands for execution without another client’s commands interleaving. They do not provide SQL-style rollback of every successful command when a later command encounters a runtime error.\n\nNor does a Redis operation atomically commit an unrelated SQL update or external API call. If the database accepts a note but cache invalidation fails, the design needs a freshness or recovery policy. If a response disappears after INCR succeeds, retrying may increment again. Separate the question “could another operation interleave?” from “could this whole request run twice?”\n\nFor this chapter, keep the correctness rule small: cache entries are derived, scoped, and replaceable; important saved records remain in the database. Learn a more complex Redis role only when its guarantees are understood and needed.\n\n> **Interview phrasing:** “I am using Redis for a derived public summary, so losing that entry can cause a miss rather than losing an accepted note. I still need bounded fallback load, correct key scope, and an explicit freshness policy.”"
+    },
+    {
+      "id": "ai",
+      "title": "Worked example: caching an AI deployment configuration",
+      "markdown": "An AI gateway repeatedly reads deployment 301’s ready configuration: model version 12, allowed limits, and region. Suppose this complete configuration is revision 4. A cached copy can avoid repeated registry reads. Use a key that includes the account and configuration revision, such as config:team8:deployment301:cfg4. The model version and configuration revision are different identities: changing a limit or region creates a new configuration revision even if the model stays at version 12. Check the caller’s access; knowing the key is not authorization.\n\nStep one: resolve the allowed deployment and current configuration version. Step two: check its cache key. Step three: on a miss, load the permitted registry data and cache that representation. Step four: when configuration changes, use the new version and retire old copies under policy. Versioned keys do not eliminate the need to learn which version is current.\n\nDo not casually cache all model answers under prompt text alone. Answers may depend on user permissions, model version, retrieved private documents, settings, and time. Similar text does not establish safe interchangeability. Start with a clearly reusable configuration record; define all inputs and privacy boundaries before considering generated-answer caching."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "client",
+      "title": "The application sends commands to a separate server role",
+      "source": "flowchart LR\nA[Notes application] --> L[Redis client library]\nL -->|GET or SET command| R[Redis server]\nR --> M[(Keyed data structures)]\nM --> R\nR -->|Value missing or error| L\nL --> A",
+      "caption": "The client library and Redis server are different roles even when they run on the same laptop.",
+      "steps": [
+        "Create a connection through the client library.",
+        "Send a command and separate arguments.",
+        "Let Redis apply its data-type rules.",
+        "Handle success, missing data, timeout, and error distinctly."
+      ],
+      "sectionId": "commands"
+    },
+    {
+      "id": "cache-path",
+      "title": "A missing cache entry leads back to saved data",
+      "source": "flowchart TB\nQ[Allowed summary request] --> C{Redis value available?}\nC -->|Yes| H[Return suitable cached summary]\nC -->|No| D[(Read saved database state)]\nD --> B[Build summary]\nB --> F[Store cache entry with expiry]\nF --> R[Return summary]",
+      "caption": "This example caches a derived public representation. An unavailable Redis server additionally needs a bounded fallback policy.",
+      "steps": [
+        "Attempt the known scoped key.",
+        "Treat missing cache data as a miss.",
+        "Rebuild from saved records.",
+        "Store an expiring reusable result and return it."
+      ],
+      "sectionId": "cache"
+    },
+    {
+      "id": "expiry-versus-eviction",
+      "sectionId": "memory",
+      "title": "The same miss can have different causes",
+      "source": "flowchart TB\nK[Cached key exists] --> T[Assigned lifetime ends]\nK --> M[Capacity policy selects eligible key]\nT --> E[Expiry removes live eligibility]\nM --> V[Eviction removes the entry]\nE --> N[Later lookup misses]\nV --> N\nN --> R[Application decides how to rebuild or fail]",
+      "caption": "A no-eviction policy may reject writes instead of removing keys. These cache-removal paths do not state that a durable source record was deleted.",
+      "steps": [
+        "Separate time-based expiry from capacity-driven eviction.",
+        "Expect either policy to affect whether a cached key is usable.",
+        "Handle a miss or a write error according to the store’s actual configuration."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Trace SET demo:views 0, then two INCR commands, then GET. Explain the expected final value, why replacing each increment with a separate GET/SET can lose an update, and why retrying an uncertain INCR can overcount. Then decide whether this counter may be lost in your product.",
+    "rubric": [
+      "Predicts final value 2 under the stated successful sequence.",
+      "Explains the two-read/lost-update race.",
+      "Separates atomicity, duplicate effects, and loss tolerance."
+    ],
+    "solution": "The counter ends at 2. Separate callers can both read 0 and write 1, whereas each atomic INCR updates the accepted value. If an increment succeeds but its response is lost, repeating it can count the same logical event twice. A decorative view count may tolerate approximation and rebuilding; billing or strict quotas require a stronger identity, persistence, and correctness design. The product requirement decides."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Redis client library and Redis server are the same thing:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "The library sends requests; a server process holds and operates on the data."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "What does a TTL automatically do for our summary?",
+      "options": [
+        "Recompute it from SQL",
+        "Expire the key according to its time condition",
+        "Prevent all stale reads"
+      ],
+      "answer": "Expire the key according to its time condition",
+      "explanation": "The application still decides how to refill the cache and handle races."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Two successful INCR commands on an initial zero produce:",
+      "options": [
+        "0",
+        "1",
+        "2"
+      ],
+      "answer": "2",
+      "explanation": "Each command adds one; repeating the logical request can therefore duplicate its effect."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is Redis with persistence not automatically a zero-loss store?",
+      "answer": "The configured snapshot/log flush and recovery behavior determine loss windows; failure modes and failover assumptions must be tested.",
+      "explanation": "State the actual durability contract rather than inferring it from a feature name."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What belongs in an AI cache-key decision besides prompt text?",
+      "answer": "The permitted user or account scope, relevant data/document versions, model and configuration versions, and other inputs that change the allowed answer.",
+      "explanation": "Some results may be unsuitable to share or cache at all."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Redis role?",
+      "back": "A server accepting commands over keyed data structures."
+    },
+    {
+      "front": "Expiry versus eviction?",
+      "back": "Time condition versus memory-capacity policy."
+    },
+    {
+      "front": "Atomic increment versus idempotency?",
+      "back": "One indivisible increment can still repeat when a request is retried."
+    },
+    {
+      "front": "Source of truth in our cache example?",
+      "back": "The saved database records; Redis holds replaceable derived copies."
+    },
+    {
+      "front": "Persistence question?",
+      "back": "Which accepted changes survive which failures under the actual configuration?"
+    }
+  ],
+  "mentalModel": "Know the key, the operation, and the role of the value. Then ask what expiration, repetition, and loss mean.",
+  "sources": [
+    {
+      "title": "Redis: data types",
+      "url": "https://redis.io/docs/latest/develop/data-types/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: SET",
+      "url": "https://redis.io/docs/latest/commands/set/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: GET",
+      "url": "https://redis.io/docs/latest/commands/get/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: TTL",
+      "url": "https://redis.io/docs/latest/commands/ttl/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: INCR",
+      "url": "https://redis.io/docs/latest/commands/incr/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: HSET",
+      "url": "https://redis.io/docs/latest/commands/hset/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: eviction",
+      "url": "https://redis.io/docs/latest/develop/reference/eviction/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: persistence",
+      "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis: transactions",
+      "url": "https://redis.io/docs/latest/develop/using-commands/transactions/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "set-changes-expiry",
+      "sectionId": "expiry",
+      "title": "Changing a value can change its expiration too",
+      "intro": "This paper command trace uses idealized elapsed times. Real TTL display depends on when the command is observed; no live Redis execution is claimed.",
+      "steps": [
+        {
+          "title": "Store an expiring summary",
+          "explanation": "The initial SET supplies both a value and an explicit expiration.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 seconds"
+            },
+            {
+              "label": "Command",
+              "value": "SET demo:summary Garden EX 60"
+            },
+            {
+              "label": "TTL",
+              "value": "About 60 seconds"
+            }
+          ]
+        },
+        {
+          "title": "Read its remaining lifetime",
+          "explanation": "After 25 seconds, the key can still be a live cached value in this simple trace.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "25 seconds"
+            },
+            {
+              "label": "Command",
+              "value": "TTL demo:summary"
+            },
+            {
+              "label": "Reply",
+              "value": "About 35 seconds"
+            }
+          ]
+        },
+        {
+          "title": "Replace it without expiry",
+          "explanation": "Plain SET normally discards the previous expiration. A correct new value can accidentally become an unbounded-lived cache entry.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "25 seconds"
+            },
+            {
+              "label": "Command",
+              "value": "SET demo:summary SpringGarden"
+            },
+            {
+              "label": "TTL reply",
+              "value": "-1 — no expiration"
+            }
+          ]
+        },
+        {
+          "title": "Write the intended policy explicitly",
+          "explanation": "If the desired rule is 60 seconds from this replacement, include EX 60 in that write. This begins a new lifetime.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "25 seconds"
+            },
+            {
+              "label": "Command",
+              "value": "SET demo:summary SpringGarden EX 60"
+            },
+            {
+              "label": "Expected expiry",
+              "value": "Around time 85 seconds"
+            }
+          ]
+        },
+        {
+          "title": "After that lifetime",
+          "explanation": "Once expired, the key is absent. The application must fetch or rebuild the summary if needed.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "After 85 seconds"
+            },
+            {
+              "label": "TTL reply",
+              "value": "-2 — key absent"
+            },
+            {
+              "label": "Next work",
+              "value": "Application miss handling"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Review the lifetime every time you change the write command. Expiration removes a value; it does not refresh the source or rebuild the result."
+    }
+  ]
+}

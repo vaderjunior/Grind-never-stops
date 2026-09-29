@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "104",
+  "objectives": [
+    "Trace prepare and decision phases of two-phase commit.",
+    "Distinguish atomic commitment from isolation and availability.",
+    "Explain in-doubt recovery without inventing a safe timeout abort."
+  ],
+  "retrieval": [
+    "L034: what does atomic commit promise?",
+    "L084: what durable decision can a surviving coordinator recover?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Two authorities must make one decision",
+      "markdown": "Suppose two transactional databases jointly move an asset from one organization to another, and the contract forbids either side being permanently committed alone. Independent local commits leave a failure window. A compensating business workflow might be acceptable, but if partial visibility and compensation violate the requirement, examine whether the data can be colocated first. Cross-resource atomic commitment is a real cost, not a default feature of RPC.\n\nTwo-phase commit coordinates participating transactional resource managers. It is not two normal HTTP calls followed by a best-effort undo. A participant must be capable of durable preparation and later recovery of the transaction's decision."
+    },
+    {
+      "id": "mechanism",
+      "title": "A promise to commit creates an obligation to wait",
+      "markdown": "In phase one the coordinator asks participants to prepare. Each participant checks whether its local transaction can commit, durably records prepared state, retains required resources, and votes yes or no. A yes vote is a promise: after a later crash it must still be able to obey the final decision.\n\nIf every required participant votes yes, the coordinator durably records commit before distributing that decision. Otherwise it chooses abort according to the protocol. Participants apply the decision, record enough recovery state, release resources, and acknowledge. Lost decision messages are retried; the coordinator and participants need logs and stable transaction identities.\n\nA participant that voted yes and then loses contact is in doubt. A local timeout does not reveal whether the coordinator durably chose commit and another participant already committed. Unilaterally aborting can violate atomicity. Classic two-phase commit can therefore block while the authoritative decision is unavailable. Replicating the coordinator improves its fault tolerance but adds a consensus-based dependency rather than deleting the uncertainty problem."
+    },
+    {
+      "id": "trace",
+      "title": "Crash after the decision reaches only one participant",
+      "markdown": "Trace transaction T8. Databases A and B both prepare yes. The coordinator writes COMMIT(T8) durably. A receives commit and makes its change visible. The coordinator crashes before B receives the message. B retains prepared state and waits. Recovery reads the coordinator's durable decision and retries COMMIT to B. If B instead aborts because30seconds elapsed, the asset can exist in neither or both organizations depending on the update semantics.\n\nContrast a failure before any participant prepares: those local transactions may be aborted under the protocol without a hidden committed global decision. Recovery actions depend on the recorded phase and evidence, not merely elapsed time. A runbook must distinguish prepared, committed, aborted, and unknown identities.\n\nFor an illustrative latency floor, if prepare consumes one network round trip plus durable local logging and decision delivery consumes another, this coordination adds at least those sequential dependencies to the critical path. Parallel prepares can overlap across participants, but the slowest required participant still delays the decision. This is a conceptual latency model, not a benchmark of PostgreSQL or a specific coordinator."
+    },
+    {
+      "id": "limits",
+      "title": "Atomicity does not specify every read history",
+      "markdown": "Two-phase commit addresses agreement on commit/abort. Isolation depends on the databases' concurrency control and the larger transaction protocol. Saying “we use2PC” does not establish global serializability, strict serializability, or a safe cross-database read snapshot. State each guarantee separately and test representative interleavings.\n\nPostgreSQL18 exposes PREPARE TRANSACTION and later COMMIT PREPARED or ROLLBACK PREPARED for external transaction managers. Prepared transactions retain locks and require prompt resolution; leaving them unattended is an operational hazard. These are documented product features, not a runnable lab in this academy. Do not enable them on a personal database merely to imitate the diagram.\n\nChoose between colocation, a supported distributed transaction service, and a saga based on the business invariant, participant support, acceptable intermediate states, latency, and recovery ownership. A payment provider that offers only an HTTP API is not automatically an XA-style participant. Common mistakes are calling two requests2PC, promising nonblocking availability during arbitrary partitions, and treating compensation as a physical rollback. Optional depth: compare a consensus-replicated transaction coordinator with classic single-coordinator failure behavior."
+    },
+    {
+      "id": "schedule",
+      "title": "Core practice and optional depth",
+      "markdown": "Core 55 minutes: retrieval5, mechanism18, worked trace8, bounded exercise10, scheduled Q1–Q3 ten minutes, comparison/cards4. Q4–Q5 are optional extra practice. Product commands below are documented patterns unless explicitly labeled as executed local code. The academy itself needs no broker cluster."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "prepare",
+      "title": "A prepared participant waits for a durable decision",
+      "source": "sequenceDiagram\nparticipant C as Coordinator\nparticipant A as Database A\nparticipant B as Database B\nC->>A: Prepare T8\nC->>B: Prepare T8\nA-->>C: Yes, durable prepared state\nB-->>C: Yes, durable prepared state\nNote over C: Durably record COMMIT T8\nC->>A: Commit T8\nNote over C,B: Coordinator becomes unavailable\nNote over B: In doubt, retain prepared state\nC->>B: Recovered decision COMMIT T8",
+      "caption": "Conceptual two-phase commit. Recovery of the durable decision, rather than a participant timeout, resolves the uncertain outcome.",
+      "steps": [
+        "Prepare every required transactional participant.",
+        "Durably record the global decision.",
+        "Observe a lost decision message.",
+        "Recover and resend the same decision."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A and B prepared yes. A committed. B has waited60seconds without hearing from the coordinator. Explain why a runbook saying “abort after one minute” is unsafe. Propose the evidence and recovery responsibility required, then state one architecture that avoids this coordination.",
+    "rubric": [
+      "Show mixed-decision risk.",
+      "Recover a durable authoritative decision.",
+      "Offer a requirement-compatible simpler boundary."
+    ],
+    "solution": "A has already committed, so B aborting on elapsed time creates a split outcome. B needs the durable coordinator decision through a supported recovery path, retaining prepared state meanwhile; operators must identify the transaction and coordinate resolution rather than guess. Colocating both invariant-owning records in one database can use one local transaction if workload/ownership permit. A saga is an alternative only when visible intermediate states and explicit business compensation satisfy the requirement. Neither choice follows solely from a timeout."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does a yes prepare vote obligate a participant to do?",
+      "options": [
+        "Forget its locks immediately",
+        "Retain recoverable state to obey the final decision",
+        "Commit independently whenever convenient"
+      ],
+      "answer": "Retain recoverable state to obey the final decision",
+      "explanation": "Preparation is a durable promise whose resolution depends on the protocol decision."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A prepared participant times out. Can it always safely abort?",
+      "options": [
+        "Yes",
+        "No",
+        "Only if another participant committed"
+      ],
+      "answer": "No",
+      "explanation": "It may be missing a commit decision already applied elsewhere."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "2PC alone proves global serializability?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with two participants"
+      ],
+      "answer": "No",
+      "explanation": "Commit agreement and concurrency-control isolation are distinct guarantees."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is a saga preferable?",
+      "answer": "When the business permits intermediate states and meaningful compensations, participants do not support atomic prepare, and durable workflow recovery is acceptable.",
+      "explanation": "When the business permits intermediate states and meaningful compensations, participants do not support atomic prepare, and durable workflow recovery is acceptable."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What operational evidence belongs in a2PC runbook?",
+      "answer": "Stable transaction IDs, participant phases, durable coordinator decisions, prepared age/locks, supported recovery procedures, and ownership for in-doubt resolution.",
+      "explanation": "Stable transaction IDs, participant phases, durable coordinator decisions, prepared age/locks, supported recovery procedures, and ownership for in-doubt resolution."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "2PC phases?",
+      "back": "Prepare participants, then distribute a durable commit/abort decision."
+    },
+    {
+      "front": "In-doubt participant?",
+      "back": "Voted yes but does not know the final decision."
+    },
+    {
+      "front": "Timeout proves abort?",
+      "back": "No; a commit decision may exist elsewhere."
+    },
+    {
+      "front": "Atomicity versus isolation?",
+      "back": "One concerns all-or-none commitment; the other constrains concurrent histories."
+    },
+    {
+      "front": "Simplest alternative to cross-database atomicity?",
+      "back": "Colocate the invariant in one supported transaction boundary when feasible."
+    }
+  ],
+  "mentalModel": "A prepare vote trades freedom to decide locally for the promise of one global outcome.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18 — PREPARE TRANSACTION",
+      "url": "https://www.postgresql.org/docs/18/sql-prepare-transaction.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18 — Two-phase transactions",
+      "url": "https://www.postgresql.org/docs/18/two-phase.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

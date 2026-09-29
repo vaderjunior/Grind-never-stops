@@ -1,0 +1,118 @@
+{
+  "id": "099",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Persist enqueue/claim/complete state transitions.",
+    "Recover an expired lease with a fresh claim token.",
+    "Reject a paused old worker before committing a local effect."
+  ],
+  "retrieval": [
+    "L087: where does fencing need to be enforced?",
+    "L092–098: how do redelivery and uncertain outcomes affect job execution?"
+  ],
+  "sections": [
+    {
+      "id": "goal",
+      "title": "A bounded implementation milestone",
+      "markdown": "Scheduled60 minutes: brief/prediction10, implementation25, tests15, evidence10. Setup is separate. This milestone implements a durable job queue with a local result ledger. It is designed to expose the hardest small failure: worker A pauses beyond its lease, worker B claims the job, and A later attempts completion. A claim is not a permanent ownership right. Completion must verify current state, token and expiry within the same transaction that commits the local effect."
+    },
+    {
+      "id": "mechanism",
+      "title": "Mechanism and correctness boundary",
+      "markdown": "Use jobs(id,payload,state,attempts,available,lease_until,token,last_error) and effects(job_id,result). Enqueue is idempotent for one ID plus identical payload; a different payload under the same ID conflicts. Claim begins an immediate transaction, recovers expired running leases to an eligible state, selects one available job, increments attempts and mints a fresh token before commit.\n\nComplete begins a transaction, checks that the job is running with the supplied current unexpired token, inserts the unique local effect and marks done, then commits. This makes the local ledger and job state one atomic boundary. It does not make an external email, payment call or filesystem change atomic with SQLite. Name that limitation every time you explain the result; a distributed system is not exactly-once merely because one table has a unique key.\n\nThe acceptance history claims a ten-second lease at the fake current time, advances exactly ten seconds, and claims again. The token must change. Completion using the old token raises PermissionError and applies nothing; completion using the new token records one effect and done state. Real wall-clock sleeps are unnecessary for this deterministic boundary test."
+    },
+    {
+      "id": "run",
+      "title": "Use the prepared learner skeleton",
+      "markdown": "Read projects/P3.md and projects/README.md. Edit projects/learner/jobs.py; the TODOs identify this milestone. Run the focused acceptance test from the repository root:\n\n~~~powershell\n$env:ACADEMY_LAB_IMPLEMENTATION = 'learner'\npy -3 -m unittest discover -s projects/tests -p test_projects.py -k P3_1 -v\nRemove-Item Env:ACADEMY_LAB_IMPLEMENTATION\n~~~\n\nThe default test implementation is the completed reference; setting the variable selects your learner code. A learner TODO failure is intentional, not missing teaching. If your launcher is python or python3, substitute it for py -3. The baseline uses only the Python standard library and temporary test databases. No app endpoint executes your code.\n\nWorker A pauses beyond expiry while B reclaims. A resumes and attempts a stale commit. Checking only job ID would allow it; validate token, state and current lease within the commit transaction.\n\nStop when the focused test passes and you have recorded the stated evidence. Do not spend the hour constructing a new server framework or extending unrelated features."
+    },
+    {
+      "id": "evidence",
+      "title": "Record what the test actually shows",
+      "markdown": "Demonstrate stale-worker rejection, current-worker success, and one durable local effect.\n\nSave the exact command, expected result, actual result, fault injected and the final invariant in the Project workspace. Note any untested assumption. The reference implementation and test have been executed; your own implementation needs its own run evidence. Compare with the explicit reference only after attempting the bounded task.\n\nLocal workers share one SQLite database. The effect ledger proves only effects stored in the same transaction. An email or payment API outside this database is not exactly-once by this mechanism.\n\nOptional additional practice belongs in a separate session: Add an outbox and idempotent HTTP receiver to demonstrate cross-boundary effect handling."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "milestone-flow",
+      "title": "Claims, execution and recovery",
+      "source": "stateDiagram-v2\n[*] --> queued: enqueue unique job\nqueued --> running: claim and fresh token\nrunning --> queued: lease expires\nrunning --> done: current token plus atomic effect\nrunning --> running: reject stale completion\ndone --> [*]",
+      "caption": "Persist enqueue/claim/complete state transitions. Recover an expired lease with a fresh claim token. Reject a paused old worker before committing a local effect.",
+      "steps": [
+        "Implement enqueue, claim and complete. Freeze time, claim a job, advance beyond its lease, and claim again. The second worker receives a different token. Reject completion from the first worker even though it once legitimately owned the job.",
+        "Worker A pauses beyond expiry while B reclaims. A resumes and attempts a stale commit. Checking only job ID would allow it; validate token, state and current lease within the commit transaction.",
+        "Demonstrate stale-worker rejection, current-worker success, and one durable local effect."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Implement enqueue, claim and complete. Freeze time, claim a job, advance beyond its lease, and claim again. The second worker receives a different token. Reject completion from the first worker even though it once legitimately owned the job.",
+    "minutes": 25,
+    "rubric": [
+      "Only the current unexpired claim token may commit a result. The local effect ledger and done state commit atomically; external side effects need their own idempotency boundary.",
+      "Demonstrate stale-worker rejection, current-worker success, and one durable local effect.",
+      "Reports the implemented guarantee and its limits."
+    ],
+    "solution": "Persist the job before claiming. Perform expired-lease recovery and selection inside one write transaction so competing workers cannot both obtain the same current claim. Assign a fresh token to each successful claim and retain the deadline. On complete, atomically check state=running, matching token and lease_until > now; otherwise reject before any protected effect. Insert a result keyed by job ID and mark done within the same SQLite transaction. The test must preserve the new worker's result after an old token attempts completion. This establishes a local transactional effect boundary only: an external provider needs its own idempotency or coordination mechanism, addressed in later projects and lessons."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "open",
+      "prompt": "What invariant does your implementation enforce and at which authority?",
+      "answer": "Only the current unexpired claim token may commit a result. The local effect ledger and done state commit atomically; external side effects need their own idempotency boundary.",
+      "explanation": "Persist the job before claiming. Perform expired-lease recovery and selection inside one write transaction so competing workers cannot both obtain the same current claim. Assign a fresh token to each successful claim and retain the deadline. On complete, atomically check state=running, matching token and lease_until > now; otherwise reject before any protected effect. Insert a result keyed by job ID and mark done within the same SQLite transaction. The test must preserve the new worker's result after an old token attempts completion. This establishes a local transactional effect boundary only: an external provider needs its own idempotency or coordination mechanism, addressed in later projects and lessons."
+    },
+    {
+      "id": "q2",
+      "type": "open",
+      "prompt": "Describe the injected fault and the exact acceptance evidence.",
+      "answer": "Worker A pauses beyond expiry while B reclaims. A resumes and attempts a stale commit. Checking only job ID would allow it; validate token, state and current lease within the commit transaction. Demonstrate stale-worker rejection, current-worker success, and one durable local effect.",
+      "explanation": "Use the saved test trace to show the guarantee under the named fault; a final green count alone is insufficient."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "What production guarantee is outside this teaching implementation?",
+      "answer": "Local workers share one SQLite database. The effect ledger proves only effects stored in the same transaction. An email or payment API outside this database is not exactly-once by this mechanism.",
+      "explanation": "Local workers share one SQLite database. The effect ledger proves only effects stored in the same transaction. An email or payment API outside this database is not exactly-once by this mechanism."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Claim token lifespan?",
+      "back": "One particular ownership generation, bounded by its lease."
+    },
+    {
+      "front": "Expired lease recovery?",
+      "back": "A replacement claim receives a fresh token."
+    },
+    {
+      "front": "Completion check location?",
+      "back": "Inside the transaction that commits the protected local effect."
+    },
+    {
+      "front": "Duplicate enqueue identity?",
+      "back": "Stable job ID plus matching payload fingerprint/serialization."
+    },
+    {
+      "front": "Exactly-once scope here?",
+      "back": "Only the effect ledger and job state in the same SQLite transaction."
+    }
+  ],
+  "mentalModel": "Only the current unexpired claim token may commit a result. The local effect ledger and done state commit atomically; external side effects need their own idempotency boundary.",
+  "sources": [
+    {
+      "title": "Python sqlite3 documentation: transactions and backup",
+      "url": "https://docs.python.org/3/library/sqlite3.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Python hashlib documentation: SHA-256 and stable hashing",
+      "url": "https://docs.python.org/3/library/hashlib.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

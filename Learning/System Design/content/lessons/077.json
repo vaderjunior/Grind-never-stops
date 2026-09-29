@@ -1,0 +1,157 @@
+{
+  "id": "077",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Compute vector timestamps for local and receive events.",
+    "Classify vector pairs as equal, causally ordered, or concurrent.",
+    "Use retained version context to distinguish stale replacement from concurrent edits.",
+    "Explain the limits of actor identity and metadata pruning."
+  ],
+  "retrieval": [
+    "L076: why does a larger Lamport counter fail to prove causality?",
+    "L073: why must causal dependencies travel with a write?",
+    "L032: why does stable identity matter beyond a display name?"
+  ],
+  "sections": [
+    {
+      "id": "need",
+      "title": "One number can hide the difference we need",
+      "markdown": "Two technicians edit a repair plan while disconnected. Alice changes the battery procedure and Bob changes the safety note. A scalar counter may order their updates by an arbitrary tie-break, but the product wants to know whether one edit knowingly superseded the other or whether both must be reconciled. Retaining separate knowledge of each writer’s progress allows that distinction.\n\nUse 5 minutes retrieval, 20 vector calculations, 10 diagram walkthrough, 10 exercise, and 10 questions/cards. The examples use a fixed three-process model [A,B,C], reliable actor identity, counters that never reset within that identity, and propagation on every modeled message. These assumptions matter to the claimed causal interpretation."
+    },
+    {
+      "id": "rules",
+      "title": "Track known progress for each process",
+      "markdown": "Each process begins with [0,0,0]. Before a local event or send, increment its own component. A send includes the vector. For receipt, merge componentwise maxima with the received vector, then increment the receiver’s own component. For vectors u and v, u≤v means every component of u is no greater than the corresponding component of v. Strict u<v additionally requires at least one smaller component.\n\nIf neither u≤v nor v≤u, the vectors are incomparable: under this complete model they represent concurrent events. Concurrent here means neither is in the other’s recorded causal past, not that two CPU instructions occurred at exactly the same wall-clock instant. Equal vectors are the same logical context for comparison; do not label equality as strict causal precedence.\n\nThese component comparisons are distinct from lexicographic list sorting. Python’s ordinary list < comparison is lexicographic, so [2,0,0] < [3,0,0] happens to agree in one case but [2,0,0] < [2,1,0] does not establish a general-purpose implementation. Explicitly compare all components."
+    },
+    {
+      "id": "worked",
+      "title": "A complete three-process trace",
+      "markdown": "A makes edit a with vector[1,0,0]. B independently makes edit b with[0,1,0]. They are incomparable: A has knowledge B lacks and B has knowledge A lacks. A sends its state as a separate event[2,0,0]. B receives and merges into[2,2,0], because its local component advances from1 to2 at receipt. B now knows A’s send and its preceding edit as well as its own earlier edit.\n\nB sends the reconciled context to C as[2,3,0]. C receives and becomes[2,3,1]. C’s context dominates both original edits. A still at[2,0,0] has not necessarily learned B’s edit just because B learned A’s. Causality flows along actual messages; receipt in one direction does not imply symmetric knowledge.\n\nCompare additional pairs: [3,1,0] < [3,2,1], while [3,1,0] and[2,2,0] are concurrent. Summing components loses information: [3,0,0] and[0,3,0] have equal sum but different independent histories. A vector is not a vote count or a physical timestamp."
+    },
+    {
+      "id": "versions",
+      "title": "Version vectors adapt the idea to stored values",
+      "markdown": "The Dynamo paper describes retaining causal context with object versions so a descendant can supersede an ancestor while concurrent siblings remain for reconciliation. Database version vectors and event vector clocks share a comparison idea, but their actor choice and increment events depend on the actual protocol. Do not copy the per-event teaching algorithm and assume it matches every database’s metadata format.\n\nIn an original object example, stored plan P has context[2,1]. Alice reads P and writes a replacement with[3,1]. Bob, still holding P, writes[2,2]. Neither replacement includes the other, so discarding one as merely “older” would lose a concurrent intention. A resolver that observes both can produce a new merged version whose context covers both plus the resolver’s own update under the chosen protocol.\n\nIf a client omits context and sends only the plan body, the store may be unable to tell “new edit based on current plan” from “blind overwrite based on stale plan.” Carry and validate the version context. It does not grant authorization; the API must still enforce who may edit the plan."
+    },
+    {
+      "id": "limits",
+      "title": "Metadata is part of the correctness boundary",
+      "markdown": "With a fixed n-actor vector, comparison and merge cost O(n) and the metadata stores n counters. At eight bytes per counter, 200 actors require1600 raw counter bytes before actor identifiers and serialization overhead. If every short-lived client becomes an actor, metadata growth may dominate a small value. Sparse encodings, replica-level identities, and other version schemes trade precision and lifecycle complexity.\n\nReusing an actor identity after resetting its counter can make new events appear old. Removing a component merely because it looks ancient can erase evidence needed to distinguish concurrent versions from descendants. Pruning therefore needs a protocol argument about stability, membership, or accepted loss of causal precision; it is not just JSON cleanup.\n\nOur tests compare vectors and reproduce the small message trace. They do not verify distributed membership changes, arbitrary metadata compaction, or a production version protocol. In an interview, finish with the consequence: detect concurrent intentions, preserve the required alternatives, and choose an application-aware resolution. Detection is useful evidence but does not decide which repair plan is safe."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "vector",
+      "title": "Knowledge is merged along message direction",
+      "source": "sequenceDiagram\nparticipant A as A\nparticipant B as B\nparticipant C as C\nNote over A: Edit a at [1,0,0]\nNote over B: Edit b at [0,1,0]\nA->>B: Send at [2,0,0]\nNote over B: Receive at [2,2,0]\nB->>C: Send at [2,3,0]\nNote over C: Receive at [2,3,1]\nNote over A: A still lacks b",
+      "caption": "Components are ordered [A,B,C]. Send and receive are separately counted events. The initial edits are concurrent even though the diagram places their notes one after another.",
+      "steps": [
+        "Increment only the actor’s own component for its local event.",
+        "Carry all known components on send.",
+        "Merge maxima and then increment the receiver.",
+        "Do not infer reverse knowledge from a one-way message."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Compare u=[4,1,0] and v=[3,2,0]. A third actor C at[0,0,2] receives u, then receives v. Calculate both receive vectors using merge-then-local-increment. Explain why choosing whichever initial vector has the larger sum is not a concurrency detector.",
+    "minutes": 10,
+    "rubric": [
+      "Identifies u and v as incomparable.",
+      "Calculates[4,1,3] then[4,2,4].",
+      "Applies receiver increment after each merge.",
+      "Explains loss of per-actor knowledge in a scalar sum."
+    ],
+    "solution": "u has a larger A component but smaller B component, so the events are concurrent in the stated model. C merges u with[0,0,2] and increments C to obtain[4,1,3]. It merges v to[4,2,3] and increments C to[4,2,4]. Both initial sums are5, but equal sums do not imply equal context; a scalar sum loses which actor’s events were observed."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "How do[2,0] and[1,1] compare?",
+      "options": [
+        "First causally precedes second",
+        "Second causally precedes first",
+        "Concurrent under the stated complete model"
+      ],
+      "answer": "Concurrent under the stated complete model",
+      "explanation": "Each has one component the other lacks."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "How do[2,1] and[2,3] compare?",
+      "options": [
+        "First strictly precedes second",
+        "Concurrent",
+        "Equal"
+      ],
+      "answer": "First strictly precedes second",
+      "explanation": "Every first component is≤the second and one is smaller."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A dense vector has200 counters at8bytes each. Raw counters alone occupy how many bytes?",
+      "answer": 1600,
+      "unit": "bytes",
+      "tolerance": 0,
+      "explanation": "200×8=1600, excluding identities and encoding."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does reset-and-reuse of an actor ID threaten causal comparison?",
+      "answer": "New events with reused low counters can be mistaken for old known progress under the same identity.",
+      "explanation": "Identity and counter lifecycle are part of the protocol."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does detecting concurrent edits tell you their correct business merge?",
+      "answer": "No. It establishes neither supersedes the other causally; application semantics must choose how to retain or reconcile intentions.",
+      "explanation": "Causal metadata is evidence, not an automatic domain decision."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Vector u≤v?",
+      "back": "Every component of u is≤the matching component of v."
+    },
+    {
+      "front": "Concurrent vector events?",
+      "back": "Neither vector dominates the other under the complete model."
+    },
+    {
+      "front": "Receive rule?",
+      "back": "Componentwise maximum, then increment the receiver’s own component."
+    },
+    {
+      "front": "Equal vectors mean strict precedence?",
+      "back": "No; equality and strict causality are distinct."
+    },
+    {
+      "front": "Metadata pruning risk?",
+      "back": "Removing causal knowledge can make version relationships ambiguous or incorrect."
+    },
+    {
+      "front": "Version context replaces authorization?",
+      "back": "No. Permission is enforced separately."
+    }
+  ],
+  "mentalModel": "A vector records whose progress an event knows; incomparable knowledge exposes concurrency instead of inventing an order.",
+  "sources": [
+    {
+      "title": "DeCandia et al. — Dynamo: Amazon’s Highly Available Key-value Store (2007)",
+      "url": "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Lamport — Time, Clocks, and the Ordering of Events in a Distributed System (1978)",
+      "url": "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

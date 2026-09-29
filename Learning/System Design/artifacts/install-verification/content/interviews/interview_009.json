@@ -1,0 +1,121 @@
+{
+  "id": "interview_009",
+  "lessonId": "045",
+  "title": "Choose an engine from measured read/write requirements",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "aliases": [
+    "L045",
+    "lesson_045"
+  ],
+  "minutes": 45,
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "modeType": "concept-check",
+  "brief": "An operations team records equipment-state updates and produces daily fleet reports. It proposes selecting a storage engine from a short throughput benchmark. Clarify the correctness, read/write, and failure requirements, interpret the supplied I/O evidence, and defend a simpler initial design. Use mechanisms from L031–044; product trivia and distributed coordination are outside this checkpoint.",
+  "clarifications": [
+    {
+      "question": "What is the authoritative operation and invariant?",
+      "answer": "A device-state change must record its new version durably before success. A stale update must not overwrite a newer accepted state. Change history is retained for 30 days."
+    },
+    {
+      "question": "What are the read and write access patterns?",
+      "answer": "Peak 60,000 updates/s, 200 encoded logical bytes/update. Reads usually fetch the current state by device ID or a bounded device-history time range. Daily reports scan selected fields across the fleet."
+    },
+    {
+      "question": "What did the benchmark measure?",
+      "answer": "Ten seconds on a warm dataset, with no maintenance backlog after the run inspected. Reported logical throughput excludes physical write bytes and errors."
+    },
+    {
+      "question": "What sustained I/O evidence is available?",
+      "answer": "The measured inclusive physical/logical write ratio is 6× under representative steady writes, and the selected storage path sustains 50 decimal MB/s under the latency objective."
+    },
+    {
+      "question": "How fresh must reports be?",
+      "answer": "Daily reports may trail by ten minutes and can be recomputed. Operational state reads must honor the promised update version."
+    },
+    {
+      "question": "What can the team operate?",
+      "answer": "A relational database is already supported; a second engine requires documented maintenance, backup, and recovery evidence."
+    }
+  ],
+  "hints": [
+    "Separate one current-state read from a fleet-wide analytical scan.",
+    "Convert logical bytes/s into physical bytes/s before accepting the benchmark.",
+    "Locate the durable commit and the received reply as separate events."
+  ],
+  "changes": [
+    "Updates become 400 bytes each while the device rate is unchanged. Which assumption fails first?",
+    "A report returns the wrong state for a recently updated device; distinguish authoritative state from a stale analytical projection."
+  ],
+  "referenceSolution": "A strong opening separates the authoritative current equipment state, an append-only change history, and analytical reports. The invariant is that an accepted state transition has a durable recorded version and stale writers cannot erase a newer accepted transition. Device identity, expected version, and a stable change ID belong in the write contract. A read by device ID and a bounded time-range history require explicit access paths. An analytical report has a different scan shape; a projected columnar copy is justified only if the measured row-store path fails the report/operational isolation objectives.\n\nAt 60,000 updates/s and 200 bytes each, logical ingress is 12,000,000 bytes/s, or 12 decimal MB/s. With the supplied inclusive write amplification of 6×, the sustained physical budget is 72 MB/s, greater than the assumed sustainable 50 MB/s. A ten-second burst using memory can hide that 22-MB/s maintenance deficit; 600 seconds accumulates 13.2 GB of debt under the simple constant-rate model. That is an illustration, not a prediction that every engine buffers exactly that amount before stalling. Check whether the amplification includes WAL, and compare the same durability configuration, dataset, indexes, skew, and cache state.\n\nThe design should not claim that selecting LSM fixes a capacity mismatch automatically. Options include lowering write work through a justified data/index model, increasing measured storage capacity, batching within allowed latency, or rejecting/backpressuring work through an explicit contract. A B-tree row store remains a valid baseline when transactions, point updates, and operational familiarity dominate and representative measurements meet the workload. An LSM engine is plausible for sustained append/update volume with a funded compaction/read/space budget. Their names alone do not decide.\n\nA crash after the durable commit but before response delivery leaves a committed change with an uncertain caller outcome. Stable change identity or version-checked readback avoids blind duplication. The durability assumption must survive the tested failure domain; a WAL on the lost only disk is insufficient disaster recovery. Monitor admitted/completed/error rates, commit latency, write bytes, maintenance backlog, free space, and query latency. Keep tenant access checks at the API/data boundary. Defend the rejected alternative and name the evidence that would change the recommendation.",
+  "debrief": "Compare the candidate’s declared invariant, physical-byte calculation, and failure trace with the reference. Do not reward a product name without an access-path and recovery explanation. A defensible alternative can score strongly when its assumptions and evidence are explicit. Record the strongest decision, the most consequential missed assumption, and a retry with changed update size; the score is educational and uncertain.",
+  "remediation": [
+    "032",
+    "037",
+    "041",
+    "042",
+    "044"
+  ]
+}

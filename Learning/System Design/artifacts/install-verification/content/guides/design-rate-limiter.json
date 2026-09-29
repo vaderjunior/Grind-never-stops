@@ -1,0 +1,297 @@
+{
+  "id": "design-rate-limiter",
+  "title": "Design a distributed rate limiter",
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 16,
+  "level": "interview",
+  "minutes": 45,
+  "summary": "Turn “100 requests per minute” into an explicit admission contract that survives concurrent servers and dependency failures.",
+  "objectives": [
+    "Choose a subject, operation, and burst policy.",
+    "Explain why allowance must be checked and consumed atomically.",
+    "Defend a failure policy and a bounded multi-region approximation."
+  ],
+  "terms": [
+    {
+      "term": "Admission",
+      "definition": "The decision to accept work before spending the protected resource."
+    },
+    {
+      "term": "Subject",
+      "definition": "The user, tenant, token, or other identity whose quota is counted."
+    },
+    {
+      "term": "Token bucket",
+      "definition": "A balance that refills at a chosen rate up to a capacity and is spent to admit work."
+    },
+    {
+      "term": "Atomic operation",
+      "definition": "An operation whose protected steps cannot be interleaved with competing operations."
+    },
+    {
+      "term": "Fail-open / fail-closed",
+      "definition": "Allowing or rejecting work when the admission decision cannot be obtained."
+    }
+  ],
+  "retrieval": [
+    "Why do retries increase demand during a failure?",
+    "Why can per-server memory disagree when traffic reaches several servers?"
+  ],
+  "sections": [
+    {
+      "id": "contract",
+      "title": "Clarify what the number actually means",
+      "markdown": "“100 requests per minute” is incomplete. Ask **who spends the allowance, which work it protects, and how bursts behave**.\n\n| Contract | What it counts | Boundary to explain |\n| --- | --- | --- |\n| Fixed window | Requests in each named calendar minute | Two bursts can straddle a minute boundary |\n| Rolling window | Requests in the preceding sixty seconds | Decisions must account for overlapping history |\n| Token bucket | Stored credit plus credit earned over time | Idle time permits a burst up to capacity |\n\nFor this design, use a bucket per authenticated account and operation family: capacity twenty tokens, refill two tokens/s. A normal read costs one token. A costly export can have a separate policy.\n\nAfter enough idle time, twenty reads can start immediately. Continuing credit arrives at two per second. This does **not** promise at most 120 requests in every rolling minute; capacity and refill define a different contract.\n\n~~~text\ntrusted account + operation family + policy version\n                    ↓\n          one particular shared bucket\n~~~\n\nDo not use an unverified account field from the request body as the identity source. Decide what a policy change does to old credit instead of accidentally granting every caller a fresh burst."
+    },
+    {
+      "id": "algorithm",
+      "title": "Follow the balance with a small example",
+      "markdown": "The bucket stores tokens and last_refill_time. At the next decision, calculate elapsed time, add elapsed times the refill rate, and cap the result at capacity. If the resulting balance covers the positive request cost, subtract the cost and allow it. Otherwise reject it with a useful retry delay estimate. Validate configuration and cost; a negative cost must never create tokens.\n\nStart full with twenty tokens. Fifteen immediate one-token requests leave five. Two seconds later, four tokens have accrued, leaving nine before the next request. A request costing three leaves six. Fractional refill credit matters when decisions occur faster than one second; rounding and resetting the timestamp carelessly can discard capacity.\n\nIn a single process, use an elapsed-time source appropriate to the runtime and test it with an injected clock. Across nodes, define the authoritative clock used by the shared decision."
+    },
+    {
+      "id": "atomic",
+      "title": "Share one decision boundary across application servers",
+      "markdown": "Two application servers each reading “one token left” can both admit a request if reading and subtracting are separate shared-store operations. The correct balance update needs one indivisible decision for the same bucket. A transactional row update or a short atomic server-side operation in a suitable store can provide that boundary. Merely using a shared database does not make a multi-step application sequence atomic.\n\nPlace the limiter before expensive work and derive the authenticated subject consistently. A key can include subject, operation family, and policy version. Keep atomic work small and bounded so one decision does not block unrelated traffic. Different keys may be partitioned to distribute load, while a single extremely hot subject still concentrates decisions on its owner. Decide how policy changes transform or reset existing state instead of silently granting a fresh burst by accident."
+    },
+    {
+      "id": "failure",
+      "title": "Choose failure behavior by what is at risk",
+      "markdown": "If the limiter store is unavailable, there is no universal correct response. For a low-cost public read, the team might temporarily use a small local emergency allowance. For an expensive export, rejecting until the decision is available may protect the system better. Describe the user response and monitor the period; silently failing open forever makes the quota meaningless.\n\nLocal fallback budgets create an aggregate bound only if their allocation is explicit. Ten servers each granting twenty emergency requests can admit up to 200 extra requests, not twenty. A cached positive decision reused across many requests has the same multiplication problem. A timeout also creates an uncertain result: the shared decision may already have consumed a token.\n\nConservative double consumption reduces availability but avoids over-admission; returning an earlier decision for a retried operation requires its own stable request identity and bounded retention."
+    },
+    {
+      "id": "regions",
+      "title": "Make the cost of global precision visible",
+      "markdown": "Compare regional designs against the same global promise.\n\n| Design | Benefit | Cost or limit |\n| --- | --- | --- |\n| One authoritative bucket | One order for decisions on that subject | Cross-region delay and dependency |\n| Full independent bucket in every region | Local decisions | Multiplies the intended global allowance |\n| Static divided allowance | A known aggregate bound | Idle regional credit may be unusable elsewhere |\n\nFor a defined interval, a 60-request budget could be divided into 35 and 25. This is a reservation example, not an implementation of a time-refilling global token bucket. Every reservation needs the same interval definition and enforced local accounting.\n\nReassigning unused allowance is more difficult: the old region must not keep spending a share after it moves. This chapter deliberately stops at static reservations.\n\n**Interview phrase:** “I can trade some utilization for a stated admission bound; dynamic reallocation needs its own coordination protocol.”"
+    },
+    {
+      "id": "test",
+      "title": "Test boundaries before presenting the diagram as correct",
+      "markdown": "Run a controlled set of tests: a burst exactly at capacity, one request beyond it, fractional refill, a long idle period, many concurrent requests for one token, invalid cost, and an unavailable state owner. Use a fake clock instead of sleeping through long windows. Check that the admitted count matches the specified contract, not an informal intuition about fairness.\n\nObserve admitted and rejected counts, decision latency, errors contacting the store, hot subjects, and time spent in fallback. Return a clear rate-limit response and an appropriate retry hint so cooperative clients can back off. Remember that admission control is only one layer: authentication, broader abuse detection, and expensive work cancellation have separate jobs. In an interview, finish by stating the atomicity boundary and what happens when it cannot be reached."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "atomic-limit",
+      "sectionId": "atomic",
+      "title": "One shared atomic decision guards expensive work",
+      "source": "flowchart LR\nC[Authenticated request] --> A[Application server]\nA --> K[Derive subject and operation key]\nK --> L[Atomic refill and consume]\nL -->|Allowed| W[Protected work]\nL -->|Rejected| R[Rate limit response]\nL -->|Store unavailable| F[Explicit failure policy]",
+      "steps": [
+        "Identify the quota subject from trusted identity.",
+        "Refill and consume in one protected decision.",
+        "Only admitted requests start expensive work.",
+        "A missing decision follows a named fallback policy."
+      ],
+      "caption": "Original teaching diagram. Each arrow has a specific responsibility; deployment details are deliberately bounded."
+    },
+    {
+      "id": "limiter-shared-balance",
+      "sectionId": "failure",
+      "title": "Fallback allowances add across independent servers",
+      "source": "flowchart TB\nF[Shared decision unavailable] --> A[Server A: at most 5 reserved requests]\nF --> B[Server B: at most 5 reserved requests]\nA --> T[At most 10 extra requests in this fallback period]\nB --> T\nT --> E[Exhaust allowance then return defined rejection]",
+      "caption": "This illustrative bound assumes exactly two reserved budgets, one defined fallback period, and no accidental budget resets. It is not a universal recommended allowance.",
+      "steps": [
+        "Identify every independent spender.",
+        "Assign a finite allowance to each.",
+        "Add the allowances to state the aggregate exposure.",
+        "Stop spending when the reservation is exhausted."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "A bucket holds 10 tokens, refills 2/s, and begins full. Seven one-token requests arrive immediately; then one request costing four arrives after 1.5 seconds. Compute the decision and balance. Explain the race when two servers separately read one remaining token, and choose a failure policy for a costly report export.",
+    "rubric": [
+      "Preserve fractional elapsed refill.",
+      "Compute 3 + 3 − 4 = 2 remaining.",
+      "Identify the atomic read/update boundary.",
+      "Choose an explicit dependency-failure policy for expensive work."
+    ],
+    "solution": "The initial burst leaves three tokens. Over 1.5 seconds, three refill, so the balance is six before the four-token request. It is admitted and leaves two. Two separate read-then-write callers can both see one token and over-admit; combine refill/check/consume atomically per key. For costly exports, reject or use a deliberately small reserved fallback when the store is unavailable. State the user-visible retry behavior and the bounded cost you accept."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "numeric",
+      "prompt": "A balance of 3 refills at 2/s for 1.5 seconds, then spends 4. Remaining tokens?",
+      "answer": 2,
+      "unit": "tokens",
+      "tolerance": 0,
+      "explanation": "3 + 2 × 1.5 − 4 = 2, below the capacity cap."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Which implementation prevents two callers spending the same token?",
+      "options": [
+        "Independent read then independent write",
+        "One atomic refill/check/consume per bucket",
+        "A separate counter on every application server"
+      ],
+      "answer": "One atomic refill/check/consume per bucket",
+      "explanation": "The check and mutation must share a concurrency boundary."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Three regions each get the full 100-request global allowance. What is wrong?",
+      "options": [
+        "They collectively may admit 300",
+        "They automatically synchronize",
+        "Only the nearest region can ever receive requests"
+      ],
+      "answer": "They collectively may admit 300",
+      "explanation": "Independent full budgets multiply the allowance unless there is coordination."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Defend fail-closed behavior for a costly export.",
+      "answer": "When admission cannot be verified, rejecting avoids unbounded expensive work. Explain the availability cost, retry guidance, observability and any explicitly reserved emergency allowance.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can a fixed calendar window violate a rolling-window expectation?",
+      "answer": "Traffic near the end of one window and start of the next can each use a full allowance, producing nearly twice that amount in a short interval spanning the boundary.",
+      "explanation": "Self-assess against this reasoning. A written response has no automatic design score."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Token-bucket capacity?",
+      "back": "The maximum accumulated burst allowance."
+    },
+    {
+      "front": "Token-bucket refill rate?",
+      "back": "How quickly new allowance becomes available over elapsed time."
+    },
+    {
+      "front": "Atomic limiter boundary?",
+      "back": "Refill, compare cost, and consume the same bucket as one protected operation."
+    },
+    {
+      "front": "What do independent full regional quotas do?",
+      "back": "Multiply the aggregate allowance."
+    },
+    {
+      "front": "Why inject a clock in tests?",
+      "back": "To reproduce boundaries, fractional refill, idle periods and retries deterministically."
+    }
+  ],
+  "mentalModel": "A quota is a contract about who spends a shared balance, over what time, and under which failure policy.",
+  "sources": [
+    {
+      "title": "Redis — Atomic server-side Lua operations",
+      "url": "https://redis.io/docs/latest/develop/programmability/eval-intro/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Redis — Rate limiting tutorial",
+      "url": "https://redis.io/tutorials/rate-limiting-in-java-spring-with-redis/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "fractional-credit",
+      "title": "Watch a bucket earn and spend credit",
+      "sectionId": "algorithm",
+      "intro": "This example has capacity 8 and refill 3 tokens/s. Six one-token requests arrive first; a later request costs four tokens. All decisions use one authoritative elapsed clock.",
+      "steps": [
+        {
+          "title": "Begin with full credit",
+          "explanation": "The bucket has accumulated its maximum. More idle time cannot raise it above eight.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 s"
+            },
+            {
+              "label": "Tokens",
+              "value": "8"
+            },
+            {
+              "label": "Capacity",
+              "value": "8"
+            },
+            {
+              "label": "Refill",
+              "value": "3 tokens/s"
+            }
+          ]
+        },
+        {
+          "title": "A short burst consumes six",
+          "explanation": "Six admitted one-token requests spend six units. No refill time has elapsed in this simplified burst.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0 s"
+            },
+            {
+              "label": "Tokens",
+              "value": "2"
+            },
+            {
+              "label": "Admitted work",
+              "value": "6 one-token requests"
+            }
+          ]
+        },
+        {
+          "title": "Half a second is not zero time",
+          "explanation": "The next decision earns 1.5 tokens. A cost-four request is rejected without spending its cost.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "0.5 s"
+            },
+            {
+              "label": "Available",
+              "value": "3.5 tokens"
+            },
+            {
+              "label": "Request cost",
+              "value": "4"
+            },
+            {
+              "label": "Decision",
+              "value": "reject; retain 3.5"
+            }
+          ]
+        },
+        {
+          "title": "Retry only when credit is available",
+          "explanation": "Another half second earns 1.5. The atomic decision can now spend four and leave one.",
+          "state": [
+            {
+              "label": "Time",
+              "value": "1.0 s"
+            },
+            {
+              "label": "Before spending",
+              "value": "5 tokens"
+            },
+            {
+              "label": "Decision",
+              "value": "allow cost 4"
+            },
+            {
+              "label": "Remaining",
+              "value": "1 token"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Capacity limits saved credit; elapsed time earns credit; only an admitted request spends it. Keep all three rules inside one protected decision."
+    }
+  ]
+}

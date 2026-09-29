@@ -1,0 +1,131 @@
+{
+  "id": "083",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Separate append, replicate, commit and apply.",
+    "Trace conflicting follower log repair without discarding committed history.",
+    "Explain current-term commitment and fresh-read requirements."
+  ],
+  "retrieval": [
+    "L082: what does candidate freshness compare?",
+    "L081: why may a follower lag without violating safety?"
+  ],
+  "sections": [
+    {
+      "id": "boundaries",
+      "title": "Four states hidden by the word “written”",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, worked replication 8, exercise 10, questions 10, review 4. A leader can append a command locally without the command being committed. It can replicate that entry to another machine without every replica having applied it. A committed command can remain unapplied temporarily while a state-machine worker catches up. These are different boundaries; a response contract must say which boundary success means.\n\nA Raft log entry records a term and a command at an index. The leader sends AppendEntries with the preceding index/term so a follower can check whether the new suffix connects to the expected prefix. A follower rejects a request whose preceding entry does not match. The leader then adjusts its view of the follower's progress and sends the needed entries. It is not sufficient to append blindly to whatever the follower happens to contain.\n\nThe leader tracks replicated positions and a commit index. The state machine applies entries in order up to that index. A database client expecting the mutation's computed result normally receives success after the relevant command is committed and applied. An API may expose a different acknowledgement contract, but it must not call a local append a durable consensus result."
+    },
+    {
+      "id": "trace",
+      "title": "A majority survives one follower being slow",
+      "markdown": "A three-voter group has leader A and followers B/C. All share entries through index 10. In term 6 A appends set(x,9) at index 11 and sends AppendEntries with previous=(10,5). B verifies its prefix, persists entry 11, and replies. C is unreachable. A plus B are a majority; because entry 11 belongs to A's current term, A can advance commitment through 11. It applies the command, returns success, and later tells C which prefix is committed when C reconnects.\n\nIf A crashes before a reply reaches the client, the client observes an uncertain outcome. It cannot conclude the command failed. The command may already be committed and later returned by a new leader. A stable request ID and stored result avoid applying a retry as a second logical mutation. Consensus protects the log decision, not the client's ability to know whether a lost response represented success.\n\nReplication latency in this example depends on the leader's persistence and the fastest follower needed for a majority, plus application work. Waiting for the slowest of all three is a different, stronger acknowledgement choice with worse latency/availability. Do not report a production latency number without measuring storage and network behavior."
+    },
+    {
+      "id": "repair",
+      "title": "Repair an uncommitted suffix, preserve committed decisions",
+      "markdown": "Suppose C contains an uncommitted entry at index 11 from an earlier failed leader, while the newly elected leader's entry 11 differs. Matching the prefix and receiving the leader's conflicting suffix allows the follower to replace its uncommitted conflicting tail. This does not license deletion of a committed command. Election restrictions and the commitment rules are designed so later valid leaders contain already committed entries.\n\nA subtle rule concerns entries from previous terms. A leader must not directly mark an older-term entry committed merely because it currently counts that entry on a majority. In Raft, majority counting directly commits an entry from the leader's current term; committing such an entry also commits its preceding prefix. This qualification is easy to omit in an interview slogan such as “three copies means committed.” It matters when leadership changes and logs contain different uncommitted suffixes.\n\nUse the following as an annotated predicate sketch, not a complete implementation:\n\n~~~python\ndef can_advance(candidate_index, current_term, entry_term, replicated_count, voters):\n    return (entry_term == current_term and\n            replicated_count >= voters // 2 + 1)\n~~~\n\nReal logic also tracks which followers have which entries, persistent state, ordered application, errors and membership. A convenient boolean helper does not implement the consensus protocol."
+    },
+    {
+      "id": "reads",
+      "title": "A committed write does not make every local read fresh",
+      "markdown": "A follower can return an old applied state after a newer command committed elsewhere. That may be allowed for explicitly stale-tolerant reads, but it does not implement a linearizable register. A leader can also be stale about its own leadership after a partition. Fresh reads need a protocol that establishes current authority and waits for the relevant committed state to be applied, or an explicitly justified lease with timing assumptions.\n\nMonitor commit-to-apply lag separately from follower replication lag. A healthy quorum can coexist with a slow application state machine. Track pending proposals and retry rates during leader transitions; an uncertain response should prompt an idempotent retry, not a new business operation. Optional depth: study the paper's old-term commitment counterexample and label the exact term/index at every step rather than relying on memorized pictures."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "Success follows the agreed and applied boundary",
+      "source": "sequenceDiagram\nparticipant Client\nparticipant A as Leader A\nparticipant B as Follower B\nparticipant C as Follower C\nClient->>A: Command with request ID\nA->>A: Persist current-term entry\nA->>B: Append after matching prefix\nB->>B: Persist entry\nB-->>A: Replication acknowledgement\nNote over C: Unreachable\nA->>A: Commit with majority then apply\nA-->>Client: Application result",
+      "caption": "The diagram assumes a fixed three-voter group and a current-term entry. An acknowledgement from the network stack is not a follower persistence acknowledgement.",
+      "steps": [
+        "Append with term and index.",
+        "Replicate only onto the matching prefix.",
+        "Use the correct majority commitment rule.",
+        "Apply before returning this API’s result."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A five-voter leader acknowledges after sending an entry to two followers, without waiting for persistence replies. It then crashes. Explain the unsafe boundary and repair it. Also explain why counting three copies of an old-term entry requires care.",
+    "rubric": [
+      "Distinguishes sending from durable receipt.",
+      "Requires majority with leader counted appropriately.",
+      "States current-term direct commitment rule."
+    ],
+    "solution": "Sending proves only that messages were attempted; they may be delayed or lost and the followers may not have persisted the entry. The leader must use confirmed durable replication according to the protocol, establish valid commitment, and apply if its API promises an application result before success. In five voters the majority is three, including the leader when its own copy is durable. Raft directly advances by replica counting only for a current-term entry; a committed current-term entry commits its preceding prefix indirectly, so old-term copy counts alone are not a sufficient shortcut."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A local leader append implies committed success:",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "answer": "No",
+      "explanation": "The entry may never reach the required quorum or survive a later legitimate leader."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "In five voters, with leader durable, how many additional durable replicas are minimally needed for a current-term majority?",
+      "answer": 2,
+      "unit": "followers",
+      "tolerance": 0,
+      "explanation": "Leader plus two followers gives three voters."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A conflicting suffix that may be replaced is:",
+      "options": [
+        "Any committed prefix",
+        "An uncommitted tail conflicting with the leader"
+      ],
+      "answer": "An uncommitted tail conflicting with the leader",
+      "explanation": "Committed decisions must remain preserved by subsequent valid leaders."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does a lost success response require idempotency even with consensus?",
+      "answer": "The write may have committed before the reply was lost; retrying under a new logical identity could execute the business command twice.",
+      "explanation": "The write may have committed before the reply was lost; retrying under a new logical identity could execute the business command twice."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Append versus commit?",
+      "back": "Local presence is not an irrevocable agreed decision."
+    },
+    {
+      "front": "Commit versus apply?",
+      "back": "Commit establishes order; apply changes the state machine in that order."
+    },
+    {
+      "front": "Prefix check?",
+      "back": "Previous log index and term anchor the incoming suffix."
+    },
+    {
+      "front": "Direct replica-count commitment?",
+      "back": "Requires a current-term entry in Raft."
+    },
+    {
+      "front": "Fresh local leader read?",
+      "back": "Needs current-authority and applied-state guarantees, not merely a leader flag."
+    }
+  ],
+  "mentalModel": "A safe result crosses persistence, agreement and application boundaries in the correct order.",
+  "sources": [
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    }
+  ]
+}

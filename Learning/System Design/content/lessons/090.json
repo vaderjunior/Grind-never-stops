@@ -1,0 +1,118 @@
+{
+  "id": "090",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Present an explicit contract and defend decisions with a failure history.",
+    "Distinguish known facts, assumptions and uncertain outcomes.",
+    "Produce a testable repair or design using the preceding module."
+  ],
+  "retrieval": [
+    "Retrieve the relevant mechanism from L082 before starting; do not open its solution during the attempt.",
+    "Retrieve the relevant mechanism from L083 before starting; do not open its solution during the attempt.",
+    "Retrieve the relevant mechanism from L087 before starting; do not open its solution during the attempt.",
+    "Retrieve the relevant mechanism from L088 before starting; do not open its solution during the attempt.",
+    "Retrieve the relevant mechanism from L089 before starting; do not open its solution during the attempt."
+  ],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate brief",
+      "markdown": "Design a small configuration service for 2,000 application instances. Authorized operators update bounded routing-policy documents. Instances need a consistent configuration version and notification of changes, must recover after disconnecting, and should continue serving with a last known safe version when the configuration service is briefly unavailable. Concurrent operator edits must not silently overwrite one another. Develop the write/read/watch contracts, storage and authority model, client recovery flow, and operational visibility. Clarify which configuration may tolerate staleness before choosing a failure policy."
+    },
+    {
+      "id": "workflow",
+      "title": "Run a bounded interview",
+      "markdown": "Scheduled 60 minutes. Use the Interview center to start interview_018, or copy its AI interviewer instruction into a connected MCP client. Coaching mode permits requested hints; exam mode begins with this brief and lets you ask clarifying questions. The engine records hint use and supports pause/resume. Record actual diagrams, estimates and answers in the session notebook; do not rely on an AI chat transcript being visible automatically.\n\nSuggested allocation: scope and facts5, initial reasoning15, detailed mechanism15, changed condition10, verification and summary10, reflection5. Ask the interviewer for one question at a time. Name your assumptions before using numbers, show a concrete operation history, and identify the authority that enforces each guarantee. It is acceptable to revise a decision when a new fact arrives; explain why the requirement changes its justification."
+    },
+    {
+      "id": "evidence",
+      "title": "Submission and feedback contract",
+      "markdown": "Before finishing, save your final explanation and any unresolved questions. Finish closes the answering phase without inventing a grade. Without a connected model, use explicitly labeled self assessment against the weighted course rubric. With an AI evaluator, require exact supporting excerpts from candidate turns and targeted lesson references.\n\nJudge the consistency of requirements, operation ordering, failure handling and tests. A polished diagram cannot compensate for acknowledging a result before the promised guarantee exists. After submission, compare your actual choices to the reference reasoning; alternatives may be defensible under different explicit assumptions. The score is educational evidence with uncertainty, not an assurance of a hiring outcome. Reattempt with the changed conditions after remediation, preserving the first attempt rather than overwriting history."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "mechanism",
+      "title": "The assessment records evidence, then reveals reference reasoning",
+      "source": "flowchart LR\nB[Candidate brief] --> C[Clarify one question at a time]\nC --> A[Save actual reasoning and artifacts]\nA --> F[Finish answering]\nF --> E[Evidence-based feedback]\nE --> D[Debrief and focused retry]",
+      "caption": "Reference reasoning stays separate while the attempt is active or paused. Actual candidate turns provide the evidence for feedback.",
+      "steps": [
+        "Start a stable interview definition.",
+        "Save the candidate’s actual decisions.",
+        "Close the answering phase.",
+        "Compare with references and plan a focused retry."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 40,
+    "prompt": "Complete the interview in the session notebook. Submit a requirements statement, one operation/failure trace, the proposed mechanism, and an executable or precisely specified acceptance test.",
+    "rubric": [
+      "Makes the contract explicit.",
+      "Shows authority and operation order.",
+      "Addresses the given failure condition.",
+      "Uses evidence rather than product-name lists."
+    ],
+    "solution": "Begin with the contract: small, low-write metadata needs durable ordered updates, while ordinary data-plane requests should use validated local state. A three-voter consensus-backed authority is defensible for regional metadata availability. One failed voter leaves a majority of two, but clients connected only to an isolated minority cannot receive authoritative new writes. Avoid claiming that watch sockets themselves provide fresh reads or that consensus requires every ordinary request to contact the control plane.\n\nExpose GET /configs/{name} returning value, schema version and revision. PUT /configs/{name} carries expected_revision, validated new value and a stable request identity; success returns the new desired revision. The authority atomically compares the expected revision so a stale editor receives a conflict instead of overwriting a colleague’s change. Authorize writes by document scope, bound payload size, validate semantics before publication, and store an audit trail with actor and reason. Never put globally readable secrets into routing documents.\n\nFor watches, return a complete initial snapshot and revisionR, then request events afterR under an API that closes the read/subscription race. Apply complete revisions and persist the last applied position. On reconnect, request from that position only if retained history can satisfy it. If the history was compacted, fetch a fresh full snapshot and replace the local derived configuration atomically; do not jump to an arbitrary newest event because missed deletions or related fields matter.\n\nClient application has its own state machine: downloaded → verified → prepared → atomically installed, with the previous valid version retained for fallback. A large artifact is referenced by immutable version/digest rather than embedded in every small metadata update. An instance reports desired_revision, applied_revision, last_successful_refresh and application_error. Publication can succeed while a client is stuck, so fleet rollout success is a separate condition.\n\nWorkload estimate: ten updates/minute is about0.167 updates/s on average. If every update reaches2,000 interested clients, that is about333 event deliveries/s before framing/reconnect overhead. A worst-case64KiB document broadcast at that average rate is roughly20.8MiB/s of payload across all deliveries; subscriptions scoped to needed documents and deltas can reduce this, but first state the fanout assumption. The100-updates/minute burst is ten times the average. Long-lived connections add memory and reconnect-storm concerns even when metadata writes are low.\n\nUse a bounded watch buffer per subscriber. A slow client that exceeds the buffer can be disconnected with a clear resume/snapshot requirement instead of consuming unbounded memory. Add jittered reconnects and backoff. These do not replace retained-history semantics; they keep recovery load bounded. Monitor active watches, delivery backlog, compaction-related refreshes, desired/applied divergence and authentication failures.\n\nFor the verification-failure change, failed clients retain their prior approved policy or follow the explicitly selected fail-safe behavior. The controller halts further rollout and publishes a new revision containing prior valid content after review. Do not decrement revision numbers; revision ordering must remain monotonic even when content is rolled back. Investigate digest/schema mismatch before forcing installation.\n\nFinally separate policy classes. A cached routing preference may remain usable for a bounded period, while revocation can require expiry, direct authorization checks or failing closed after a freshness deadline. State the operational cost of that stricter rule. Tests should cover competing updates, one-voter failure, minority write rejection, interrupted watch replay, compacted cursor refresh, slow watchers, invalid artifacts and restored client state. The smallest architecture is a metadata authority plus client libraries and observability; an unrelated cache or queue product is unnecessary unless a measured constraint justifies it."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "open",
+      "prompt": "After the attempt, which assumption most changed your design?",
+      "answer": "Name an actual assumption from the saved conversation and explain its effect on one mechanism.",
+      "explanation": "Name an actual assumption from the saved conversation and explain its effect on one mechanism."
+    },
+    {
+      "id": "q2",
+      "type": "open",
+      "prompt": "What is your smallest counterexample to the unsafe alternative?",
+      "answer": "Provide an ordered history showing a violated stated invariant, and a check that catches it.",
+      "explanation": "Provide an ordered history showing a violated stated invariant, and a check that catches it."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Which part of your answer needs a focused retry?",
+      "answer": "Select the lowest-supported rubric dimension and write a short changed-constraint exercise.",
+      "explanation": "Select the lowest-supported rubric dimension and write a short changed-constraint exercise."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Assessment evidence?",
+      "back": "Actual saved reasoning, estimates, diagrams and tests."
+    },
+    {
+      "front": "Timeout means?",
+      "back": "The caller does not know the outcome; it may have occurred."
+    },
+    {
+      "front": "A valid alternative?",
+      "back": "One justified against explicit assumptions and a matching guarantee."
+    },
+    {
+      "front": "Hint use?",
+      "back": "Recorded as assistance, not hidden from interpretation."
+    },
+    {
+      "front": "Debrief goal?",
+      "back": "Find a specific reasoning gap and practise it under changed constraints."
+    }
+  ],
+  "mentalModel": "Defend a guarantee with an operation history and a test that would expose its violation.",
+  "sources": [
+    {
+      "title": "Ongaro and Ousterhout, Raft extended paper (2014), relevant safety/election/log sections",
+      "url": "https://raft.github.io/raft.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "etcd v3.5 API guarantees: revisions, watches, leases and consistency modes",
+      "url": "https://etcd.io/docs/v3.5/learning/api_guarantees/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "date": "2026-09-29T12:06:58.354Z",
+  "python": "Python 3.12.14",
+  "results": [
+    {
+      "kind": "executable-example",
+      "lessonId": "004",
+      "sha256": "fd6ff28ecc39c4e547df1446ae333e6608e8119ccd24da5d87ba89bae0ad6650",
+      "sectionId": "worked",
+      "ok": true,
+      "stdout": "average=16.2/s peak=129.6/s\r\n",
+      "stderr": "",
+      "status": 0
+    },
+    {
+      "kind": "executable-example",
+      "lessonId": "006",
+      "sha256": "0d5bb1895b7c6b4c40b36655e167cfaa48c5e3c22fe6dce1783a54c689cdd78c",
+      "sectionId": "bandwidth",
+      "ok": true,
+      "stdout": "photo ingress: 640 Mbit/s; minimum restore: 27.8 h\r\n",
+      "stderr": "",
+      "status": 0
+    },
+    {
+      "kind": "executable-example",
+      "lessonId": "007",
+      "sha256": "18b2ddecfd16e9cb16ecf82e2534d737374cc3953d8cfa5d779619939c8bf56b",
+      "sectionId": "worked",
+      "ok": true,
+      "stdout": "peak backlog=200; drained after 10 seconds\r\n",
+      "stderr": "",
+      "status": 0
+    },
+    {
+      "kind": "executable-example",
+      "lessonId": "008",
+      "sha256": "12df4bc3a2926f7a5a5fe75f46d94bb87b41784292bbeef71851336b3b81bdb2",
+      "sectionId": "sensitivity",
+      "ok": true,
+      "stdout": "A: 3 instances; B: 2 instances\r\n",
+      "stderr": "",
+      "status": 0
+    },
+    {
+      "kind": "executable-example",
+      "lessonId": "021",
+      "sha256": "e103db0dc5c088b9f5ba76f5fd9c6d7c7f8c0223d0eaa102160bff3269e95672",
+      "sectionId": "example",
+      "ok": true,
+      "stdout": "A start\r\nB start\r\nA ready\r\nB ready\r\nboth complete\r\n",
+      "stderr": "",
+      "status": 0
+    },
+    {
+      "kind": "executable-example",
+      "lessonId": "022",
+      "sha256": "f58aad32579dcb474636b0205f2abb7b0e66a692761f3930d01673cc5893a0e5",
+      "sectionId": "cleanup",
+      "ok": true,
+      "stdout": "counter=2\r\n",
+      "stderr": "",
+      "status": 0
+    },
+    {
+      "kind": "executable-example",
+      "lessonId": "024",
+      "sha256": "ed07d9c863ff10846207e72c4cc695e1ca30d1b258dfc2f7f524a47e0767133b",
+      "sectionId": "trace",
+      "ok": true,
+      "stdout": "[5, 4] [3, 2]\r\n",
+      "stderr": "",
+      "status": 0
+    },
+    {
+      "kind": "lab",
+      "label": "runtime-harness",
+      "args": [
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "labs/runtime-harness",
+        "-v"
+      ],
+      "ok": true,
+      "stdout": "{\"event\": \"request\", \"message\": \"\\\"GET /work?delay_ms=9000 HTTP/1.1\\\" 400 -\"}\r\n{\"event\": \"request\", \"message\": \"\\\"GET /health HTTP/1.1\\\" 200 -\"}\r\n{\"event\": \"request\", \"message\": \"\\\"GET /items?after=8&size=2 HTTP/1.1\\\" 200 -\"}\r\n{\"event\": \"request\", \"message\": \"\\\"GET /work?delay_ms=0 HTTP/1.1\\\" 200 -\"}\r\n",
+      "stderr": "test_bad_delay_real_http (test_harness.HTTPTests.test_bad_delay_real_http) ... ok\r\ntest_health_real_http (test_harness.HTTPTests.test_health_real_http) ... ok\r\ntest_items_real_http (test_harness.HTTPTests.test_items_real_http) ... ok\r\ntest_simulated_work_real_http (test_harness.HTTPTests.test_simulated_work_real_http) ... ok\r\ntest_bound_rejects_and_releases (test_harness.RuntimeTests.test_bound_rejects_and_releases) ... ok\r\ntest_cancellation_releases_async_semaphore (test_harness.RuntimeTests.test_cancellation_releases_async_semaphore) ... ok\r\ntest_cursor_ignores_newer_insert (test_harness.RuntimeTests.test_cursor_ignores_newer_insert) ... ok\r\ntest_cursor_survives_deleted_anchor (test_harness.RuntimeTests.test_cursor_survives_deleted_anchor) ... ok\r\ntest_exception_does_not_leak_slot (test_harness.RuntimeTests.test_exception_does_not_leak_slot) ... ok\r\ntest_forced_lost_update_and_protection (test_harness.RuntimeTests.test_forced_lost_update_and_protection) ... ok\r\ntest_invalid_page_size (test_harness.RuntimeTests.test_invalid_page_size) ... ok\r\ntest_two_claims_preserve_inventory (test_harness.RuntimeTests.test_two_claims_preserve_inventory) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 12 tests in 0.604s\r\n\r\nOK\r\n",
+      "status": 0
+    },
+    {
+      "kind": "lab",
+      "label": "relational-sqlite",
+      "args": [
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "labs/relational",
+        "-v"
+      ],
+      "ok": true,
+      "stdout": "",
+      "stderr": "test_composite_cursor_and_index_plan (test_relational.RelationalTests.test_composite_cursor_and_index_plan) ... ok\r\ntest_conditional_stock_update_stops_second_acceptance (test_relational.RelationalTests.test_conditional_stock_update_stops_second_acceptance) ... ok\r\ntest_failure_rolls_back_stock_and_reservation (test_relational.RelationalTests.test_failure_rolls_back_stock_and_reservation) ... ok\r\ntest_foreign_key_carries_department_scope (test_relational.RelationalTests.test_foreign_key_carries_department_scope) ... ok\r\ntest_one_active_loan_but_many_historical_loans (test_relational.RelationalTests.test_one_active_loan_but_many_historical_loans) ... ok\r\ntest_unique_barcode_and_department_scope (test_relational.RelationalTests.test_unique_barcode_and_department_scope) ... ok\r\ntest_version_condition_rejects_stale_edit (test_relational.RelationalTests.test_version_condition_rejects_stale_edit) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 7 tests in 0.004s\r\n\r\nOK\r\n",
+      "status": 0
+    },
+    {
+      "kind": "lab",
+      "label": "P1.1-reference",
+      "args": [
+        "projects/tests/test_projects.py",
+        "Labs.test_P1_1_L039_persistence_collision_and_redirect",
+        "-v"
+      ],
+      "ok": true,
+      "stdout": "",
+      "stderr": "test_P1_1_L039_persistence_collision_and_redirect (__main__.Labs.test_P1_1_L039_persistence_collision_and_redirect) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 1 test in 0.051s\r\n\r\nOK\r\n",
+      "status": 0
+    }
+  ],
+  "limits": [
+    "SQLite tests do not establish PostgreSQL isolation, row-lock, or planner behavior.",
+    "Runtime harness state is process-local and in-memory.",
+    "P1.1 reference test reopens the same database file; it is not a disk-loss or power-loss test.",
+    "This record is execution evidence, not independent pedagogical review or complete application acceptance."
+  ]
+}

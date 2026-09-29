@@ -1,0 +1,105 @@
+{
+  "id": "P2",
+  "title": "Rate limiter",
+  "milestones": [
+    {
+      "lessonId": "138",
+      "number": 1,
+      "title": "[P2.1] Rate limiter: deterministic-clock implementation and boundary tests",
+      "focus": "Clock and boundary behavior",
+      "task": "Implement token refill and cost subtraction using a supplied clock. Clamp to capacity and preserve the last timestamp when time moves backward. Explain how tokens differ from a request-per-fixed-window counter.",
+      "failureInjection": "A backward wall clock must not mint tokens later by overwriting the previous timestamp. Test half-token waits and the exact eligibility boundary.",
+      "evidence": "Exhaust a capacity-two bucket, show a 0.5-second retry estimate halfway to refill, and admit exactly once after one second.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P2_1 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "139",
+      "number": 2,
+      "title": "[P2.2] Rate limiter: atomic shared state and failure policy",
+      "focus": "Shared atomic admission",
+      "task": "Run fifty concurrent requests against one tenant at a frozen clock and capacity ten. Read, refill, check, and update within one write transaction; report SQLite contention as distinct from an allowed request.",
+      "failureInjection": "Separate SELECT and UPDATE transactions permit concurrent callers to spend the same tokens. Reproduce the risk conceptually and verify the transactional implementation admits exactly ten.",
+      "evidence": "Capture fifty results with exactly ten admissions and forty denials. Explain what the database lock protects and how a distributed store would need equivalent atomicity.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P2_2 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "158",
+      "number": 3,
+      "title": "Design rate limiter I / [P2.3]: regional quotas and coordination budgets",
+      "focus": "Regional quota budget",
+      "task": "Allocate a global capacity of one hundred as EU sixty and US forty. Demonstrate that partitioned regions can enforce their portions without coordination, and identify stranded capacity when demand shifts.",
+      "failureInjection": "Reallocating reservations before the old owner relinquishes them can temporarily double-spend. Specify an ownership epoch or conservative transfer procedure as a design extension.",
+      "evidence": "Reject allocations summing above one hundred; document a regional imbalance scenario and the deliberate availability/utilization tradeoff.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P2_3 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "159",
+      "number": 4,
+      "title": "Design rate limiter II / [P2.4]: load/failure tests and policy defense",
+      "focus": "Load and failure defense",
+      "task": "Inject a store outage under both policies. Fail-open preserves service access while admitting unmetered work; fail-closed protects scarce or costly resources while rejecting eligible work. Select policies separately for login defense and optional analytics.",
+      "failureInjection": "Do not silently treat infrastructure errors as normal denials. Return a degraded marker and propose separate alerts for limiter availability and policy rejection rate.",
+      "evidence": "Provide the concurrent admission count, both outage outcomes, and a written policy defense tied to business cost and abuse risk.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P2_4 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    }
+  ],
+  "baselineArtifact": "Local limiter, shared-state limiter, regional quota design",
+  "acceptanceEvidence": [
+    "Deterministic boundary tests",
+    "concurrent admission",
+    "documented fail-open/fail-closed policy"
+  ],
+  "source": "catalog",
+  "version": 1,
+  "status": "reference-tested",
+  "authorship": "original prepared teaching implementation; curriculum names and milestone IDs source-derived",
+  "invariant": "An atomic bucket admits at most its starting capacity plus elapsed refill; regional reservations never exceed the global allocation.",
+  "requirements": [
+    "Implement deterministic token-bucket boundaries with explicit capacity, refill rate, clock, and request cost.",
+    "Serialize shared read/refill/debit using SQLite BEGIN IMMEDIATE. Preserve per-tenant isolation.",
+    "Choose fail-open or fail-closed explicitly; report degraded decisions. Regional quotas are disjoint reservations rather than a fictional global counter."
+  ],
+  "architecture": "tenant request → validation → atomic bucket refill/debit → allowed or retry_after. Regional design allocates conserved token ceilings before a partition occurs.",
+  "limitations": "SQLite is one shared authority on one machine. Regional allocation is a static accounting model. Dynamic quota transfer, distributed clocks and an HTTP proxy are extensions.",
+  "extensions": [
+    "Add expiry/cleanup for inactive tenants and test capacity after eviction.",
+    "Implement conservative reservation transfers with fencing tokens."
+  ],
+  "learnerFile": "projects/learner/limiter.py",
+  "referenceFile": "projects/reference/limiter.py",
+  "instructionsFile": "projects/P2.md",
+  "testFile": "projects/tests/test_projects.py",
+  "referenceReveal": "Explicit reveal in the academy; reference source also remains inspectable on disk. Educational spoiler control, not secure examination."
+}

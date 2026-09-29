@@ -1,0 +1,143 @@
+{
+  "id": "038",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Interpret snapshots and operation histories rather than isolation labels alone.",
+    "Distinguish nonrepeatable reads, phantoms, lost updates, and write skew.",
+    "Explain PostgreSQL 18 read-committed, repeatable-read, and serializable boundaries.",
+    "Test whether an invariant survives a permitted concurrent history."
+  ],
+  "retrieval": [
+    "From L036: construct two atomic transactions that leave no supervisor on duty.",
+    "From L037: why must a retry recompute earlier reads?"
+  ],
+  "sections": [
+    {
+      "id": "mvcc",
+      "title": "A reader can observe a version rather than block every writer",
+      "markdown": "Core 55 minutes: retrieval 5, mechanism 18, history exercise 8, bounded exercise 10, questions 10, review 4. Multi-version concurrency control keeps versions and visibility information so reads can observe a defined snapshot while writes create new versions. The snapshot rule depends on the isolation level and implementation. MVCC is a mechanism family, not a synonym for serializability.\n\nImagine account row X changes from 10 to 20 while a report is running. A snapshot can let the report continue seeing the version 10 according to its visibility boundary. Keeping old versions has a cost: long-running transactions can retain data that cleanup would otherwise reclaim. Writers still coordinate conflicts; MVCC does not mean the database has no locks.\n\nAnalyze a history using transaction starts, reads, writes, commits, and the invariant. Ask what each read may observe and which transactions may commit. A label such as “repeatable” is insufficient because products can implement stronger or different behavior than the minimum expected by a generic table."
+    },
+    {
+      "id": "levels",
+      "title": "Version-specific behavior, stated compactly",
+      "markdown": "For PostgreSQL 18, ordinary READ COMMITTED reads use a statement snapshot, so successive statements can observe newer committed changes. REPEATABLE READ uses a transaction snapshot established by its first non-transaction-control statement and prevents phantom reads in that implementation, but can still admit serialization anomalies. SERIALIZABLE adds conflict detection so committed transactions are equivalent to some serial order, with possible aborts that require retry. Requested READ UNCOMMITTED behaves as READ COMMITTED. These are documented PostgreSQL behaviors, not universal claims about every database.\n\nSerializable does not mean physically running one transaction at a time, and it does not promise that the chosen serial order follows every external wall-clock observation. Distributed linearizability is a different topic in M08. It also cannot repair a transaction that violates the business invariant even when run alone. The application still needs correct logic, constraints, and correct retry handling.\n\nDirty read: observing another transaction's uncommitted write. Nonrepeatable read: reading a row twice and seeing another committed value. Phantom: repeating a predicate query and seeing a changed matching set. Lost update and write skew concern how concurrent decisions produce writes; do not collapse them all into “eventual consistency.”"
+    },
+    {
+      "id": "history",
+      "title": "The supervisor example has no valid serial explanation",
+      "markdown": "Initial state: Alice on duty, Bob on duty; invariant: at least one remains on duty. Transaction A reads both and sees two, then writes Alice off. Transaction B reads the same initial snapshot and writes Bob off. Their writes touch different rows, so merely detecting same-row write collisions may allow both. Final state has zero supervisors.\n\nTry serial order A then B. After A commits, B would see only Bob on duty and refuse to take Bob off. Try B then A: A would refuse. Neither serial order produces both off if the transaction logic is correct. The concurrent result is therefore a serialization anomaly called write skew in this example.\n\nRepairs can include serializable execution with whole-transaction retry, or explicit coordination through a shared authoritative guard row/lock that every shift-change path uses. Adding a row CHECK(on_duty IN (true,false)) does not express “at least one across the set.” Locking only the row being changed also misses the cross-row decision. The repair must cover the predicate or its equivalent shared authority.\n\nA retry is meaningful: if A commits and B is aborted, B's new attempt sees only Bob remaining and returns a business rejection. That rejection is correct; the system has not failed merely because it refused the original request after re-evaluating the invariant."
+    },
+    {
+      "id": "testing",
+      "title": "Write expected permitted histories before choosing a setting",
+      "markdown": "For a report, decide whether each statement may see newer data or whether the whole report must share a snapshot. For a reservation, decide which concurrent acceptances must be impossible. For a counter update, prefer an atomic arithmetic update or version guard rather than assuming a broad isolation label repairs a stale application assignment. The required behavior is specific to the operation.\n\nUse coordinated two-session tests to force the read/read/write/write sequence. Record engine version, isolation level, transaction boundaries, observed reads, commit/abort results, and final invariant. The local SQLite lab is useful for constraints and atomic rollback; it is not a substitute for PostgreSQL snapshot-isolation experiments. PostgreSQL history tests in this course are documented scripts until actually executed on that engine.\n\nFailure scenarios include a long report retaining old versions, a retry loop that reuses stale input state, mixed writer paths where some bypass the guard, and a notification sent from an attempt that later aborts. Common misconceptions: a snapshot is always the latest state; no dirty reads implies serializability; repeatable read means identical behavior in every engine; serializable means no application errors; MVCC eliminates locking.\n\nOptional depth: compare a predicate guard-row strategy with serializable retry under a hot shared schedule, measuring both conflicts and operational complexity. That comparison is additional work beyond the one-hour conceptual history."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "write-skew",
+      "title": "Disjoint row writes can break a shared invariant",
+      "source": "sequenceDiagram\nparticipant A as Transaction A\nparticipant S as Snapshot: Alice and Bob on duty\nparticipant B as Transaction B\nA->>S: Read count 2\nB->>S: Read count 2\nA->>S: Set Alice off duty\nB->>S: Set Bob off duty\nNote over A,B: If both commit, count becomes 0\nNote over A,B: Neither serial order would allow this result",
+      "caption": "The history illustrates write skew under a snapshot model without sufficient serialization protection. PostgreSQL serializable execution must prevent both from committing in this anomalous history.",
+      "steps": [
+        "Both decisions rely on the same original set.",
+        "Each writes a different row.",
+        "Same-row conflict checks alone miss the shared rule.",
+        "A serializable or correct shared-guard strategy rejects or retries a conflicting attempt."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Two transactions each read that a project has two administrators, then remove a different administrator. The invariant requires at least one. Explain why the final zero-admin state is not equivalent to either serial order. Propose two repair families and what must happen when a retried removal sees only one administrator.",
+    "minutes": 10,
+    "rubric": [
+      "Shows both candidate serial orders.",
+      "Identifies cross-row predicate rather than same-row lost update.",
+      "Names serializable retry or shared invariant guard covering all writers.",
+      "Returns a valid business rejection on retry."
+    ],
+    "solution": "If A removes first, B reads one remaining and must refuse; reversing order makes A refuse. Both removals therefore have no valid serial explanation. Use serializable transactions with whole-attempt retries or serialize all membership-changing decisions on a shared project guard while rechecking the count. On a fresh retry seeing one admin, reject removal; do not keep retrying until the invariant breaks. Constraints on individual membership rows cannot alone express this minimum-cardinality rule."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "MVCC guarantees serializability by itself:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Snapshot visibility is a mechanism; permitted histories depend on isolation and conflict handling."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "In PostgreSQL18, REPEATABLE READ can still permit:",
+      "options": [
+        "Dirty reads",
+        "Serialization anomalies such as write skew",
+        "Every new committed row in every repeated query"
+      ],
+      "answer": "Serialization anomalies such as write skew",
+      "explanation": "Its stable snapshot is stronger than some generic repeatable-read descriptions but is not serializable."
+    },
+    {
+      "id": "q3",
+      "type": "open",
+      "prompt": "Why can disjoint writes conflict in business meaning?",
+      "answer": "Both may rely on the same predicate or shared invariant, so changes to different rows can jointly invalidate the decision.",
+      "explanation": "Row identity is not the full dependency graph."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What should an isolation test record?",
+      "answer": "Engine/version, level, transaction boundaries, forced read/write sequence, observed values, commit/abort outcomes, and final invariant.",
+      "explanation": "Without those details an isolation label does not explain the result."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does serializable fix a transaction that removes the last administrator even when run alone?",
+      "answer": "No. Serializability preserves equivalence to serial execution; the transaction itself must enforce the business rule.",
+      "explanation": "Correct single-transaction logic remains necessary."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "MVCC?",
+      "back": "Version-based visibility supporting snapshots, with engine-specific coordination."
+    },
+    {
+      "front": "Nonrepeatable read?",
+      "back": "A repeated row read sees another committed value."
+    },
+    {
+      "front": "Phantom?",
+      "back": "A repeated predicate query sees a changed matching set."
+    },
+    {
+      "front": "Write skew?",
+      "back": "Concurrent decisions based on shared state write different rows and jointly violate an invariant."
+    },
+    {
+      "front": "Serializable means?",
+      "back": "Committed transactions match some valid serial execution, potentially using abort/retry."
+    },
+    {
+      "front": "Isolation labels portable?",
+      "back": "Not enough alone; verify the engine/version’s actual permitted histories."
+    }
+  ],
+  "mentalModel": "Read the history: which facts did each decision depend on, and can all accepted effects fit any valid serial order?",
+  "sources": [
+    {
+      "title": "PostgreSQL 18: Transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

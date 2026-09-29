@@ -1,0 +1,152 @@
+{
+  "id": "043",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish definitely absent from possibly present in a Bloom filter.",
+    "Estimate filter memory and false-positive I/O under explicit assumptions.",
+    "Separate filter, page-cache, and compression effects in a storage budget."
+  ],
+  "retrieval": [
+    "L042: why can one negative lookup encounter several sorted files?",
+    "L006: distinguish bits, bytes, decimal MB, and binary MiB."
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Avoid reading bytes that cannot answer the question",
+      "markdown": "An LSM lookup for a missing key may examine many candidate files. Most contain nothing useful for that key. A small summary can reject impossible candidates before expensive block reads. The summary need not prove presence: it only needs a trustworthy negative result.\n\nA Bloom filter is a bit array with several hash-derived positions for each inserted key. Insertion sets those positions. A query with any required bit unset is definitely absent from the represented set; if every bit is set, the key is only possibly present. Different keys can set the same positions, causing false positives. The actual index or data block must decide whether a possibly-present key exists."
+    },
+    {
+      "id": "mechanism",
+      "title": "The guarantee depends on what the filter represents",
+      "markdown": "For a correctly constructed filter queried with the same hash/encoding scheme, inserted elements are not false negatives. That conditional matters: an out-of-date filter, corruption, inconsistent normalization, or clearing shared bits can incorrectly reject a real key. The basic bit-array structure cannot safely delete a key by clearing its bits, because another key may depend on them. Immutable-file filters fit neatly: rebuild a filter for the replacement file during compaction.\n\nWith n inserted keys, m bits, and k approximately independent uniform hash positions per key, the usual false-positive approximation is p ≈ (1 − e^(−kn/m))^k. The approximate optimal k is (m/n) ln 2; choose a sensible integer in an implementation. This is a model, not a guarantee about an arbitrary toy hash. More bits reduce false positives but consume memory; more hashes add CPU and eventually stop helping.\n\nFilter memory competes with index blocks, uncompressed data blocks, memtables, application memory, and operating-system caches. A cache stores data that has been read; a filter stores a lossy membership summary. Increasing one can force another out. Compare end-to-end I/O and latency under the real working set, not one metric in isolation."
+    },
+    {
+      "id": "worked",
+      "title": "One million keys and a 1% target",
+      "markdown": "For one million keys and target p=0.01, the approximation gives m = −n ln(p)/(ln 2)^2 ≈ 9.59 million bits, or 1.20 million bytes before allocation/metadata. That is about 1.14 MiB, with k ≈ 6.64, rounded to seven hash positions. It is not 9.59 MB: the formula returns bits.\n\nSuppose a definitely-missing lookup checks eight independent candidate files, each with a 1% false-positive probability. The expected number of unnecessary file probes is 8 × 0.01 = 0.08. The chance of at least one false-positive file is approximately 1 − 0.99^8 ≈ 7.73%. These are different quantities. Independence is an approximation and a file probe is not automatically a physical disk operation when the needed block is cached.\n\nCompression changes a different budget. If a requested 64-KiB uncompressed block occupies 20 KiB on disk, a cold miss reads fewer bytes but spends CPU decoding. If it is already cached uncompressed, that request may avoid both disk and decompression. A high-entropy encrypted blob may compress poorly; a repeated status column may compress well. Benchmark representative data and record whether cache sizes refer to compressed or uncompressed bytes."
+    },
+    {
+      "id": "model",
+      "title": "Executable estimation, then a failure experiment",
+      "markdown": "The following arithmetic uses the approximation above. It does not allocate a filter and does not measure production false positives.\n\n```python\nfrom math import log, ceil\n\nn, target = 1_000_000, 0.01\nm = ceil(-n * log(target) / log(2) ** 2)\nk = round(m / n * log(2))\nprint(m, k, round(m / 8 / 1024**2, 2))\nassert 9_580_000 < m < 9_590_000\nassert k == 7\nassert round(1 - 0.99**8, 4) == 0.0773\n\n```\n\nExpected output is 9585059 7 1.14. To reason about unsafe deletion, imagine key A maps to bits {2,5} and key B maps to {5,7}. Inserting both sets 2,5,7. Deleting A by clearing 2 and 5 makes B fail its bit-5 check, even though B remains in the data. Rebuilding from the live set or using a carefully specified deletion-capable structure is required.\n\nCommon misconceptions: “possibly present” means found; 1% false positives means 1% of existing records disappear; compression saves CPU; and a large page cache rescues any access pattern. The filter only rejects negatives, compression trades resources, and caches need locality. Optional depth: account separately for a cold restart, where warm-cache measurements no longer describe the first reads."
+    },
+    {
+      "id": "session-budget",
+      "title": "How to use this session",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation and diagrams, 8 worked trace or arithmetic, 10 bounded exercise, 10 scheduled Q1–Q3, and 4 solution comparison/cards. Q4–Q5 and extension prompts are optional extra practice. Python blocks labeled executable are self-contained standard-library models; they do not implement a production storage engine."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "filter",
+      "title": "A negative filter answer can safely skip a file",
+      "source": "flowchart LR\nK[Lookup key] --> F[Bloom summary for file]\nF -->|At least one bit unset| A[Skip file: absent]\nF -->|All required bits set| I[Consult real file index]\nI -->|Candidate block| C[Block cache lookup]\nC -->|Miss| R[Read and decompress block]\nC -->|Hit| V[Verify actual key and version]\nR --> V",
+      "caption": "A Bloom-positive result is not a database answer. Data verification still decides presence and the visible version.",
+      "steps": [
+        "Check membership bits using the same key encoding as insertion.",
+        "A definite negative removes a candidate file.",
+        "A positive continues through index and cache lookup.",
+        "Verify the actual key; a false positive simply did extra work."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A proposal allocates 10 bits/key for 20 million keys, with seven hash positions. Estimate raw filter MB, then expected unnecessary probes for six files at 1% false positives. Explain why clearing bits on deletion can break correctness using two overlapping keys.",
+    "rubric": [
+      "Convert 200 million bits to 25 million bytes.",
+      "Distinguish expected probes 0.06 from probability of any false positive.",
+      "Use overlapping bits to demonstrate a false negative after unsafe deletion."
+    ],
+    "solution": "20,000,000 × 10 = 200,000,000 bits = 25,000,000 bytes, or 25 decimal MB before overhead. At six candidate files each with p=0.01, expected unnecessary probes are 0.06 per missing lookup; under independence the probability of at least one is 1−0.99^6≈5.85%. Keys A={2,5} and B={5,7} share bit 5. Clearing A’s bits removes bit 5 and falsely rejects B. Retain immutable-file filters until replacement or use a deletion-aware design with its own correctness argument."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "All Bloom query bits are set. What may the engine conclude?",
+      "options": [
+        "The key definitely exists",
+        "The key may exist and needs verification",
+        "The key is definitely absent"
+      ],
+      "answer": "The key may exist and needs verification",
+      "explanation": "Collisions can set the same bits; membership is not proven by a positive."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "20 million keys at 10 bits/key consume how many raw decimal MB?",
+      "answer": 25,
+      "unit": "MB",
+      "tolerance": 0,
+      "explanation": "200 million bits / 8 / 1,000,000 = 25 MB."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "What is unsafe in a basic Bloom filter?",
+      "options": [
+        "Rebuilding it for a new immutable file",
+        "Clearing a removed key’s shared bit positions",
+        "Checking a real data block after a positive"
+      ],
+      "answer": "Clearing a removed key’s shared bit positions",
+      "explanation": "Other still-present keys can depend on those bits, creating false negatives."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why might more Bloom memory make end-to-end performance worse?",
+      "answer": "It may displace useful cached data or indexes and add CPU work; evaluate the combined memory budget.",
+      "explanation": "Optimizing filter false-positive rate alone ignores the resource competition."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is a 3× compression ratio not a 3× query speedup?",
+      "answer": "Some queries are CPU-bound, already cached, or read only a subset; decoding and metadata have costs.",
+      "explanation": "Fewer storage bytes is one mechanism, not an end-to-end latency equation."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Bloom negative?",
+      "back": "Definitely absent from the correctly represented set."
+    },
+    {
+      "front": "Bloom positive?",
+      "back": "Possibly present; inspect authoritative data."
+    },
+    {
+      "front": "Can basic Bloom bits be cleared safely for one deleted key?",
+      "back": "Not generally: bit positions may be shared."
+    },
+    {
+      "front": "Ten bits per key in bytes?",
+      "back": "1.25 bytes per key before overhead."
+    },
+    {
+      "front": "Filters versus caches?",
+      "back": "Filters reject impossible candidates; caches retain useful retrieved bytes."
+    }
+  ],
+  "mentalModel": "Spend small, well-defined memory to avoid unnecessary I/O; never promote a probabilistic positive into truth.",
+  "sources": [
+    {
+      "title": "RocksDB — Bloom Filter",
+      "url": "https://github.com/facebook/rocksdb/wiki/RocksDB-Bloom-Filter",
+      "scope": "Negative filtering and false-positive tradeoffs.",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RocksDB — Overview",
+      "url": "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview",
+      "scope": "Memtables, sorted files, compaction and storage-engine boundaries; no version-specific performance promises.",
+      "checked": "2026-09-29"
+    }
+  ]
+}

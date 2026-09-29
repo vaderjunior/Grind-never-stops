@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "110",
+  "objectives": [
+    "Ask for the guarantee before selecting a mechanism.",
+    "Use actual traces to defend failure and recovery behavior."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "brief",
+      "title": "Candidate brief",
+      "markdown": "Design a durable equipment-order workflow that reserves inventory, obtains a deposit authorization, schedules a pickup, and confirms the order. The external provider can time out after accepting a request. Customers can cancel before pickup. Work through partial completion, recovery, and a changed requirement using explicit states."
+    },
+    {
+      "id": "format",
+      "title": "Saved assessment workflow",
+      "markdown": "Use the interview center for45minutes of reasoning and15minutes of feedback. Ask one clarification at a time. Record actual statements and artifacts. Finish the answering phase before retrieving the separate reference/debrief. A rubric score is educational evidence, not a hiring prediction."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "minutes": 45,
+    "prompt": "Design a durable equipment-order workflow that reserves inventory, obtains a deposit authorization, schedules a pickup, and confirms the order. The external provider can time out after accepting a request. Customers can cancel before pickup. Work through partial completion, recovery, and a changed requirement using explicit states.",
+    "rubric": [
+      "Scope and invariant.",
+      "Failure schedule and ownership.",
+      "Recovery and defended alternatives."
+    ],
+    "solution": "Use the protected interview debrief after submitting the attempt."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "Name the boundary, show a failing history, then defend the smallest mechanism that closes it.",
+  "sources": []
+}

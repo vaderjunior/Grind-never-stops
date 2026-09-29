@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "016",
+  "objectives": [
+    "Locate head-of-line blocking at application and transport layers.",
+    "Explain why multiplexing does not create backend capacity.",
+    "Choose measurements before proposing a protocol migration."
+  ],
+  "retrieval": [
+    "L012: why do later TCP bytes wait behind a lost earlier range?",
+    "L014: do HTTP method semantics change when the framing changes?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Six requests are waiting for different reasons",
+      "markdown": "A dashboard fetches summary, chart, permissions, activity, alerts, and a large export. If these requests share resources, one slow path can delay another. The phrase head-of-line blocking is only useful when you identify the queue and ordering rule. A slow earlier response in an ordered HTTP exchange is different from a missing byte range in TCP. A saturated application worker pool is a third problem.\n\nThe HTTP versions preserve the method/status semantics studied in L014 while changing how exchanges are represented on connections. Treat protocol selection as one part of a request path. It cannot compensate for a ten-second database scan or an unbounded queue."
+    },
+    {
+      "id": "mechanism",
+      "title": "Multiplexing moves the ordering boundary",
+      "markdown": "HTTP/1.1 supports persistent connections. Pipelined responses on a connection retain request order, so an early slow response can hold up later ones. Clients often use multiple connections to obtain concurrency, at the expense of extra connection state and setup. Do not assume that every browser actually uses pipelining.\n\nHTTP/2 gives concurrent exchanges separate streams and interleaves frames on a connection. Response B can make progress while response A is waiting on backend work. Stream identifiers preserve attribution; header compression reduces repeated metadata. But the connection still runs over TCP. If a missing TCP byte blocks delivery of later bytes containing frames for several HTTP streams, those streams can all stall at the receiver. Application multiplexing has not removed transport ordering.\n\nHTTP/3 maps HTTP onto QUIC. QUIC provides reliable ordered streams over UDP, with loss recovery and security integrated into the transport design. Missing data on one stream need not prevent delivery of already received independent stream data. Within the affected stream, order still matters. Congestion and connection-level limits remain shared, and packets can carry data from more than one stream. HTTP/3 does not make packet loss costless or requests independent of the same constrained link."
+    },
+    {
+      "id": "trace",
+      "title": "A loss experiment with two independent reads",
+      "markdown": "Imagine a small account-summary response A and a large chart response B. Under HTTP/2, a lost TCP segment containing some B frames can prevent the receiver from delivering later bytes containing A frames until retransmission fills the gap. Under HTTP/3, if A's stream data arrived and its required metadata is available, A can continue despite missing B stream data. This is a statement about ordering, not a prediction that every A completes faster.\n\nNow change the experiment: both A and B are waiting for one database connection pool. HTTP/3 cannot manufacture a free database connection. Measure DNS/connect/security timing, negotiated HTTP version, stream timing, loss/retransmission where available, server queue wait, and database wait. A protocol comparison that changes server implementation, cache warmth, and network conditions simultaneously cannot attribute improvement to the protocol.\n\nFor a simple concurrency bound, if ten backend slots each complete one independent 100 ms operation, the idealized service capacity is 100 operations/s before overhead. Sending 1,000 multiplexed requests instantly does not raise that bound; it creates waiting work. Use admission limits and deadlines at the application boundary."
+    },
+    {
+      "id": "failures",
+      "title": "Fallbacks and shared failure domains",
+      "markdown": "A network can block or degrade UDP while TCP works. A deployment should understand client and intermediary support and offer appropriate fallback. Negotiation and fallback can themselves add latency. Terminating HTTP/3 at an edge does not imply the backend speaks HTTP/3; each hop has its own protocol and limits.\n\nA single connection failure can interrupt many streams. Graceful draining must distinguish streams already in progress from new work. Retry only according to operation semantics, because a failed connection may follow a committed application effect. For a noisy client, bound streams, header sizes, request bodies, and outstanding work. Multiplexing changes accounting, not the need for limits.\n\nDo not say HTTP/2 removes all head-of-line blocking, or HTTP/3 is unreliable because it uses UDP. State the layer. Optional depth: investigate header-compression dependencies and connection migration after mastering the simpler ordering model."
+    },
+    {
+      "id": "budget",
+      "title": "Practice boundary",
+      "markdown": "Core 55 minutes: retrieval 5, explanation and diagrams 18, worked trace 8, bounded exercise 10, scheduled Q1–Q3 10, comparison and cards 4. Q4–Q5 are optional extra practice. Stop after the stated artifact rather than expanding the task into a full implementation."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "layers",
+      "title": "Two kinds of waiting",
+      "source": "flowchart TB\nsubgraph H2[HTTP/2 over TCP]\nL[Lost TCP bytes] -->|Blocks later byte delivery| A[Stream A frames]\nL -->|Blocks later byte delivery| B[Stream B frames]\nend\nsubgraph H3[HTTP/3 over QUIC]\nQ[Missing stream B data] -->|Wait for B recovery| QB[Stream B]\nQA[Received independent A data] -->|Can deliver subject to limits| APP[Application A]\nend",
+      "caption": "Illustrative ordering view. QUIC streams still share congestion and connection resources; the diagram does not promise independent throughput.",
+      "steps": [
+        "Identify the missing bytes or stream data.",
+        "In TCP, later byte delivery waits behind the gap.",
+        "In QUIC, independent received stream data can proceed.",
+        "Check shared congestion and backend limits before predicting latency."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "An HTTP/2 dashboard becomes slow during large downloads. Propose a controlled experiment that distinguishes TCP loss blocking from backend pool saturation. Specify what stays fixed, what is measured, and what observation would justify testing HTTP/3.",
+    "rubric": [
+      "Hold workload/server/cache state comparable.",
+      "Measure transport symptoms and backend queue time separately.",
+      "Avoid claiming protocol migration fixes every bottleneck."
+    ],
+    "solution": "Run the same request mix, cache state, and backend capacity under controlled loss/RTT profiles. Record small-response latency, retransmissions, negotiated protocol, pool wait, and server processing time. If small responses stall with loss while backend waits remain low, a QUIC comparison is justified. If pool waits dominate even without loss, first bound concurrency or improve the dependency. Repeat enough runs and report distributions rather than one lucky request."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "HTTP/2 multiplexing removes which constraint?",
+      "options": [
+        "All shared transport effects",
+        "The requirement that entire responses serialize in HTTP/1.1 response order",
+        "Database contention"
+      ],
+      "answer": "The requirement that entire responses serialize in HTTP/1.1 response order",
+      "explanation": "TCP ordering and backend resource limits still exist."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Does HTTP/3 provide unreliable HTTP because it uses UDP?",
+      "options": [
+        "Yes",
+        "No, QUIC supplies reliable ordered streams",
+        "Only for GET"
+      ],
+      "answer": "No, QUIC supplies reliable ordered streams",
+      "explanation": "UDP is the underlying datagram carrier; QUIC adds transport mechanisms."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "Ten slots, each doing 100 ms work, have what idealized throughput?",
+      "answer": 100,
+      "unit": "operations/s",
+      "tolerance": 0.01,
+      "explanation": "10 / 0.1 seconds = 100 operations/s, before overhead."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why retain fallback when introducing HTTP/3?",
+      "answer": "Some client/network/intermediary paths may not support it or may block UDP. Measure fallback behavior and avoid breaking reachability.",
+      "explanation": "Some client/network/intermediary paths may not support it or may block UDP. Measure fallback behavior and avoid breaking reachability."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why can one connection still be a shared failure domain?",
+      "answer": "Its termination or shared congestion/limits can affect many streams even if their in-stream delivery is independent.",
+      "explanation": "Its termination or shared congestion/limits can affect many streams even if their in-stream delivery is independent."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "HTTP/2 ordering benefit?",
+      "back": "Frames from concurrent HTTP exchanges can interleave."
+    },
+    {
+      "front": "HTTP/2 transport dependency?",
+      "back": "All streams rely on one ordered TCP byte stream per connection."
+    },
+    {
+      "front": "HTTP/3 transport?",
+      "back": "QUIC reliable streams over UDP."
+    },
+    {
+      "front": "Does multiplexing add worker capacity?",
+      "back": "No. It permits concurrent exchanges but does not add dependency capacity."
+    },
+    {
+      "front": "Name the queue first?",
+      "back": "Application response order, transport byte delivery, stream delivery, and worker queues have distinct blocking causes."
+    }
+  ],
+  "mentalModel": "Concurrency at one layer does not remove ordering or capacity limits at another.",
+  "sources": [
+    {
+      "title": "RFC 9113 — HTTP/2 streams and multiplexing",
+      "url": "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 9114 — HTTP/3 mapping",
+      "url": "https://www.rfc-editor.org/rfc/rfc9114.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "RFC 9000 — QUIC streams and loss recovery",
+      "url": "https://www.rfc-editor.org/rfc/rfc9000.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

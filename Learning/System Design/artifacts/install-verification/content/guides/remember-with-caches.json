@@ -1,0 +1,275 @@
+{
+  "id": "remember-with-caches",
+  "title": "Caching: reuse an answer you already have",
+  "version": 2,
+  "week": 6,
+  "level": "beginner",
+  "minutes": 45,
+  "status": "drafted",
+  "authoredBy": "original",
+  "summary": "Keep a reusable copy of frequently read note information, then follow a cache hit and a miss back to the saved record.",
+  "objectives": [
+    "Explain what a cache stores and what it does not replace.",
+    "Trace cache-aside reads through hits and misses.",
+    "Calculate a simple hit fraction.",
+    "Identify freshness and permission questions before caching private data."
+  ],
+  "terms": [
+    {
+      "term": "Cache",
+      "definition": "A reusable copy of data or a computed result kept to avoid repeating expensive work."
+    },
+    {
+      "term": "Cache key",
+      "definition": "The identifier used to find one cached result."
+    },
+    {
+      "term": "Hit",
+      "definition": "A lookup finds a usable cached entry."
+    },
+    {
+      "term": "Miss",
+      "definition": "A lookup does not find a usable cached entry."
+    },
+    {
+      "term": "Source of truth",
+      "definition": "The main accepted record used to resolve disagreement with a cached copy."
+    },
+    {
+      "term": "Cache-aside",
+      "definition": "The application checks the cache, and on a miss reads the main store and fills the cache."
+    }
+  ],
+  "retrieval": [
+    "Why can another app instance read a note saved through the first instance?",
+    "Why does a load balancer not make a shared slow database faster?"
+  ],
+  "sections": [
+    {
+      "id": "reuse",
+      "title": "Repeated reads can repeat unnecessary work",
+      "markdown": "A class repeatedly opens the same public photo note. Each request asks the database for the same title and description. If that read is a measured source of unnecessary work, the app can keep a reusable copy in a cache. The next request may reuse the result instead of repeating the database lookup.\n\nThink of a cook keeping a frequently used recipe on a nearby card instead of walking to the cookbook shelf each time. The card is a convenient copy. If the cookbook is corrected, the card may be old. If the card disappears, the recipe can be copied again. The analogy does not imply computer caches have unlimited space or that every cached answer is safe for every person.\n\nThe source of truth is the main accepted record. In our app, it is the saved database row for the note. The cache is a copy we can rebuild. If a supposedly cached note is the only place an accepted user edit exists, losing it is data loss; we have accidentally treated temporary reuse as the main storage promise.\n\n> **Pause and predict:** The cache process restarts but the saved row survives. Have we lost the note or lost a shortcut? In this design the shortcut is lost. The next permitted read can rebuild it, provided the database fallback has enough capacity."
+    },
+    {
+      "id": "lookup",
+      "title": "Follow a miss before celebrating a hit",
+      "markdown": "Use a key such as public-note:41:v1 for one clearly defined public representation. Here v1 names the response format, not a promise that the note never changes. The application asks the cache for that key. If no usable entry exists, the lookup is a miss. The application reads the current accepted record from the database, creates the response, stores a copy under the key, and returns the response to the browser.\n\nOn a later request, the application asks for the same key. If an allowed usable entry is present, the lookup is a hit, and that result can be returned. This pattern is called cache-aside because the application manages the check and fill beside its ordinary data access. The cache does not magically know every database change; the application needs a policy for replacing or expiring entries.\n\nThe key must describe which answer is being reused. If one result depends on language, image size, or permission-sensitive fields, those differences cannot be silently mixed under a shared key. A thumbnail and an original image are different representations. A public excerpt and a private full note are different responses even when both refer to note 41.\n\nPermission comes before exposing private information. For a private-note cache, retain the access check and an explicit rule for which users can receive the cached representation. A cache hit means we found data, not that the caller is entitled to it. Our simplest classroom example caches only a defined public note view so this distinction stays visible."
+    },
+    {
+      "id": "numbers",
+      "title": "Reuse reduces one kind of work",
+      "markdown": "Suppose twenty requests ask for that public note and eighteen are cache hits. The hit fraction is 18/20, or 90%. Two misses still need database reads. This is useful only if the cached result is correct enough for the product and cache lookup is worthwhile. A high hit fraction for wrong or leaked responses is not success.\n\nUse invented timing assumptions to count both paths:\n\n| Path | Cost in this simplified model | Share of requests |\n| --- | --- | --- |\n| Hit | Cache lookup: 5 ms | 90% |\n| Miss | Cache lookup 5 ms + database read 50 ms = 55 ms | 10% |\n\nMean modeled access time is **0.9 × 5 + 0.1 × 55 = 10 ms**. This excludes network time, permission checks, encoding the response, and browser rendering. It is not a measured latency for a real cache product.\n\nThe first request still misses, and entries can disappear. Caches have finite memory, so they may remove entries to make room; this removal is called eviction. A restarted empty cache also produces misses. The database needs a plan for the increased work when the convenient copies are unavailable. A cache can reduce normal load without making its fallback path infinitely capable."
+    },
+    {
+      "id": "changes",
+      "title": "An old copy is a product decision",
+      "markdown": "An edit can leave the two locations disagreeing:\n\n| Location | Before edit | After database edit, before cache policy runs |\n| --- | --- | --- |\n| Accepted database row | Garden | Spring garden |\n| Cached public view | Garden | Garden |\n\nRemoving the cached entry so a later request reloads it is **invalidation**. Replacing it stores a new copy. Expiry limits its usable lifetime under policy. None happens merely because a separate database row changed.\n\nWhich delay is acceptable depends on the information. A public photo caption may tolerate a short delay. A permission revocation or a final booking decision may require a different path. Do not describe all old data as harmless simply because the cache makes the page fast. The coming cache-patterns and CDN chapters work through freshness and nearby delivery more carefully.\n\nFor now, keep the design small: define one public view, one key, one main record, a miss path, and an update policy that will be refined next. Measure hit fraction and database work separately. If almost every request asks for a new uncached key, the extra cache lookup may add cost without much reuse.\n\nYour checkpoint is to narrate two requests and one change. First request misses and fills. Second request hits. An edit makes the copy potentially old, so the design needs an explicit response. These three events reveal more understanding than simply saying that caches are fast."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "aside",
+      "title": "A miss returns to the accepted stored record",
+      "source": "flowchart LR\nR[Request for defined public note view] --> A[Application]\nA --> C{Usable cache entry?}\nC -->|Hit| V[Return cached representation]\nC -->|Miss| D[(Read main database record)]\nD --> F[Create response and fill cache]\nF --> V",
+      "caption": "The drawing assumes the requested view is allowed to be public. Private paths still require permission checks and a safe cache-key policy.",
+      "steps": [
+        "Define exactly which representation the key identifies.",
+        "On a hit, reuse an eligible entry.",
+        "On a miss, read the accepted record and fill the copy.",
+        "After a change, apply the freshness policy before trusting the old copy indefinitely."
+      ],
+      "sectionId": "lookup"
+    },
+    {
+      "id": "copy-lifecycle",
+      "sectionId": "changes",
+      "title": "A cached copy has a lifecycle separate from the main record",
+      "source": "flowchart LR\nD[(Accepted note in database)] --> F[Fill cached public view]\nF --> H[Reuse while eligible]\nH --> X[Expiry or eviction removes copy]\nX --> M[Next request misses]\nM --> D\nD -.->|Edit requires an update policy| H",
+      "caption": "Expiry and eviction can remove a copy; neither means the accepted database note was deleted. The dashed edit edge names a required policy rather than promising automatic synchronization.",
+      "steps": [
+        "Build a reusable representation from the saved record.",
+        "Reuse it only under its scope and freshness rules.",
+        "Expect the copy to disappear and provide a bounded path to rebuild it."
+      ]
+    }
+  ],
+  "exercise": {
+    "prompt": "Thirty requests arrive for a public note. Twenty-four find a usable cached copy. Compute the hit fraction and number of database reads under cache-aside. Then Maya edits the title. Explain why the cached title may be old and what decision the app must make.",
+    "minutes": 8,
+    "rubric": [
+      "Computes 80% hits and six misses.",
+      "Connects misses to six database reads under the stated model.",
+      "Names invalidation/update/expiry with a permitted-staleness decision."
+    ],
+    "solution": "24/30=80% hit fraction. Six misses need database reads in this simple model. The database edit does not automatically rewrite the cached copy, so later hits can return the old title. Decide how long that is acceptable and remove, replace, or expire entries accordingly; do not silently apply the same policy to permission-sensitive results."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does a cache hit establish?",
+      "options": [
+        "A usable entry was found under the lookup policy",
+        "The caller is automatically authorized",
+        "The database can be deleted"
+      ],
+      "answer": "A usable entry was found under the lookup policy",
+      "explanation": "Data presence is separate from permission and permanent storage."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "A cache-aside miss normally leads to:",
+      "options": [
+        "Reading the main store and filling a copy",
+        "Deleting the requested note",
+        "Returning somebody else’s key"
+      ],
+      "answer": "Reading the main store and filling a copy",
+      "explanation": "The miss path retrieves the accepted data needed to answer."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "If a cache holds the only copy of a confirmed edit, losing it is harmless:",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer": "False",
+      "explanation": "Then it is carrying the main storage responsibility, whatever it is called."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why must cache keys distinguish public excerpts from private full notes?",
+      "answer": "They are different representations with different permission requirements; sharing one entry can expose information intended for another audience.",
+      "explanation": "Correct key design and access checks work together."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why should you inspect database load when a cache restarts?",
+      "answer": "An empty cache creates more misses, so previously avoided database work returns and may exceed its fallback capacity.",
+      "explanation": "Normal hit rates do not prove safe behavior during cache loss."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Cache?",
+      "back": "A reusable copy that avoids repeated work."
+    },
+    {
+      "front": "Hit versus miss?",
+      "back": "Usable copy found versus not found."
+    },
+    {
+      "front": "Source of truth?",
+      "back": "The main accepted record when copies disagree."
+    },
+    {
+      "front": "Cache-aside miss?",
+      "back": "Application reads the main store, fills a copy, and returns the result."
+    },
+    {
+      "front": "Invalidation?",
+      "back": "Removing or marking an old cached entry unusable so it is refreshed."
+    }
+  ],
+  "mentalModel": "A cache remembers an answer cheaply; the design still decides whose answer it is and when it is too old.",
+  "sources": [
+    {
+      "title": "ByteByteGo: caching strategies, optional visual vocabulary",
+      "url": "https://bytebytego.com/guides/top-5-caching-strategies/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "MDN: HTTP caching and private/shared responses",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "miss-hit-evict-rebuild",
+      "sectionId": "lookup",
+      "title": "One key survives in storage even when its cache entry does not",
+      "intro": "The database contains note 41, Garden. The public-view cache starts empty and is disposable.",
+      "steps": [
+        {
+          "title": "First request misses",
+          "explanation": "The application looks for the exact public-view key, finds no usable entry, and reads the saved record.",
+          "state": [
+            {
+              "label": "Cache key",
+              "value": "public-note:41:v1"
+            },
+            {
+              "label": "Cache state",
+              "value": "Missing"
+            },
+            {
+              "label": "Database",
+              "value": "41 → Garden"
+            }
+          ]
+        },
+        {
+          "title": "Fill and return",
+          "explanation": "The app stores the public representation with its chosen expiry and returns it. The database remains the main record.",
+          "state": [
+            {
+              "label": "Cache value",
+              "value": "Garden public view"
+            },
+            {
+              "label": "Database",
+              "value": "41 → Garden"
+            },
+            {
+              "label": "Response source",
+              "value": "Fresh database read"
+            }
+          ]
+        },
+        {
+          "title": "Second request hits",
+          "explanation": "The same permitted representation can be reused while eligible.",
+          "state": [
+            {
+              "label": "Requested key",
+              "value": "public-note:41:v1"
+            },
+            {
+              "label": "Cache outcome",
+              "value": "Hit"
+            },
+            {
+              "label": "Additional database read",
+              "value": "None in this path"
+            }
+          ]
+        },
+        {
+          "title": "Evict and rebuild later",
+          "explanation": "A capacity policy removes the copy. A later miss follows the same bounded read-and-fill path.",
+          "state": [
+            {
+              "label": "Cache after eviction",
+              "value": "Missing"
+            },
+            {
+              "label": "Saved note",
+              "value": "Still in database"
+            },
+            {
+              "label": "Next path",
+              "value": "Read, fill, return"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Hit, miss, and eviction describe the reusable copy. They do not change which component owns the accepted note."
+    }
+  ]
+}

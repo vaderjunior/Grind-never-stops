@@ -1,0 +1,152 @@
+{
+  "id": "044",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Derive row versus column layout from the bytes a query touches.",
+    "Distinguish analytical columnar storage from a wide-column partitioned model.",
+    "Bound partitions and account for duplicated query views."
+  ],
+  "retrieval": [
+    "L031: which access patterns drove your schema?",
+    "L034: why can an indexed point lookup and a scan have different cost models?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A row lookup and a fleet-wide sum want different neighborhoods",
+      "markdown": "A customer-support screen retrieves one shipment: recipient, address, status, package size, courier, and timestamps. A capacity report sums package weight for every shipment in the last month, grouped by region. Both queries concern the same logical table but touch different parts of it.\n\nA row-oriented layout stores the fields of a row close together, which suits retrieving or changing a small number of complete records. A column-oriented layout groups values from one column across many rows, so an analytical scan can read fewer columns and process same-type values together. These are physical layout choices, not a rule that SQL means row storage or that columns cannot support transactions. Engines can mix layouts, indexes, and execution strategies."
+    },
+    {
+      "id": "mechanism",
+      "title": "The word “column” describes two different ideas",
+      "markdown": "Analytical column stores often encode blocks of same-type values, exploit repeated values, and evaluate batches. Sorting, partition pruning, metadata, and indexes can skip work before decoding. Small scattered updates may require a different ingestion/merge path from a conventional row-store update. The specific engine and table configuration determine the guarantee.\n\nA wide-column model such as Cassandra is organized around partition keys and ordered rows within partitions. A query such as “events for device X during day D ordered by time” can be modeled as partition (device_id, day), clustering order (event_time, event_id), and selected values. That is not the same as storing all devices’ temperature values together for a fleet-wide analytical scan.\n\nQuery-driven duplication creates responsibility: a table by device and a table by location may represent the same event twice. Decide which representation owns the original event and how another representation is maintained and repaired. This module names the problem; later asynchronous-data modules build safe update pipelines. Do not casually promise an atomic cross-table view because both tables describe one business event."
+    },
+    {
+      "id": "worked",
+      "title": "Which bytes does the report require?",
+      "markdown": "Assume 100 million rows, 20 fixed-width fields averaging 8 bytes, and no compression, headers, indexes, or pruning. The row payload is 16 billion bytes. Reading only weight and region in an ideal column layout touches 1.6 billion payload bytes, a 10× reduction. This is a byte-count illustration, not an end-to-end benchmark: grouping needs CPU/memory, region widths may vary, and physical blocks can change the amount actually read.\n\nNow model device history at 2 observations/s. One device-day contains 172,800 observations. At 80 bytes each before index/replication overhead, its raw payload is about 13.8 MB. A device-month partition grows to about 414.7 MB over 30 days. Whether that is acceptable depends on the engine and workload; a bounded day/hour bucket makes the growth limit and query fan-out explicit. A six-hour read near a day boundary touches two day buckets.\n\nThe same row can appear in two views only if the duplication budget and maintenance protocol are included. Storing an event by device, by tenant, and by location triples its logical representation before replication or indexes; choosing the word “NoSQL” does not remove those bytes."
+    },
+    {
+      "id": "design",
+      "title": "An access-path sketch, not a product shopping list",
+      "markdown": "The following is a CQL-style schema sketch, not a runnable PostgreSQL script:\n\n```sql\n-- Query: one device, one day, bounded timestamp interval.\nCREATE TABLE readings_by_device_day (\n    device_id text,\n    day date,\n    event_time timestamp,\n    event_id text,\n    temperature double,\n    PRIMARY KEY ((device_id, day), event_time, event_id)\n);\n```\n\nThe event ID distinguishes observations with equal timestamps; it does not prove real-world event order. A separate monthly analytical report may justify a columnar projection, but a small deployment could begin with a relational table and appropriate indexes. Start with its query plan and measured load before adding another state owner.\n\nFailure scenarios include an unbounded partition, one device producing far more events than assumed, late events being excluded by an incorrect timestamp boundary, and divergent duplicate views. Common misconceptions are equating Cassandra with analytical columnar scanning, assuming one column layout makes every query fast, or interpreting the simple 10× byte ratio as promised latency. Optional practice: add retention, backfills, and an extra query that crosses every device; explain what would invalidate your original model."
+    },
+    {
+      "id": "session-budget",
+      "title": "How to use this session",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation and diagrams, 8 worked trace or arithmetic, 10 bounded exercise, 10 scheduled Q1–Q3, and 4 solution comparison/cards. Q4–Q5 and extension prompts are optional extra practice. Python blocks labeled executable are self-contained standard-library models; they do not implement a production storage engine."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "layouts",
+      "title": "Two layouts and a separate partitioning model",
+      "source": "flowchart TB\nQ1[Fetch one complete shipment] --> R[Row-oriented access]\nR --> R1[Nearby fields for selected row]\nQ2[Sum two fields across many shipments] --> C[Column-oriented access]\nC --> C1[Read selected column blocks]\nQ3[Device X events for day D] --> W[Wide-column partition lookup]\nW --> W1[Ordered event rows within bounded partition]",
+      "caption": "Each branch starts from a concrete access pattern. Wide-column partitioning is not a synonym for analytical column storage.",
+      "steps": [
+        "Identify whether the query selects rows, columns, or a bounded partition.",
+        "Estimate touched bytes and index work for that pattern.",
+        "Check growth bounds and skew rather than only average volume.",
+        "Add a derived representation only with a maintenance and repair plan."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A telemetry product has a device-detail view, a 90-day fleet-wide average over two fields, and exact account-balance updates. Choose a starting storage model for each and justify a shared or separate deployment. Estimate uncompressed scan payload for 50 million rows of 12 eight-byte columns when only two columns are needed.",
+    "rubric": [
+      "Distinguish point/history, analytical, and transactional invariant workloads.",
+      "Compute 4.8 GB full payload versus 0.8 GB projected payload.",
+      "Avoid unnecessary stores at small scale and name projection freshness/repair if split."
+    ],
+    "solution": "The payload is 50M×12×8=4.8 billion bytes versus 50M×2×8=0.8 billion bytes, an ideal 6× reduction excluding overhead. A relational store with indexes and bounded history can be a simple baseline for detail and balance updates, using transactions for the balance invariant. If fleet analytics demonstrably interferes, a columnar derived representation can isolate scan work with an explicit freshness and reconciliation contract. A wide-column device-day view is plausible for high-volume bounded history, but it does not automatically solve fleet-wide analytics or exact cross-account invariants. Product names follow verified requirements and operations capability."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Which is the main benefit of analytical column layout for a narrow projection?",
+      "options": [
+        "It skips every row automatically",
+        "It can read selected columns without the full row payload",
+        "It removes all transaction costs"
+      ],
+      "answer": "It can read selected columns without the full row payload",
+      "explanation": "Column grouping reduces unnecessary bytes when only a few fields across many rows are needed."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "50 million rows × two selected 8-byte fields equals how many decimal GB?",
+      "answer": 0.8,
+      "unit": "GB",
+      "tolerance": 0.001,
+      "explanation": "50,000,000×2×8 / 1,000,000,000 = 0.8 GB."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Is a wide-column device/day partition the same as an analytical column store?",
+      "options": [
+        "Yes, both contain the word column",
+        "No, they organize access in different ways",
+        "Only when timestamps are present"
+      ],
+      "answer": "No, they organize access in different ways",
+      "explanation": "Partition-local ordered rows and column-wise analytical scans answer different access patterns."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why include day in a high-volume device history partition key?",
+      "answer": "To bound partition growth, trading some multi-day query fan-out for a manageable unit.",
+      "explanation": "The correct bucket size depends on rate, skew, retention, and query windows, not a universal one-day rule."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What responsibility follows from storing multiple query-specific copies?",
+      "answer": "Define authority, propagation, acceptable staleness, and repair of inconsistencies.",
+      "explanation": "Denormalization moves work and correctness responsibility; it does not eliminate them."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Row layout suits?",
+      "back": "Small numbers of records with several related fields read or updated together."
+    },
+    {
+      "front": "Column layout suits?",
+      "back": "Scanning selected fields across many records, often with useful compression."
+    },
+    {
+      "front": "Wide-column partition?",
+      "back": "A query-oriented grouping with a partition key and ordered rows, distinct from analytical column layout."
+    },
+    {
+      "front": "Why bound partitions?",
+      "back": "Growth, skew, latency, and maintenance must remain manageable."
+    },
+    {
+      "front": "Cost of duplicate views?",
+      "back": "Extra storage and writes plus a freshness and repair obligation."
+    }
+  ],
+  "mentalModel": "Put together the bytes a query needs together; the query boundary and correctness boundary must both remain explicit.",
+  "sources": [
+    {
+      "title": "ClickHouse — What is a columnar database?",
+      "url": "https://clickhouse.com/resources/engineering/what-is-columnar-database",
+      "scope": "Column-oriented analytical layout; all numerical examples here are original and illustrative.",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Apache Cassandra 5.0 — Data modeling introduction",
+      "url": "https://cassandra.apache.org/doc/latest/cassandra/developing/data-modeling/intro.html",
+      "scope": "Query-driven partition and clustering-key design, distinct from analytical column storage.",
+      "checked": "2026-09-29"
+    }
+  ]
+}

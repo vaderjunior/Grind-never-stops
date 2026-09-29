@@ -1,0 +1,150 @@
+{
+  "id": "061",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Separate replication from partitioning and backup.",
+    "Locate the acknowledged durability boundary in synchronous and asynchronous replication.",
+    "Explain why promotion requires more than noticing a timeout."
+  ],
+  "retrieval": [
+    "L041: when may a synchronous local commit reply?",
+    "L052: which state must survive replacing an API instance?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "One durable copy still has one failure domain",
+      "markdown": "A database commits an order to its local durable log. A process restart can recover it, but a destroyed disk cannot reconstruct its own bytes. Replication maintains another copy so some failures can be tolerated and some read workloads can move elsewhere. It does not automatically protect against every failure: two replicas on one failed volume are not independent, and an accidental deletion can propagate to every replica.\n\nReplication copies the same logical data. Partitioning divides different logical data among owners. A system may replicate each partition. Backup preserves a recoverable historical state, often with a different recovery time and purpose. Calling all three “more servers” erases the design question each mechanism answers."
+    },
+    {
+      "id": "mechanism",
+      "title": "What did the acknowledgment actually wait for?",
+      "markdown": "In the primary/replica model used here, one authorized primary orders writes. An asynchronous path acknowledges after its local durability condition, while transfer and application on replicas continue later. If that only current primary is permanently lost before a write reaches an eligible replacement, a previously acknowledged change can be missing after failover. The design must state the accepted recovery-point risk rather than promise zero loss from the existence of a replica.\n\nA synchronous policy waits for named remote evidence before success. That evidence could mean receipt in memory, write to an OS buffer, durable flush, or application into a readable state; those are not interchangeable. PostgreSQL documents distinct synchronization modes, including durable standby acknowledgment and remote application. The selected policy, replicas, and failure domains define the guarantee.\n\nWaiting adds latency and dependence on enough eligible replicas being available. Requiring all three replicas to acknowledge can stop writes when any one is unavailable; requiring a selected subset has a different availability and recovery contract. This lesson does not derive consensus or quorum correctness from a count. M08–M09 study those assumptions explicitly."
+    },
+    {
+      "id": "trace",
+      "title": "Three writes and a failed primary",
+      "markdown": "Primary P has committed versions 10, 11, and 12; replica R has received through 11 and applied through 10. The client received success for version 12 on an asynchronous path. If P disappears permanently and no other copy contains 12, promoting R cannot preserve that acknowledged version. R may apply 11 from its received durable log before serving, but cannot invent 12.\n\nUnder a policy that waits for R to durably flush version 12, the success response establishes a surviving copy on R if P alone is lost and R's storage survives. It does not necessarily mean a read from R immediately sees version 12 unless application visibility was part of the policy or the read waits for it. It also does not establish what happens if both copies share the same failure.\n\nFor a lower-bound illustration, local durable work takes 4 ms, then remote round-trip/flush work takes another 7 ms on this intentionally sequential critical path. Minimum acknowledgment time is about 11 ms before queueing and application costs. Real engines can overlap work, so do not blindly add independently reported latencies; draw the actual critical path first."
+    },
+    {
+      "id": "failure",
+      "title": "Promotion is a state-ownership decision",
+      "markdown": "A network timeout proves only that one observer did not hear a timely reply. The old primary may still accept writes from another client. Promoting a second writer without preventing old ownership creates diverging authorities. A correct failover procedure needs a safe candidate, an ownership decision, and rejection or isolation of obsolete writers. The detailed election and fencing mechanisms arrive later; naming the requirement now is more honest than “the load balancer picks a new primary.”\n\nTest a failed primary separately from a paused replica, a broken network link, corrupted storage, and an erroneous delete. Monitor transfer lag, durable receipt, apply lag, eligible replica health, and acknowledged-loss/recovery objectives. A read-only replica can be alive yet too stale for the required read. Retained logs need a space budget; an offline replica may require re-seeding when necessary history is no longer available.\n\nCommon misconceptions: replicas are backups; synchronous means every replica is readable at the newest state; and failover means zero interruption. A complete promise names what survives, where writes may pause, how ownership becomes exclusive, and how clients handle uncertain in-flight requests."
+    },
+    {
+      "id": "time-budget",
+      "title": "Core and optional depth",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 mechanism and diagrams, 8 worked trace, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and deeper variations are optional. Examples are deterministic teaching models, not production replication or routing implementations."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "ack",
+      "title": "Acknowledgment placement changes the loss window",
+      "source": "sequenceDiagram\nparticipant C as Client\nparticipant P as Primary\nparticipant R as Replica\nC->>P: Write version 12\nP->>P: Local durable commit\nP-->>C: Async policy may acknowledge here\nP->>R: Transfer version 12\nR->>R: Durable flush\nR-->>P: Remote durability acknowledgment\nP-->>C: Sync policy acknowledges here instead\nR->>R: Apply for read visibility",
+      "caption": "The two client responses are alternative policies for comparison, not two responses in one request. Remote durable receipt and read visibility are separate stages.",
+      "steps": [
+        "Commit on the primary under its local durability contract.",
+        "An asynchronous policy can acknowledge before a surviving remote copy exists.",
+        "A synchronous policy waits for the specified remote evidence.",
+        "A replica must apply the change before its ordinary read view includes it."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "P acknowledges version 12; R has durable log through 11 and has applied 10. P is permanently lost. State the maximum recoverable version from R, the acknowledged-loss risk, and why a timeout alone is not a safe promotion decision. Compare with an acknowledgment waiting for R’s durable version 12.",
+    "rubric": [
+      "Separate received/durable/applied positions.",
+      "Do not invent an unavailable version after failure.",
+      "Name exclusive ownership and the selected failure domain."
+    ],
+    "solution": "R can recover through durable version 11, even though it was serving only 10 before applying more log. If no surviving copy has version 12, the acknowledged change is lost under the asynchronous contract. A timeout may instead be a network partition while P remains active, so promotion must prevent obsolete-primary writes and select an eligible candidate. If success required R’s durable version 12, losing P alone need not lose that write, assuming R’s durability and history are intact. Reading it still requires application/visibility, and correlated loss of both copies remains outside that guarantee."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Replication and partitioning differ because…",
+      "options": [
+        "Replication copies logical data; partitioning divides logical data",
+        "They are synonyms",
+        "Partitioning always creates backups"
+      ],
+      "answer": "Replication copies logical data; partitioning divides logical data",
+      "explanation": "Both may be combined: each shard can have replicas."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Does remote durable receipt necessarily mean the replica has applied the change for reads?",
+      "options": [
+        "Yes",
+        "No, application visibility can lag durable receipt",
+        "Only for small records"
+      ],
+      "answer": "No, application visibility can lag durable receipt",
+      "explanation": "The chosen acknowledgment mode determines which boundary is awaited."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A strictly sequential 4-ms local stage and 7-ms remote stage require at least how many ms?",
+      "answer": 11,
+      "unit": "ms",
+      "tolerance": 0,
+      "explanation": "4+7=11 ms for the explicitly sequential model, excluding other work."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can replication reproduce an accidental delete?",
+      "answer": "Replication preserves changes, including erroneous authorized changes; a historical backup serves a different purpose.",
+      "explanation": "More live copies do not by themselves preserve a state before the mistake."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is a timed-out primary not automatically a dead primary?",
+      "answer": "The observer may be partitioned or delayed while other clients can still reach it.",
+      "explanation": "Safe replacement must establish exclusive ownership, not infer it from one missing response."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Replication?",
+      "back": "Multiple copies of the same logical data."
+    },
+    {
+      "front": "Partitioning?",
+      "back": "Different logical subsets assigned to different owners."
+    },
+    {
+      "front": "Async failover risk?",
+      "back": "Acknowledged primary-only changes may be absent from the replacement."
+    },
+    {
+      "front": "Sync acknowledgment question?",
+      "back": "Which remote event and which replicas must confirm before success?"
+    },
+    {
+      "front": "Timeout proves death?",
+      "back": "No. It proves lack of a timely response to that observer."
+    }
+  ],
+  "mentalModel": "Replication protects a named surviving copy; its acknowledgment and ownership rules determine what the user can rely on.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18 — Log-shipping standby servers",
+      "url": "https://www.postgresql.org/docs/18/warm-standby.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL 18 — Hot standby",
+      "url": "https://www.postgresql.org/docs/18/hot-standby.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

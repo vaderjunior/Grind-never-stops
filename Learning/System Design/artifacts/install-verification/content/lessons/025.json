@@ -1,0 +1,38 @@
+{
+  "id": "025",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Diagnose runtime blockage from a concrete execution trace.",
+    "Repair pagination with an explicit ordering contract.",
+    "Bound admission and acknowledge cancellation limits."
+  ],
+  "retrieval": [],
+  "sections": [
+    {
+      "id": "assessment",
+      "title": "Assessment session",
+      "markdown": "Start interview_005 in the Interview Center. This 60-minute catalog slot contains a 45-minute debugging assessment and 15 minutes of evidence-based feedback. The candidate brief appears at attempt start; reference reasoning belongs to the submitted-attempt debrief. Coaching and exam modes share durable session state and record requested hints."
+    }
+  ],
+  "diagrams": [],
+  "exercise": {
+    "prompt": "Start the mapped interview and save the actual diagnosis or design reasoning.",
+    "minutes": 45,
+    "rubric": [
+      "Use the interview rubric and cite actual submitted evidence."
+    ],
+    "solution": "Reference reasoning is in the gated interview debrief."
+  },
+  "questions": [],
+  "flashcards": [],
+  "mentalModel": "An assessment tests reasoning against a counterexample; visiting the page is not a demonstrated skill.",
+  "sources": [
+    {
+      "title": "IETF RFC 9110: HTTP Semantics, HTTPWG edition",
+      "url": "https://httpwg.org/specs/rfc9110.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

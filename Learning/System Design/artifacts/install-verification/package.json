@@ -1,0 +1,53 @@
+{
+  "name": "form-system-design-academy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.13.0"
+  },
+  "scripts": {
+    "setup": "npm ci && npm run build",
+    "dev": "tsx server/index.ts --dev",
+    "build": "tsc --noEmit && vite build",
+    "start": "tsx server/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "npm run typecheck && npm run validate:content && npm run validate:guides && npm run validate:illustrated && npm test",
+    "validate:content": "node scripts/validate-content.mjs",
+    "mcp": "tsx mcp/index.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "validate:guides": "node scripts/validate-guides.mjs --complete",
+    "test:browser:learn": "tsx scripts/qa-learning.ts",
+    "test:browser": "tsx scripts/qa-browser.ts",
+    "diagrams": "node scripts/render-diagrams.mjs",
+    "validate:illustrated": "node scripts/validate-illustrated-guides.mjs",
+    "test:browser:illustrated": "tsx scripts/qa-illustrated.ts",
+    "test:diagrams": "tsx scripts/qa-diagram-readability.ts",
+    "test:diagram-controls": "tsx scripts/qa-diagram-controls.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "lucide-react": "1.48.0",
+    "mermaid": "12.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-markdown": "10.1.0",
+    "rehype-highlight": "7.0.2",
+    "remark-gfm": "4.0.1",
+    "tsx": "4.23.15",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.1"
+  },
+  "overrides": {
+    "lodash-es": "4.18.1"
+  }
+}

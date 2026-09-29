@@ -1,0 +1,290 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 21,
+  "title": "Design a booking system without overselling",
+  "level": "advanced",
+  "minutes": 45,
+  "id": "design-bookings",
+  "summary": "Two people click the last seat. Learn where the system must make one decision, and why the seat map and a payment reply cannot make that decision for it.",
+  "objectives": [
+    "State the no-overselling rule precisely.",
+    "Choose an atomic boundary that can award a seat to only one active holder.",
+    "Handle an expired hold and a late payment without granting two bookings."
+  ],
+  "terms": [
+    {
+      "term": "Invariant",
+      "definition": "A rule that must remain true through every allowed operation."
+    },
+    {
+      "term": "Hold",
+      "definition": "A temporary claim on inventory while a customer completes another step."
+    },
+    {
+      "term": "Atomic operation",
+      "definition": "An operation whose protected change is observed as one indivisible result."
+    },
+    {
+      "term": "Transaction",
+      "definition": "A group of database changes that commit together or do not commit."
+    },
+    {
+      "term": "Conditional transition",
+      "definition": "Changing a state only if the stored owner, version, and other required conditions still match."
+    }
+  ],
+  "retrieval": [
+    "Why is a cached value not automatically current?",
+    "What did the expected-version check protect during file synchronization?"
+  ],
+  "sections": [
+    {
+      "id": "seat",
+      "title": "The last seat is a shared decision",
+      "markdown": "Priya and Mateo both see tonight’s seat A12 as available. That can be a truthful recent observation in both browsers. It cannot become two confirmed promises.\n\n**Invariant:** for one show and seat, at most one current active claim may exist under the declared hold/booking lifecycle. A12 in tomorrow’s show is a different inventory item.\n\n| Observation or decision | Example | May it be stale? |\n| --- | --- | --- |\n| Seat-map read | “A12 looked free a moment ago” | Yes, under the browsing policy |\n| Atomic claim | “H1 now owns this show/seat” | Must follow the authoritative current rule |\n| Confirmation | “This same valid hold becomes booked” | Must check the exact current claim |\n\nA receptionist with one physical ticket can show it to two people but hand it to only one. The authoritative check-and-change plays that role in software.\n\n~~~text\nread free → pause → write held     can race\ncheck claimable AND change owner   must be one protected decision\n~~~\n\n**Pause and predict:** adding ten API servers creates how many copies of the physical seat? Separate request capacity from inventory."
+    },
+    {
+      "id": "claim",
+      "title": "Let the database decide once",
+      "markdown": "Keep a seat row keyed by show and seat, with state, holder, expiry, and version. Use a database transaction or conditional update whose predicate says the seat is currently claimable. Only the operation that successfully changes the row receives a hold identity. The other request gets a clear unavailable/conflict response and can choose another seat.\n\nThe critical point is the indivisible check-and-change, not the SQL spelling. Row locking, a properly constrained insert, or an appropriate compare-and-set design can enforce different versions of the rule. Multi-seat bookings add a further requirement: either acquire the whole group atomically or explicitly describe partial holds and their cleanup.\n\nDo not hold a database transaction open while a person types card details. Create a short durable hold, commit it, and continue checkout outside the transaction. The user's hold identity connects subsequent actions to the precise claim they obtained."
+    },
+    {
+      "id": "expiry",
+      "title": "A timeout is not permission for an old request",
+      "markdown": "Suppose Priya holds A12 until 12:05. The product uses the database's chosen authoritative time and checks expiry when changing the row. At 12:06, Mateo obtains a new hold. Priya's browser finally sends “confirm my old hold.” That request must not confirm Mateo's claim or displace it.\n\nConfirmation should check the expected hold identity, owner, version/state, and the policy for expiry at the same protected boundary. A periodic sweeper makes expired holds disappear from listings, but correctness should not depend on that job running at exactly 12:05. The claim operation must itself apply the expiry rule.\n\nWall clocks and failover need a declared time policy; do not compare arbitrary customer device clocks. For this teaching design, one authoritative database evaluates the hold deadline. Moving the inventory across independent regions would require preserving that single ownership decision or changing the product's availability tradeoff."
+    },
+    {
+      "id": "payment",
+      "title": "Payment introduces a second authority",
+      "markdown": "Seat state belongs to our booking service. A payment provider controls its own financial operation. There is usually no one local database transaction covering both. A charge can succeed after the seat hold expires, or the provider can accept payment while its reply is lost.\n\nChoose a workflow and compensating policy. For example, create a payment attempt tied to a hold, attempt the allowed provider operation, and confirm the seat only when the same hold is still valid. If payment succeeds but the seat cannot be granted, record the exception and perform the appropriate cancel/refund workflow according to provider and product rules. A refund is another operation to track, not an erasure of history.\n\nThe next lesson follows this uncertainty carefully. Here the key point is that “paid” and “seat confirmed” are different facts. Never manufacture a second seat to make those facts appear consistent."
+    },
+    {
+      "id": "scale",
+      "title": "Make browsing cheap without weakening checkout",
+      "markdown": "Make viewing inexpensive while keeping checkout authoritative.\n\n| Path | Useful optimization | Rule that remains |\n| --- | --- | --- |\n| Browse a seat map | Cache approximate availability | Explain that availability can change |\n| Request a hold | Bound admission and contention | One authoritative check-and-change |\n| Enter payment details | Continue outside a long database transaction | Persist a bounded hold identity |\n\nIf 5,000 people contend for one seat, more servers can receive requests but cannot grant 5,000 seats. Bound waiting and reject excess work clearly so retries do not overwhelm the authority.\n\nFairness is a separate requirement. The first successful transaction is not necessarily the first human click; network timing and scheduling intervene.\n\n**Interview phrase:** “Browsing can be approximate; the hold is the inventory promise.” Point to the operation that makes one contender lose, then test the existing late-confirmation timeline."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "booking-race",
+      "title": "Two requests compete at one protected boundary",
+      "source": "sequenceDiagram\nparticipant P as Priya\nparticipant D as Seat authority\nparticipant M as Mateo\nP->>D: Claim A12 if available\nD-->>P: Hold H1 created\nM->>D: Claim A12 if available\nD-->>M: Unavailable: H1 is active",
+      "caption": "Both clients may have seen the same older seat map. The claim operation makes the authoritative decision.",
+      "steps": [
+        "Both users can view an available seat.",
+        "Priya reaches the atomic claim first in this example.",
+        "The database records H1.",
+        "Mateo’s condition fails because the seat is no longer available."
+      ],
+      "sectionId": "claim"
+    },
+    {
+      "id": "booking-late",
+      "title": "An old hold cannot confirm a newer owner",
+      "source": "flowchart LR\nH1[Priya hold H1] -->|Expires under authority rule| E[Seat claimable]\nE -->|New atomic claim| H2[Mateo hold H2]\nOLD[Late confirm for H1] --> C{Current hold matches H1?}\nH2 --> C\nC -->|No| R[Reject old confirmation]",
+      "caption": "The hold identity is part of the confirmation condition, not merely something displayed in the browser.",
+      "steps": [
+        "H1 expires.",
+        "H2 becomes the current claim.",
+        "An old confirmation still names H1.",
+        "The authority rejects it rather than confirming the wrong owner."
+      ],
+      "sectionId": "expiry"
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Write a plain-English condition for confirming a seat. Test it against: current hold H2 belongs to Mateo; Priya sends confirmation for expired H1. Then explain what the service does if Priya’s payment has already succeeded.",
+    "rubric": [
+      "Check the precise current hold identity and authorized owner.",
+      "Apply state/version and deadline policy atomically.",
+      "Do not grant another seat claim; record and resolve the payment exception."
+    ],
+    "solution": "Confirm only when the stored seat belongs to this hold and user, remains in an allowed state, and satisfies the chosen expiry policy at the authoritative transition. H1 cannot confirm a row now held by H2. If Priya paid, record that successful payment separately from the failed seat confirmation, and run the appropriate tracked cancellation/refund or manual resolution workflow. The inventory invariant must remain true while the payment exception is resolved."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Both users saw a free seat. What awards it safely?",
+      "options": [
+        "A cached seat map",
+        "An atomic authoritative claim",
+        "The browser with the fastest animation"
+      ],
+      "answer": "An atomic authoritative claim",
+      "explanation": "The protected check-and-change chooses one current holder."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Should a database lock remain open while the user enters payment details?",
+      "options": [
+        "Usually no; persist a bounded hold instead",
+        "Always",
+        "Only if the seat is expensive"
+      ],
+      "answer": "Usually no; persist a bounded hold instead",
+      "explanation": "Long human interactions should not occupy a database transaction."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "An old hold confirmation arrives after a new holder wins.",
+      "options": [
+        "Reject it using the exact hold identity",
+        "Confirm the newest holder on behalf of the old user",
+        "Trust the original seat map"
+      ],
+      "answer": "Reject it using the exact hold identity",
+      "explanation": "A stale action must not mutate a different claim."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why is an expiry sweeper insufficient by itself?",
+      "answer": "It may run late or fail. Claim and confirmation operations must enforce the deadline and ownership policy at the authoritative boundary.",
+      "explanation": "It may run late or fail. Claim and confirmation operations must enforce the deadline and ownership policy at the authoritative boundary."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What extra question arises when booking four seats together?",
+      "answer": "Whether all four must succeed atomically or partial holds are allowed; the design must define group acquisition, conflict handling, and cleanup.",
+      "explanation": "Whether all four must succeed atomically or partial holds are allowed; the design must define group acquisition, conflict handling, and cleanup."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Seat invariant?",
+      "back": "At most one active claim per show and seat under the lifecycle rules."
+    },
+    {
+      "front": "Seat map versus claim?",
+      "back": "The map is an observation; the claim is the protected decision."
+    },
+    {
+      "front": "Hold purpose?",
+      "back": "Reserve inventory for a bounded workflow without keeping a database transaction open."
+    },
+    {
+      "front": "Late confirmation protection?",
+      "back": "Check current hold identity, owner, state/version, and expiry policy atomically."
+    },
+    {
+      "front": "Paid but unbooked?",
+      "back": "Track and resolve the separate payment exception without violating inventory correctness."
+    }
+  ],
+  "mentalModel": "A seat map can suggest availability. Only a protected claim can promise it.",
+  "sources": [
+    {
+      "title": "PostgreSQL18 — Explicit locking",
+      "url": "https://www.postgresql.org/docs/18/explicit-locking.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL18 — Transaction isolation",
+      "url": "https://www.postgresql.org/docs/18/transaction-iso.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Stripe — Idempotent requests",
+      "url": "https://docs.stripe.com/api/idempotent_requests",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "one-seat-one-decision",
+      "title": "See where two observations become one claim",
+      "sectionId": "claim",
+      "intro": "A separate show has one available seat B9. Zoe and Kai see the same cached map. The order below is illustrative, not a fairness guarantee.",
+      "steps": [
+        {
+          "title": "Both view availability",
+          "explanation": "The browsers have the same recent observation. Neither has a hold identity.",
+          "state": [
+            {
+              "label": "Inventory key",
+              "value": "show_5 / B9"
+            },
+            {
+              "label": "Stored state",
+              "value": "available"
+            },
+            {
+              "label": "Zoe and Kai",
+              "value": "both viewing free"
+            }
+          ]
+        },
+        {
+          "title": "Zoe’s claim reaches the authority",
+          "explanation": "The protected predicate matches and the database accepts one hold.",
+          "state": [
+            {
+              "label": "Inventory key",
+              "value": "show_5 / B9"
+            },
+            {
+              "label": "Current hold",
+              "value": "Q101"
+            },
+            {
+              "label": "Owner",
+              "value": "Zoe"
+            },
+            {
+              "label": "State",
+              "value": "held until authority deadline"
+            }
+          ]
+        },
+        {
+          "title": "Kai’s claim reaches the same boundary",
+          "explanation": "The predicate no longer finds a claimable seat. It returns an unavailable result rather than creating another active holder.",
+          "state": [
+            {
+              "label": "Current hold",
+              "value": "Q101"
+            },
+            {
+              "label": "Owner",
+              "value": "Zoe"
+            },
+            {
+              "label": "Kai result",
+              "value": "unavailable"
+            },
+            {
+              "label": "Active claims",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "title": "The interface catches up",
+          "explanation": "Kai can refresh or choose another seat. Zoe continues checkout using Q101 without keeping the original database transaction open.",
+          "state": [
+            {
+              "label": "Kai next action",
+              "value": "choose another seat"
+            },
+            {
+              "label": "Zoe checkout identity",
+              "value": "Q101"
+            },
+            {
+              "label": "Original transaction",
+              "value": "already committed"
+            }
+          ]
+        }
+      ],
+      "takeaway": "The shared mutation decides inventory. The map and the browser only describe or request that decision."
+    }
+  ]
+}

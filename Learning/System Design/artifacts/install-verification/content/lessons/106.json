@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "106",
+  "objectives": [
+    "Model a long-running operation as durable states and transitions.",
+    "Design compensations around business meaning rather than SQL rollback.",
+    "Handle repeated, uncertain, and irreversible external effects."
+  ],
+  "retrieval": [
+    "L104: when would holding prepared locks be unacceptable?",
+    "L096: what evidence identifies a repeated operation?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A workflow outlives a database transaction",
+      "markdown": "A rental order reserves an item, authorizes a deposit, schedules collection, and sends a confirmation. Collection might happen tomorrow. Holding a distributed database transaction open until every step finishes is incompatible with that timescale and may not be supported by the payment or messaging providers. The product instead needs explicit intermediate states and recovery actions.\n\nA saga organizes local transactions into a business workflow with compensating actions for relevant completed steps. Compensation is a new action that repairs business consequences. Releasing a reservation may restore capacity; refunding a captured payment records another financial action. An email cannot be unread, and a collected parcel cannot be restored by changing one database flag."
+    },
+    {
+      "id": "mechanism",
+      "title": "Make uncertainty a first-class state",
+      "markdown": "Use a durable workflow ID and operation identity per step. Before issuing an external command, persist enough intent to recover. Record attempted, accepted, succeeded, failed, or outcome-unknown as appropriate to the provider contract. A timeout after authorization can mean the provider accepted the deposit but the response was lost. Query by stable provider operation identity or reconcile before blindly issuing a second authorization.\n\nAn orchestrator records progress and chooses the next step or compensation. Choreography lets services react to events without one central workflow procedure, but dependencies, cycles, and recovery become harder to inspect as complexity grows. Either approach needs durable state, repeat-safe handlers, bounded retries, ownership, and observability. Selecting an orchestration product does not design the business state machine for you.\n\nCompensations can fail and must themselves be retryable. Model compensation_pending and manual_review instead of asserting every cancellation completes immediately. A cancellation request racing with final fulfillment requires an authoritative rule about which transition wins. Use conditional transitions or version checks at that authority; do not let two workers independently declare incompatible final states."
+    },
+    {
+      "id": "worked",
+      "title": "The deposit succeeded but the reply disappeared",
+      "markdown": "Workflow W17 reserves item R5, then sends authorize(W17-deposit). The provider authorizes but the network response is lost. The worker crashes. On recovery the workflow is authorization_unknown, not definitely_failed. It queries the same operation identity. If authorized, it stores the provider reference and proceeds. If the reservation expired meanwhile, it schedules an explicit release/void action against that authorization rather than obtaining a second one.\n\nLater a customer cancels after a collection label was printed. The compensation plan cancels the label if supported, releases the uncollected item, and voids or refunds the deposit according to its actual state. A label already used or a parcel already collected enters a different business process. No amount of retry logic makes that physical action atomic with a database.\n\nA concise durable record includes workflow_id, version, state, step operation IDs, provider references, last error, next retry time, and decision history. Store only necessary sensitive data and restrict operator actions. The record makes resuming and explaining the process possible; it is not a license to retain personal information forever."
+    },
+    {
+      "id": "failure",
+      "title": "Retries need bounds and a human ownership path",
+      "markdown": "Use classified failures and bounded backoff with jitter for transient errors. Permanent validation failures should not loop indefinitely. Alert on oldest stuck workflow age and states that need intervention, not only process health. A worker restart should be routine; a lost durable history is a different recovery problem.\n\nDurable workflow systems such as Temporal can recover execution from recorded history and impose deterministic replay constraints on workflow logic. Activities that call external systems still need suitable retry and effect semantics. A durable function label is not proof that an arbitrary external operation occurs exactly once.\n\nCommon mistakes are compensating an effect whose outcome is still unknown, reusing an idempotency key for a changed request, assuming reverse order always makes compensation semantically valid, and leaving manual repair undocumented. Test a crash at every boundary between recording intent, issuing the call, receiving a response, and saving the outcome. Optional depth: explore workflow versioning while old histories are still active."
+    },
+    {
+      "id": "schedule",
+      "title": "A bounded learning session",
+      "markdown": "Core55 minutes: retrieval5, explanation18, trace8, exercise10, scheduled Q1–Q3 ten minutes, comparison/cards4. Q4–Q5 and product deployment are optional depth outside this session. Diagrams and numeric workloads are original teaching models, not measurements of a deployed service."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "saga",
+      "title": "Visible intermediate states and explicit recovery",
+      "source": "stateDiagram-v2\n[*] --> Reserved\nReserved --> DepositUnknown: Response lost\nDepositUnknown --> Authorized: Reconcile provider identity\nDepositUnknown --> Compensating: Confirmed failure\nAuthorized --> Scheduled: Collection accepted\nScheduled --> Completed: Business completion\nAuthorized --> Compensating: Cancellation allowed\nCompensating --> Cancelled: All required repairs confirmed\nCompensating --> ManualReview: Repair needs intervention\nCompleted --> [*]",
+      "caption": "This is a rental teaching workflow. Provider-specific irreversible boundaries must be specified before implementation.",
+      "steps": [
+        "Persist the reservation and step identity.",
+        "Preserve an unknown result after a timeout.",
+        "Reconcile before making a conflicting decision.",
+        "Retry compensations or route a documented intervention."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Design five durable states for a ticket-order workflow where seat reservation is reversible but a confirmation SMS cannot be unsent. Show a timeout after payment acceptance and a cancellation race. Define one compensation failure alarm.",
+    "rubric": [
+      "Represent uncertain payment outcome.",
+      "Distinguish reversible state from irreversible notification.",
+      "Assign transition authority and recovery ownership."
+    ],
+    "solution": "States can include reserved, payment_unknown, paid, issued, and compensation_pending, with cancelled/manual_review as terminal or intervention states. Reuse the payment operation ID to query/reconcile after a timeout. A conditional transition decides whether cancellation precedes issuance; after issuance use the explicit refund/revocation policy. Release a reservation and refund/void according to confirmed payment state. Treat a sent SMS as a historical fact and send a correction if appropriate. Alert on compensation_pending age beyond the operational objective, with order/provider IDs and a safe repair runbook."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A compensation is best described as what?",
+      "options": [
+        "A guaranteed physical rollback of history",
+        "A new business action repairing consequences",
+        "A distributed mutex"
+      ],
+      "answer": "A new business action repairing consequences",
+      "explanation": "It can have its own failure and may not restore the exact prior world."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Timeout after an external command means what?",
+      "options": [
+        "Confirmed failure",
+        "Confirmed success",
+        "Potentially unknown outcome"
+      ],
+      "answer": "Potentially unknown outcome",
+      "explanation": "The destination may have accepted the operation before the reply was lost."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Durable workflow replay guarantees arbitrary external effects occur once?",
+      "options": [
+        "Yes",
+        "No",
+        "Only for HTTP POST"
+      ],
+      "answer": "No",
+      "explanation": "The destination effect still needs identity, idempotency, transactional cooperation, or reconciliation."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is orchestration easier to operate than choreography?",
+      "answer": "When the workflow has many dependent steps, compensation paths, deadlines, and intervention states that benefit from a visible authoritative history.",
+      "explanation": "When the workflow has many dependent steps, compensation paths, deadlines, and intervention states that benefit from a visible authoritative history."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What belongs in a compensation runbook?",
+      "answer": "Actual completed effects, stable provider references, permitted repairs, repeat safety, authorization, reconciliation checks, and escalation for irreversible or uncertain outcomes.",
+      "explanation": "Actual completed effects, stable provider references, permitted repairs, repeat safety, authorization, reconciliation checks, and escalation for irreversible or uncertain outcomes."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Saga compensation?",
+      "back": "A business repair action, not erasure of history."
+    },
+    {
+      "front": "Timeout state?",
+      "back": "Unknown until reconciled or otherwise resolved by the destination contract."
+    },
+    {
+      "front": "Compensation can fail?",
+      "back": "Yes; persist, retry safely, and expose intervention states."
+    },
+    {
+      "front": "Durable workflow versus exactly-once effect?",
+      "back": "Recoverable execution does not automatically make external effects unique."
+    },
+    {
+      "front": "Cancellation race protection?",
+      "back": "An authoritative conditional state transition and explicit business policy."
+    }
+  ],
+  "mentalModel": "A saga makes partial completion explicit and recoverable instead of pretending it never existed.",
+  "sources": [
+    {
+      "title": "García-Molina and Salem — Sagas,1987",
+      "url": "https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Temporal — Workflow execution and replay",
+      "url": "https://docs.temporal.io/workflow-execution",
+      "checked": "2026-09-29"
+    }
+  ]
+}

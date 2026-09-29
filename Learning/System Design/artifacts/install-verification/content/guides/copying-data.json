@@ -1,0 +1,269 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 9,
+  "title": "Replication: keeping another copy",
+  "level": "intermediate",
+  "minutes": 45,
+  "id": "copying-data",
+  "summary": "A second database copy can help with reads and recovery. Follow a write to see why copies may temporarily disagree.",
+  "objectives": [
+    "Distinguish copying data from dividing data.",
+    "Explain asynchronous and synchronous replication with a timeline.",
+    "Describe a safe read-after-write expectation."
+  ],
+  "terms": [
+    {
+      "term": "Replication",
+      "definition": "Keeping copies of the same data on more than one database node."
+    },
+    {
+      "term": "Primary / leader",
+      "definition": "In this simple model, the database node accepting writes and sending its changes to replicas."
+    },
+    {
+      "term": "Replica",
+      "definition": "A node maintaining a copy by receiving and applying changes."
+    },
+    {
+      "term": "Replication lag",
+      "definition": "The gap between a change at the writer and that change being received/applied at a replica."
+    },
+    {
+      "term": "Failover",
+      "definition": "Moving a service role to another eligible node after a failure, under a defined safety procedure."
+    }
+  ],
+  "retrieval": [
+    "What happens if the only working database machine stops?",
+    "What is the difference between a cache copy and the place where a note is saved?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "Our notes app has more readers",
+      "markdown": "Pocket Notes now serves many people who read notes more often than they edit them. The database is busy handling reads. We can first improve queries and indexes, as you learned in week 3. If measurements still show a read bottleneck, one option is another database copy that can answer appropriate reads.\n\nReplication means copying the same data. It is like keeping an updated duplicate of a classroom register in another office. The second register can be useful if the first office is unavailable, but someone must carry updates between them. If updates are delayed, the two copies temporarily differ. That delay is the key idea in this chapter.\n\nReplication can also support recovery from some node failures. It does not automatically provide a safe failover procedure, preserve every acknowledged write, or replace a backup. Those outcomes depend on the exact protocol, settings, and failure."
+    },
+    {
+      "id": "trace",
+      "title": "Watch one edit move to another copy",
+      "markdown": "In our primary/replica model, one database accepts writes and another applies copies. Edit note 42 from **Buy tea** to **Buy coffee**. The primary can hold the new value while the replica still holds the old one.\n\n| Event | Primary | Replica | What a reader may observe |\n| --- | --- | --- | --- |\n| Before edit | Buy tea | Buy tea | Both agree |\n| Primary commits edit | Buy coffee | Buy tea | A replica read can be old |\n| Replica receives change | Buy coffee | Not necessarily applied yet | Receipt alone does not prove a query sees it |\n| Replica applies change | Buy coffee | Buy coffee | This replica includes the edit |\n\n**Asynchronous replication** may acknowledge before the replica catches up. That can reduce waiting, but a primary failure before copying can leave an acknowledged update missing from a promoted copy, depending on recovery options.\n\n**Synchronous replication** waits for a configured replication condition. Ask whether that means received, durably stored, or applied for reads. Waiting adds latency or may stop writes while a required node is unavailable. It does not automatically make every read from every copy current."
+    },
+    {
+      "id": "user",
+      "title": "Why did my own edit disappear?",
+      "markdown": "You save “Buy coffee” through the primary and immediately refresh. The load distribution sends your read to a lagging replica, which returns “Buy tea.” You may think the save failed, even though the primary has it. The system needs a user-facing consistency choice, not simply more copies.\n\nOne simple approach sends that user’s immediate follow-up read to the primary. Another carries a version or replication position and reads only from a replica that has reached it, with a bounded wait or fallback. For an ordinary public count, an old value for a short time might be acceptable. For confirming an important edit, it may not be.\n\nThe choice follows the operation. Do not say “all our data can be stale” because a profile view tolerates it. A permission removal or a limited-stock purchase can have a much stricter contract."
+    },
+    {
+      "id": "numbers",
+      "title": "A small example reveals the limit",
+      "markdown": "Suppose the primary handles 900 reads/s and 100 writes/s. Move 600 suitable reads/s to two replicas:\n\n| Destination | Illustrative user reads/s | Writes to account for |\n| --- | --- | --- |\n| Primary | 300 | 100 original writes/s |\n| Replica A | 300 | Applies copied changes |\n| Replica B | 300 | Applies copied changes |\n\nThe user-read count moved; the write history did not divide into three independent datasets. Replication itself consumes network, storage, and processing. These request counts therefore do not predict CPU usage or latency by themselves.\n\nReplication and sharding answer different questions. Replication asks for another copy of the same data; sharding divides different data among owners. A system can use both, but each needs its own rationale.\n\nNow draw a boundary around the physical host and shared storage. If all three copies depend on the same failed host, the diagram has more database icons without independent protection. Name what can fail together before claiming the extra copy provides availability."
+    },
+    {
+      "id": "recovery",
+      "title": "Changing the writer needs rules",
+      "markdown": "If the primary cannot be reached, promoting a replica is not merely changing a browser URL. The system must choose an eligible replacement, know which changes it has, redirect clients, and prevent the old primary from continuing conflicting writes if it returns. We will later study leaders and fencing—the destination rejecting work from an outdated owner.\n\nFor now, remember that failure detection is uncertain. A node may be slow or separated by a broken network rather than destroyed. Two sides independently declaring themselves the only writer can produce incompatible histories.\n\nCommon mistakes are treating every replica as a backup, assuming more copies increase write capacity, and calling all copies “consistent” without stating what a reader can see. Your practice goal is simpler: draw one edit, delay the copying arrow, and predict two reads. If you can do that, the advanced vocabulary has a concrete foundation."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "replicate",
+      "title": "A write reaches the reader’s copy later",
+      "source": "sequenceDiagram\nparticipant U as User\nparticipant P as Primary\nparticipant R as Replica\nU->>P: Save note 42 as Buy coffee\nP-->>U: Saved under async policy\nU->>R: Read note 42 before catch-up\nR-->>U: Old value Buy tea\nP->>R: Replicate and apply change\nU->>R: Read note 42 later\nR-->>U: Buy coffee",
+      "caption": "Original asynchronous example. The delay is exaggerated so the visible behavior is easy to follow.",
+      "steps": [
+        "Accept the edit at the primary.",
+        "Acknowledge before replica application in this policy.",
+        "Observe an old value on the lagging copy.",
+        "Apply the change and observe the new value."
+      ],
+      "sectionId": "trace"
+    },
+    {
+      "id": "version-aware-read",
+      "title": "Do not route an immediate follow-up read blindly",
+      "sectionId": "user",
+      "source": "flowchart LR\nS[Save acknowledged at position P] --> R[Follow-up read requires P]\nR --> C{Chosen replica has applied P?}\nC -->|Yes| V[Serve from that replica]\nC -->|No| W[Bounded wait or authoritative fallback]\nW --> E[Return result or explicit inability to meet contract]",
+      "caption": "A position is meaningful only within the replication protocol. Receipt, persistence, and application are different; fallback must respect the operation deadline.",
+      "steps": [
+        "Remember the position required by the completed write.",
+        "Check whether the selected replica has applied at least that position.",
+        "Wait briefly or route to an appropriate authoritative read path if it has not.",
+        "Do not silently return an older value under a read-your-writes promise."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw a primary and two replicas. Replica A is current; replica B is five updates behind. A user just edited a private note. Choose a follow-up read policy, explain its cost, and describe what you must check before promoting B after a primary failure.",
+    "rubric": [
+      "Freshness follows the user requirement.",
+      "Policy names a wait/routing cost.",
+      "Failover does not silently assume all writes exist on B."
+    ],
+    "solution": "Route the immediate read to a node known to include the edit, or require a version and wait/fallback within a deadline. This costs routing coordination, waiting, or primary load. Before promoting B, assess its durable position and recover missing acknowledged writes if possible, and fence/disable the old writer under a supported protocol. If missing writes cannot be recovered, report the data-loss boundary rather than claiming every replica is equivalent."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Replication primarily means what?",
+      "options": [
+        "Different data on every node",
+        "Copies of the same data",
+        "Deleting old data"
+      ],
+      "answer": "Copies of the same data",
+      "explanation": "Dividing data is sharding; replication creates copies with a propagation protocol."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "An asynchronous replica can return an old value immediately after a write?",
+      "options": [
+        "Yes",
+        "Never",
+        "Only if SQL is disabled"
+      ],
+      "answer": "Yes",
+      "explanation": "The update may not yet have been applied there."
+    },
+    {
+      "id": "q3",
+      "type": "numeric",
+      "prompt": "A primary serves 900 reads/s. Moving 600 to replicas leaves how many primary reads/s in this simple count?",
+      "answer": 300,
+      "unit": "reads/s",
+      "explanation": "900−600=300. This does not model replication or query resource costs.",
+      "tolerance": 0.01
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "What should “synchronous” specify?",
+      "answer": "Which replicas and which milestone acknowledgment waits for: receipt, durable storage, or application/visibility, plus behavior when they are unavailable.",
+      "explanation": "Which replicas and which milestone acknowledgment waits for: receipt, durable storage, or application/visibility, plus behavior when they are unavailable."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why does a replica not replace every backup use?",
+      "answer": "Replicas may copy accidental deletion or corruption. A retained recoverable backup can preserve a different point in history.",
+      "explanation": "Replicas may copy accidental deletion or corruption. A retained recoverable backup can preserve a different point in history."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Replication?",
+      "back": "Copies of the same data."
+    },
+    {
+      "front": "Lag?",
+      "back": "A replica has not yet received or applied some changes."
+    },
+    {
+      "front": "Async acknowledgment?",
+      "back": "May precede replica catch-up."
+    },
+    {
+      "front": "Read your own edit?",
+      "back": "Route/wait for a copy known to include it, or state weaker behavior."
+    },
+    {
+      "front": "Failover needs?",
+      "back": "An eligible replacement, recovery position, client routing, and old-writer safety."
+    }
+  ],
+  "mentalModel": "Copies help only when you explain how updates reach them and which copy a reader may trust.",
+  "sources": [
+    {
+      "title": "PostgreSQL18 — Standby servers and replication modes",
+      "url": "https://www.postgresql.org/docs/18/warm-standby.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "delayed-copy",
+      "title": "The write is saved before every copy can read it",
+      "sectionId": "trace",
+      "intro": "The teaching system orders note changes by replication position. Acknowledgement is asynchronous, and the follow-up read requires the acknowledged position.",
+      "steps": [
+        {
+          "title": "Both copies agree",
+          "explanation": "Before the edit, the primary and replica have applied position 204.",
+          "state": [
+            {
+              "label": "Primary",
+              "value": "n7 = draft; position 204"
+            },
+            {
+              "label": "Replica",
+              "value": "n7 = draft; position 204"
+            },
+            {
+              "label": "RequiredRead",
+              "value": "None yet"
+            }
+          ]
+        },
+        {
+          "title": "Acknowledge the new edit",
+          "explanation": "The primary saves published at position 205 and acknowledges. The replica has not applied that change.",
+          "state": [
+            {
+              "label": "Primary",
+              "value": "n7 = published; position 205"
+            },
+            {
+              "label": "Replica",
+              "value": "n7 = draft; position 204"
+            },
+            {
+              "label": "RequiredRead",
+              "value": "At least 205"
+            }
+          ]
+        },
+        {
+          "title": "Protect the immediate refresh",
+          "explanation": "A replica read at 204 cannot satisfy this session’s requirement. Route to a suitable current authority or wait within the deadline.",
+          "state": [
+            {
+              "label": "ChosenReplica",
+              "value": "204, insufficient"
+            },
+            {
+              "label": "Action",
+              "value": "Use authoritative read path"
+            },
+            {
+              "label": "Returned",
+              "value": "published at 205"
+            }
+          ]
+        },
+        {
+          "title": "The replica catches up",
+          "explanation": "Once position 205 is applied, that replica can satisfy the same minimum-position read.",
+          "state": [
+            {
+              "label": "Primary",
+              "value": "205"
+            },
+            {
+              "label": "Replica",
+              "value": "205"
+            },
+            {
+              "label": "ReplicaValue",
+              "value": "published"
+            }
+          ]
+        }
+      ],
+      "takeaway": "A successful write and a readable copy are separate milestones. Pick the reader-visible promise before choosing how to route reads."
+    }
+  ]
+}

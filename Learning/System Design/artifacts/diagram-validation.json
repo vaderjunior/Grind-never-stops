@@ -1,0 +1,2072 @@
+{
+  "generatedAt": "2026-09-29T14:34:13.655Z",
+  "renderer": "12.0.0",
+  "total": 258,
+  "failed": 0,
+  "results": [
+    {
+      "lessonId": "ai-platform-operations",
+      "diagramId": "planes",
+      "sourceHash": "63a3cad177ac61134ab2c13594e1eecb75857f8b53f4a9831691c7dc8eb8b8ff",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/ai-platform-operations-planes.svg"
+    },
+    {
+      "lessonId": "ai-platform-operations",
+      "diagramId": "canary",
+      "sourceHash": "f288ed62bb89fd0ced45d77beb23a807252f160a17ae10d31a73c501ed1496dc",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/ai-platform-operations-canary.svg"
+    },
+    {
+      "lessonId": "ai-system-design",
+      "diagramId": "ai-gateway",
+      "sourceHash": "a76fcb7a88d1c29935103e8361d37f9c94f957bfbdc764e6f08157eb6cb06150",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/ai-system-design-ai-gateway.svg"
+    },
+    {
+      "lessonId": "ai-system-design",
+      "diagramId": "ai-two-checks",
+      "sourceHash": "74ef118ea2ee0dbe853337880890902db92a6ac9ed535c5251ac38b0b58f7879",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/ai-system-design-ai-two-checks.svg"
+    },
+    {
+      "lessonId": "apis-without-jargon",
+      "diagramId": "contract",
+      "sourceHash": "0f4faec28eef0d7487f68fcd705362e9cda1c28500ade18a7849c246bb609479",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/apis-without-jargon-contract.svg"
+    },
+    {
+      "lessonId": "apis-without-jargon",
+      "diagramId": "result-interpretation",
+      "sourceHash": "2fe6f098ccc26f93eb2bf7467012f146ba8eec98562621ce3b7a12c5ece6b72e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/apis-without-jargon-result-interpretation.svg"
+    },
+    {
+      "lessonId": "background-jobs",
+      "diagramId": "job",
+      "sourceHash": "498d87f0e63c8bd3ffee2a6930e6689b7e2b1609c929f96d1d6ec5bdfb392e08",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/background-jobs-job.svg"
+    },
+    {
+      "lessonId": "background-jobs",
+      "diagramId": "job-lifecycle",
+      "sourceHash": "e34cf6febc23ccf5a2873325e4dead02baf55816e78330d98dcd6fe0187a0210",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/background-jobs-job-lifecycle.svg"
+    },
+    {
+      "lessonId": "blobs-files-and-objects",
+      "diagramId": "interfaces",
+      "sourceHash": "460dcc4243db146336223e525014d856a67d459a11b61bc1edbfd7ac491bb59b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/blobs-files-and-objects-interfaces.svg"
+    },
+    {
+      "lessonId": "blobs-files-and-objects",
+      "diagramId": "lifecycle",
+      "sourceHash": "e95226cecd387b6bd8406d4c3411833ff8e88a8fd4f01386a3898de43233fef3",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/blobs-files-and-objects-lifecycle.svg"
+    },
+    {
+      "lessonId": "blobs-files-and-objects",
+      "diagramId": "private-photo-read",
+      "sourceHash": "2cdead70b98f3601fab3b6d163d597a0ef568ac8447147ad52f24f982a028476",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/blobs-files-and-objects-private-photo-read.svg"
+    },
+    {
+      "lessonId": "cache-freshness-and-cdns",
+      "diagramId": "cdn",
+      "sourceHash": "31df0c3addfba2cd896cb5ad912b71220eadf8521b49d501780846f827bb9c75",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/cache-freshness-and-cdns-cdn.svg"
+    },
+    {
+      "lessonId": "cache-freshness-and-cdns",
+      "diagramId": "stale-fill",
+      "sourceHash": "e7b5c18a442a5ea6bd72766f4ef1e2d00ea849c58b42ab5056c27de94e74074e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/cache-freshness-and-cdns-stale-fill.svg"
+    },
+    {
+      "lessonId": "cache-patterns-and-invalidation",
+      "diagramId": "aside",
+      "sourceHash": "5d379864fdc1ef21b45dd03fb73e2d4e37fa8c6036e8057815bdd1bc09c0d146",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/cache-patterns-and-invalidation-aside.svg"
+    },
+    {
+      "lessonId": "cache-patterns-and-invalidation",
+      "diagramId": "race",
+      "sourceHash": "1b39e537f48ff47cd8ef56748a362af455902585e3767b4f480713965583e50d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/cache-patterns-and-invalidation-race.svg"
+    },
+    {
+      "lessonId": "cache-patterns-and-invalidation",
+      "diagramId": "coalesced-miss",
+      "sourceHash": "63fe862ddacbd331bea6f6c911fb06804685b13c7f55f23d05699fbb77f7af47",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/cache-patterns-and-invalidation-coalesced-miss.svg"
+    },
+    {
+      "lessonId": "capstone-and-readiness-plan",
+      "diagramId": "evidence-loop",
+      "sourceHash": "ecae0327c5d600eabcc760f35ffc1dc5b28f52a46abbace0a48562386e3a8aa9",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/capstone-and-readiness-plan-evidence-loop.svg"
+    },
+    {
+      "lessonId": "capstone-and-readiness-plan",
+      "diagramId": "practice-loop",
+      "sourceHash": "7f184712961ce745cce9f1e5715d37c8b9e35c3b759bdd7357f7d5849a62f707",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/capstone-and-readiness-plan-practice-loop.svg"
+    },
+    {
+      "lessonId": "change-data-safely",
+      "diagramId": "migration-stream",
+      "sourceHash": "6c342e3eb31b13e9e67276c87e0c805b4d97f9cc6377b0497797e37c6af9aafd",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/change-data-safely-migration-stream.svg"
+    },
+    {
+      "lessonId": "change-data-safely",
+      "diagramId": "replay-effects",
+      "sourceHash": "12aa5a6a957487f10c0bb61b97704aad1ef167b288ec69d9a469b2fc819fb7ad",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/change-data-safely-replay-effects.svg"
+    },
+    {
+      "lessonId": "chat-reconnect-and-scale",
+      "diagramId": "replay-handoff",
+      "sourceHash": "62f5a74708ef78a896a91d449c49e024481271c83bb785b5f385c16986a4e04c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/chat-reconnect-and-scale-replay-handoff.svg"
+    },
+    {
+      "lessonId": "chat-reconnect-and-scale",
+      "diagramId": "chat-repair-state",
+      "sourceHash": "4edb4ad29d6991507cf9edefb32f04783edd4b655680380db060e381fed75f44",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/chat-reconnect-and-scale-chat-repair-state.svg"
+    },
+    {
+      "lessonId": "choose-a-database",
+      "diagramId": "storage",
+      "sourceHash": "cfd13adf5b0bd163d0894e80344c4ee6881820841c564099be1e4b9fb1d55b6c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/choose-a-database-storage.svg"
+    },
+    {
+      "lessonId": "choose-a-database",
+      "diagramId": "registry",
+      "sourceHash": "fde7085f02ff20b746d30b1685ea03dd97a8d52d9472ad3332f5fe042a961eb8",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/choose-a-database-registry.svg"
+    },
+    {
+      "lessonId": "choose-a-database",
+      "diagramId": "candidate-evaluation",
+      "sourceHash": "66dc46c0f89e8cc8739e751b660cdbb9011b109e1c26a84d87b0d7c048bafab8",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/choose-a-database-candidate-evaluation.svg"
+    },
+    {
+      "lessonId": "computer-and-server-basics",
+      "diagramId": "layers",
+      "sourceHash": "3b3abffe06b2b5b20c638894596dc35c9214fdafca86674dce4f310bff576518",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/computer-and-server-basics-layers.svg"
+    },
+    {
+      "lessonId": "computer-and-server-basics",
+      "diagramId": "save",
+      "sourceHash": "d0f74f893ff50ec4f79d7f4984faa1480caca0730f597d4bbd51a846483d86c5",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/computer-and-server-basics-save.svg"
+    },
+    {
+      "lessonId": "computer-and-server-basics",
+      "diagramId": "resource-choice",
+      "sourceHash": "9acd3512c483a1e7b3515225c9b9edc2fa0cb3321a8257ce79013d742628b84e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/computer-and-server-basics-resource-choice.svg"
+    },
+    {
+      "lessonId": "connection-and-protocol-basics",
+      "diagramId": "protocol-stack",
+      "sourceHash": "0b1e626235b8da0c6765015b693499d7ab6420ef01387368f3f23fa9d7abafce",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/connection-and-protocol-basics-protocol-stack.svg"
+    },
+    {
+      "lessonId": "connection-and-protocol-basics",
+      "diagramId": "job-protocols",
+      "sourceHash": "5de6398e252be3fffd354c30fda652c9b1a0d4f60215f48dc2d1e681cf15a3cf",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/connection-and-protocol-basics-job-protocols.svg"
+    },
+    {
+      "lessonId": "connection-and-protocol-basics",
+      "diagramId": "two-tls-hops",
+      "sourceHash": "44b27b4a020b147996131893d2eb0a8e5e3d44144f137befb75ddfaa6a5a1d04",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/connection-and-protocol-basics-two-tls-hops.svg"
+    },
+    {
+      "lessonId": "consistency-in-plain-language",
+      "diagramId": "histories",
+      "sourceHash": "80128a269471587de8b8dd8c03889731fb0a70023561670faacccbed576eef12",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/consistency-in-plain-language-histories.svg"
+    },
+    {
+      "lessonId": "consistency-in-plain-language",
+      "diagramId": "causal-message",
+      "sourceHash": "4a6ae4e28c746fc070bbc4b64e5c9e30bcb98d8747a5e3a23de40c1f93dff002",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/consistency-in-plain-language-causal-message.svg"
+    },
+    {
+      "lessonId": "containers-and-deployment",
+      "diagramId": "container-layers",
+      "sourceHash": "fb5c606cbad52c37333b2e268a86e2b1417c0070cf9479adfbddc0d927e55ab8",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/containers-and-deployment-container-layers.svg"
+    },
+    {
+      "lessonId": "containers-and-deployment",
+      "diagramId": "deployment-management",
+      "sourceHash": "0f47f2dfee3e0919181d32adf9e1df33a505a38d764db108376b666f8ecea653",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/containers-and-deployment-deployment-management.svg"
+    },
+    {
+      "lessonId": "coordination-and-leases",
+      "diagramId": "fence-timeline",
+      "sourceHash": "42a8328f038d4c76247546f7c563d670080699d453942b95ffb724a97c633d1e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/coordination-and-leases-fence-timeline.svg"
+    },
+    {
+      "lessonId": "coordination-and-leases",
+      "diagramId": "majority",
+      "sourceHash": "83a5158923772fdc15ceac787c724348844a6c7e3d8a95105250599559f7d844",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/coordination-and-leases-majority.svg"
+    },
+    {
+      "lessonId": "copying-data",
+      "diagramId": "replicate",
+      "sourceHash": "1e111dcb88ab9e997047ff1279f9b85024543eded60a693b6be8157c2f118dd7",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/copying-data-replicate.svg"
+    },
+    {
+      "lessonId": "copying-data",
+      "diagramId": "version-aware-read",
+      "sourceHash": "c7d15647daff019665f83c5a989e986ba7b04d011a25b5329e3c144d1540831d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/copying-data-version-aware-read.svg"
+    },
+    {
+      "lessonId": "data-modeling-basics",
+      "diagramId": "relations",
+      "sourceHash": "efc6a0693e21004a8e11096786a154d10ab9fa15ab69984b5765fa1e51d78d0c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/data-modeling-basics-relations.svg"
+    },
+    {
+      "lessonId": "data-modeling-basics",
+      "diagramId": "counter",
+      "sourceHash": "8c54e4d95b9e7f42b64ce6ee3217e32016a1196582fb3d6f2c82e175e9e51f09",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/data-modeling-basics-counter.svg"
+    },
+    {
+      "lessonId": "data-modeling-basics",
+      "diagramId": "rename-one-fact",
+      "sourceHash": "d60f35d38d1acd7dd31a3f9c533beb4fb819b33f59d699209323e5f27b298253",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/data-modeling-basics-rename-one-fact.svg"
+    },
+    {
+      "lessonId": "data-that-survives",
+      "diagramId": "storage",
+      "sourceHash": "aa95aa56866c2aad8cccce5cfac09dd9726b666e638221385250ff982846fc93",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/data-that-survives-storage.svg"
+    },
+    {
+      "lessonId": "data-that-survives",
+      "diagramId": "backup-time",
+      "sourceHash": "1b2cedcf798eb6f34ccad0890fd9ef43042ee64ee3dd52d22bf06d27d055d804",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/data-that-survives-backup-time.svg"
+    },
+    {
+      "lessonId": "database-families",
+      "diagramId": "questions",
+      "sourceHash": "b50786fd299fa0a9c4e4cc948798006c69b1fb76384a58a8fbb7c674968fe397",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/database-families-questions.svg"
+    },
+    {
+      "lessonId": "database-families",
+      "diagramId": "paths",
+      "sourceHash": "28a5f3cb4348520d88ebcda43a7cc6d7924105e11a2d34430275d6af4e515f7b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/database-families-paths.svg"
+    },
+    {
+      "lessonId": "database-families",
+      "diagramId": "known-event-group",
+      "sourceHash": "c16cdfb9273dfb5f1615b44da738d9406a06407ac74f8a82cb517885126205d6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/database-families-known-event-group.svg"
+    },
+    {
+      "lessonId": "databases-and-sql",
+      "diagramId": "ownership",
+      "sourceHash": "fd66d1ec9d4d209d88c6a9c5dc33091f12c6628b87d89eda38cd4b49ef0c4c51",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/databases-and-sql-ownership.svg"
+    },
+    {
+      "lessonId": "databases-and-sql",
+      "diagramId": "query-shape",
+      "sourceHash": "49cab478842c1bf42ab980a1fdb5611da6c885c839bb1c25021681d24f367c04",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/databases-and-sql-query-shape.svg"
+    },
+    {
+      "lessonId": "design-bookings",
+      "diagramId": "booking-race",
+      "sourceHash": "662beb0c88fb8723a94c0c6a678484cc120a34d8b5e36dc86eaa71b821b48018",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-bookings-booking-race.svg"
+    },
+    {
+      "lessonId": "design-bookings",
+      "diagramId": "booking-late",
+      "sourceHash": "ab27bb44ba693c23829599c84b7293b7b84dacf66d1dc9bda4c188805e5c05c6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-bookings-booking-late.svg"
+    },
+    {
+      "lessonId": "design-chat",
+      "diagramId": "chat-save-live",
+      "sourceHash": "ce9822e342a304d7c3838d5659d71c2a3233aed883ed6ed1fda99d745f7d34ff",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-chat-chat-save-live.svg"
+    },
+    {
+      "lessonId": "design-chat",
+      "diagramId": "chat-evidence-stages",
+      "sourceHash": "30d2d0d40e1f7ac09a2aba7522ab9e9051ad9f9cda11c1e933225260d56c83ed",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-chat-chat-evidence-stages.svg"
+    },
+    {
+      "lessonId": "design-file-storage",
+      "diagramId": "file-roles",
+      "sourceHash": "49b1a5e80024cbd7810dfc251b15618597b3c8bada44d0f9b67142fbb626cb4a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-file-storage-file-roles.svg"
+    },
+    {
+      "lessonId": "design-file-storage",
+      "diagramId": "file-state",
+      "sourceHash": "fc3f8398265659078a7074d67dcee375384b6881447da16da62c1160f92c5b33",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-file-storage-file-state.svg"
+    },
+    {
+      "lessonId": "design-news-feed",
+      "diagramId": "feed-projection",
+      "sourceHash": "834e33d63c1ff6958c34642d345a7eddafd8628ed1ca4f5ed6f42b2591967bd7",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-news-feed-feed-projection.svg"
+    },
+    {
+      "lessonId": "design-news-feed",
+      "diagramId": "feed-page-cursor",
+      "sourceHash": "7bf055ab3773b1df53c4c6c4c2d491801b6774a07e2182c196afd85cd8ea4152",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-news-feed-feed-page-cursor.svg"
+    },
+    {
+      "lessonId": "design-notifications",
+      "diagramId": "notification-outbox",
+      "sourceHash": "e0789aa6ccb6fbc345fa5781b21069a3475c384cb782fb47c671b92450c7b291",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-notifications-notification-outbox.svg"
+    },
+    {
+      "lessonId": "design-notifications",
+      "diagramId": "notification-state-boundaries",
+      "sourceHash": "e4af6f174927bb615eb67b185fafbb99d3c09667f8a1498481d7471401a1989e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-notifications-notification-state-boundaries.svg"
+    },
+    {
+      "lessonId": "design-payments",
+      "diagramId": "payment-lost-reply",
+      "sourceHash": "7fe25cec91c452d7b5610433718c0d07d932e9b1e50b754e82a5025414132021",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-payments-payment-lost-reply.svg"
+    },
+    {
+      "lessonId": "design-payments",
+      "diagramId": "payment-reconcile",
+      "sourceHash": "ca1924e20cb8fdbef6ffd0457bbb9b6e2bf6786fb83edf369ab168b3eb138b1a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-payments-payment-reconcile.svg"
+    },
+    {
+      "lessonId": "design-rate-limiter",
+      "diagramId": "atomic-limit",
+      "sourceHash": "271285dd32405a5f50b0b7e44c93a4d852d9af93e02189892465e6b8ccfdbd12",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-rate-limiter-atomic-limit.svg"
+    },
+    {
+      "lessonId": "design-rate-limiter",
+      "diagramId": "limiter-shared-balance",
+      "sourceHash": "2cc4a5766210fe3951154a151d42f810496069564efe97a763c23f179b253045",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-rate-limiter-limiter-shared-balance.svg"
+    },
+    {
+      "lessonId": "design-search-and-autocomplete",
+      "diagramId": "search-write",
+      "sourceHash": "274dc29608d63fba0abb426ce349de3c68fd4acafe5633773908d01730705db0",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-search-and-autocomplete-search-write.svg"
+    },
+    {
+      "lessonId": "design-search-and-autocomplete",
+      "diagramId": "search-read",
+      "sourceHash": "765fa928ca73be4c1d2076c4ea0ba2d0e9da54595807abf161ed4889e7fecf2f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-search-and-autocomplete-search-read.svg"
+    },
+    {
+      "lessonId": "design-video-platform",
+      "diagramId": "video-preparation",
+      "sourceHash": "c3be04cc76fcfea59d5e52e61536547e373021b1ad5f07fbf9e88e342fb47496",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-video-platform-video-preparation.svg"
+    },
+    {
+      "lessonId": "design-video-platform",
+      "diagramId": "video-playback",
+      "sourceHash": "3cd4c6c723d69a1c0ff5795e744a641f76870516b35d70e86769055d44c6073b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/design-video-platform-video-playback.svg"
+    },
+    {
+      "lessonId": "dns-and-addresses",
+      "diagramId": "dns-lookup",
+      "sourceHash": "d9dd38a6e6e39a32bc97e9827d3f609693b713dfd18d20625370ee9c6e1f59da",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/dns-and-addresses-dns-lookup.svg"
+    },
+    {
+      "lessonId": "dns-and-addresses",
+      "diagramId": "dns-request",
+      "sourceHash": "1df4003f03ec0c8cc89a34c87d27dcbf93a4bbd004da56641b4c85869aaa2243",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/dns-and-addresses-dns-request.svg"
+    },
+    {
+      "lessonId": "dns-and-addresses",
+      "diagramId": "one-host-many-paths",
+      "sourceHash": "aa17322e123e2cb8a83fbd7aa11d9dd308bd4738e9d43af8da3ff8c70624535f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/dns-and-addresses-one-host-many-paths.svg"
+    },
+    {
+      "lessonId": "estimates-and-tradeoffs",
+      "diagramId": "estimate-chain",
+      "sourceHash": "6f64dd8ec7a1d895516906b588095ce7721cd503c1c39cdef6b807b1d2e06b6f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/estimates-and-tradeoffs-estimate-chain.svg"
+    },
+    {
+      "lessonId": "estimates-and-tradeoffs",
+      "diagramId": "operation-versus-bytes",
+      "sourceHash": "4830a015a2cc5af8d81cc2b4807417f147d034b6d5b573da9e3fcbf369c966a8",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/estimates-and-tradeoffs-operation-versus-bytes.svg"
+    },
+    {
+      "lessonId": "feed-fanout-and-ranking",
+      "diagramId": "hybrid-feed",
+      "sourceHash": "1bb3205a4edbab1e736f075111797ad612ea619e479e8491650e960170bd0563",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/feed-fanout-and-ranking-hybrid-feed.svg"
+    },
+    {
+      "lessonId": "feed-fanout-and-ranking",
+      "diagramId": "feed-policy-transition",
+      "sourceHash": "66da90efe7a06ff87ed5a5b277b3c7b9f46bde63c1b1373f275a678bc05e9a84",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/feed-fanout-and-ranking-feed-policy-transition.svg"
+    },
+    {
+      "lessonId": "file-sync-and-conflicts",
+      "diagramId": "sync-conflict",
+      "sourceHash": "99305f880732e6e60cc1306cd6b7234e15d2fae22eefcaf482ed002afd5a70a6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/file-sync-and-conflicts-sync-conflict.svg"
+    },
+    {
+      "lessonId": "file-sync-and-conflicts",
+      "diagramId": "sync-cursor",
+      "sourceHash": "a3c4b9c317c320db58cb5a6b0e0e3de19754d95566026513724b0a9cc2c4fb3c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/file-sync-and-conflicts-sync-cursor.svg"
+    },
+    {
+      "lessonId": "find-data-with-indexes",
+      "diagramId": "lookup",
+      "sourceHash": "825dc7acf50d5b891a9056645652516480c29e3e215d1f092f3d475440284165",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/find-data-with-indexes-lookup.svg"
+    },
+    {
+      "lessonId": "find-data-with-indexes",
+      "diagramId": "index-maintenance",
+      "sourceHash": "0119d34c4fa70d3f7a20fdef0ed515148049a7efdde32d0d6547af9fb5928934",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/find-data-with-indexes-index-maintenance.svg"
+    },
+    {
+      "lessonId": "first-design-url-shortener",
+      "diagramId": "redirect",
+      "sourceHash": "ad73becf3c35b0b04b2312637885052479df92f26d4a8f6344839de5be06a63a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/first-design-url-shortener-redirect.svg"
+    },
+    {
+      "lessonId": "first-design-url-shortener",
+      "diagramId": "create-intent",
+      "sourceHash": "6a07bcf00a4980f43fa024ccfb930b3c1585f2db9958b3401d9f022813a11f39",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/first-design-url-shortener-create-intent.svg"
+    },
+    {
+      "lessonId": "full-mock-interview",
+      "diagramId": "mock-process",
+      "sourceHash": "7051bd91a4ab5c2836fb7b5a28db9dfc1462d7d00cd1b84115c20dfc0b1253c4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/full-mock-interview-mock-process.svg"
+    },
+    {
+      "lessonId": "full-mock-interview",
+      "diagramId": "mock-evidence-loop",
+      "sourceHash": "496b3c2608cddfb003aa1fd822b58eaf91db141c5059ea6a57b7776bc8fe5944",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/full-mock-interview-mock-evidence-loop.svg"
+    },
+    {
+      "lessonId": "gateways-and-proxies",
+      "diagramId": "proxy-roles",
+      "sourceHash": "ca20a9c23779f6c43c95bb2d626a15576764285b4ac50f4d2aa11d249617a337",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/gateways-and-proxies-proxy-roles.svg"
+    },
+    {
+      "lessonId": "gateways-and-proxies",
+      "diagramId": "gateway-request",
+      "sourceHash": "bf35d7f238df1ccb22389901bf0b7f4f091f0278f1e30a72c7497e3e52bd7032",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/gateways-and-proxies-gateway-request.svg"
+    },
+    {
+      "lessonId": "gateways-and-proxies",
+      "diagramId": "drain-transition",
+      "sourceHash": "2d98c0700ff3b73ed924f80430569334abd316da7d25608c90fd55a380c209eb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/gateways-and-proxies-drain-transition.svg"
+    },
+    {
+      "lessonId": "grow-one-server",
+      "diagramId": "copies",
+      "sourceHash": "cf88ccdc6d0e400e63872886298b9645b57ffe20ef03f5e6f4202058bc34ae0e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/grow-one-server-copies.svg"
+    },
+    {
+      "lessonId": "grow-one-server",
+      "diagramId": "shared-capacity-limit",
+      "sourceHash": "7f8f3187dc997e9682033bc8cb3614a8fda84265e26e244dca7569c3a62cdfe4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/grow-one-server-shared-capacity-limit.svg"
+    },
+    {
+      "lessonId": "http-requests-and-errors",
+      "diagramId": "http-exchange",
+      "sourceHash": "19922a1003a8baca5d9bdc45f2d2ccfb7b3a46384f261f85dc047877a66ddd9c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/http-requests-and-errors-http-exchange.svg"
+    },
+    {
+      "lessonId": "http-requests-and-errors",
+      "diagramId": "result-branches",
+      "sourceHash": "0de6c791379070220d2ae78c5c2080e2f280c6a6f8b42d3384cf423c3a868b5d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/http-requests-and-errors-result-branches.svg"
+    },
+    {
+      "lessonId": "identity-and-permissions",
+      "diagramId": "private-read",
+      "sourceHash": "59654c522fe89e85ab3552a606c7023864e6443fa2eb29b6d67b1b4a1120ce13",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/identity-and-permissions-private-read.svg"
+    },
+    {
+      "lessonId": "identity-and-permissions",
+      "diagramId": "tenant-boundary",
+      "sourceHash": "5b9ba046aa39a9770db98dab4323176dc949c357a238744a414b9f6d4cb7d41f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/identity-and-permissions-tenant-boundary.svg"
+    },
+    {
+      "lessonId": "interview-game-plan",
+      "diagramId": "interview-flow",
+      "sourceHash": "43e366e845d643c74f44d5f4a9edacec90282c7da67a3c7add496e2f2e34cebb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/interview-game-plan-interview-flow.svg"
+    },
+    {
+      "lessonId": "interview-game-plan",
+      "diagramId": "interview-decision-loop",
+      "sourceHash": "ad730723f4876d817c0345c0e1c45ebfa92bb5e9209a0f7d1b6064f4a517a8de",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/interview-game-plan-interview-decision-loop.svg"
+    },
+    {
+      "lessonId": "job-lifecycle-and-backpressure",
+      "diagramId": "job-states",
+      "sourceHash": "6c2b4ad0eb0f25c1586c4d3b163659b95eac1efefbfd27e7cbaa2c2aa009a665",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/job-lifecycle-and-backpressure-job-states.svg"
+    },
+    {
+      "lessonId": "job-lifecycle-and-backpressure",
+      "diagramId": "job-backpressure",
+      "sourceHash": "f4353da1d0f085e4ca7358f46a377f086e09a84fe6115355379b2313f9e9315e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/job-lifecycle-and-backpressure-job-backpressure.svg"
+    },
+    {
+      "lessonId": "kubernetes-building-blocks",
+      "diagramId": "control",
+      "sourceHash": "e3525c559131a20e06463e8334166fb133e4af1422ce61d5be88f977c0c00961",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/kubernetes-building-blocks-control.svg"
+    },
+    {
+      "lessonId": "kubernetes-building-blocks",
+      "diagramId": "traffic",
+      "sourceHash": "dbf4094776478aa3463a0d253e0c3eb29171080a6a3db0ba779b1f8088d5e4c7",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/kubernetes-building-blocks-traffic.svg"
+    },
+    {
+      "lessonId": "kubernetes-networking",
+      "diagramId": "kubernetes-internal",
+      "sourceHash": "869530a763edd967275a8cc8df01c1310f7e8a90cd320da4acf3d2828b1d2757",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/kubernetes-networking-kubernetes-internal.svg"
+    },
+    {
+      "lessonId": "kubernetes-networking",
+      "diagramId": "kubernetes-external",
+      "sourceHash": "5bcb14f08588b94b970b4e3dec91c0aa1a673b01946fd156072898f901a7e1e2",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/kubernetes-networking-kubernetes-external.svg"
+    },
+    {
+      "lessonId": "kubernetes-operations",
+      "diagramId": "probe-actions",
+      "sourceHash": "0298b3c9427ca5499c3289fb6b42b3797efd2767bcea6b63402e7eb8c900da4f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/kubernetes-operations-probe-actions.svg"
+    },
+    {
+      "lessonId": "kubernetes-operations",
+      "diagramId": "hpa-loop",
+      "sourceHash": "6415393c9482ebf5b0d4898c3fdeac12e0b3d0eb3360de2221a527ce648efe95",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/kubernetes-operations-hpa-loop.svg"
+    },
+    {
+      "lessonId": "load-balancing",
+      "diagramId": "request",
+      "sourceHash": "9b596ee2721f97f7a9fa7f916ffc299df8dd57098a38ddf300813423dc26ebf5",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/load-balancing-request.svg"
+    },
+    {
+      "lessonId": "load-balancing",
+      "diagramId": "health-information-lag",
+      "sourceHash": "61ee0931dac7e61186f133b5e1e27921a7efa77b50b74052819c0dc01b632050",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/load-balancing-health-information-lag.svg"
+    },
+    {
+      "lessonId": "mcp-platform-architecture",
+      "diagramId": "remote-mcp",
+      "sourceHash": "1b42ef2c0626229b7768281bc26829ff42dcde3c9413dc19fbe5ad712095df4b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/mcp-platform-architecture-remote-mcp.svg"
+    },
+    {
+      "lessonId": "mcp-platform-architecture",
+      "diagramId": "replica-state",
+      "sourceHash": "0555783b75212cd8b070069d78d7c3bc8e7c52a26157ef669af28cd6d8217c93",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/mcp-platform-architecture-replica-state.svg"
+    },
+    {
+      "lessonId": "measure-before-scaling",
+      "diagramId": "timing",
+      "sourceHash": "dc8707a3ec3ab31abda773b70a60e0451b3340623f94f70b8eee753d5c376cb2",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/measure-before-scaling-timing.svg"
+    },
+    {
+      "lessonId": "measure-before-scaling",
+      "diagramId": "timer-boundaries",
+      "sourceHash": "9291891f43b2ed9a70f5fce9eb61d41c3b94d1f63f0a7152d068584701d950df",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/measure-before-scaling-timer-boundaries.svg"
+    },
+    {
+      "lessonId": "model-serving-and-gpus",
+      "diagramId": "serving-path",
+      "sourceHash": "17defbdf10236f30624f67ce843d8b88aacc05980e2eefc9e7323b46644784a4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/model-serving-and-gpus-serving-path.svg"
+    },
+    {
+      "lessonId": "model-serving-and-gpus",
+      "diagramId": "continuous-batch",
+      "sourceHash": "c81445344aaee2d2053d7ed29e9ee1808082f16ea8f83d91db0ba113bf7b46a2",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/model-serving-and-gpus-continuous-batch.svg"
+    },
+    {
+      "lessonId": "numbers-bytes-and-units",
+      "diagramId": "unit-path",
+      "sourceHash": "c57fef6786df52e09483ecbe914135e313fa2e96ba304df2c8764ddca75d45fe",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/numbers-bytes-and-units-unit-path.svg"
+    },
+    {
+      "lessonId": "numbers-bytes-and-units",
+      "diagramId": "rate-path",
+      "sourceHash": "ee6a7dac253eff8dfda1899df22108cf9b3a6a8ee8402bf0ea3908d5591d3700",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/numbers-bytes-and-units-rate-path.svg"
+    },
+    {
+      "lessonId": "observe-and-debug",
+      "diagramId": "save-trace",
+      "sourceHash": "e062ced3b75aaad24c94e7b6caee7532c24e0e5a473aa141dd663c245c9d33e3",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/observe-and-debug-save-trace.svg"
+    },
+    {
+      "lessonId": "observe-and-debug",
+      "diagramId": "debug-hypothesis",
+      "sourceHash": "d2703a6055fdbffcf3af5e9a4eb9ecfea17b349dbd00b326c03b0eb36dc13291",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/observe-and-debug-debug-hypothesis.svg"
+    },
+    {
+      "lessonId": "pagination-from-scratch",
+      "diagramId": "page-request",
+      "sourceHash": "2e41e9ff77dbc800a4acd83cd55fca3b466fbdec8c0229568ef1d7229c8b0630",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/pagination-from-scratch-page-request.svg"
+    },
+    {
+      "lessonId": "pagination-from-scratch",
+      "diagramId": "cursor-choice",
+      "sourceHash": "f6e58b518028f1a5ee77f20828865d856adf626ef286fcbbe542dad1fb972be7",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/pagination-from-scratch-cursor-choice.svg"
+    },
+    {
+      "lessonId": "partitions-and-quorums",
+      "diagramId": "overlap",
+      "sourceHash": "716e5a30cc5e70a22e56d799689eee470ad963f863ece6406fd45d7a3dd56a4d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/partitions-and-quorums-overlap.svg"
+    },
+    {
+      "lessonId": "partitions-and-quorums",
+      "diagramId": "partition-choice",
+      "sourceHash": "15db47ed307c7830a8e4bb4d3b33134ea97d7a6f1e2e0a01e1614cedfca3fe6b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/partitions-and-quorums-partition-choice.svg"
+    },
+    {
+      "lessonId": "platform-security-and-tenancy",
+      "diagramId": "authority",
+      "sourceHash": "406d516111348790b552ba746917aee589123eca590ddd41394dfdedac183c36",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/platform-security-and-tenancy-authority.svg"
+    },
+    {
+      "lessonId": "platform-security-and-tenancy",
+      "diagramId": "boundaries",
+      "sourceHash": "e1f0c918ddbd28fb101f74127e456a6e40063ebd8bb762cec0def0f74126955a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/platform-security-and-tenancy-boundaries.svg"
+    },
+    {
+      "lessonId": "processes-threads-and-concurrency",
+      "diagramId": "process-memory",
+      "sourceHash": "f5da183d27e513553cf0f30678524fd54a80e14c0f5e4900158250af67322cde",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/processes-threads-and-concurrency-process-memory.svg"
+    },
+    {
+      "lessonId": "processes-threads-and-concurrency",
+      "diagramId": "overlap-waits",
+      "sourceHash": "9c25d12f820c5465a06b2d16fcd53978a78e4975a4937b72368c1b0808c045e7",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/processes-threads-and-concurrency-overlap-waits.svg"
+    },
+    {
+      "lessonId": "processes-threads-and-concurrency",
+      "diagramId": "blocked-loop",
+      "sourceHash": "8f82ec1b6cfe43b154f308bd056636a3c5788f08bb6e47b0bb92f814a180bec4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/processes-threads-and-concurrency-blocked-loop.svg"
+    },
+    {
+      "lessonId": "queue-broker-fundamentals",
+      "diagramId": "messaging-patterns",
+      "sourceHash": "0bfa83cf4f2cba8a780ca1581c7c51d233a894dd691c9ac9d8e01806f9a41ffb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/queue-broker-fundamentals-messaging-patterns.svg"
+    },
+    {
+      "lessonId": "queue-broker-fundamentals",
+      "diagramId": "durable-ai-job",
+      "sourceHash": "4029b1ec26a42f82225384a771f3ae94339905bf622b0edf5e40d9ace66f3ff6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/queue-broker-fundamentals-durable-ai-job.svg"
+    },
+    {
+      "lessonId": "queues-and-retries",
+      "diagramId": "redelivery",
+      "sourceHash": "3efe7bb9c0c91f3a7ce934e92cda43f38df09e49107db4a3c62428eec1afd538",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/queues-and-retries-redelivery.svg"
+    },
+    {
+      "lessonId": "queues-and-retries",
+      "diagramId": "protected-effect",
+      "sourceHash": "34d9c28b61e72ab9ffce390730c6dff18b23bbfdfbe5bb2ad0e79996fb750b1d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/queues-and-retries-protected-effect.svg"
+    },
+    {
+      "lessonId": "rag-and-inference",
+      "diagramId": "rag-ingest",
+      "sourceHash": "ac7ba7d8e3faa9d1a0b083cfc2140dc1d79a6741ecc844e354c3a9b1b155cc91",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/rag-and-inference-rag-ingest.svg"
+    },
+    {
+      "lessonId": "rag-and-inference",
+      "diagramId": "rag-query",
+      "sourceHash": "bc17cd7df4ae65e43f0cb79f81c26a16a2c9759035eb5c23c7d8d2e6c8e7bab2",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/rag-and-inference-rag-query.svg"
+    },
+    {
+      "lessonId": "rate-limits-and-abuse",
+      "diagramId": "bucket-flow",
+      "sourceHash": "8df2cb3d66a0d8f5adae49740a22292db450e6b617e078ad3683894e4bc97cbb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/rate-limits-and-abuse-bucket-flow.svg"
+    },
+    {
+      "lessonId": "rate-limits-and-abuse",
+      "diagramId": "rate-and-concurrency",
+      "sourceHash": "7bc1dcd418fbb074ade405bec57a12883e579d9dfc007f6f7448a7867238a5d8",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/rate-limits-and-abuse-rate-and-concurrency.svg"
+    },
+    {
+      "lessonId": "read-system-diagrams",
+      "diagramId": "request-map",
+      "sourceHash": "a642725bf83dd0a021d23649156600e02a0df947ebf7d12eea60be49757cff88",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/read-system-diagrams-request-map.svg"
+    },
+    {
+      "lessonId": "read-system-diagrams",
+      "diagramId": "message-order",
+      "sourceHash": "40507583b6ebf3750ec05044a163995d4d6d70f593d1d20234c9a8d70d31438c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/read-system-diagrams-message-order.svg"
+    },
+    {
+      "lessonId": "redis-from-scratch",
+      "diagramId": "client",
+      "sourceHash": "e0abe5220ea13f7c56a24ad6e6cf7799bb671d4c4c4dc547b756788e7d8fd53e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/redis-from-scratch-client.svg"
+    },
+    {
+      "lessonId": "redis-from-scratch",
+      "diagramId": "cache-path",
+      "sourceHash": "4e1215705623193f2d2766f4ce2f09632e721c0db2c877437f37bde313703f1b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/redis-from-scratch-cache-path.svg"
+    },
+    {
+      "lessonId": "redis-from-scratch",
+      "diagramId": "expiry-versus-eviction",
+      "sourceHash": "2fb042bd8b4e37808085e7d03ecd3e855a15ba0d2e5b12c85675a9de3333a277",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/redis-from-scratch-expiry-versus-eviction.svg"
+    },
+    {
+      "lessonId": "regions-and-disaster-recovery",
+      "diagramId": "region-promotion",
+      "sourceHash": "786f0ce367c379669c33abc37bbb572a25892de034a08ed93c91c27d647df3ec",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/regions-and-disaster-recovery-region-promotion.svg"
+    },
+    {
+      "lessonId": "regions-and-disaster-recovery",
+      "diagramId": "recovery-journey",
+      "sourceHash": "9faffbcf75df806bd6b24cccf58c282c1ff30d874097a46f3ce46ebe1e3a9e0e",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/regions-and-disaster-recovery-recovery-journey.svg"
+    },
+    {
+      "lessonId": "reliability-controls",
+      "diagramId": "deadline",
+      "sourceHash": "f2c5486016285f5dd3c81ced9017c183a8873b29edd285314fad079fde2f3e50",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/reliability-controls-deadline.svg"
+    },
+    {
+      "lessonId": "reliability-controls",
+      "diagramId": "breaker-states",
+      "sourceHash": "646ea18a8b69b8044a1e6628b72b505267f2a0ecf68b3309d5c17a8e3508000c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/reliability-controls-breaker-states.svg"
+    },
+    {
+      "lessonId": "reliable-events",
+      "diagramId": "outbox-flow",
+      "sourceHash": "f585544df5585d216cfac7db9e0b0785964469238be47b1539600a17811415c0",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/reliable-events-outbox-flow.svg"
+    },
+    {
+      "lessonId": "reliable-events",
+      "diagramId": "outbox-duplicate",
+      "sourceHash": "0e91180b949479ce242653d294ddc65bce8a9d8de1a5c6674871102c8629c9d9",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/reliable-events-outbox-duplicate.svg"
+    },
+    {
+      "lessonId": "reliable-systems",
+      "diagramId": "degraded-save",
+      "sourceHash": "2f7383d56913c8d78dd73d1857739f02482c23ad6b449955a683ea2eb1a00a5d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/reliable-systems-degraded-save.svg"
+    },
+    {
+      "lessonId": "reliable-systems",
+      "diagramId": "survivor-budget",
+      "sourceHash": "d8931e2696f773c39af2c67395d5f23dc53f03bbbbcbf4103e638475b2060f3c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/reliable-systems-survivor-budget.svg"
+    },
+    {
+      "lessonId": "remember-with-caches",
+      "diagramId": "aside",
+      "sourceHash": "55e059f42777f758b370020a00dcdca07a212a60aa379d899f060cdabba2e8a4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/remember-with-caches-aside.svg"
+    },
+    {
+      "lessonId": "remember-with-caches",
+      "diagramId": "copy-lifecycle",
+      "sourceHash": "d8c1c66c70ea41c4ef1c02803c4ff5914539158e91db4d64200f446ae2b0b4d4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/remember-with-caches-copy-lifecycle.svg"
+    },
+    {
+      "lessonId": "request-journey",
+      "diagramId": "journey",
+      "sourceHash": "825948d3b05cf7dd3837a141ac2edf5fff4bec40a482d57b9914c7d6b4f02235",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/request-journey-journey.svg"
+    },
+    {
+      "lessonId": "request-journey",
+      "diagramId": "reused-connection",
+      "sourceHash": "56bef12cb2d23fbf878534ebe7d8958864d4b13f8082277465f38315a865929a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/request-journey-reused-connection.svg"
+    },
+    {
+      "lessonId": "serialization-and-data-formats",
+      "diagramId": "format-layers",
+      "sourceHash": "0a70aa369ed2dffeb74fc13ecd6b42c9626e6634321d05c8e685233ae31aaf61",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/serialization-and-data-formats-format-layers.svg"
+    },
+    {
+      "lessonId": "serialization-and-data-formats",
+      "diagramId": "versions",
+      "sourceHash": "4a619df46ccf040ad33fd4b4eee05c5f086b2198349c5a86e07756646905b4bb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/serialization-and-data-formats-versions.svg"
+    },
+    {
+      "lessonId": "service-boundaries",
+      "diagramId": "modular-app",
+      "sourceHash": "8f49be86d45f056d44ec1ee968ab2a0dca481ce2acbd229a2c388647f0191171",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/service-boundaries-modular-app.svg"
+    },
+    {
+      "lessonId": "service-boundaries",
+      "diagramId": "extract-summary",
+      "sourceHash": "21bfc6265bc0fb05d6e73f9b0cb47885a2d8eb2aa4c9dec9fb7d9c3ed1d31ed6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/service-boundaries-extract-summary.svg"
+    },
+    {
+      "lessonId": "service-boundaries",
+      "diagramId": "optional-dependency",
+      "sourceHash": "3c6c56a7fae77ec5a3085b1cd46aef52c89bea4473083a914728f7a1b5abb69f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/service-boundaries-optional-dependency.svg"
+    },
+    {
+      "lessonId": "ship-and-recover",
+      "diagramId": "compatible-change",
+      "sourceHash": "e7cb09411dd27cb0af589ba444c26df03861c5515195268cf7091eb342d315f5",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/ship-and-recover-compatible-change.svg"
+    },
+    {
+      "lessonId": "ship-and-recover",
+      "diagramId": "restore-isolated",
+      "sourceHash": "281ed69fe3a59303f9db77771cba07468edc28e9fd859171c16f6ef9e3fd548a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/ship-and-recover-restore-isolated.svg"
+    },
+    {
+      "lessonId": "split-data-into-shards",
+      "diagramId": "shards",
+      "sourceHash": "7f61b43af3057aa68ab4000ff7b5f506b11922ce5f4104711927404cd9f866a1",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/split-data-into-shards-shards.svg"
+    },
+    {
+      "lessonId": "split-data-into-shards",
+      "diagramId": "shards-and-copies",
+      "sourceHash": "4a45e845e4c981702023fe856a18679e92cb9b9e4bff9a54662ac0ae61ca707f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/split-data-into-shards-shards-and-copies.svg"
+    },
+    {
+      "lessonId": "sql-in-small-steps",
+      "diagramId": "join",
+      "sourceHash": "c26f248bbf734274863acb3ceabc51834b80a1394d993d685b97cf428c9de1e5",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/sql-in-small-steps-join.svg"
+    },
+    {
+      "lessonId": "sql-in-small-steps",
+      "diagramId": "query-intent",
+      "sourceHash": "775cc4f0244b34fd4baf9b1f84f8bc34872351b3b45ce146ec7f46634d5a8d83",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/sql-in-small-steps-query-intent.svg"
+    },
+    {
+      "lessonId": "sql-in-small-steps",
+      "diagramId": "write-scope",
+      "sourceHash": "ffe088c423dc58010d1ce98bb3efcf83e792238ad0063f28f45391c6678f67ae",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/sql-in-small-steps-write-scope.svg"
+    },
+    {
+      "lessonId": "streaming-and-replay",
+      "diagramId": "readers",
+      "sourceHash": "13aa63a6b7428ab8110dc6d716dcdb9caba28767da90376ba15fdf1fd08b7df9",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/streaming-and-replay-readers.svg"
+    },
+    {
+      "lessonId": "streaming-and-replay",
+      "diagramId": "log-rebuild",
+      "sourceHash": "f8830abe75fec79327b7a9c1923ac39f0028e8bf5a3e6a3c77e1077d0a1f71f6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/streaming-and-replay-log-rebuild.svg"
+    },
+    {
+      "lessonId": "transactions-and-correctness",
+      "diagramId": "transaction",
+      "sourceHash": "3b85e32924561e0e36b869ea45325f94352da02deb65b1938d6be4c1debfcc66",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/transactions-and-correctness-transaction.svg"
+    },
+    {
+      "lessonId": "transactions-and-correctness",
+      "diagramId": "commit-versus-response",
+      "sourceHash": "1948af7f2bcb264cd5f9fa6fe980e873a49a5843639ee11fc81a1265c4b3e7fb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/transactions-and-correctness-commit-versus-response.svg"
+    },
+    {
+      "lessonId": "what-is-system-design",
+      "diagramId": "first-system",
+      "sourceHash": "df0d1ae2ae18a65d6acd9ca5a41f263a5337270ce1eedb1a393bcf697ae44980",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/what-is-system-design-first-system.svg"
+    },
+    {
+      "lessonId": "what-is-system-design",
+      "diagramId": "need-to-part",
+      "sourceHash": "d7074fc55eb917e31a48d4b46bf3ccbfdb9ee07b5d8adceeec03305eb77aa7b5",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/what-is-system-design-need-to-part.svg"
+    },
+    {
+      "lessonId": "001",
+      "diagramId": "loan-path",
+      "sourceHash": "2d737c78ae703925951103f9f17e323b119546c7548bae039222c60f1c0d9cbb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/001-loan-path.svg"
+    },
+    {
+      "lessonId": "002",
+      "diagramId": "confirmation",
+      "sourceHash": "155d71f2b969427e61f2a5b7d198c126363e085bb0b5ba931803b6798ae030ef",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/002-confirmation.svg"
+    },
+    {
+      "lessonId": "003",
+      "diagramId": "timers",
+      "sourceHash": "fb7934f83bb4bc0432f3065d7d8330491d2ef824cfb462512eaae134cb1c1fa6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/003-timers.svg"
+    },
+    {
+      "lessonId": "004",
+      "diagramId": "funnel",
+      "sourceHash": "7b0681368e039457ccc47a0e3a87ed51a7c41d06aa8998e4f7bc4f45e07b456a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/004-funnel.svg"
+    },
+    {
+      "lessonId": "006",
+      "diagramId": "copies",
+      "sourceHash": "b3a6cd690c0205ec2e4155534e5b31432457f902537fae19dbce77cf250fba25",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/006-copies.svg"
+    },
+    {
+      "lessonId": "007",
+      "diagramId": "queue-boundary",
+      "sourceHash": "37ed9bfe721e356c647bdbf91dbf2732172d6a9ec312b55a1f7ea83a4679eba3",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/007-queue-boundary.svg"
+    },
+    {
+      "lessonId": "008",
+      "diagramId": "limits",
+      "sourceHash": "42c98dc12985b2e75b696b7cf15c46ee341ce1b7474f88cc81c9c4bb4fc15c52",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/008-limits.svg"
+    },
+    {
+      "lessonId": "009",
+      "diagramId": "reasoning-loop",
+      "sourceHash": "c6da1165eb60cc47e107dc6d877e3dd57971a3f80f21f8ca426700208978e174",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/009-reasoning-loop.svg"
+    },
+    {
+      "lessonId": "011",
+      "diagramId": "resolution",
+      "sourceHash": "d4f7efa8c271a9351c51a28dae9e461b9d1cb78d41cb1d2b38aeb5a424873f39",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/011-resolution.svg"
+    },
+    {
+      "lessonId": "012",
+      "diagramId": "gap",
+      "sourceHash": "296cc0ff15a0499d2c55d9a70d138364edb284249bac4fcf00072eb2e91b6c16",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/012-gap.svg"
+    },
+    {
+      "lessonId": "013",
+      "diagramId": "termination",
+      "sourceHash": "67d219f3bb16ca184448491ff7261b06ef45a98d53dfff732e5a10a50a8b0077",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/013-termination.svg"
+    },
+    {
+      "lessonId": "014",
+      "diagramId": "condition",
+      "sourceHash": "8d6a752bd5809c81adcd9e1dd1e17913f8abf6cda5cbeb2e500769d461265334",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/014-condition.svg"
+    },
+    {
+      "lessonId": "016",
+      "diagramId": "layers",
+      "sourceHash": "9d6b909c451bf0b84ca4f1fc82c2700a6844eec833d4d7c3c49791399def6251",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/016-layers.svg"
+    },
+    {
+      "lessonId": "017",
+      "diagramId": "routing",
+      "sourceHash": "25dfe6d589fe64a5f87e80c6b3be8df9030eae92001bdf5dc5d124345028334d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/017-routing.svg"
+    },
+    {
+      "lessonId": "018",
+      "diagramId": "contract",
+      "sourceHash": "9e2edf4e6cbb350d45e23a9c124cf3c7ecd11f494e2bb21c72a5803dc27fe9b0",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/018-contract.svg"
+    },
+    {
+      "lessonId": "019",
+      "diagramId": "reconnect",
+      "sourceHash": "b82dd0414a8708c48c2fe41d34971abaa309420d590920cee104dc4ff570d680",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/019-reconnect.svg"
+    },
+    {
+      "lessonId": "021",
+      "diagramId": "event-loop",
+      "sourceHash": "405a7d7bc27622cc18a6c9f64df6dff00815f0e61ec9324709356876bcd7aec3",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/021-event-loop.svg"
+    },
+    {
+      "lessonId": "022",
+      "diagramId": "lost-update",
+      "sourceHash": "064dc4c72285190ec3290fa86bb74fd50d8780ba8b425f3d8227f9f7265baccc",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/022-lost-update.svg"
+    },
+    {
+      "lessonId": "023",
+      "diagramId": "checks",
+      "sourceHash": "5b434d3e17dfe0eb517efe175583d827a8cc5b330a4ed821d81748cac1d0cbc1",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/023-checks.svg"
+    },
+    {
+      "lessonId": "024",
+      "diagramId": "pagination",
+      "sourceHash": "30567cb8ba87d69874c82587be25fbe7f28e9d23c243e0e4311afee22845cb78",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/024-pagination.svg"
+    },
+    {
+      "lessonId": "026",
+      "diagramId": "authorization",
+      "sourceHash": "e2b85aa26aa1083f487d7738b0874c3ea54a1927ff242f43990e7b3049c9b5a9",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/026-authorization.svg"
+    },
+    {
+      "lessonId": "027",
+      "diagramId": "uncertain",
+      "sourceHash": "075b8d55d209d5efaf32fd86426074f4b7f5fc474d1f6dcf8aad4892da72df8f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/027-uncertain.svg"
+    },
+    {
+      "lessonId": "028",
+      "diagramId": "boundary",
+      "sourceHash": "5fa2fcddc7cfba2d72c45de330077d5426028f06ff902306117eb6b1ac15561c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/028-boundary.svg"
+    },
+    {
+      "lessonId": "029",
+      "diagramId": "harness",
+      "sourceHash": "0a1d520825f0c817ddd611909421820f329b03f9c7008fc1c5adc41b32e24797",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/029-harness.svg"
+    },
+    {
+      "lessonId": "031",
+      "diagramId": "relationships",
+      "sourceHash": "768888b85adcea9d00a572f437a86ede54240d03ab2830ca1d43bf81593e44da",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/031-relationships.svg"
+    },
+    {
+      "lessonId": "032",
+      "diagramId": "constraint",
+      "sourceHash": "8d2c99485cb959cb2eda004ed89e34218cd50dd28cfe8c84218309834b4edba5",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/032-constraint.svg"
+    },
+    {
+      "lessonId": "033",
+      "diagramId": "btree",
+      "sourceHash": "c352ad00724b83ac2397ad57ea0297e2cfcf9580cd07a41f0b15017d61598a3b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/033-btree.svg"
+    },
+    {
+      "lessonId": "034",
+      "diagramId": "amplification",
+      "sourceHash": "0d60ae7139b46e9c5e4c1b7af431e4a6c4cec584dcdf36202b57261fce0116eb",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/034-amplification.svg"
+    },
+    {
+      "lessonId": "036",
+      "diagramId": "transaction",
+      "sourceHash": "6aef08f2032a8e44c8e7d874e5c58695fa3ea927b6d9fd5c7d14e5215058d831",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/036-transaction.svg"
+    },
+    {
+      "lessonId": "037",
+      "diagramId": "deadlock",
+      "sourceHash": "87c5c8789881e402fe504fee7f44ee88f98f7d332bab2d3bb5d176117924573c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/037-deadlock.svg"
+    },
+    {
+      "lessonId": "038",
+      "diagramId": "write-skew",
+      "sourceHash": "e00bb32537971e0062c2b4f04ee26ad84f01baf767f33ffd6f468b12b757065a",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/038-write-skew.svg"
+    },
+    {
+      "lessonId": "039",
+      "diagramId": "create",
+      "sourceHash": "8282c15aedac464e9904e81b46d89ee86cd6caaad7705400731ad93ce5dab380",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/039-create.svg"
+    },
+    {
+      "lessonId": "041",
+      "diagramId": "wal-order",
+      "sourceHash": "d07c3fe6a16300eabf90d416031d012e7711414e3672f2af151ea4e7921947a9",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/041-wal-order.svg"
+    },
+    {
+      "lessonId": "042",
+      "diagramId": "lsm",
+      "sourceHash": "7d924cddd630f2b30156d1c194e8e3bf2dfb7b9410d23cf6aa94840809d60300",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/042-lsm.svg"
+    },
+    {
+      "lessonId": "043",
+      "diagramId": "filter",
+      "sourceHash": "8bca26c597dfbaf6158eeff860628d8addcc3be88c2c0b2b0f306de262a68654",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/043-filter.svg"
+    },
+    {
+      "lessonId": "044",
+      "diagramId": "layouts",
+      "sourceHash": "c86b8827e8eedde005170914481b85b384738536b6f6847f42c0dcb48db503f8",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/044-layouts.svg"
+    },
+    {
+      "lessonId": "045",
+      "diagramId": "selection-evidence",
+      "sourceHash": "0545f0485eea170c3052c6a665313e4e22a817ec0a51d70d70ddef4d4eb747c4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/045-selection-evidence.svg"
+    },
+    {
+      "lessonId": "046",
+      "diagramId": "aggregate",
+      "sourceHash": "faabcd616de4ddd081445f2005afa39f518bde9190dc0e78a548520a699c699d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/046-aggregate.svg"
+    },
+    {
+      "lessonId": "047",
+      "diagramId": "search-path",
+      "sourceHash": "dbbd490ddc2388e0983495e66542d1b79960d999126b427af18415ce3af1292c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/047-search-path.svg"
+    },
+    {
+      "lessonId": "048",
+      "diagramId": "graph-spatial",
+      "sourceHash": "6db0246e8140251a6f2b9a0dc6174435bc48f3216ad20859549d4b2ee626a8b0",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/048-graph-spatial.svg"
+    },
+    {
+      "lessonId": "049",
+      "diagramId": "blob-publish",
+      "sourceHash": "32dacca05a75306d4725b815af728e321d4bcaa3f8f542f37884af10408c4b24",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/049-blob-publish.svg"
+    },
+    {
+      "lessonId": "050",
+      "diagramId": "clinic-grid",
+      "sourceHash": "8e939f971fe71552376790793558a375b3591d24d73c86078e2f37c4fcf4c691",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/050-clinic-grid.svg"
+    },
+    {
+      "lessonId": "051",
+      "diagramId": "measurement",
+      "sourceHash": "5a7aa086c1928cc198224b7832699ae12827d4de0b871e03afef36dd2f7fd311",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/051-measurement.svg"
+    },
+    {
+      "lessonId": "052",
+      "diagramId": "state",
+      "sourceHash": "0966b46d192a51ba11eef5bbf59d63882027da30f01ff3dab3d1b95e47cc0627",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/052-state.svg"
+    },
+    {
+      "lessonId": "053",
+      "diagramId": "demand",
+      "sourceHash": "2eb68fe9bf50763ef978412a69b19c643fa3c0cee93c2918d410040ff12f9a33",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/053-demand.svg"
+    },
+    {
+      "lessonId": "054",
+      "diagramId": "pool",
+      "sourceHash": "870738807873857cc776972fcfb559d518533a38d35ba3e89547971428c1b779",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/054-pool.svg"
+    },
+    {
+      "lessonId": "056",
+      "diagramId": "aside",
+      "sourceHash": "c475157a697adce6082333e18271ee8f3527d1489fb437225317025f2801cf02",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/056-aside.svg"
+    },
+    {
+      "lessonId": "057",
+      "diagramId": "stale-fill",
+      "sourceHash": "0b3d7b89e193b3c7a0f3fd7486498455a9712ae83d42dae170aa0188f4a5f240",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/057-stale-fill.svg"
+    },
+    {
+      "lessonId": "058",
+      "diagramId": "validation",
+      "sourceHash": "9a018546ef0fbad506e2dc21648c157ea57238efa96de5ecb8c5c5cdddc9400f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/058-validation.svg"
+    },
+    {
+      "lessonId": "059",
+      "diagramId": "milestone-flow",
+      "sourceHash": "4a66262a48e62fa7b0a29d973613ebf492d7c4ff3bfb51afe1e02affff1aaf39",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/059-milestone-flow.svg"
+    },
+    {
+      "lessonId": "061",
+      "diagramId": "ack",
+      "sourceHash": "d374dbe5307686c4c506e7bfc87c221b42f7329fd233d3566bff4e6d4978960f",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/061-ack.svg"
+    },
+    {
+      "lessonId": "062",
+      "diagramId": "read-position",
+      "sourceHash": "191942d0d86acd746480cf8a6a9c3e246202d6ae1a5de71a2aa82eb30dc95c45",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/062-read-position.svg"
+    },
+    {
+      "lessonId": "063",
+      "diagramId": "partition-replica",
+      "sourceHash": "0f9ecb187fbbee3c701f507796cbba89802ceb94c6b656ca7f847596a5d3cc78",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/063-partition-replica.svg"
+    },
+    {
+      "lessonId": "064",
+      "diagramId": "ring-split",
+      "sourceHash": "b455e0b5bb237ead537e5b2b8f252d1f59082287a10997a9d19d31c0703acbd3",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/064-ring-split.svg"
+    },
+    {
+      "lessonId": "069",
+      "diagramId": "milestone-flow",
+      "sourceHash": "3da7ea7964beaa92365c34a2eeb29cb86889a567fb268cec77e33faea4814b9c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/069-milestone-flow.svg"
+    },
+    {
+      "lessonId": "071",
+      "diagramId": "lost-response",
+      "sourceHash": "d8f96556c8986e95e1a1176729fcd95291505b749883beb934a49462e6ae8ec3",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/071-lost-response.svg"
+    },
+    {
+      "lessonId": "072",
+      "diagramId": "histories",
+      "sourceHash": "23c413c08d6d53f5c76d171ecff39d8c48889469637a81f2514bda7583726142",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/072-histories.svg"
+    },
+    {
+      "lessonId": "073",
+      "diagramId": "dependency",
+      "sourceHash": "a715143e0414e19a804acead99d83b1ca0c2e4e6f87dc606fb8fcdcfbb5b2fee",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/073-dependency.svg"
+    },
+    {
+      "lessonId": "074",
+      "diagramId": "partition",
+      "sourceHash": "8219b5828377eb1c053d85416bcf6037d31996ed9f3705b5e653299e5ea4c418",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/074-partition.svg"
+    },
+    {
+      "lessonId": "076",
+      "diagramId": "logical",
+      "sourceHash": "3ad8d6bedb67f88f3081fefa39597ec38803f1333888c45ab692f94664334398",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/076-logical.svg"
+    },
+    {
+      "lessonId": "077",
+      "diagramId": "vector",
+      "sourceHash": "31d70c7b003222783fc9c6e2fd1e0609199cc8ab233e4300e57ad21cfc251999",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/077-vector.svg"
+    },
+    {
+      "lessonId": "078",
+      "diagramId": "regression",
+      "sourceHash": "ec2ee9430f76dfb6149c1480457217b921531b7060c6618d9d14fe48e558256b",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/078-regression.svg"
+    },
+    {
+      "lessonId": "079",
+      "diagramId": "counter",
+      "sourceHash": "cffdc1d0e5484953124613ed771bd06ab783585b0b95c41b0bd20aee899c5ed4",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/079-counter.svg"
+    },
+    {
+      "lessonId": "081",
+      "diagramId": "mechanism",
+      "sourceHash": "65ee7a5b41eb44895dcb1ee28f5554c451a95c1324631a2834e0700c254a11ba",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/081-mechanism.svg"
+    },
+    {
+      "lessonId": "082",
+      "diagramId": "mechanism",
+      "sourceHash": "9a771409bc40322dd155e8a08bb03d6128af4662dd0250ef1d245ad56601cf71",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/082-mechanism.svg"
+    },
+    {
+      "lessonId": "083",
+      "diagramId": "mechanism",
+      "sourceHash": "c5bac5a22dbbac3aad0050867a57d4364ea462d6775c8784368a01d08464afcc",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/083-mechanism.svg"
+    },
+    {
+      "lessonId": "084",
+      "diagramId": "mechanism",
+      "sourceHash": "91e0e76406ddb570ceaeb91cc2516ec4e5010380208511ba48bf785a71f25e16",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/084-mechanism.svg"
+    },
+    {
+      "lessonId": "085",
+      "diagramId": "mechanism",
+      "sourceHash": "5ed48863d96f048fba86c93f04a1458f72f712e3886e1f2459183a6e5aa9e4e7",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/085-mechanism.svg"
+    },
+    {
+      "lessonId": "086",
+      "diagramId": "mechanism",
+      "sourceHash": "ed5f34623f42334b2e2907da6151952c77c15324911c5d0c707538de33e1f266",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/086-mechanism.svg"
+    },
+    {
+      "lessonId": "087",
+      "diagramId": "mechanism",
+      "sourceHash": "4d8401603929055e3377559fa307bc3a8990764a84c127d9bf6793e9c6e321c3",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/087-mechanism.svg"
+    },
+    {
+      "lessonId": "088",
+      "diagramId": "mechanism",
+      "sourceHash": "5f885735765557c2b6c1c909db1cfc886b0d5a9d2a2902ae6f59c4cff4967b0c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/088-mechanism.svg"
+    },
+    {
+      "lessonId": "089",
+      "diagramId": "mechanism",
+      "sourceHash": "0ae59a5e53c95f3a071d25c88a34ac2f9cd465b7dc479059bf749c7037a0ba24",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/089-mechanism.svg"
+    },
+    {
+      "lessonId": "090",
+      "diagramId": "mechanism",
+      "sourceHash": "5ed48863d96f048fba86c93f04a1458f72f712e3886e1f2459183a6e5aa9e4e7",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/090-mechanism.svg"
+    },
+    {
+      "lessonId": "091",
+      "diagramId": "mechanism",
+      "sourceHash": "c8b3e92e7acbdd02c4cca6e84413da8cc75dcf5d94d4aa6b9a65cf384cfb40f0",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/091-mechanism.svg"
+    },
+    {
+      "lessonId": "092",
+      "diagramId": "mechanism",
+      "sourceHash": "4519b860b9175caf19e1b5a1e812f7185df044687d840a93d95630c761ee91f9",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/092-mechanism.svg"
+    },
+    {
+      "lessonId": "093",
+      "diagramId": "mechanism",
+      "sourceHash": "df2482f4b4b61c3dea5b0b3d5cd9091710fc6eb15740d8379ea5773a83447ab2",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/093-mechanism.svg"
+    },
+    {
+      "lessonId": "094",
+      "diagramId": "mechanism",
+      "sourceHash": "466ac38128df6981ef5ada3e726fd8eb16ae94d544929f2d424c87b3289b26ce",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/094-mechanism.svg"
+    },
+    {
+      "lessonId": "096",
+      "diagramId": "mechanism",
+      "sourceHash": "fb3384e6d4066cf11d883a4d8ff055c46494204bbab2a2e35e7cf5188d203a2c",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/096-mechanism.svg"
+    },
+    {
+      "lessonId": "097",
+      "diagramId": "mechanism",
+      "sourceHash": "31cec0ea419714526fd69a97a256f1d135e020f4a13f8cb1e35c8db692fbb310",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/097-mechanism.svg"
+    },
+    {
+      "lessonId": "098",
+      "diagramId": "mechanism",
+      "sourceHash": "7db49d450c00081f93cc3ba4b7b6b3e5f5d849510ed0f829197aef6632fc3913",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/098-mechanism.svg"
+    },
+    {
+      "lessonId": "099",
+      "diagramId": "milestone-flow",
+      "sourceHash": "f4e1dae9e8e85a4a6fe2d75e0df79ec3dca9fb1e4c6bce4600e9b7435e941745",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/099-milestone-flow.svg"
+    },
+    {
+      "lessonId": "101",
+      "diagramId": "groups",
+      "sourceHash": "b3a037b913af4f51febadb50f06e887544cc59fc6d37be10373bd97af67299e0",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/101-groups.svg"
+    },
+    {
+      "lessonId": "102",
+      "diagramId": "prefix",
+      "sourceHash": "ccaf2ba8bb70348b508ec6190792c36a61799fbbb632eeb4e99cd3f732a54d6d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/102-prefix.svg"
+    },
+    {
+      "lessonId": "103",
+      "diagramId": "outbox",
+      "sourceHash": "ef5920d6d01c6995a424f23782893b5653f78d40c4b378c24ccb90a6fa93ca25",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/103-outbox.svg"
+    },
+    {
+      "lessonId": "104",
+      "diagramId": "prepare",
+      "sourceHash": "503a390a975f0b90eb05c45696f6311f28bf4442a0ec54b42e91af963d7d58dd",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/104-prepare.svg"
+    },
+    {
+      "lessonId": "106",
+      "diagramId": "saga",
+      "sourceHash": "c4ae13231e101408d45e662a299fcfbbe4e8b0f15cc0da02485bec3f8e74607d",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/106-saga.svg"
+    },
+    {
+      "lessonId": "107",
+      "diagramId": "boundary",
+      "sourceHash": "c46b35316104d025508d0d87b2cc470634e95086493bbe90f4a3ac2eb27d08cf",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/107-boundary.svg"
+    },
+    {
+      "lessonId": "108",
+      "diagramId": "late",
+      "sourceHash": "4a4e8002c0c8c48c22efe6794b8d4b4d7c16d34f9f95d3cd7a237b6350ad0840",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/108-late.svg"
+    },
+    {
+      "lessonId": "109",
+      "diagramId": "ingest",
+      "sourceHash": "526130a39e6ad205af2680652327b7817884cc8699baea3de636a2d328efbc88",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/109-ingest.svg"
+    },
+    {
+      "lessonId": "111",
+      "diagramId": "models",
+      "sourceHash": "eb028a71e7d5d17b828f3cab295a53f630abd26ef67076a06f8b775832b6bdf6",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/111-models.svg"
+    },
+    {
+      "lessonId": "112",
+      "diagramId": "fold",
+      "sourceHash": "7c7f300b0c7d02eca30d8f149e4aa2d812d1a2635b6126219173ae8e2b57fd52",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/112-fold.svg"
+    },
+    {
+      "lessonId": "113",
+      "diagramId": "migration",
+      "sourceHash": "a94d22a119d7a81be850546f4f8fe6783cd84682afbd2163c7654c1a2260a8ed",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/113-migration.svg"
+    },
+    {
+      "lessonId": "114",
+      "diagramId": "batch",
+      "sourceHash": "41ad6bd5b166f1550e13929b3393fb79e044b2aec87968d5b25509227952c805",
+      "configurationHash": "fde307b90d513c54b658dbd5ec2919cbb3e3eccb0fd8223db37c254e1e104846",
+      "ok": true,
+      "svg": "artifacts/diagrams/114-batch.svg"
+    }
+  ]
+}

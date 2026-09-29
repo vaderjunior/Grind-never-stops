@@ -1,0 +1,321 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 3,
+  "title": "Read and change data with SQL, one step at a time",
+  "level": "beginner",
+  "minutes": 60,
+  "id": "sql-in-small-steps",
+  "summary": "Use one tiny users-and-notes dataset to read, filter, join, count, and safely change records. See the result of each query before adding another idea.",
+  "objectives": [
+    "Read a SELECT query in terms of its intended result.",
+    "Use filters, ordering, joins, and aggregates on concrete rows.",
+    "Explain constraints and parameterized queries.",
+    "Distinguish what a query requests from how the database executes it."
+  ],
+  "terms": [
+    {
+      "term": "SQL",
+      "definition": "A language used to define, query, and modify data in relational databases."
+    },
+    {
+      "term": "Projection",
+      "definition": "Choosing which columns appear in a query result."
+    },
+    {
+      "term": "Join",
+      "definition": "Combining rows from relations according to a stated matching condition."
+    },
+    {
+      "term": "Aggregate",
+      "definition": "A calculation over several rows, such as counting them."
+    },
+    {
+      "term": "NULL",
+      "definition": "A marker for a missing or unknown value, with special comparison behavior."
+    },
+    {
+      "term": "Parameterized query",
+      "definition": "A query whose data values are passed separately from its SQL structure."
+    }
+  ],
+  "retrieval": [
+    "What makes a primary key useful?",
+    "How does a note point to its owner in the users table?"
+  ],
+  "sections": [
+    {
+      "id": "dataset",
+      "title": "Start with five rows you can inspect",
+      "markdown": "We will use two tables. Do not think about millions of requests yet. First make the relationship and the answer visible.\n\n| users.id | users.name |\n|---|---|\n| 1 | Ajay |\n| 2 | Mira |\n\n| notes.id | owner_id | title | created_order |\n|---|---|---|---|\n| 10 | 1 | Redis basics | 1 |\n| 11 | 1 | Queue practice | 3 |\n| 12 | 2 | Database questions | 2 |\n\nEach note has one owner. The created_order number is an artificial teaching sequence so the example stays independent of timestamp formatting. A real schema would define its creation timestamp and ordering policy explicitly. Note 11 is the newest by this sequence, even though it is not the final displayed row.\n\nSQL lets you state which result you want. The database chooses an execution strategy, such as scanning rows or using an index. You will study that choice next; getting the requested result right comes first."
+    },
+    {
+      "id": "select",
+      "title": "SELECT chooses columns; FROM chooses the table",
+      "markdown": "To list note titles, ask for the title column from notes:\n\n~~~sql\nSELECT title FROM notes;\n~~~\n\nThe result contains three titles. Without an ORDER BY clause, SQL does not promise a particular row order. A result that happens to look insertion-ordered during a tiny experiment is not a stable application contract.\n\nTo include identities, write SELECT id, title FROM notes. The selected columns form the result shape; choosing a subset is sometimes called projection. SELECT * asks for every column. It is convenient when exploring, but an API usually benefits from requesting explicit columns so an added private field does not accidentally become part of a returned representation.\n\nThe semicolon terminates a statement in common SQL tools. Keywords are often capitalized for readability; capitalization of keywords is not what makes the query correct."
+    },
+    {
+      "id": "filter",
+      "title": "WHERE narrows the rows",
+      "markdown": "Ajay wants only his notes:\n\n~~~sql\nSELECT id, title\nFROM notes\nWHERE owner_id = 1;\n~~~\n\nThe matching note IDs are 10 and 11. The predicate owner_id = 1 is evaluated as a condition on rows. An AND combines required conditions, while an OR allows alternatives; parentheses make intended grouping clear.\n\nAn application should derive the allowed owner or workspace scope from trusted identity and authorization rules. Letting a browser choose arbitrary owner_id values without checking permissions would expose other people's notes. A query filter can implement part of an access boundary, but the database does not automatically know which browser user should be trusted.\n\nFor this dataset the filter answers a product question: “Which notes belong to this user?” This is an access pattern. Writing these questions before choosing a database keeps technology selection connected to real behavior."
+    },
+    {
+      "id": "order",
+      "title": "ORDER BY makes order explicit; LIMIT bounds a page",
+      "markdown": "To retrieve Ajay's newest note under our sequence:\n\n~~~sql\nSELECT id, title\nFROM notes\nWHERE owner_id = 1\nORDER BY created_order DESC, id DESC\nLIMIT 1;\n~~~\n\nDESC means descending order, so larger values come first. The result is note 11, Queue practice. The additional id ordering provides a defined tie-breaker if creation-order values ever tie. A production timestamp can tie too, so stable pagination often needs a unique tie-breaker.\n\nLIMIT 1 bounds returned rows; it does not prove the database only inspected one row. Without an appropriate access path, it may still need to examine and sort many candidates. The next index chapter explains how query shape affects work.\n\nOffset-based pagination can skip a number of sorted rows, but inserts and deletes can shift positions between requests. Cursor-based pagination can carry the last observed ordering values. You do not need to implement either now; remember that page size, order, and consistency across pages are separate decisions."
+    },
+    {
+      "id": "join",
+      "title": "A join follows the relationship",
+      "markdown": "Suppose a report needs a note title and its owner's name. The name is stored once in users, rather than copied into each note:\n\n~~~sql\nSELECT notes.id, notes.title, users.name\nFROM notes\nJOIN users ON notes.owner_id = users.id\nORDER BY notes.id;\n~~~\n\nThe matching rule produces a small, inspectable result:\n\n| notes.id | notes.title | users.name |\n| --- | --- | --- |\n| 10 | Redis basics | Ajay |\n| 11 | Queue practice | Ajay |\n| 12 | Database questions | Mira |\n\nON describes the matching rule. Table names distinguish notes.id from users.id; their numerical values do not need to be equal because the match uses notes.owner_id.\n\nA join is not inherently a slow or bad operation. Its cost depends on the data, indexes, matching conditions, result size, and execution plan. Conversely, a poorly specified join can create far more rows than intended. If every note is paired with every user instead of matching owners, this dataset produces six combinations, most of them wrong for the question.\n\nAn inner join keeps matches. A left join keeps every row from its left side and fills unmatched right-side columns with NULL. That distinction matters when listing users who have no notes."
+    },
+    {
+      "id": "count",
+      "title": "Count rows and group by a meaningful key",
+      "markdown": "To count notes per owner:\n\n~~~sql\nSELECT owner_id, COUNT(*) AS note_count\nFROM notes\nGROUP BY owner_id\nORDER BY owner_id;\n~~~\n\nThe result is owner 1 with count 2 and owner 2 with count 1. GROUP BY forms groups, and COUNT(*) counts rows in each group. AS gives the result column a useful name.\n\nThis query does not list users with zero notes because it starts from notes. To include those users, start from users, left join notes, and count the matched note identity. Counting COUNT(*) after a left join can count the preserved user row even when no note matched; COUNT(notes.id) avoids counting the NULL unmatched identity.\n\nWhen the intended result is “how many deployments does each team own?”, the same relationship reasoning applies. First decide whether teams with zero deployments should appear; that product choice determines the query shape."
+    },
+    {
+      "id": "writes",
+      "title": "INSERT, UPDATE, and DELETE change data",
+      "markdown": "INSERT adds a row; UPDATE changes matching rows; DELETE removes matching rows. This inserts a new note using the same simple schema:\n\n~~~sql\nINSERT INTO notes (id, owner_id, title, created_order)\nVALUES (13, 2, 'Cache questions', 4);\n\nUPDATE notes SET title = 'Cache exercises'\nWHERE id = 13;\n~~~\n\nThe WHERE condition is critical. Omitting it from UPDATE or DELETE can affect every row in the table. In an application, combine the intended object identity with the relevant authorization and concurrency checks rather than relying only on a user's supplied identifier.\n\nAn update that affects zero rows is not always a successful business action. The row may be absent, the permission scope may exclude it, or an expected-version condition may no longer match. Inspect the result and decide what the API should report. These examples are learning statements, not an instruction to run changes on a real production database.\n\n> **Pause and predict:** The example updates note 13. If the WHERE clause were removed, which rows qualify? Every row. Read a write’s condition aloud before considering its effect. This is a paper example, not a prompt to try an unrestricted update on real data."
+    },
+    {
+      "id": "constraints",
+      "title": "Let the database reject impossible records",
+      "markdown": "Let the database enforce simple stored-data rules:\n\n| Rule | Example | Invalid record it can reject |\n| --- | --- | --- |\n| Primary key | Unique, non-null notes.id | A second note with id 10 |\n| Foreign key | owner_id references users.id | A nonexistent owner |\n| NOT NULL | Title must have a value | Missing title represented by NULL |\n| CHECK | Stored count must be nonnegative | A count of −2 |\n\nNOT NULL does not by itself reject an empty string. Choose each rule for the requirement it actually enforces.\n\nConstraints protect shared data even when multiple application paths write it. An application-level check that an owner exists can race with another change; the database relationship rule is enforced at the authoritative write boundary under the database's semantics.\n\nNULL needs special attention. It is not the same as an empty string or zero. To test missing values use IS NULL or IS NOT NULL, rather than treating equality with NULL like ordinary equality. Functions and comparisons handle NULL according to SQL rules, so inspect the behavior before using it in counts or permissions.\n\nConstraints do not encode every business policy. A complicated cross-row rule may require a transaction, locking, conditional updates, or another design. Learn to separate simple row/schema rules from concurrent workflows."
+    },
+    {
+      "id": "parameters",
+      "title": "Keep values separate from SQL structure",
+      "markdown": "Suppose a user searches for a title containing an apostrophe. Building SQL by attaching raw user text to a query string can break its syntax and allow SQL injection, where supplied text changes the intended command structure.\n\nUse a database driver's parameter binding. Conceptually the query is SELECT id FROM notes WHERE owner_id = :owner and the value is provided separately as owner = 1. Placeholder syntax differs by driver: named markers, question marks, or numbered placeholders are common. Do not copy a placeholder from one library into another without checking its API.\n\nParameter binding protects the structure/value boundary; it does not replace authorization. A perfectly parameterized query can still return another user's private notes if the application passes the wrong owner scope. Similarly, dynamic column or table names often require a fixed allowlist rather than ordinary value parameters."
+    },
+    {
+      "id": "platform",
+      "title": "Use the same reasoning for a model registry",
+      "markdown": "Replace users with teams and notes with model_deployments. A deployment record may contain deployment_id, team_id, model_version, region, and status. “List active deployments for this team, newest first” gives you a filter and ordering. “Show each deployment with its owning team's name” gives you a relationship and join.\n\nIf the product needs a reliable change of owner plus an audit record, a transaction can keep those updates together. If it only needs to fetch a configuration by a known key, a simpler lookup may be enough. The workload determines which operations matter.\n\nBefore moving on, predict each tiny query's output without executing it. Then ask what changes when a user has no notes or two records share a creation time. These edge cases build the habit that matters in design interviews: specify the result and its assumptions before arguing about scale."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "join",
+      "title": "A matching owner key supplies the name",
+      "source": "flowchart LR\nN10[Note 10: owner 1] --> U1[User 1: Ajay]\nN11[Note 11: owner 1] --> U1\nN12[Note 12: owner 2] --> U2[User 2: Mira]",
+      "caption": "The join follows owner_id = users.id, not row position or display order.",
+      "steps": [
+        "Read the note owner key.",
+        "Find the matching user identity.",
+        "Combine the requested fields.",
+        "Preserve only matches for this inner join."
+      ],
+      "sectionId": "join"
+    },
+    {
+      "id": "query-intent",
+      "title": "A useful way to reason about this query result",
+      "source": "flowchart LR\nA[Notes rows] --> B[Keep owner 1]\nB --> C[Order newest first with tie-breaker]\nC --> D[Return one row with selected fields]",
+      "caption": "This is a logical teaching trace; an optimizer may execute an equivalent physical plan in a different order.",
+      "steps": [
+        "Identify the candidate records.",
+        "Apply the requested owner condition.",
+        "Apply the stable result order.",
+        "Return the requested bounded shape."
+      ],
+      "sectionId": "order"
+    },
+    {
+      "id": "write-scope",
+      "sectionId": "writes",
+      "title": "The write condition defines the affected rows",
+      "source": "flowchart TB\nU[UPDATE title] --> W{Condition present?}\nW -->|WHERE id equals 13| O[Only matching row is a candidate]\nW -->|No WHERE clause| A[Every row is a candidate]\nO --> C[Check affected rows and business result]\nA --> C",
+      "caption": "Candidate rows are also subject to database rules and the full statement. Application authorization and concurrency conditions must still be included where required.",
+      "steps": [
+        "Identify the change being requested.",
+        "Inspect the condition selecting records.",
+        "Check the affected-row result rather than assuming the intended business action occurred."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 15,
+    "prompt": "Using the original three-note dataset, write a query for Mira’s newest note title and predict its result. Then add a third user with no notes conceptually: which join and count expression would include that user with zero?",
+    "rubric": [
+      "Owner filter and deterministic order are explicit.",
+      "Predicted result uses the original data.",
+      "Zero-note users remain in the result without a false count of one."
+    ],
+    "solution": "SELECT id, title FROM notes WHERE owner_id = 2 ORDER BY created_order DESC, id DESC LIMIT 1 returns note 12, Database questions. To include users with zero notes, start FROM users LEFT JOIN notes ON users.id = notes.owner_id, group by the user identity (and name if selected), and use COUNT(notes.id). COUNT(*) would count the left-preserved row for a user with no note and can incorrectly give one."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Without ORDER BY, a repeated SELECT promises insertion order?",
+      "options": [
+        "Yes",
+        "No",
+        "Only with SELECT *"
+      ],
+      "answer": "No",
+      "explanation": "A stable application order requires an explicit ordering contract."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "How many notes belong to owner 1 in the original dataset?",
+      "answer": 2,
+      "unit": "notes",
+      "explanation": "Note IDs 10 and 11 reference owner 1.",
+      "tolerance": 0
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which comparison checks for a missing SQL value?",
+      "options": [
+        "value = NULL",
+        "value IS NULL",
+        "value = 0"
+      ],
+      "answer": "value IS NULL",
+      "explanation": "NULL represents missing/unknown information and has special comparison rules."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does LIMIT 1 not prove a query is cheap?",
+      "answer": "The database may still inspect or sort many candidate rows before finding the required first result; indexes and the execution plan determine physical work.",
+      "explanation": "The database may still inspect or sort many candidate rows before finding the required first result; indexes and the execution plan determine physical work."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What does a parameterized query protect, and what does it not decide?",
+      "answer": "It separates data values from SQL command structure to prevent injection through values. It does not decide whether the caller may access the chosen records.",
+      "explanation": "It separates data values from SQL command structure to prevent injection through values. It does not decide whether the caller may access the chosen records."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "WHERE versus selected columns?",
+      "back": "WHERE filters rows; the SELECT list chooses returned fields."
+    },
+    {
+      "front": "JOIN ... ON?",
+      "back": "Combine rows using the stated matching relationship."
+    },
+    {
+      "front": "Stable newest-first result?",
+      "back": "Explicit order with a suitable unique tie-breaker."
+    },
+    {
+      "front": "Count zero-child parents?",
+      "back": "Left join from parents and count a non-null child identity."
+    },
+    {
+      "front": "SQL safety has two different checks?",
+      "back": "Bind values safely and enforce the caller’s authorized data scope."
+    }
+  ],
+  "mentalModel": "First predict the rows and columns the product needs. Then choose the query and inspect how the database performs it.",
+  "sources": [
+    {
+      "title": "PostgreSQL 18 — Querying a table",
+      "url": "https://www.postgresql.org/docs/18/tutorial-select.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL 18 — Joins between tables",
+      "url": "https://www.postgresql.org/docs/18/tutorial-join.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "PostgreSQL — Data definition and constraints",
+      "url": "https://www.postgresql.org/docs/current/ddl-constraints.html",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "filter-order-limit",
+      "sectionId": "order",
+      "title": "Reason through Ajay’s newest note",
+      "intro": "Follow the logical result of the shown query. The database may use a different physical plan to compute the same answer.",
+      "steps": [
+        {
+          "title": "Start from three rows",
+          "explanation": "The table contains notes for two owners. Display position is not a creation-time guarantee.",
+          "state": [
+            {
+              "label": "Candidates",
+              "value": "10, 11, 12"
+            },
+            {
+              "label": "Owner values",
+              "value": "1, 1, 2"
+            },
+            {
+              "label": "Created order",
+              "value": "1, 3, 2"
+            }
+          ]
+        },
+        {
+          "title": "Keep owner 1",
+          "explanation": "The WHERE condition keeps Ajay’s two records and excludes the other owner.",
+          "state": [
+            {
+              "label": "Remaining IDs",
+              "value": "10, 11"
+            },
+            {
+              "label": "Created order",
+              "value": "1, 3"
+            },
+            {
+              "label": "Excluded",
+              "value": "12"
+            }
+          ]
+        },
+        {
+          "title": "Apply the requested order",
+          "explanation": "Descending creation order puts the larger value first; id supplies the tie-breaker if necessary.",
+          "state": [
+            {
+              "label": "Ordered IDs",
+              "value": "11, 10"
+            },
+            {
+              "label": "Order values",
+              "value": "3, 1"
+            },
+            {
+              "label": "Tie-breaker",
+              "value": "id descending"
+            }
+          ]
+        },
+        {
+          "title": "Return one row",
+          "explanation": "LIMIT 1 bounds the result. It says nothing by itself about how much work the physical plan performed.",
+          "state": [
+            {
+              "label": "Returned ID",
+              "value": "11"
+            },
+            {
+              "label": "Returned title",
+              "value": "Queue practice"
+            },
+            {
+              "label": "Rows returned",
+              "value": "1"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Filter, ordering, selected columns, and row limit each describe a different part of the intended answer."
+    }
+  ]
+}

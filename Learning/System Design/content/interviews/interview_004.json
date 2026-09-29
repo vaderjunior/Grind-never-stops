@@ -1,0 +1,116 @@
+{
+  "id": "interview_004",
+  "lessonId": "020",
+  "title": "[C] Select transports for a live dashboard and chat product",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "aliases": [
+    "L020",
+    "lesson_020"
+  ],
+  "modeType": "C",
+  "minutes": 45,
+  "sessionMinutes": 60,
+  "brief": "Design the communication paths for a live build dashboard and a team chat used by 20,000 concurrently connected people. Select transports, explain authentication and reconnect behavior, and estimate one decision-relevant load. Keep the design limited to communication boundaries and recovery contracts.",
+  "clarifications": [
+    {
+      "question": "What freshness is required?",
+      "answer": "Build status should normally appear within five seconds. Chat should normally arrive within one second for connected users."
+    },
+    {
+      "question": "How often do updates occur?",
+      "answer": "Each dashboard sees about one build transition per minute. A chat user sends on average one message per minute, with bursts."
+    },
+    {
+      "question": "What must survive disconnect?",
+      "answer": "Final build state and chat history must recover. Typing indicators can expire without replay."
+    },
+    {
+      "question": "What retention and scope are needed?",
+      "answer": "Assume a durable per-conversation message history and authenticated membership checks. Design its interface; detailed database scaling comes later."
+    }
+  ],
+  "hints": [
+    "Separate update direction, frequency, and freshness.",
+    "Transport reconnect is not a substitute for a replay contract.",
+    "Estimate polling requests and buffer memory using explicit assumptions."
+  ],
+  "changes": [
+    "A proxy closes idle streams after one minute. Adapt without losing history.",
+    "One percent of clients consume events at one tenth normal speed. Bound resource use."
+  ],
+  "rubric": [
+    {
+      "id": "requirements",
+      "label": "Requirements and scope",
+      "weight": 10
+    },
+    {
+      "id": "estimates",
+      "label": "Workload and estimates",
+      "weight": 8
+    },
+    {
+      "id": "api",
+      "label": "API contracts",
+      "weight": 6
+    },
+    {
+      "id": "data",
+      "label": "Data modeling and ownership",
+      "weight": 10
+    },
+    {
+      "id": "architecture",
+      "label": "Coherent architecture",
+      "weight": 12
+    },
+    {
+      "id": "scalability",
+      "label": "Scalability and bottlenecks",
+      "weight": 10
+    },
+    {
+      "id": "reliability",
+      "label": "Reliability and recovery",
+      "weight": 10
+    },
+    {
+      "id": "consistency",
+      "label": "Consistency and invariant protection",
+      "weight": 10
+    },
+    {
+      "id": "security",
+      "label": "Security and isolation",
+      "weight": 6
+    },
+    {
+      "id": "observability",
+      "label": "Observability and operability",
+      "weight": 6
+    },
+    {
+      "id": "tradeoffs",
+      "label": "Alternatives and tradeoff reasoning",
+      "weight": 6
+    },
+    {
+      "id": "communication",
+      "label": "Communication, prioritization, and adaptation",
+      "weight": 6
+    }
+  ],
+  "referenceSolution": "A defensible baseline uses HTTP for authentication, snapshots, and commands; jittered polling or SSE for build notifications; and WebSockets or SSE plus HTTP sends for chat according to bidirectional needs and deployment support. At a five-second poll interval 20,000 dashboards generate 4,000 requests/s before retries, with roughly 2.5-second mean detection delay under independent uniform timing; the tail and processing budget still need attention for a five-second objective. Persist chat before acknowledging durable acceptance, give messages stable IDs and per-conversation cursors, and replay after the last applied cursor. Recheck membership on reconnect and subscription changes. Expire/coalesce typing state separately from durable messages. Use bounded connection buffers, disconnect/resume slow durable consumers, and jitter reconnects. Heartbeats may maintain idle paths where supported but do not replace reconnect recovery. Avoid global ordering claims from a single TCP connection and avoid overengineering database partitioning before that material is taught.",
+  "debrief": "Compare your transport choice against requirements rather than the reference technology names. Several choices are valid when their operational costs are acknowledged. Inspect whether your loss/reconnect sequence leaves any gap between snapshot and live subscription. Retry with only 200 users and a 30-second freshness objective; identify which complexity can be removed.",
+  "remediation": [
+    "006",
+    "011",
+    "014",
+    "016",
+    "017",
+    "018",
+    "019"
+  ]
+}

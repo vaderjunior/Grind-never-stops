@@ -1,0 +1,311 @@
+{
+  "schemaVersion": 2,
+  "reviewer": "engine agent, independent editorial cross-review of the 24 refined advanced chapters",
+  "reviewedAt": "2026-09-29T14:08:26.878Z",
+  "scope": [
+    "interview-game-plan",
+    "estimates-and-tradeoffs",
+    "design-notifications",
+    "design-rate-limiter",
+    "design-chat",
+    "chat-reconnect-and-scale",
+    "design-news-feed",
+    "feed-fanout-and-ranking",
+    "design-file-storage",
+    "file-sync-and-conflicts",
+    "design-video-platform",
+    "design-search-and-autocomplete",
+    "design-bookings",
+    "design-payments",
+    "coordination-and-leases",
+    "change-data-safely",
+    "mcp-platform-architecture",
+    "platform-security-and-tenancy",
+    "ai-system-design",
+    "model-serving-and-gpus",
+    "rag-and-inference",
+    "ai-platform-operations",
+    "full-mock-interview",
+    "capstone-and-readiness-plan"
+  ],
+  "method": "Read every updated teaching section, table, walkthrough step/state/takeaway, and diagram source/caption/step. Also read each exercise/rubric/solution and every question/answer/explanation. Checked arithmetic, state transitions, authority and failure boundaries, prerequisite vocabulary, and accidental solution disclosure. Applied focused corrections to the frozen published JSON only.",
+  "checks": {
+    "reviewed": 24,
+    "corrected": 7,
+    "assessmentCollectionsUnchanged": 24,
+    "anchoredWalkthroughsChecked": 24,
+    "diagramsChecked": 48
+  },
+  "limitations": [
+    "This is a manual editorial and semantic review, not a production benchmark or proof of every architecture.",
+    "No new niche product or protocol facts were introduced. Existing previously verified primary sources were reused; this pass did not re-open every citation or watch linked videos.",
+    "Diagram semantics and attachment anchors were checked. Root owns final Mermaid rendering, browser review, answer-withholding integration checks, and global validation.",
+    "Exercise, question, and flashcard collections were preserved byte-for-byte in their JSON serialization. Guide versions remain v2 within the same unpublished refinement batch."
+  ],
+  "records": [
+    {
+      "id": "interview-game-plan",
+      "sha256": "5b482ae0a4bcf7dc33abea324154accd4d61d04b0d4e2c87a6982f310a3861e7",
+      "notes": [
+        "Made the accepted destination an absolute URL matching the record table; the redirect trace now cannot be misread as a same-origin relative redirect.",
+        "Checked the 45-minute allocation, create/read ownership, operation identity, and separate browser destination request."
+      ],
+      "changed": true,
+      "beforeSha256": "c73dfc3986612f447875d2a86c208deee353ac9d8670685638e2be7286dff7f0",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "estimates-and-tradeoffs",
+      "sha256": "a692ad96ecde88784fd282839744143d880673d175d7d217b99673c20d79572d",
+      "notes": [
+        "No correction needed. Checked decimal units, daily/retained storage, previews, rounded peak throughput, worker failure capacity, and upload-size sensitivity walkthrough.",
+        "Estimates explicitly distinguish illustrative arithmetic from measured capacity and explain the changed design pressure."
+      ],
+      "changed": false,
+      "beforeSha256": "a692ad96ecde88784fd282839744143d880673d175d7d217b99673c20d79572d",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-notifications",
+      "sha256": "cbb75416f96db0caffcbc39d36e1991252baefdcf5f3e03e9a406fc822f769d6",
+      "notes": [
+        "Closed a missing local failure boundary: intent, inbox item, and durable channel-work records now commit together in the notification database. A duplicate cannot skip unfinished fan-out after a partial local commit.",
+        "Updated both diagrams and the walkthrough to show the local commit; kept provider submission outside it and preserved provider uncertainty, preferences, and acceptance-versus-reading distinctions."
+      ],
+      "changed": true,
+      "beforeSha256": "8538295c6dcb0b981b3597d153043938f10ff04666571a4ba9c4ffe1cc1e6542",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-rate-limiter",
+      "sha256": "1667b2d2f585556c1055a1a90d7f17e7bcd7ac7e174886438862a2b35b32c532",
+      "notes": [
+        "Clarified that the first burst contains six one-token requests and the later request costs four; the old intro could imply every request cost four.",
+        "Checked 8→2→3.5 rejected→5→1 arithmetic, fractional refill, atomic decision, clock scope, and independent-region budget limitations."
+      ],
+      "changed": true,
+      "beforeSha256": "780db415da6b9fab2ee0f22b8981c4b12909e7a2462d34de8cd4c084763611a3",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-chat",
+      "sha256": "b6be0fbe4f70519ee8cff8129366ceb680a7a000c463e0714cb2b460e12f10e0",
+      "notes": [
+        "No correction needed. Checked durable acceptance versus device receipt/read evidence, room/sender operation identity, atomic local message publication intent, and gateway-independent history.",
+        "Walkthrough preserves one stored sequence and does not equate a read report with transport delivery."
+      ],
+      "changed": false,
+      "beforeSha256": "b6be0fbe4f70519ee8cff8129366ceb680a7a000c463e0714cb2b460e12f10e0",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "chat-reconnect-and-scale",
+      "sha256": "5ea87f34574ce57ebc888cb49f748cc5f30203b0bf85d42769e687e2de2923fc",
+      "notes": [
+        "No correction needed. Checked confirmed subscription before high-water replay, overlap deduplication, contiguous cursor, overflow recovery, and legitimate allocator/filter gaps.",
+        "Replay through 203 and buffered event 204 preserve coverage under the explicitly stated committed-log assumptions."
+      ],
+      "changed": false,
+      "beforeSha256": "5ea87f34574ce57ebc888cb49f748cc5f30203b0bf85d42769e687e2de2923fc",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-news-feed",
+      "sha256": "f37be4d309b0543dfeb6856e813c524a267049b4fdd5614013db5e4d3e0ccc03",
+      "notes": [
+        "No correction needed. Current post/policy remains authoritative; stale feed candidates are hydrated and filtered before display.",
+        "Checked repeated fan-out, bounded refill after filtering, tie-broken cursor caveats, and walkthrough candidate counts."
+      ],
+      "changed": false,
+      "beforeSha256": "f37be4d309b0543dfeb6856e813c524a267049b4fdd5614013db5e4d3e0ccc03",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "feed-fanout-and-ranking",
+      "sha256": "1c32762a497f65d348f7d2133429f9dbc3db6af32f252f9f371ddbb72eb710f9",
+      "notes": [
+        "No correction needed. Checked 100,000-fold fan-out contrast, safe overlapping policy transition, logical post deduplication, ranking order, and explicit continuity/fallback contracts.",
+        "Private/deleted content filtering remains required during ranker failure; latency arithmetic is explicitly sequential."
+      ],
+      "changed": false,
+      "beforeSha256": "1c32762a497f65d348f7d2133429f9dbc3db6af32f252f9f371ddbb72eb710f9",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-file-storage",
+      "sha256": "7aef0c2aa012fdf55d3c7bcf6993b297d5408c39e160301865a377878991e89d",
+      "notes": [
+        "Replaced an implementation-only reference to the protected exercise with a plain introduction to the rename/download story.",
+        "Checked immutable content references, verified finalization, metadata identity, cleanup references, and bounded signed-grant revocation limitations."
+      ],
+      "changed": true,
+      "beforeSha256": "6436bb009bc4791b1e6975e8b4568d067bca9470a7af020d9d317388c4b3042f",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "file-sync-and-conflicts",
+      "sha256": "921d5d42c8a37bce7e8c927d00b832264c72598641b204c24aa0a51fb81b59ea",
+      "notes": [
+        "No correction needed. Incoming changes preserve unsynced drafts/base versions before applying remote state, and cursor advancement follows durable accounting.",
+        "The walkthrough retains the conflict while applying remote version 5 and only then checkpoints 301; it does not imply the user has resolved the conflict."
+      ],
+      "changed": false,
+      "beforeSha256": "921d5d42c8a37bce7e8c927d00b832264c72598641b204c24aa0a51fb81b59ea",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-video-platform",
+      "sha256": "53ccd5c250e7368085ea8f48a939ccd9ad31216fcb4b2f9cec3cb3906658a614",
+      "notes": [
+        "No correction needed. Attempt outputs remain isolated and publication points to a coherent immutable set, preserving the earlier stale-worker correction.",
+        "Checked segment bit/byte arithmetic, buffer 4−2+6=8 seconds, bandwidth assumptions, and media-access boundaries."
+      ],
+      "changed": false,
+      "beforeSha256": "53ccd5c250e7368085ea8f48a939ccd9ad31216fcb4b2f9cec3cb3906658a614",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-search-and-autocomplete",
+      "sha256": "e3c8c081eb5d1ed15c7bb62811a18234a956865f24814e335cf37aa5a913b2f7",
+      "notes": [
+        "Changed the walkthrough title: the old response arrives later in the trace, so calling it faster contradicted the shown event order.",
+        "Checked request 42 remains displayed after obsolete reply 41, inverted-index intersection, versioned index updates, and private-title/cache authorization."
+      ],
+      "changed": true,
+      "beforeSha256": "d7d351ec21aa31929ed603bd4fb99b525872a191ddafabc8edd5d8dc7387751a",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-bookings",
+      "sha256": "306e07f0dc23679b9969af5f3a65a21af17ee5b25d8129deaf4578952cf62558",
+      "notes": [
+        "No correction needed. Checked the distinction between a cached observation and one atomic inventory claim, exact hold identity/deadline enforcement, and no open transaction during human checkout.",
+        "The two-contender walkthrough makes no click-order fairness promise; payment compensation does not weaken the seat invariant."
+      ],
+      "changed": false,
+      "beforeSha256": "306e07f0dc23679b9969af5f3a65a21af17ee5b25d8129deaf4578952cf62558",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "design-payments",
+      "sha256": "a8305be5195750c68976edbb39e2df5b5c45463ea971dadef49fac663d2137a8",
+      "notes": [
+        "Replaced an implementation-only protected-scenario mention with a learner-facing explanation of periodic reconciliation.",
+        "Checked unresolved versus failed state, provider-specific retry retention, verified evidence, repeatable local effects, and separate settlement/refund lifecycles."
+      ],
+      "changed": true,
+      "beforeSha256": "5c27c53edb094dec7c4de6af28af8fbf3d6f561d8c701c2dbbd9d135e1c56b40",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "coordination-and-leases",
+      "sha256": "bc216b5be9957d57debf8c14cc990d5cf0e236562ba19da3bb09b9841f2c7700",
+      "notes": [
+        "No correction needed. New authority is established at the resource before usable handoff; old epoch 61 fails after 62 is registered.",
+        "Leases do not stop old processes, a highest-seen token has a stated limitation, and majority size is not presented as a complete consensus protocol."
+      ],
+      "changed": false,
+      "beforeSha256": "bc216b5be9957d57debf8c14cc990d5cf0e236562ba19da3bb09b9841f2c7700",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "change-data-safely",
+      "sha256": "3c6746bd96ba012d9b5f0f4154836b47d4f4d011cd530ab522a50ee43f0958df",
+      "notes": [
+        "No correction needed. Checked gap-free snapshot/change boundary, deletion and permission validation, 200-second net catch-up estimate, and rollback compatibility.",
+        "The membership walkthrough reconstructs accepted facts only and leaves external effects disabled during replay."
+      ],
+      "changed": false,
+      "beforeSha256": "3c6746bd96ba012d9b5f0f4154836b47d4f4d011cd530ab522a50ee43f0958df",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "mcp-platform-architecture",
+      "sha256": "5b0180bc9b811033f0a0a5288fe8759c842569d2ad870da83e2dbaf3f39ebdf7",
+      "notes": [
+        "No correction needed. Reviewed actor roles, bounded lookup authorization, observation freshness, durable application identity versus protocol IDs, stream lifetime, and safe replication.",
+        "Preserves the previously sourced 2026-07-28 transport model and clearly labels the older 2025-11-25 session model used by the installed SDK adapter; no new protocol claims added."
+      ],
+      "changed": false,
+      "beforeSha256": "5b0180bc9b811033f0a0a5288fe8759c842569d2ad870da83e2dbaf3f39ebdf7",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "platform-security-and-tenancy",
+      "sha256": "3376017e76cb03b96b73d11e36c787cf37fb3f385fdd40b96fb6d68f3cfef617",
+      "notes": [
+        "No correction needed. Actor/workload/audience distinctions, queue revocation policy, tenant scope across data paths, gateway bypass, and secret lifecycle remain explicit.",
+        "Credential C1→C2 walkthrough permits overlap only by assumption and does not declare rotation finished before all consumers switch and C1 is retired."
+      ],
+      "changed": false,
+      "beforeSha256": "3376017e76cb03b96b73d11e36c787cf37fb3f385fdd40b96fb6d68f3cfef617",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "ai-system-design",
+      "sha256": "5ef2247fc44c7f1786d8446ab0049257530281e16c0071714b756c2b3d636230",
+      "notes": [
+        "No correction needed. Terms define prefill and KV cache before optional serving depth; request lifecycle keeps partial output distinct from completion and human authority.",
+        "Checked 6,000/300=20 response/s estimate with measured-workload caveats, cancellation cleanup, bounded admission, and separate quality evaluation."
+      ],
+      "changed": false,
+      "beforeSha256": "5ef2247fc44c7f1786d8446ab0049257530281e16c0071714b756c2b3d636230",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "model-serving-and-gpus",
+      "sha256": "fe834ba0b7fbeb0fc4694fe35ef07e95d994915f761ad532c2c1fa044ad65a96",
+      "notes": [
+        "No correction needed. Checked 14 decimal GB weights, 128 KiB/token and 1 GiB KV estimate, active memory versus arithmetic upper bound, and parallelism distinctions.",
+        "Both decode schedules are internally consistent and explicitly abstract prefill and wall time; they do not claim a throughput benchmark."
+      ],
+      "changed": false,
+      "beforeSha256": "fe834ba0b7fbeb0fc4694fe35ef07e95d994915f761ad532c2c1fa044ad65a96",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "rag-and-inference",
+      "sha256": "0e880b9993dd57bb63bdec82bc38d727b37e92b79e84cf1c6ac112a9f6d1f759",
+      "notes": [
+        "No correction needed. Checked source/version/access metadata, authorization before model exposure, cache revocation, and separation of prefix computation from final-answer caching.",
+        "The Friday-hours walkthrough retains the 16:00 exception alongside the general 18:00 rule and verifies actual citation support."
+      ],
+      "changed": false,
+      "beforeSha256": "0e880b9993dd57bb63bdec82bc38d727b37e92b79e84cf1c6ac112a9f6d1f759",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "ai-platform-operations",
+      "sha256": "60c7180dc735ef8d75a913243ed1fa7f425353b5ada5faf1d745f24597206bb6",
+      "notes": [
+        "No correction needed. Registry metadata, ready workers, and routing remain separate; canary expansion depends on both operating and quality gates.",
+        "Checked sequential 0.3+0.1+0.6=1.0-second timing, slow model capacity startup, meaningful readiness, and fallback/rollback compatibility limits."
+      ],
+      "changed": false,
+      "beforeSha256": "60c7180dc735ef8d75a913243ed1fa7f425353b5ada5faf1d745f24597206bb6",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "full-mock-interview",
+      "sha256": "91547289d283529f4ba798e93aa97d5c2d37d243aaee44c5f5b3883105c199c7",
+      "notes": [
+        "Made the final schedule explicit: adapt 25–35, stress-test 35–40, summarize 40–45. The previous prose left five minutes unassigned.",
+        "The added walkthrough and diagrams are process-only; they provide no PlotShare architecture or timed requirement. Candidate brief and the timed requirement itself remain unchanged."
+      ],
+      "changed": true,
+      "beforeSha256": "51900df1f25387772be5c3baea710c89ab798ab51048e0e12319f92938daeb7c",
+      "assessmentUnchanged": true
+    },
+    {
+      "id": "capstone-and-readiness-plan",
+      "sha256": "fa5ddcf6b1cb6e7a83065a5797a91b93cd100e9ffcac1945237e18c52c732232",
+      "notes": [
+        "No correction needed. Checked failure-test evidence, bounded local-demo claims, independent versus assisted attempts, and specific changed-problem retests.",
+        "The fictional walkthrough demonstrates one narrower skill improvement while retaining a revocation gap; it awards no automatic readiness."
+      ],
+      "changed": false,
+      "beforeSha256": "fa5ddcf6b1cb6e7a83065a5797a91b93cd100e9ffcac1945237e18c52c732232",
+      "assessmentUnchanged": true
+    }
+  ]
+}

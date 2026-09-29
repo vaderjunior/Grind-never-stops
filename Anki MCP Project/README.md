@@ -1,3 +1,12 @@
+# Anki Tutor
+
+A German-learning tutor built gradually while learning JavaScript, TypeScript,
+MCP and infrastructure. The project currently contains planning documents only.
+
+Start with [our progress notes](docs/PROGRESS.md). We work in small edits,
+explain new concepts using Python comparisons, and check understanding before
+moving on. Early examples will use made-up learning data.
+
         YOUR LEARNING                         YOUR BUILD GUIDE
 ────────────────────────────────────────────────────────────────────
 

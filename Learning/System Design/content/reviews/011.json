@@ -1,0 +1,12 @@
+{
+  "lessonId": "011",
+  "sha256": "5e17e2a6a407cf74caff92e8a39fd7fb891abda1d85c47d4294fe1b9940dfaee",
+  "result": "pass",
+  "reviewer": "curriculum-worker (independent of M02 author)",
+  "reviewedAt": "2026-09-29",
+  "scope": "Substantive textual pedagogy, technical reasoning, examples, questions, and diagram-source consistency; not final visual or full product acceptance.",
+  "evidence": [
+    "Independent text review: naming/address/port boundaries, cached TTL versus connection lifetime, and diagnostic scope are consistent.",
+    "Cold/warm arithmetic independently recomputed: 155 ms and 55 ms."
+  ]
+}

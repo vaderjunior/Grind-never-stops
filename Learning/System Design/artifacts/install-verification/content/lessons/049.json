@@ -1,0 +1,145 @@
+{
+  "id": "049",
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "objectives": [
+    "Distinguish block, file, and object interfaces without inferring every guarantee from the category.",
+    "Separate large immutable content from transactional metadata.",
+    "Trace partial failures when content and metadata have different authorities."
+  ],
+  "retrieval": [
+    "L006: how do object count, size, retention, and bandwidth affect storage?",
+    "L036: what lies inside one atomic transaction?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A thumbnail is not a row-shaped business fact",
+      "markdown": "A document portal stores 2-MB PDFs along with ownership, title, permissions, and upload status. Keeping everything in one database may be a valid small-scale baseline, especially if it simplifies atomicity and backups. As blob volume dominates, the database's backup, replication, and query paths may move many bytes irrelevant to a metadata query. Separating content from metadata can change that cost—but introduces a second consistency boundary.\n\nDo not choose object storage solely because files are large. Identify read/write patterns, mutability, range access, access controls, lifecycle, latency, recovery, and transaction needs. A storage interface is a contract for addressing and manipulating bytes, not a universal answer about reliability or speed."
+    },
+    {
+      "id": "interfaces",
+      "title": "Three levels of meaning over bytes",
+      "markdown": "Block storage exposes addressable blocks to a host; the host typically builds a filesystem or database layout above it. File storage exposes hierarchical paths and file operations with filesystem/protocol semantics. Object storage exposes objects addressed by keys through an API, commonly with whole-object creation/replacement, metadata, range reads, and provider-specific lifecycle features. Capabilities such as conditional writes, versioning, consistency, and rename semantics must be checked for the actual implementation.\n\nAn object key that contains slashes may resemble a path without providing atomic filesystem directory rename. Conversely, attaching a block volume to a host does not itself implement a multi-writer shared filesystem. The layers can be composed, but translating APIs does not magically preserve every semantic expectation.\n\nFor our portal, a relational metadata row can own document ID, tenant ID, owner, content key/version, byte count, digest, state, and creation time. The object store owns the content bytes. A key is an address, not permission: the read path must authenticate and authorize before exposing content or an appropriately scoped temporary read capability. Never infer privacy merely from a hard-to-guess object name."
+    },
+    {
+      "id": "trace",
+      "title": "Publish only after verifying the object",
+      "markdown": "A simple state machine begins with a metadata row in pending state and a unique upload ID. The client uploads bytes to a restricted staging key, or the application streams them under explicit limits. The service verifies expected size and digest, checks that the object version is available under the storage contract, and atomically changes the metadata row to ready with that immutable key/version. Readers expose only ready documents. Repeating completion for the same upload ID must return the same accepted document or detect a conflict.\n\nThis is not an atomic transaction across arbitrary database and object APIs. If the object upload succeeds but metadata finalization fails, an orphan object may remain. A reconciliation/cleanup job can remove unreferenced expired staging objects after a safe grace period. If metadata points to content before upload completes, readers can see a broken document; the ready transition order prevents that particular failure. Object deletion and permission revocation also need explicit ordering rather than two unrelated best-effort writes.\n\nSuppose 100,000 documents/day average 2 MB and are retained for 90 days. Raw content is 18 TB decimal before versions or redundancy. At 600 bytes of metadata per document, the 9-million-document catalog is 5.4 GB raw before indexes and overhead. This difference can motivate separation, but does not by itself establish transaction rates, bandwidth peaks, or a vendor bill."
+    },
+    {
+      "id": "exercise-model",
+      "title": "Executable state transition, with a deliberately narrow claim",
+      "markdown": "The following model validates publication against an in-memory object dictionary. It does not model real transfer, authentication, durable transactions, or atomicity across storage systems.\n\n```python\nfrom hashlib import sha256\n\nobjects: dict[str, bytes] = {}\nrow = {\"state\": \"pending\", \"key\": \"tenant7/upload9\", \"bytes\": 3,\n       \"digest\": sha256(b\"abc\").hexdigest()}\n\ndef ready() -> bool:\n    data = objects.get(row[\"key\"])\n    if data is None or len(data) != row[\"bytes\"]:\n        return False\n    if sha256(data).hexdigest() != row[\"digest\"]:\n        return False\n    row[\"state\"] = \"ready\"\n    return True\n\nassert ready() is False\nobjects[row[\"key\"]] = b\"bad\"\nassert ready() is False\nobjects[row[\"key\"]] = b\"abc\"\nassert ready() is True\nassert ready() is True\nprint(\"only verified content becomes ready\")\n```\n\nExpected output is the printed sentence. In a real service, immutable object identity/version and the metadata update's concurrency guard prevent another writer from swapping bytes between verification and publication. A digest detects mismatch under its assumptions; it is not authorization, a signature of who uploaded, or proof that the content is safe to execute.\n\nCommon misconceptions: object storage is always eventually consistent; every successful PUT atomically changes a database row; a file path and object prefix have identical rename semantics; and deleting metadata immediately reclaims all retained object versions. Verify the selected provider's actual guarantees and lifecycle. Optional depth: design a garbage-collection grace period that does not remove a slow but still-valid upload."
+    },
+    {
+      "id": "session-budget",
+      "title": "Core time and optional practice",
+      "markdown": "Core 55 minutes: 5 retrieval, 18 explanation/diagrams, 8 worked example, 10 exercise, 10 Q1–Q3, 4 comparison/cards. Q4–Q5 and extension questions are optional. The examples use explicitly bounded data and do not establish vendor throughput, durability, or scaling claims."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "blob-publish",
+      "title": "Two authorities, one visible ready transition",
+      "source": "sequenceDiagram\nparticipant C as Authorized client\nparticipant A as Upload service\nparticipant M as Metadata authority\nparticipant O as Object bytes\nC->>A: Create bounded upload\nA->>M: Insert pending upload ID\nC->>O: Upload to restricted staging key\nC->>A: Complete upload ID\nA->>O: Verify bytes and immutable version\nO-->>A: Verified object identity\nA->>M: Conditional pending to ready\nA-->>C: Document ready\nNote over M,O: Orphans need reconciliation, no shared atomic commit",
+      "caption": "The user-visible ready state is committed after content verification. The two stores still need cleanup and recovery rules for partial failures.",
+      "steps": [
+        "Create a pending upload with ownership and limits.",
+        "Transfer bytes without making the document readable.",
+        "Verify the exact immutable content identity.",
+        "Commit ready metadata, while retaining an orphan-cleanup strategy for earlier failures."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw the two partial-failure cases for an upload: object exists but metadata finalization failed; metadata says ready but content is absent. Propose ordering and cleanup rules that prevent broken reads without claiming an atomic cross-store transaction. Estimate 90-day raw bytes for 100,000 daily uploads of 2 MB.",
+    "rubric": [
+      "Publish ready only after checking a stable content version.",
+      "Treat orphan cleanup as idempotent, bounded, and grace-period aware.",
+      "Compute 18 trillion bytes while excluding replication/versions explicitly."
+    ],
+    "solution": "100,000×2,000,000×90=18,000,000,000,000 bytes, or 18 decimal TB. Create pending metadata, upload a unique immutable object, verify its identity/size/digest, then atomically mark metadata ready. A failure before ready may leave a hidden orphan, which a reconciliation process can collect after ownership checks and an expiry grace period. Never publish a mutable key whose bytes can be swapped after verification. Readers accept only ready metadata and still handle storage unavailability as a service failure rather than silently returning wrong content. This orders a workflow; it is not a transaction across both systems."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "What does an object key alone establish?",
+      "options": [
+        "An object address, not access permission",
+        "A user’s authorization",
+        "A cross-store transaction"
+      ],
+      "answer": "An object address, not access permission",
+      "explanation": "Authorization is a separate policy and enforcement step."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "100,000 daily uploads × 2 MB × 90 days gives how many decimal TB?",
+      "answer": 18,
+      "unit": "TB",
+      "tolerance": 0,
+      "explanation": "100,000×2,000,000×90 / 10^12 = 18 TB before versions and redundancy."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which visibility order avoids publishing an incomplete upload?",
+      "options": [
+        "Ready metadata first, upload later",
+        "Verify stable uploaded content, then mark metadata ready",
+        "Return success before storing either"
+      ],
+      "answer": "Verify stable uploaded content, then mark metadata ready",
+      "explanation": "It may leave recoverable hidden orphans but avoids this particular ready-without-content race."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why can deleting metadata fail to reclaim all content storage?",
+      "answer": "Objects, versions, retention policies, and partial failures have separate lifecycles.",
+      "explanation": "A cleanup/reconciliation contract must name what is removed and when."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "When might keeping blobs inside the relational database be defensible?",
+      "answer": "For bounded volume and access patterns where simpler atomicity, operations, and backup outweigh blob overhead.",
+      "explanation": "Architecture follows measured requirements; separation itself adds state and failure handling."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Block interface?",
+      "back": "Addressable blocks; a host manages higher-level filesystem/database meaning."
+    },
+    {
+      "front": "File interface?",
+      "back": "Paths and file operations with filesystem/protocol semantics."
+    },
+    {
+      "front": "Object interface?",
+      "back": "Key-addressed content through an API with implementation-specific guarantees."
+    },
+    {
+      "front": "Upload publication boundary?",
+      "back": "Ready metadata should reference verified stable content."
+    },
+    {
+      "front": "Two-store partial failure?",
+      "back": "Hidden orphan bytes or missing content require explicit ordering, recovery, and cleanup."
+    }
+  ],
+  "mentalModel": "Name who owns the bytes, who owns the business fact, and how they agree before the user sees success.",
+  "sources": [
+    {
+      "title": "Amazon S3 — User guide overview",
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+      "checked": "2026-09-29"
+    }
+  ]
+}

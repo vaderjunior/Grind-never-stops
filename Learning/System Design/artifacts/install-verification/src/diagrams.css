@@ -1,0 +1,16 @@
+/* SVG text uses the renderer's font metrics, independent of prose/HTML rules. */
+.diagram-card .diagram-canvas{display:block;max-height:620px;min-height:0;overscroll-behavior:contain;scrollbar-gutter:stable;background:#fbfcf8;color:#153b35;color-scheme:light}
+.diagram-card .diagram-svg{display:block;flex:none;margin-inline:auto}
+.diagram-card .diagram-svg>svg{display:block;width:100%;max-width:none!important;max-height:none;height:auto}
+.diagram-card.expanded .diagram-canvas{min-height:0;max-height:none}
+.diagram-card .diagram-scroll-hint{padding:9px 18px;margin:0;border-top:1px solid var(--border);font-size:11px;line-height:1.6;color:var(--muted)}
+.diagram-card .diagram-text{border-top:1px solid var(--border);padding:14px 20px;font-size:13px;line-height:1.8}
+.diagram-card .diagram-text summary{cursor:pointer;font-weight:600;color:var(--teal)}
+.diagram-card .diagram-text p{margin:14px 0 10px;font-size:13px;line-height:1.8}
+.diagram-card .diagram-text li{margin:7px 0;overflow-wrap:anywhere}
+.diagram-card .diagram-text ul{columns:2;column-gap:28px;padding-left:19px}
+.diagram-card .diagram-text ul li{break-inside:avoid}
+.diagram-print-labels{display:none}
+.diagram-card .diagram-svg text.step-muted,.diagram-card .diagram-svg .edgeLabel.step-muted,.diagram-card .diagram-svg .node.step-muted{opacity:1!important}
+@media(max-width:600px){.diagram-card .diagram-header{flex-wrap:wrap}.diagram-card .diagram-header>div:first-child{flex:1 1 190px}.diagram-card .diagram-text{padding:13px 16px}.diagram-card .diagram-text ul{columns:1}.diagram-card .diagram-canvas{max-height:560px}.diagram-card.expanded .diagram-header>div:first-child{flex-basis:150px}}
+@media print{.diagram-card{break-inside:auto}.diagram-card .diagram-header{break-after:avoid}.diagram-card .diagram-canvas{overflow:visible;max-height:none;padding:12px 8px;scrollbar-gutter:auto;break-inside:avoid}.diagram-card .diagram-svg{width:min(var(--diagram-width),100%)!important;min-width:0!important;max-width:100%}.diagram-card .diagram-svg>svg{max-height:180mm!important}.diagram-card .diagram-scroll-hint{display:none}.diagram-card .diagram-text{display:none}.diagram-card .diagram-print-labels{display:block;padding:12px 20px;font-size:10pt;line-height:1.6;border-top:1px solid #ddd;break-inside:avoid}.diagram-card .diagram-print-labels ul{columns:2;column-gap:28px;padding-left:18px}.diagram-card .diagram-print-labels li{break-inside:avoid;margin:5px 0;overflow-wrap:anywhere}}

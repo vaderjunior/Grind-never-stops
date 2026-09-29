@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-09-29T14:06:56.991Z",
+  "passed": true,
+  "checks": [
+    "Authored pagination SQL returns 40,30 before insertion.",
+    "Inserted70 produces the documented offset duplicate while keyset remains 40,30.",
+    "Pagination exercise deletion produces offset60,50 and keyset70,60.",
+    "6GB / 100Mbit/s ideal transfer is480seconds=8minutes.",
+    "50uploads/s×2MB=800Mbit/s payload.",
+    "30day telemetry payload and three copies are1.296TB and3.888TB.",
+    "Units exercise gives10MB/s=80Mbit/s."
+  ],
+  "limitations": [
+    "SQLite executes the portable SQL example; this does not test a live PostgreSQL query planner.",
+    "Rate calculations validate stated assumptions, not real infrastructure capacity."
+  ]
+}

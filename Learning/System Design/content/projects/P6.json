@@ -1,0 +1,106 @@
+{
+  "id": "P6",
+  "title": "AI inference gateway",
+  "milestones": [
+    {
+      "lessonId": "269",
+      "number": 1,
+      "title": "[P6.1] Inference gateway: contracts, mock backend, and cancellable token streaming",
+      "focus": "Contracts, stub and cancellable stream",
+      "task": "Implement the generator contract and close propagation. Consume one token, then explicitly close the stream as a disconnected HTTP/SSE transport would. Use try/finally so provider cleanup and accounting run during generator cancellation.",
+      "failureInjection": "A abandoned generator that remains referenced may retain a reservation. The transport adapter must close on disconnect; documentation and tests should show that ownership contract.",
+      "evidence": "Observe one delivered token, cancelled outcome, zero active count, and charge of exactly one illustrative output unit.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P6_1 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "286",
+      "number": 2,
+      "title": "[P6.2] Inference gateway: tenant admission, token limits, and budgets",
+      "focus": "Tenant limits and budgets",
+      "task": "Under a lock, reserve max_tokens and one concurrency slot before advancing the provider. Start a stream for Alice, reject her second concurrent stream, and allow Bob independently. Release unused budget when the stream ends.",
+      "failureInjection": "Checking balance and decrementing in separate critical sections permits over-admission. Reserving only delivered tokens can also permit too many simultaneous future obligations.",
+      "evidence": "Demonstrate tenant isolation and deterministic rejection when the requested ceiling exceeds remaining allowance.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P6_2 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "287",
+      "number": 3,
+      "title": "[P6.3] Inference gateway: provider failures, cancellation, and telemetry",
+      "focus": "Provider errors, cancellation and telemetry",
+      "task": "Inject a disconnect after one token and a provider delay past the deadline. Guarantee finally cleanup, distinguish provider_error from timeout/cancelled, and avoid automatic stream retries once output has been observed.",
+      "failureInjection": "Retrying a partially delivered generation can duplicate or contradict visible output. State whether a client should start a new logical request instead of hiding the failure.",
+      "evidence": "Verify no reservation leak after provider error or timeout, with accurate emitted-unit count and terminal status.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P6_3 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    },
+    {
+      "lessonId": "288",
+      "number": 4,
+      "title": "[P6.4] Inference gateway: load/fault tests and latency/cost evidence",
+      "focus": "Load/fault and cost evidence",
+      "task": "Run ten deterministic stub requests and total the output units. Compare first-token latency with overall duration. Label cost units and timing as simulation output; do not translate them into GPU capacity or vendor currency without a real measurement model.",
+      "failureInjection": "Counting only completed requests conceals partial outputs and cancelled work. Include those outcomes separately and explain that real provider billing may count tokens not delivered to the client.",
+      "evidence": "Provide per-request telemetry, 30 emitted units across ten runs, 0.02-second first-token simulation, and an explicit uncertainty/limitation paragraph.",
+      "minutes": 60,
+      "budget": {
+        "brief": 10,
+        "implementation": 25,
+        "tests": 15,
+        "evidence": 10
+      },
+      "testCommand": "py -3 -m unittest discover -s projects/tests -p test_projects.py -k P6_4 -v",
+      "stopCondition": "Stop when the focused deterministic test passes and the stated evidence is recorded. Extensions are separate practice."
+    }
+  ],
+  "baselineArtifact": "Streaming gateway, tenant budgets, failure controls, observability",
+  "acceptanceEvidence": [
+    "Canceled requests",
+    "provider timeout",
+    "quota fairness",
+    "latency and cost accounting"
+  ],
+  "source": "catalog",
+  "version": 1,
+  "status": "reference-tested",
+  "authorship": "original prepared teaching implementation; curriculum names and milestone IDs source-derived",
+  "invariant": "Admission atomically reserves each tenant’s maximum output-unit budget before work starts. Completion, cancellation and failure release unused reservations and preserve per-request accounting.",
+  "requirements": [
+    "Expose a bounded streaming generator backed by an explicit local deterministic token stub.",
+    "Isolate tenant concurrency and output-unit budgets; reject reused request IDs rather than silently double-charge or replay incomplete streams.",
+    "Record delivery-unit counts, time to first delivered token, duration, and outcome; release reservations on every terminal path."
+  ],
+  "architecture": "tenant + request ID → atomic concurrency/budget reservation → cancellable stub iterator → delivered token stream → finally release unused units + telemetry.",
+  "limitations": "No AI model runs here. Stub tokens are illustrative output units, not tokenizer IDs, provider billing or measured inference throughput. Budgets are process-local. Deadline checks occur between cooperative stub tokens and cannot interrupt an arbitrary blocking provider call; real adapters need cancellable I/O and provider-side billing reconciliation.",
+  "extensions": [
+    "Add a durable reservation ledger and crash reconciliation with conservative orphan handling.",
+    "Add a real cancellable HTTP adapter against a local fake SSE server, without a paid provider."
+  ],
+  "learnerFile": "projects/learner/gateway.py",
+  "referenceFile": "projects/reference/gateway.py",
+  "instructionsFile": "projects/P6.md",
+  "testFile": "projects/tests/test_projects.py",
+  "referenceReveal": "Explicit reveal in the academy; reference source also remains inspectable on disk. Educational spoiler control, not secure examination."
+}

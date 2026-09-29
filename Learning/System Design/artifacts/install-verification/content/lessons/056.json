@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "status": "drafted",
+  "authoredBy": "original",
+  "id": "056",
+  "objectives": [
+    "Trace cache-aside hits and misses without confusing cache authority.",
+    "Estimate origin demand from hit ratios and request mix.",
+    "Distinguish TTL expiration, eviction, and working-set capacity."
+  ],
+  "retrieval": [
+    "L049: separate authoritative metadata from copies.",
+    "L051: why does a warm-cache benchmark need its own label?"
+  ],
+  "sections": [
+    {
+      "id": "problem",
+      "title": "A cache saves repeated work but adds another state copy",
+      "markdown": "A URL redirect service repeatedly reads the same short-code mappings. The authoritative database can answer correctly, but many identical reads spend avoidable dependency time. A cache stores reusable results closer to the read path. The useful question is not “is memory fast?” but “which expensive work can be skipped safely, for how long, and for whose request?”\n\nFor this lesson, mappings are immutable after creation and tenant scope is part of lookup identity where applicable. This simplifies correctness enough to isolate the cache-aside mechanism. L057 changes the workload to mutable values and exposes invalidation races."
+    },
+    {
+      "id": "mechanism",
+      "title": "Cache-aside leaves miss handling in the application",
+      "markdown": "On a read, the application looks up the cache key. A hit returns a reusable value under the freshness/authorization policy. A miss reads the authoritative store, then populates the cache and returns the result. The database remains the source of truth; losing the cache must not lose the only acknowledged mapping. A cache timeout is not necessarily equivalent to a not-found answer.\n\nTTL expiration is a time-based reuse limit. Eviction removes entries to enforce capacity or another policy. An entry can be evicted before its TTL, so TTL is not a promise that it will remain present. A key can be present yet unusable because its version or access scope differs. Define negative caching separately: briefly remembering a missing key can reduce repeated invalid requests, but it can conceal a newly created mapping until expiry.\n\nThe working set is the portion of data accessed with enough frequency over the relevant interval to benefit from residency. A cache smaller than the entire database can still work well when popularity is skewed. A cache that fits all keys may still be ineffective if values change constantly, keys omit dimensions, or serialization/network overhead dominates the saved work. Estimate key/value/metadata overhead instead of counting payload bytes alone."
+    },
+    {
+      "id": "worked",
+      "title": "A good hit ratio can hide an unsafe outage plan",
+      "markdown": "Assume 10,000 reads/s and a90% hit ratio measured on the relevant operation mix. Normal origin reads are approximately1,000/s, ignoring refreshes and retries. If every cache entry disappears, origin demand can jump toward10,000/s. A database sized only for normal misses may fail during cache recovery. Add bounded origin concurrency, request coalescing for common misses, gradual warming, and a policy for excess demand.\n\nFor an illustrative latency mean, cache lookup costs1ms and an origin read adds20ms on misses. If costs are independent and queueing is negligible, mean latency is1+0.10×20=3ms. This does not derive p99 latency. Misses, slow-cache timeouts, and correlated bursts determine the tail. A99% hit ratio on tiny objects can also hide large-object bandwidth demand: byte hit ratio and request hit ratio answer different questions.\n\nSuppose one million resident entries average300 bytes including modeled key/value overhead. The simplified budget is300MB decimal before allocator, replication, buffers, and operational headroom. Measure the actual implementation. Do not turn this arithmetic into a vendor-specific memory guarantee."
+    },
+    {
+      "id": "failures",
+      "title": "The miss path is part of the normal architecture",
+      "markdown": "A hot key expires and thousands of callers miss together. Without coalescing they all read the origin. A per-key single-flight mechanism can let one refresh serve concurrent waiters, subject to bounded waiting and cancellation. It does not coordinate across processes unless the design explicitly does so. TTL jitter can reduce synchronized expirations across different keys but does not solve every hot-key burst.\n\nWhen the cache is unavailable, a fail-open policy means attempting the authoritative path, not accepting arbitrary overload. A fail-closed policy may protect dependencies but reduce availability. Some workloads can serve a bounded stale result; others cannot. Tie the choice to the invariant, such as authorization revocation versus public immutable content.\n\nCommon misconceptions: a cache is a backup; TTL guarantees presence; hit rate determines tail latency; and more capacity fixes a wrong key. Optional practice: use the cache simulator to compare a uniform access trace with a skewed one at the same cache size, and explain the assumptions."
+    },
+    {
+      "id": "schedule",
+      "title": "Core versus optional practice",
+      "markdown": "Core55 minutes: retrieval5, explanation/diagram18, worked trace8, exercise10, scheduled questionsQ1–Q3 for10, comparison/cards4. QuestionsQ4–Q5 are extra practice. Use the mechanism lab to explore illustrative models; its output is not a production measurement."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "aside",
+      "title": "What happens on a miss?",
+      "source": "sequenceDiagram\nparticipant C as Caller\nparticipant A as Application\nparticipant K as Derived cache\nparticipant D as Authoritative mappings\nC->>A: Lookup short code\nA->>K: GET scoped key\nK-->>A: Miss\nA->>D: Read mapping\nD-->>A: Durable mapping\nA->>K: SET value with TTL\nA-->>C: Redirect target",
+      "caption": "Cache population follows the authoritative read. Cache loss changes performance, not ownership of the mapping.",
+      "steps": [
+        "Look up the correctly scoped cache key.",
+        "Treat a miss as a need for authoritative data.",
+        "Read and validate the authoritative result.",
+        "Cache the reusable result and return it."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "A service gets20,000 reads/s,95% hits, and the origin safely handles2,000 reads/s. Calculate normal miss demand and full cache-loss demand. Propose an outage policy that protects the origin while stating what users may observe.",
+    "rubric": [
+      "Compute1,000/s normal and20,000/s cold demand.",
+      "Bound origin work rather than blindly forwarding all misses.",
+      "State rejection/staleness behavior and key scope."
+    ],
+    "solution": "Normal misses are20,000×0.05=1,000/s. Full loss can send20,000/s, ten times the stated origin capacity. Bound concurrent origin work/admission, coalesce duplicate hot-key misses, warm gradually, and apply an explicit reject or bounded-stale policy consistent with the data. Users may see controlled errors or documented stale public values; authorization-sensitive state may require a stricter policy. Cache failure is not a reason to return not-found for an existing record."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "Who owns truth in cache-aside?",
+      "options": [
+        "The last browser",
+        "The authoritative store",
+        "Whichever cache replica is fastest"
+      ],
+      "answer": "The authoritative store",
+      "explanation": "The cache is a derived copy; loss should not erase the only acknowledged record."
+    },
+    {
+      "id": "q2",
+      "type": "numeric",
+      "prompt": "At10,000 reads/s and90% hits, approximate origin read rate?",
+      "answer": 1000,
+      "unit": "reads/s",
+      "tolerance": 0.01,
+      "explanation": "10,000×(1−0.90)=1,000, excluding refreshes/retries."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Can an entry disappear before TTL expiry?",
+      "options": [
+        "No",
+        "Yes, eviction or cache loss can remove it",
+        "Only after a database write"
+      ],
+      "answer": "Yes, eviction or cache loss can remove it",
+      "explanation": "TTL limits reuse; it does not reserve residency."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "When is negative caching useful and risky?",
+      "answer": "It reduces repeated missing-key lookups but may temporarily hide a newly created value. Choose short bounds and invalidation behavior appropriate to creation frequency.",
+      "explanation": "It reduces repeated missing-key lookups but may temporarily hide a newly created value. Choose short bounds and invalidation behavior appropriate to creation frequency."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Why is high hit ratio insufficient to establish availability?",
+      "answer": "The miss path, cache outage load, key scope, tail latency, and freshness requirements still determine user-visible behavior.",
+      "explanation": "The miss path, cache outage load, key scope, tail latency, and freshness requirements still determine user-visible behavior."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Cache-aside miss owner?",
+      "back": "Application reads authority and populates the cache."
+    },
+    {
+      "front": "TTL versus eviction?",
+      "back": "Time-based reuse bound versus removal for capacity/policy."
+    },
+    {
+      "front": "Origin rate estimate?",
+      "back": "Read rate×miss ratio, then add refresh/retry effects."
+    },
+    {
+      "front": "Cold-cache risk?",
+      "back": "Origin demand can jump toward full read traffic."
+    },
+    {
+      "front": "Cache key completeness?",
+      "back": "Include all dimensions that affect representation and access scope."
+    }
+  ],
+  "mentalModel": "A cache is a reusable derived answer with a miss path and a correctness budget.",
+  "sources": [
+    {
+      "title": "RFC9111 — HTTP Caching",
+      "url": "https://www.rfc-editor.org/rfc/rfc9111.html",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Google SRE — Handling Overload",
+      "url": "https://sre.google/sre-book/handling-overload/",
+      "checked": "2026-09-29"
+    }
+  ]
+}

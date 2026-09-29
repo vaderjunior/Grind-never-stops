@@ -1,0 +1,328 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 5,
+  "title": "Proxies, load balancers, API gateways, and ingress",
+  "level": "beginner",
+  "minutes": 55,
+  "id": "gateways-and-proxies",
+  "summary": "Learn why a request may pass through another server before reaching your application. Separate the jobs of a proxy, load balancer, and API gateway with one growing notes app.",
+  "objectives": [
+    "Distinguish a client-side forward proxy from a server-side reverse proxy.",
+    "Explain how load balancing and gateway policies can share one component.",
+    "Trace an incoming request without confusing control configuration with the traffic path."
+  ],
+  "terms": [
+    {
+      "term": "Proxy",
+      "definition": "An intermediary that handles communication on behalf of another participant."
+    },
+    {
+      "term": "Forward proxy",
+      "definition": "An intermediary used on the client side to reach other services."
+    },
+    {
+      "term": "Reverse proxy",
+      "definition": "An entry intermediary that receives requests for a service and forwards them to its backend."
+    },
+    {
+      "term": "Load balancer",
+      "definition": "A component or function that distributes eligible connections or requests among service instances."
+    },
+    {
+      "term": "API gateway",
+      "definition": "An application entry point that applies API-facing policies such as routing, authentication, and request limits."
+    },
+    {
+      "term": "Upstream",
+      "definition": "The backend destination a proxy forwards to; the word is relative to the proxy’s viewpoint."
+    }
+  ],
+  "retrieval": [
+    "Which part of a URL identifies the hostname and which part identifies the path?",
+    "Why might two instances of a stateless application use the same saved data?"
+  ],
+  "sections": [
+    {
+      "id": "front-door",
+      "title": "Why add a front door at all?",
+      "markdown": "Pocket Notes began with one application process receiving browser requests. It now has two application instances so one can be replaced without stopping every user. The public URL should stay the same. The team also wants one place to manage HTTPS certificates and decide which instances may receive new traffic.\n\nImagine a reception desk at a clinic. Patients use one entrance; the receptionist directs each patient to an appropriate available practitioner. Patients do not need the internal room list to stay correct every minute. A server-side entry intermediary can play a similar role for requests.\n\nThe analogy does not mean the intermediary knows your business rules. A receptionist can direct someone to the right room without deciding whether a particular prescription is medically appropriate. Similarly, a gateway may authenticate a user while the application still checks whether that user may edit a particular note. We will keep routing and business authorization separate."
+    },
+    {
+      "id": "forward",
+      "title": "A forward proxy represents the client’s side",
+      "markdown": "Suppose an organization configures employee browsers to reach external sites through an outbound proxy. The browser asks that intermediary to connect onward. The organization may use it for access policy, auditing, or controlled network egress. This is a forward proxy: its role is defined from the client side of the conversation.\n\nWith HTTPS, a proxy may carry an encrypted tunnel rather than reading every application message. An organization can also deploy managed interception with its own trust configuration, but that is a distinct security arrangement. Do not assume the word proxy always implies decrypting the content.\n\nOur Pocket Notes customers do not need a forward proxy for the service to work. Some may use one because of their own network environment. From the application's perspective those requests still arrive at its public entry point. Forward and reverse describe who the intermediary serves in the architecture, not whether the machine is geographically in front of another machine."
+    },
+    {
+      "id": "reverse",
+      "title": "A reverse proxy represents the service’s entry",
+      "markdown": "Pocket Notes publishes a hostname whose address reaches its reverse proxy. The browser sends a request for /notes/42. The proxy chooses a backend destination, forwards the request, receives the backend response, and relays it to the browser. The browser can use a stable public name while backend processes start, stop, or move.\n\nThe proxy might terminate HTTPS, meaning it handles the client's encrypted connection. It then uses a separately configured connection to the backend. If that second connection also needs encryption and peer authentication, configure them explicitly; a padlock in the browser describes the browser-facing connection, not every internal hop.\n\nA reverse proxy can also route based on hostnames and paths. For example, /notes goes to the notes API while /images goes to a static-content service. A route is a rule about destination selection, not a reason to split a small application into many services. Keep one backend when it still meets the need."
+    },
+    {
+      "id": "balance",
+      "title": "Load balancing is one job the entry point may do",
+      "markdown": "With two equivalent notes instances, the entry point needs a selection policy. Round-robin alternates among eligible instances; least-connections uses a measure of active connections. Other policies account for capacity or locality. The choice depends on workload: one long streaming connection can use resources differently from one tiny read.\n\nA layer 4 load balancer makes decisions mainly using transport-level information such as addresses and ports. A layer 7 proxy understands application information such as HTTP hostnames or paths. These labels describe the level of information used, not a universal quality ranking. Neither automatically understands which database operation is safe to repeat.\n\nIf requests for one user can reach either instance, both need access to the required shared state or a documented session design. Load balancing does not copy the note from instance A's memory into instance B. This is why the previous statelessness lesson matters: distribution and shared application truth solve different problems."
+    },
+    {
+      "id": "gateway",
+      "title": "An API gateway adds entry policies",
+      "markdown": "An API gateway is often a reverse proxy with a richer set of API-facing policies. It can validate an authentication token, apply a per-client request limit, route API versions, normalize selected headers, and record request timing. One implementation may perform reverse proxying, load balancing, and gateway functions together.\n\nOne running component may perform several jobs:\n\n| Responsibility | Question it answers |\n| --- | --- |\n| Reverse proxy | Where should this incoming service request be forwarded? |\n| Load balancing | Which eligible instance should receive it? |\n| API entry policies | Does this request satisfy shared identity, size, or rate rules? |\n| Resource authorization | May this caller perform this action on this particular note? |\n\nThe last rule still needs the application’s resource knowledge. Do not draw three mandatory machines because three intermediary names appear. Separate components can be justified, but each hop adds configuration and failure behavior.\n\nThe gateway still cannot replace all application authorization. Knowing that a request belongs to Ajay does not prove Ajay owns note 42. The backend or another authoritative policy boundary checks the requested action against the resource. Preserve trustworthy identity between entry and backend, and do not blindly accept identity headers that an external caller could forge.\n\n> **Common mistake:** Trusting an incoming user-id header merely because its name looks internal. The entry/backend arrangement must establish which identity information is authentic and prevent a client-supplied value from impersonating another caller."
+    },
+    {
+      "id": "walk",
+      "title": "Follow one request through the combined entry service",
+      "markdown": "Mina opens note 42. DNS supplies address information for notes.example.com. The browser establishes HTTPS with the public entry service. The entry service checks its route and entry policies, creates or propagates a trace identity—a label for connecting observations about this request—under a trusted policy, and selects one ready notes instance. That instance verifies Mina's permission, reads the saved note, and returns a result. The response comes back through the entry service.\n\nReplacing A has separate states:\n\n| Instance A state | New requests | Already accepted work |\n| --- | --- | --- |\n| Ready | Eligible for selection | Continues |\n| Draining | Stop selecting it after routing learns the change | Given a bounded chance to finish |\n| Stopped | Not eligible | Unfinished outcomes need the application’s failure policy |\n\n**Draining** means letting existing work finish while stopping new work. Existing connections and delayed health information make this a transition, not an instantaneous switch.\n\nNow suppose the entry service times out waiting for A. It may return a gateway error even if A has already saved a change. An idempotent operation has the same intended effect when repeated; setting a note’s title to the same value is a simple example. Creating a new note on every call is not idempotent unless the application adds duplicate protection. Retrying a read is different from blindly replaying such a create operation. Request identities and application semantics must determine whether a retry could duplicate a business effect."
+    },
+    {
+      "id": "health",
+      "title": "Healthy enough to receive work is a specific claim",
+      "markdown": "A health check asks a defined question about an instance. “The process responds to this URL” is not identical to “this instance can serve the next user request.” A readiness check should reflect whether the instance can safely receive its intended traffic. It should avoid unnecessary expensive checks that themselves cause overload.\n\nIf a shared database has a brief slowdown, removing every application instance simultaneously may turn a degraded service into a complete outage. Define what the check is trying to protect and what action follows its failure. Health decisions have timing, thresholds, and false positives.\n\nThe entry service itself can become a bottleneck or a single point of failure. Redundant entry instances or a managed highly available service may address that, but configuration mistakes and bad deployments can still affect every copy. Monitor the entry and backend separately so a gateway timeout is not mistaken for proof that the browser never reached the service."
+    },
+    {
+      "id": "kubernetes",
+      "title": "Optional preview: where Kubernetes traffic configuration fits",
+      "markdown": "Kubernetes is a platform for running and managing application workloads. In that environment, an Ingress object describes selected incoming HTTP routing rules. An Ingress controller reads such configuration and arranges an actual serving implementation. The configuration object is not itself the running network proxy.\n\nGateway API is another Kubernetes API family for describing traffic-handling resources and routes with clearer role separation. It still requires a compatible implementation. Creating configuration does not conjure a working external address, certificate, and route unless the required controllers and infrastructure exist.\n\nFor now, recognize the mapping: a Kubernetes traffic entry implementation can perform reverse-proxy, load-balancing, and gateway responsibilities. The later platform lessons show Pods and Services in the actual path. A Deployment controller manages desired replicas; ordinary user HTTP requests do not travel through that controller before reaching the application. Keep management arrows distinct from traffic arrows."
+    },
+    {
+      "id": "compare",
+      "title": "Choose by responsibility, not by brand",
+      "markdown": "Use four questions when looking at an unfamiliar diagram. Is this component acting for outbound clients or incoming service traffic? What information does it use to route? Which policies does it enforce? What happens to a request when it cannot reach the backend?\n\nFor our small notes service, a combined reverse proxy and load balancer may be enough. An API gateway becomes useful when there are meaningful shared entry policies or several managed API surfaces. A corporate forward proxy belongs to the client's network story. A Kubernetes controller belongs to the infrastructure management story. One product can support several roles, so product names alone do not settle the classification.\n\nIn an interview, draw the simplest path that fulfills the requirements. Explain one successful read, one backend becoming unready, and one ambiguous timeout during a write. If you can do that without treating every named component as compulsory, you understand the reason for the front door rather than merely its vocabulary."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "proxy-roles",
+      "title": "The same word proxy can describe two different sides",
+      "source": "flowchart LR\nC[Organization browser] --> F[Forward proxy acting for client]\nF --> I[Internet destination]\nU[Notes user] --> R[Reverse proxy acting for service]\nR --> A[Notes backend A]\nR --> B[Notes backend B]",
+      "caption": "These are two illustrative paths, not a requirement to place a forward proxy in every notes request.",
+      "steps": [
+        "A client-side proxy helps an organization reach external services.",
+        "A server-side proxy receives requests for the published service.",
+        "The reverse proxy selects an eligible backend.",
+        "The two roles describe responsibility rather than physical location."
+      ],
+      "sectionId": "reverse"
+    },
+    {
+      "id": "gateway-request",
+      "title": "One entry service can own several related functions",
+      "source": "sequenceDiagram\nparticipant B as Browser\nparticipant G as Combined entry service\nparticipant A as Ready notes instance\nparticipant D as Database\nB->>G: HTTPS request for note 42\nG->>G: Route and entry policy checks\nG->>A: Forward with trusted identity context\nA->>A: Authorize note access\nA->>D: Read permitted note\nD-->>A: Note content\nA-->>G: Application response\nG-->>B: HTTP response",
+      "caption": "The gateway checks entry policy; the application still enforces access to the particular note.",
+      "steps": [
+        "The browser reaches the stable HTTPS entry.",
+        "The entry service applies route and shared policies.",
+        "A ready backend checks the resource permission and reads data.",
+        "The response returns through the same logical entry path."
+      ],
+      "sectionId": "walk"
+    },
+    {
+      "id": "drain-transition",
+      "sectionId": "health",
+      "title": "Readiness and draining change which work is accepted",
+      "source": "flowchart LR\nA[Instance A ready] --> D[Mark A unready for new traffic]\nD --> R[Routing observes updated eligibility]\nR --> B[Send new work to ready B]\nD --> F[Allow A existing work a bounded drain period]\nF --> S[Stop A under shutdown policy]",
+      "caption": "The two branches can overlap. Propagation delays, existing connections, and time-limited shutdown mean this is not a guarantee that every in-flight request succeeds.",
+      "steps": [
+        "Mark A, the instance being replaced, ineligible for new work.",
+        "Let routing shift new requests after observing that state.",
+        "Handle already accepted work under a bounded drain and shutdown policy."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 12,
+    "prompt": "Draw one stable public entry for two notes instances. Label reverse-proxy, load-balancing, and authentication responsibilities without automatically drawing three machines. Then trace a write whose backend saves successfully but whose response times out at the entry.",
+    "rubric": [
+      "One component may implement several responsibilities.",
+      "Resource authorization and saved data remain explicit.",
+      "A gateway timeout does not prove the write failed; retry policy uses operation identity and semantics."
+    ],
+    "solution": "Browser→combined entry service→one ready notes instance→database is sufficient for this starting picture. The entry handles public HTTPS, route selection, and shared identity checks; the backend checks access to the specific note and performs the save. If the response is lost after saving, the caller has an unknown result. A repeatable operation identity and status/read path can resolve the outcome. Blindly replaying a non-idempotent create against another instance could duplicate work. Redundant entry infrastructure and graceful draining are separate reliability additions."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "A forward proxy usually acts on behalf of…",
+      "options": [
+        "Clients reaching other services",
+        "Only a database row",
+        "Every backend’s disk"
+      ],
+      "answer": "Clients reaching other services",
+      "explanation": "Its placement and responsibility are on the client side of the communication."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Reverse proxy, load balancer, and API gateway must be three separate machines.",
+      "options": [
+        "True",
+        "False",
+        "Only for HTTPS"
+      ],
+      "answer": "False",
+      "explanation": "These describe overlapping responsibilities that one implementation may combine."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "A gateway timeout proves the backend never saved the change.",
+      "options": [
+        "True",
+        "False",
+        "Only if two instances exist"
+      ],
+      "answer": "False",
+      "explanation": "The backend may have committed before its response was lost or delayed."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Why does authentication at the gateway not automatically authorize editing note 42?",
+      "answer": "Identity answers who the caller is. The requested resource and action still require an authoritative permission decision.",
+      "explanation": "Identity answers who the caller is. The requested resource and action still require an authoritative permission decision."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "Does an HTTP request pass through a Kubernetes Deployment controller?",
+      "answer": "No. The controller manages desired workloads. Actual application traffic follows the configured network data path, such as entry proxy to Service-selected backend Pods.",
+      "explanation": "No. The controller manages desired workloads. Actual application traffic follows the configured network data path, such as entry proxy to Service-selected backend Pods."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Forward proxy?",
+      "back": "An intermediary serving the client’s outbound communication."
+    },
+    {
+      "front": "Reverse proxy?",
+      "back": "An intermediary receiving incoming requests for a service and forwarding them to backends."
+    },
+    {
+      "front": "Load-balancing responsibility?",
+      "back": "Choose among eligible instances using a defined policy."
+    },
+    {
+      "front": "Gateway policy versus business rule?",
+      "back": "Shared entry checks do not replace resource-specific authorization or atomic data decisions."
+    },
+    {
+      "front": "Ingress configuration versus controller?",
+      "back": "Configuration declares rules; a controller and serving implementation make those rules operational."
+    }
+  ],
+  "mentalModel": "Name what each intermediary does for the request. Different names do not automatically require different boxes.",
+  "sources": [
+    {
+      "title": "MDN — Proxies and tunneling",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "NGINX — Reverse proxy behavior",
+      "url": "https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "NGINX — HTTP load balancing",
+      "url": "https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Ingress",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/ingress/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Kubernetes — Gateway API",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/gateway/",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "replace-one-backend",
+      "sectionId": "walk",
+      "title": "Replace A while B receives new requests",
+      "intro": "Assume B has enough spare capacity. This example distinguishes new selection from work already accepted by A.",
+      "steps": [
+        {
+          "title": "Both instances are ready",
+          "explanation": "A already has two requests in progress. The entry can choose either eligible instance.",
+          "state": [
+            {
+              "label": "A eligibility",
+              "value": "Ready"
+            },
+            {
+              "label": "A in-flight requests",
+              "value": "2"
+            },
+            {
+              "label": "B eligibility",
+              "value": "Ready"
+            }
+          ]
+        },
+        {
+          "title": "Begin draining A",
+          "explanation": "A becomes unready for new work, but routing needs to observe that change. Existing work has not vanished.",
+          "state": [
+            {
+              "label": "A desired eligibility",
+              "value": "No new work"
+            },
+            {
+              "label": "A in-flight requests",
+              "value": "2"
+            },
+            {
+              "label": "Routing knowledge",
+              "value": "Updating"
+            }
+          ]
+        },
+        {
+          "title": "Routing uses the new state",
+          "explanation": "A new request goes to B. One of A’s earlier requests finishes during its drain period.",
+          "state": [
+            {
+              "label": "New request destination",
+              "value": "B"
+            },
+            {
+              "label": "A in-flight requests",
+              "value": "1"
+            },
+            {
+              "label": "A new selections",
+              "value": "Stopped after update"
+            }
+          ]
+        },
+        {
+          "title": "Finish under the shutdown policy",
+          "explanation": "If A’s last request completes within the deadline, it can stop with no remaining work. Otherwise the documented timeout/failure policy applies.",
+          "state": [
+            {
+              "label": "A in-flight requests",
+              "value": "0 in this successful trace"
+            },
+            {
+              "label": "A process",
+              "value": "Can stop"
+            },
+            {
+              "label": "Service entry",
+              "value": "Still routes to B"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Removing an instance from new selection is different from finishing work already on it. Explain both transitions."
+    }
+  ]
+}

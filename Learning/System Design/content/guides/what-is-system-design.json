@@ -1,0 +1,275 @@
+{
+  "version": 2,
+  "status": "drafted",
+  "authoredBy": "original",
+  "week": 1,
+  "title": "What is system design?",
+  "level": "beginner",
+  "minutes": 45,
+  "id": "what-is-system-design",
+  "summary": "Start with a tiny notes app. Learn what a system is, what its parts do, and how to explain a simple design without jargon.",
+  "objectives": [
+    "Explain system design in one sentence.",
+    "Give the browser, server, and database different jobs.",
+    "Trace saving and reading one note."
+  ],
+  "terms": [
+    {
+      "term": "System",
+      "definition": "A set of parts that work together to do something useful."
+    },
+    {
+      "term": "Client",
+      "definition": "A program asking another program to do work. In our example, it is the browser."
+    },
+    {
+      "term": "Server",
+      "definition": "A program that receives requests and sends responses. People also use “server” for the computer running it."
+    },
+    {
+      "term": "Database",
+      "definition": "Software for storing and retrieving organized data, such as saved notes."
+    },
+    {
+      "term": "Request / response",
+      "definition": "A message asking for work, followed by the message reporting the result."
+    }
+  ],
+  "retrieval": [
+    "Think of an app you used today. What did you ask it to do? No technical answer is needed."
+  ],
+  "sections": [
+    {
+      "id": "start",
+      "title": "You already understand the starting problem",
+      "markdown": "Imagine a small app called Pocket Notes. You type “Buy coffee,” press Save, close the browser, and later open the note on your phone. There are only three things we want at first: create a note, list your notes, and read a note. We are not designing for a billion people today.\n\nSystem design means deciding which parts will do that work, how those parts communicate, and what happens when something goes wrong. It is the bigger picture around code. A function might decide how to format a date; a system design decides where notes live and how a second device finds them.\n\nYou do not need to memorize a catalog of tools. By the end of this chapter, success means explaining a small picture in your own words. You can draw it with rectangles and arrows on paper. No Python, SQL, cloud account, or prior system-design course is required."
+    },
+    {
+      "id": "three-parts",
+      "title": "Give three parts three clear jobs",
+      "markdown": "Start with jobs you can point to:\n\n| Part | Job in Pocket Notes | Example it handles |\n| --- | --- | --- |\n| Browser, our **client** | Display the editor and ask for work | The text you are typing |\n| Server | Check the request and decide what to do | “Save this note” |\n| Database | Keep and find saved notes | Note 42 and its text |\n\nThe client asks; the server applies the app's rules; the database keeps the saved record.\n\nThink of a small library. A visitor asks the librarian for a book; the librarian looks in the catalog and returns an answer. The visitor resembles a client, the librarian resembles a server, and the catalog resembles stored data. This analogy is only a starting aid. Computer messages can arrive late or fail, many requests can overlap, and a database does more than a paper catalog.\n\nThese are roles, not necessarily three physical computers. While learning, your browser, server program, and database can all run on your laptop. Later, the same roles may run on different machines. A diagram first tells us responsibilities; it does not automatically tell us how many computers to buy."
+    },
+    {
+      "id": "save",
+      "title": "Walk through saving one note",
+      "markdown": "Read the diagram one arrow at a time. Typing changes the open page. Pressing Save starts a request. The server checks the request and asks the database to save it. Only after the database reports success under its storage rules does the server return a saved identity, such as note 42.\n\nFollow the changing values in the walkthrough. **A button press is an intention; a confirmed result is evidence.**\n\nWhy give the note an identity? Two notes can have the same title. A stable identity lets the app ask for this particular note later. The number 42 is just an example; we will learn how to choose identities later. For now, it is a label that does not change when the note’s words change.\n\nNotice the order. The browser should not report a confirmed save just because you clicked a button. It needs the server’s result. Some apps show an optimistic “saving…” state immediately; that is a user-interface choice and should still handle a failed save honestly."
+    },
+    {
+      "id": "read",
+      "title": "Reading is a second journey",
+      "markdown": "When your phone asks to read note 42, its browser sends another request. The server finds note 42 in the database and sends the content back. The phone did not need the original laptop’s open page. Both devices used the same saved information through the server.\n\nWe are leaving out login for this first picture, not claiming every person should see every note. A real private notes app must identify the user and check which notes they may access. We will add those ideas gradually. Good learning diagrams can leave out detail as long as they say what is omitted.\n\nTry explaining the difference between saving and reading without looking: saving sends new information toward storage; reading asks storage for information already saved. Both use a request and a response. That explanation is already system-design reasoning."
+    },
+    {
+      "id": "failure",
+      "title": "Ask one simple “what if?”",
+      "markdown": "What if the server program stops? The browser cannot get normal answers until the service returns. If the notes were properly saved in durable storage—storage intended to survive a program restart—the notes can still be there after the program starts again. Being temporarily unable to read data is different from losing that data.\n\nWhat if you kept every note only in a variable inside the server program? That temporary memory can disappear when the program stops. This is why our design includes saved storage. The next chapters examine memory, disks, and backups; you do not need the storage internals yet.\n\nA small system also has limits. One server may eventually become too busy. That is a future problem to measure, not a reason to add ten components now. Throughout this course, we will grow a design when a requirement creates a reason to grow it."
+    },
+    {
+      "id": "explain",
+      "title": "Your first interview habit: say why",
+      "markdown": "Compare two explanations. “I will use a database” names a component. “I will save notes in a database because users need them after closing the app and from another device” connects the component to a need. The second explanation is more useful.\n\nUse this small pattern: **The user needs X, so this part does Y.** The user needs to edit a note, so the browser shows an editor. The user needs saved notes across devices, so the server reads shared saved storage. The user needs to know whether saving worked, so the server returns a result.\n\nSpend about 20 minutes reading and stepping through the diagram, 10 drawing your own version, 10 on the checks, and 5 explaining it aloud. You do not need to finish quickly. If you can explain the three roles without repeating the paragraph, move to the next chapter.\n\n> **Pause and predict:** If the title changes from “Shopping” to “Saturday shopping,” should the saved note identity change too? Keep the identity stable so another device can still ask for the same note."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "first-system",
+      "title": "A whole application in three boxes",
+      "source": "flowchart LR\nB[Browser: show and edit a note] -->|Save or read request| S[Server: decide what to do]\nS -->|Store or find the note| DB[(Database: keep saved notes)]\nDB -->|Saved result or note content| S\nS -->|Response| B",
+      "caption": "Original beginner diagram. Login, network details, and multiple servers are intentionally left for later chapters.",
+      "steps": [
+        "You type a note in the browser.",
+        "The browser asks the server to save it.",
+        "The server stores it in the database.",
+        "The result travels back so the browser can show Saved."
+      ],
+      "sectionId": "save"
+    },
+    {
+      "id": "need-to-part",
+      "sectionId": "three-parts",
+      "title": "Choose a part because of a user need",
+      "source": "flowchart TB\nE[Need to type and edit] --> B[Browser editor]\nC[Need the same app rules on both devices] --> S[Server checks requests]\nR[Need to find a saved note later] --> D[(Database record)]",
+      "caption": "These arrows connect needs to responsibilities. They do not show network traffic or require three separate machines.",
+      "steps": [
+        "Start with an action the user needs.",
+        "Give one part a clear responsibility for that action.",
+        "Add communication between the parts only after their jobs are clear."
+      ]
+    }
+  ],
+  "exercise": {
+    "minutes": 10,
+    "prompt": "Draw Pocket Notes using only three boxes. Trace “save Buy coffee” in one color and “read note 42 on my phone” in another. Below the drawing, explain what happens if the browser closes after a confirmed save. No product names are needed.",
+    "rubric": [
+      "Different jobs for browser, server, and database.",
+      "Arrows show a request and its result.",
+      "Saved notes do not depend on the original page remaining open."
+    ],
+    "solution": "A reasonable drawing has browser→server→database, with result arrows returning through the server. Saving stores the text with a note identity. Reading later asks the server for that identity and returns the stored text. Closing the original browser does not delete a properly saved note; the other device uses the server and shared database. This assumes saving really completed and that the storage itself remains available. The drawing does not yet solve login, disk failure, or high traffic."
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "type": "choice",
+      "prompt": "In Pocket Notes, which part displays the editor?",
+      "options": [
+        "Browser",
+        "Database",
+        "A second database"
+      ],
+      "answer": "Browser",
+      "explanation": "The browser is the user-facing client. The database stores information rather than drawing the editor."
+    },
+    {
+      "id": "q2",
+      "type": "choice",
+      "prompt": "Why add saved storage instead of keeping every note only in a running program’s variable?",
+      "options": [
+        "It makes every network request instant",
+        "Users need notes after the program restarts",
+        "It removes the need for a server"
+      ],
+      "answer": "Users need notes after the program restarts",
+      "explanation": "Temporary program memory is not the same as durable saved data."
+    },
+    {
+      "id": "q3",
+      "type": "choice",
+      "prompt": "Which explanation gives a reason for a design choice?",
+      "options": [
+        "Use a database because that is what diagrams contain",
+        "Use shared saved storage so another device can read the note",
+        "Use as many servers as possible"
+      ],
+      "answer": "Use shared saved storage so another device can read the note",
+      "explanation": "It connects a component to a user need instead of listing technology."
+    },
+    {
+      "id": "q4",
+      "type": "open",
+      "prompt": "Can these three roles run on one laptop? Explain.",
+      "answer": "Yes. They describe responsibilities; separate programs and storage can run on one machine while learning. Larger deployments may place them on different machines.",
+      "explanation": "Yes. They describe responsibilities; separate programs and storage can run on one machine while learning. Larger deployments may place them on different machines."
+    },
+    {
+      "id": "q5",
+      "type": "open",
+      "prompt": "What is one question our first design has deliberately left for later?",
+      "answer": "Examples include who may read a private note, how to handle many users, what happens if storage fails, or what to do after an uncertain save response.",
+      "explanation": "Examples include who may read a private note, how to handle many users, what happens if storage fails, or what to do after an uncertain save response."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "System design in one sentence?",
+      "back": "Choose parts, communication, and failure behavior to meet user needs."
+    },
+    {
+      "front": "Client?",
+      "back": "The program asking for work; our browser is a client."
+    },
+    {
+      "front": "Server?",
+      "back": "The program receiving requests and returning results."
+    },
+    {
+      "front": "Database?",
+      "back": "Software that stores and retrieves organized saved data."
+    },
+    {
+      "front": "A useful design explanation?",
+      "back": "The user needs X, so this part does Y."
+    }
+  ],
+  "mentalModel": "Start with a user action. Follow it through a few parts, and explain why each part exists.",
+  "sources": [
+    {
+      "title": "MDN — Client-server overview",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Client-Server_overview",
+      "checked": "2026-09-29"
+    }
+  ],
+  "walkthroughs": [
+    {
+      "id": "draft-to-record",
+      "title": "Watch a draft become a saved record",
+      "sectionId": "save",
+      "intro": "The text is the same, but its location and the evidence of saving change.",
+      "steps": [
+        {
+          "title": "Type a draft",
+          "explanation": "The browser holds the text. No shared save has been confirmed.",
+          "state": [
+            {
+              "label": "Editor",
+              "value": "Buy coffee"
+            },
+            {
+              "label": "Saved identity",
+              "value": "None yet"
+            },
+            {
+              "label": "Display",
+              "value": "Unsaved"
+            }
+          ]
+        },
+        {
+          "title": "Send the request",
+          "explanation": "The server checks the text and asks storage to keep it. Waiting is not confirmation.",
+          "state": [
+            {
+              "label": "Request",
+              "value": "Save Buy coffee"
+            },
+            {
+              "label": "Storage result",
+              "value": "Pending"
+            },
+            {
+              "label": "Display",
+              "value": "Saving…"
+            }
+          ]
+        },
+        {
+          "title": "Receive the storage result",
+          "explanation": "The database accepts the record under its configured storage rules. The server now has a result to return.",
+          "state": [
+            {
+              "label": "Database",
+              "value": "42 → Buy coffee"
+            },
+            {
+              "label": "Server result",
+              "value": "Saved as 42"
+            },
+            {
+              "label": "Display",
+              "value": "Still waiting"
+            }
+          ]
+        },
+        {
+          "title": "Show the result",
+          "explanation": "The browser receives the identity and can use it for a later request.",
+          "state": [
+            {
+              "label": "Database",
+              "value": "42 → Buy coffee"
+            },
+            {
+              "label": "Browser identity",
+              "value": "42"
+            },
+            {
+              "label": "Display",
+              "value": "Saved"
+            }
+          ]
+        }
+      ],
+      "takeaway": "Keep the user action, the saved record, and the confirmation message separate in your explanation."
+    }
+  ]
+}
